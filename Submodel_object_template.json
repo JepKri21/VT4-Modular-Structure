@@ -1,0 +1,93 @@
+{
+  "idShort": "DrillStationOperationalData",
+  "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/OperationalData"}]},
+  "id": "https://aausmartlab.com/submodels/DrillStationOperationalData",
+  "submodelElements": [
+    {
+      "modelType": "SubmodelElementList",
+      "idShort": "Skills",
+      "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/DrillStation/Skills"}]},
+      "typeValueListElement": "SubmodelElementCollection",
+      "valueTypeListElement": null,
+      "orderRelevant": true,
+
+      "value": [
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Drilling",
+          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/DrillStation/Drilling"}]},
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "EstimatedDuration",
+              "valueType": "xs:integer",
+              "value": "5",
+              "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/Seconds"}]}
+            },
+            {
+              "modelType": "Range",
+              "idShort": "DrillDepth",
+              "valueType": "xs:integer",
+              "min" : "1",
+              "max" : "20",
+              "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/Millimeters"}]}
+            },
+            {
+              "modelType":"Range",
+              "idShort":"RotationalSpeed",
+              "valueType":"xs:integer",
+              "min":"1500", 
+              "max" : "2000",
+              "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/RPM"}]}
+            },
+            {
+              "modelType":"Range",
+              "idShort":"Feed",
+              "valueType":"xs:integer",
+              "min":"100", 
+              "max" : "200",
+              "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/MillimetersPerSecond"}]}
+            },
+            {
+              "modelType": "SubmodelElementCollection",
+              "idShort": "DrillSize",
+              "value": [
+                {
+                  "modelType": "Property",
+                  "idShort": "3mm",
+                  "valueType": "xs:integer",
+                  "value": "3",
+                  "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/Millimeters"}]}
+                },
+                {
+                  "modelType": "Property",
+                  "idShort": "5mm",
+                  "valueType": "xs:integer",
+                  "value": "5",
+                  "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/Millimeters"}]}
+                },
+                {
+                  "modelType": "Property",
+                  "idShort": "9mm",
+                  "valueType": "xs:integer",
+                  "value": "9",
+                  "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/Millimeters"}]}
+                }
+              ]
+            },
+            {
+              "modelType": "Operation",
+              "idShort": "StartDrilling",
+              "inputVariables": [
+                { "value" : {"modelType" : "Range", "idShort" : "Feed", "min" : "100", "max" : "200", "valueType" : "xs:integer"}},
+                { "value" : {"modelType" : "Range", "idShort" : "RotationalSpeed", "min" : "1500", "max" : "2000", "valueType" : "xs:integer"}},
+                { "value" : {"modelType" : "Range", "idShort" : "DrillDepth", "min" : "1", "max" : "20", "valueType" : "xs:integer"}}
+              ],
+              "outputVariables": [{"value": {"modelType" : "Property", "idShort" : "Status", "valueType":"xs:string"}}]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

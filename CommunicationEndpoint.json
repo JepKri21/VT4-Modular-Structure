@@ -1,0 +1,43 @@
+{
+
+    "idShort": "Communication",
+    "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/OperationalData"}]},
+    "id": "https://aausmartlab.com/submodels/DrillStationCommunication",
+    "submodelElements": [
+        {
+            "modelType" : "SubmodelElementCollection",
+            "idShort" : "UNSCommunication",
+            "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/DrillStation/Communication"}]},
+             "value": [
+                {
+                    "modelType": "Property",
+                    "idShort": "BrokerAddress",
+                    "valueType": "xs:string",
+                    "value": "mqtt://broker.company.com:1883"
+                },
+
+                {
+                    "modelType": "Property",
+                    "idShort": "Protocol",
+                    "valueType": "xs:string",
+                    "value": "MQTT"
+                },
+
+                {
+                    "modelType": "Property",
+                    "idShort": "Topic",
+                    "valueType": "xs:string",
+                    "value": "AAU/SmartLab/FIB14/MT/Drill1"
+                },
+
+                {
+                    "modelType": "Property",
+                    "idShort": "QoS",
+                    "valueType": "xs:string",
+                    "value": "2"
+                }
+
+            ]
+        }
+  ]
+}

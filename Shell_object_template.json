@@ -1,0 +1,33 @@
+{
+  "idShort": "DrillStation",
+  "id": "https://aausmartlab.com/aas/DrillStation",
+  "modelType": "AssetAdministrationShell",
+  "assetInformation": {
+    "assetKind": "Instance",
+    "globalAssetId": "https://aausmartlab.com/assets/DrillStation/6592_2171_2062_3433",
+    "defaultThumbnail": {
+      "path": "/aasxs/files/CircImage.png"
+    }
+  },
+  "submodels": [
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/submodels/DrillStationOperationalData"
+        }
+      ]
+    },
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/submodels/DrillStationCommunication"
+        }
+      ]
+    }
+  ]
+}
+
