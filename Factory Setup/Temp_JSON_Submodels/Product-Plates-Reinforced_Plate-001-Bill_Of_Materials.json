@@ -1,0 +1,49 @@
+{
+  "idShort": "Bill_Of_Materials",
+  "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/Bill_Of_Materials"}]},
+  "id": "https://aausmartlab.com/Assets/Product/Plates/Reinforced_Plate/001/Bill_Of_Materials",
+  "description":[{"language": "en", "text": "List of materials required to produce the product."}],
+
+  "submodelElements" : [
+    {
+      "modelType": "SubmodelElementList",
+      "idShort": "List_Of_Materials",
+      "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/ListOfMaterials"}]},
+      "typeValueListElement": "SubmodelElementCollection",
+      "valueTypeListElement": null,
+      "orderRelevant": true,
+      "description": [
+            {
+              "language": "en",
+              "text": "Collection of all parts in the product Bill of Materials."
+            }
+          ],
+      "value" : [
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Rod_For_Bolt_Manufacturing",
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Component_Variant",
+              "valueType": "xs:string",
+              "value": "https://aausmartlab.com/Assets/Component/DanishSteel/Rod_100mm_Steel"
+            }         
+          ] 
+        },
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Plate_For_Reinforced_Plate_Manufacturing",
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Component_Variant",
+              "valueType": "xs:string",
+              "value": "https://aausmartlab.com/Assets/Component/DanishSteel/Plate_300x300mm_Steel"
+            }         
+          ] 
+        }
+      ]
+    }
+  ]
+}

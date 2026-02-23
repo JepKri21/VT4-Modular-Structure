@@ -1,0 +1,380 @@
+{
+  "idShort": "Bill_Of_Processes",
+  "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/BillOfOperations"}]},
+  "id": "https://aausmartlab.com/Product/Plates/Reinforced_Plate/001/Bill_Of_Processes",
+  "description":[{"language": "en", "text": "List of manufacturing and assembly operations for the product."}],
+
+  "submodelElements" : [
+    {
+      "modelType": "SubmodelElementList",
+      "idShort": "List_Of_processes",
+      "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Product/PlateWithHole/ListOfOperations"}]},
+      "typeValueListElement": "SubmodelElementCollection",
+      "valueTypeListElement": null,
+      "orderRelevant": true,
+      "description": [
+            {
+              "language": "en",
+              "text": "Ordered list of operations required to manufacture and assemble the product."
+            }
+          ],
+      "value" : [
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Retrieve",
+          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Operations/Drilling"}]},
+          "description": [
+            {
+              "language": "en",
+              "text": "List of parameters to perform this process."
+            }
+          ],
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Process_Id",
+              "valueType": "xs:string",
+              "value": "Retrieve_472398"
+            },
+            {
+              "modelType": "SubmodelElementCollection",
+              "idShort": "Execution_Constraints",
+              "value": [
+                {
+                    "modelType": "Property",
+                    "idShort": "Constraint_Id",
+                    "valueType": "xs:string",
+                    "value": ""
+                }
+              ]
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Component_Type",
+              "valueType": "xs:string",
+              "value": "https://aausmartlab.com/Assets/Component/DanishSteel/Rod_100mm_Steel"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "To",
+              "valueType": "xs:string",
+              "value": "Transport_836421"
+            }
+          ] 
+        },
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Transport",
+          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Operations/Drilling"}]},
+          "description": [
+            {
+              "language": "en",
+              "text": "List of parameters to perform this process."
+            }
+          ],
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Process_Id",
+              "valueType": "xs:string",
+              "value": "Transport_836421"
+            },
+            {
+              "modelType": "SubmodelElementCollection",
+              "idShort": "Execution_Constraints",
+              "value": [
+                {
+                    "modelType": "Property",
+                    "idShort": "Constraint_Id",
+                    "valueType": "xs:string",
+                    "value": "Retrieve_472398"
+                }
+              ]
+            },
+            {
+              "modelType": "Property",
+              "idShort": "From",
+              "valueType": "xs:string",
+              "value": "Retrieve_472398"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "To",
+              "valueType": "xs:string",
+              "value": "Bolt_Manufacturing_320128"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Speed",
+              "valueType": "xs:integer",
+              "value": "100",
+              "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/MillimetersPerSecond"}]}
+            }
+          ] 
+        },
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Bolt_Manufacturing",
+          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Operations/Drilling"}]},
+          "description": [
+            {
+              "language": "en",
+              "text": "List of parameters to perform this process."
+            }
+          ],
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Process_Id",
+              "valueType": "xs:string",
+              "value": "Bolt_Manufacturing_320128"
+            },
+            {
+              "modelType": "SubmodelElementCollection",
+              "idShort": "Execution_Constraints",
+              "value": [
+                {
+                    "modelType": "Property",
+                    "idShort": "Constraint_Id",
+                    "valueType": "xs:string",
+                    "value": "Transport_836421"
+                }
+              ]
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Input_Component",
+              "valueType": "xs:string",
+              "value": "https://aausmartlab.com/Assets/Component/DanishSteel/Rod_100mm_Steel"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Length",
+              "valueType": "xs:integer",
+              "value": "20",
+              "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/Millimeters"}]}
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Material",
+              "valueType": "xs:string",
+              "value": "Steel",
+              "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Materials/Steel"}]}
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Thread_Pitch",
+              "valueType": "xs:float",
+              "value": "1.25",
+              "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/Millimeters"}]}
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Produced_Component",
+              "valueType": "xs:string",
+              "value": "https://aausmartlab.com/Assets/Component/In_House/Bolt_20mm_Steel/001"
+            }
+          ] 
+        },
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Transport",
+          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Operations/Drilling"}]},
+          "description": [
+            {
+              "language": "en",
+              "text": "List of parameters to perform this process."
+            }
+          ],
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Process_Id",
+              "valueType": "xs:string",
+              "value": "Transport_671594"
+            },
+            {
+              "modelType": "SubmodelElementCollection",
+              "idShort": "Execution_Constraints",
+              "value": [
+                {
+                    "modelType": "Property",
+                    "idShort": "Constraint_Id",
+                    "valueType": "xs:string",
+                    "value": "Bolt_Manufacturing_320128"
+                }
+              ]
+            },
+            {
+              "modelType": "Property",
+              "idShort": "From",
+              "valueType": "xs:string",
+              "value": "Bolt_Manufacturing_320128"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "To",
+              "valueType": "xs:string",
+              "value": "Reinforced_Plate_Manufacturing_563884"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Speed",
+              "valueType": "xs:integer",
+              "value": "100",
+              "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/MillimetersPerSecond"}]}
+            }
+          ] 
+        },
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Reinforced_Plate_Manufacturing",
+          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Operations/Drilling"}]},
+          "description": [
+            {
+              "language": "en",
+              "text": "List of parameters to perform this process."
+            }
+          ],
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Process_Id",
+              "valueType": "xs:string",
+              "value": "Reinforced_Plate_Manufacturing_563884"
+            },
+            {
+              "modelType": "SubmodelElementCollection",
+              "idShort": "Execution_Constraints",
+              "value": [
+                {
+                    "modelType": "Property",
+                    "idShort": "Constraint_Id",
+                    "valueType": "xs:string",
+                    "value": "Transport_671594"
+                },
+                {
+                    "modelType": "Property",
+                    "idShort": "Constraint_Id",
+                    "valueType": "xs:string",
+                    "value": "Transport_128465"
+                }
+              ]
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Input_Component",
+              "valueType": "xs:string",
+              "value": "https://aausmartlab.com/Assets/Component/In_House/Bolt_20mm_Steel"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Input_Component",
+              "valueType": "xs:string",
+              "value": "https://aausmartlab.com/Assets/Component/DanishSteel/Plate_300x300mm_Steel"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Produced_Component",
+              "valueType": "xs:string",
+              "value": "https://aausmartlab.com/Assets/Product/Plates/Reinforced_Plate/001"
+            }
+          ] 
+        },
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Retrieve",
+          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Operations/Drilling"}]},
+          "description": [
+            {
+              "language": "en",
+              "text": "List of parameters to perform this process."
+            }
+          ],
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Process_Id",
+              "valueType": "xs:string",
+              "value": "Retrieve_873246"
+            },
+            {
+              "modelType": "SubmodelElementCollection",
+              "idShort": "Execution_Constraints",
+              "value": [
+                {
+                    "modelType": "Property",
+                    "idShort": "Constraint_Id",
+                    "valueType": "xs:string",
+                    "value": ""
+                }
+              ]
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Component_Type",
+              "valueType": "xs:string",
+              "value": "https://aausmartlab.com/Assets/Component/DanishSteel/Plate_300x300mm_Steel"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "To",
+              "valueType": "xs:string",
+              "value": "Transport_128465"
+            }
+          ] 
+        },
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Transport",
+          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Operations/Drilling"}]},
+          "description": [
+            {
+              "language": "en",
+              "text": "List of parameters to perform this process."
+            }
+          ],
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Process_Id",
+              "valueType": "xs:string",
+              "value": "Transport_128465"
+            },
+            {
+              "modelType": "SubmodelElementCollection",
+              "idShort": "Execution_Constraints",
+              "value": [
+                {
+                    "modelType": "Property",
+                    "idShort": "Constraint_Id",
+                    "valueType": "xs:string",
+                    "value": "Retrieve_873246"
+                }
+              ]
+            },
+            {
+              "modelType": "Property",
+              "idShort": "From",
+              "valueType": "xs:string",
+              "value": "Retrieve_873246"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "To",
+              "valueType": "xs:string",
+              "value": "Reinforced_Plate_Manufacturing_563884"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Speed",
+              "valueType": "xs:integer",
+              "value": "100",
+              "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/MillimetersPerSecond"}]}
+            }
+          ] 
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "idShort": "Aseembled_Components",
+  "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Assets/Product/Submodels/Assembled_Components"}]},
+  "id": "https://aausmartlab.com/Assets/Product/Plates/Reinforced_Plate/001/Aseembled_Components",
+  "description":[{"language": "en", "text": "List of currently assembled parts of the product."}],
+
+  "submodelElements" : [
+    {
+      "modelType": "SubmodelElementList",
+      "idShort": "List_Of_Currently_Assembled_Components",
+      "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Assets/Product/Submodels/Assembled_Components/List_Of_Currently_Assembled_Components"}]},
+      "typeValueListElement": "SubmodelElementCollection",
+      "valueTypeListElement": null,
+      "orderRelevant": true,
+      "description": [{ "language": "en", "text": "Ordered list of operations required to manufacture and assemble the product."}],
+      "value" : [
+        {
+          "modelType": "Property",
+          "idShort": "Component_Shell_Id",
+          "description": [{"language": "en","text": "Reference to the component used in the product."}],
+          "valueType": "xs:string",
+          "value": "https://aausmartlab.com/Assets/Component/DanishSteel/Plate_300x300mm_Steel/001" 
+        },
+        {
+          "modelType": "Property",
+          "idShort": "Component_Shell_Id",
+          "description": [{"language": "en","text": "Reference to the component used in the product."}],
+          "valueType": "xs:string",
+          "value": "https://aausmartlab.com/Assets/Component/In_House/Bolt_20mm_Steel/001" 
+        }
+      ]
+    }
+  ]
+}
