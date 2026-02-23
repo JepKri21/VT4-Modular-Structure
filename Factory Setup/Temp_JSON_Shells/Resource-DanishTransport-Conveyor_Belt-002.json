@@ -1,0 +1,57 @@
+{
+  "idShort": "Conveyor_Belt",
+  "id": "https://aausmartlab.com/aas/Resource/DanishProduction/Conveyor_Belt/002",
+  "modelType": "AssetAdministrationShell",
+  "assetInformation": {
+    "assetKind": "Instance",
+    "globalAssetId": "https://aausmartlab.com/aas/Resource/DanishProduction/Conveyor_Belt/002"
+  },
+  "submodels": [
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/aas/Resource/DanishProduction/Conveyor_Belt/002/Documentation"
+        }
+      ]
+    },
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/aas/Resource/DanishProduction/Conveyor_Belt/002/Skills"
+        }
+      ]
+    },
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/aas/Resource/DanishProduction/Conveyor_Belt/002/Communication"
+        }
+      ]
+    },
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/aas/Resource/DanishProduction/Conveyor_Belt/002/Location"
+        }
+      ]
+    },
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/aas/Resource/DanishProduction/Conveyor_Belt/002/Item_Capacity"
+        }
+      ]
+    }
+  ]
+}
+

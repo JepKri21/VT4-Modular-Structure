@@ -1,0 +1,885 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>IO.Swagger.Registry.Lib.V3</name>
+    </assembly>
+    <members>
+        <member name="T:IO.Swagger.Registry.Lib.V3.Attributes.ValidateModelStateAttribute">
+            <summary>
+            Model state validation attribute
+            </summary>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Attributes.ValidateModelStateAttribute.OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext)">
+            <summary>
+            Called before the action method is invoked
+            </summary>
+            <param name="context"></param>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Extensions.ReferenceElementExtensions.ReverseReferenceKeys(AasCore.Aas3_0.ReferenceElement)">
+            <summary>
+            Reverses the keys in the Value property of the ReferenceElement.
+            </summary>
+            <param name="referenceElement">The reference element whose keys are to be reversed.</param>
+        </member>
+        <member name="T:IO.Swagger.Registry.Lib.V3.Filters.BasePathFilter">
+            <summary>
+            BasePath Document Filter sets BasePath property of Swagger and removes it from the individual URL paths
+            </summary>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Filters.BasePathFilter.#ctor(System.String)">
+            <summary>
+            Constructor
+            </summary>
+            <param name="basePath">BasePath to remove from Operations</param>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Filters.BasePathFilter.BasePath">
+            <summary>
+            Gets the BasePath of the Swagger Doc
+            </summary>
+            <returns>The BasePath of the Swagger Doc</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Filters.BasePathFilter.Apply(Microsoft.OpenApi.Models.OpenApiDocument,Swashbuckle.AspNetCore.SwaggerGen.DocumentFilterContext)">
+            <summary>
+            Apply the filter
+            </summary>
+            <param name="swaggerDoc">OpenApiDocument</param>
+            <param name="context">FilterContext</param>
+        </member>
+        <member name="T:IO.Swagger.Registry.Lib.V3.Filters.GeneratePathParamsValidationFilter">
+            <summary>
+            Path Parameter Validation Rules Filter
+            </summary>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Filters.GeneratePathParamsValidationFilter.Apply(Microsoft.OpenApi.Models.OpenApiOperation,Swashbuckle.AspNetCore.SwaggerGen.OperationFilterContext)">
+            <summary>
+            Constructor
+            </summary>
+            <param name="operation">Operation</param>
+            <param name="context">OperationFilterContext</param>
+        </member>
+        <member name="T:IO.Swagger.Registry.Lib.V3.Models.AssetAdministrationShellDescriptor">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.AssetAdministrationShellDescriptor.Administration">
+            <summary>
+            Gets or Sets Administration
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.AssetAdministrationShellDescriptor.AssetKind">
+            <summary>
+            Gets or Sets AssetKind
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.AssetAdministrationShellDescriptor.AssetType">
+            <summary>
+            Gets or Sets AssetType
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.AssetAdministrationShellDescriptor.Endpoints">
+            <summary>
+            Gets or Sets Endpoints
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.AssetAdministrationShellDescriptor.GlobalAssetId">
+            <summary>
+            Gets or Sets GlobalAssetId
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.AssetAdministrationShellDescriptor.IdShort">
+            <summary>
+            Gets or Sets IdShort
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.AssetAdministrationShellDescriptor.Id">
+            <summary>
+            Gets or Sets Id
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.AssetAdministrationShellDescriptor.SpecificAssetIds">
+            <summary>
+            Gets or Sets SpecificAssetIds
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.AssetAdministrationShellDescriptor.SubmodelDescriptors">
+            <summary>
+            Gets or Sets SubmodelDescriptors
+            </summary>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.AssetAdministrationShellDescriptor.ToString">
+            <summary>
+            Returns the string presentation of the object
+            </summary>
+            <returns>String presentation of the object</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.AssetAdministrationShellDescriptor.ToJson">
+            <summary>
+            Returns the JSON string presentation of the object
+            </summary>
+            <returns>JSON string presentation of the object</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.AssetAdministrationShellDescriptor.Equals(System.Object)">
+            <summary>
+            Returns true if objects are equal
+            </summary>
+            <param name="obj">Object to be compared</param>
+            <returns>Boolean</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.AssetAdministrationShellDescriptor.Equals(IO.Swagger.Registry.Lib.V3.Models.AssetAdministrationShellDescriptor)">
+            <summary>
+            Returns true if AssetAdministrationShellDescriptor instances are equal
+            </summary>
+            <param name="other">Instance of AssetAdministrationShellDescriptor to be compared</param>
+            <returns>Boolean</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.AssetAdministrationShellDescriptor.GetHashCode">
+            <summary>
+            Gets the hash code
+            </summary>
+            <returns>Hash code</returns>
+        </member>
+        <member name="T:IO.Swagger.Registry.Lib.V3.Models.Descriptor">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.Descriptor.Description">
+            <summary>
+            Gets or Sets Description
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.Descriptor.DisplayName">
+            <summary>
+            Gets or Sets DisplayName
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.Descriptor.Extensions">
+            <summary>
+            Gets or Sets Extensions
+            </summary>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.Descriptor.ToString">
+            <summary>
+            Returns the string presentation of the object
+            </summary>
+            <returns>String presentation of the object</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.Descriptor.ToJson">
+            <summary>
+            Returns the JSON string presentation of the object
+            </summary>
+            <returns>JSON string presentation of the object</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.Descriptor.Equals(System.Object)">
+            <summary>
+            Returns true if objects are equal
+            </summary>
+            <param name="obj">Object to be compared</param>
+            <returns>Boolean</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.Descriptor.Equals(IO.Swagger.Registry.Lib.V3.Models.Descriptor)">
+            <summary>
+            Returns true if Descriptor instances are equal
+            </summary>
+            <param name="other">Instance of Descriptor to be compared</param>
+            <returns>Boolean</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.Descriptor.GetHashCode">
+            <summary>
+            Gets the hash code
+            </summary>
+            <returns>Hash code</returns>
+        </member>
+        <member name="T:IO.Swagger.Registry.Lib.V3.Models.Endpoint">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.Endpoint.Interface">
+            <summary>
+            Gets or Sets _Interface
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.Endpoint.ProtocolInformation">
+            <summary>
+            Gets or Sets ProtocolInformation
+            </summary>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.Endpoint.ToString">
+            <summary>
+            Returns the string presentation of the object
+            </summary>
+            <returns>String presentation of the object</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.Endpoint.ToJson">
+            <summary>
+            Returns the JSON string presentation of the object
+            </summary>
+            <returns>JSON string presentation of the object</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.Endpoint.Equals(System.Object)">
+            <summary>
+            Returns true if objects are equal
+            </summary>
+            <param name="obj">Object to be compared</param>
+            <returns>Boolean</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.Endpoint.Equals(IO.Swagger.Registry.Lib.V3.Models.Endpoint)">
+            <summary>
+            Returns true if Endpoint instances are equal
+            </summary>
+            <param name="other">Instance of Endpoint to be compared</param>
+            <returns>Boolean</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.Endpoint.GetHashCode">
+            <summary>
+            Gets the hash code
+            </summary>
+            <returns>Hash code</returns>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.Message.Code">
+            <summary>
+            Gets or Sets Code
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.Message.CorrelationId">
+            <summary>
+            Gets or Sets CorrelationId
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.Message.MessageType">
+            <summary>
+            Gets or Sets MessageType
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.Message.Text">
+            <summary>
+            Gets or Sets Text
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.Message.Timestamp">
+            <summary>
+            Gets or Sets Timestamp
+            </summary>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.Message.ToString">
+            <summary>
+            Returns the string presentation of the object
+            </summary>
+            <returns>String presentation of the object</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.Message.ToJson">
+            <summary>
+            Returns the JSON string presentation of the object
+            </summary>
+            <returns>JSON string presentation of the object</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.Message.Equals(System.Object)">
+            <summary>
+            Returns true if objects are equal
+            </summary>
+            <param name="obj">Object to be compared</param>
+            <returns>Boolean</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.Message.Equals(IO.Swagger.Registry.Lib.V3.Models.Message)">
+            <summary>
+            Returns true if Message instances are equal
+            </summary>
+            <param name="other">Instance of Message to be compared</param>
+            <returns>Boolean</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.Message.GetHashCode">
+            <summary>
+            Gets the hash code
+            </summary>
+            <returns>Hash code</returns>
+        </member>
+        <member name="T:IO.Swagger.Registry.Lib.V3.Models.ProtocolInformation">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.ProtocolInformation.Href">
+            <summary>
+            Gets or Sets Href
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.ProtocolInformation.EndpointProtocol">
+            <summary>
+            Gets or Sets EndpointProtocol
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.ProtocolInformation.EndpointProtocolVersion">
+            <summary>
+            Gets or Sets EndpointProtocolVersion
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.ProtocolInformation.Subprotocol">
+            <summary>
+            Gets or Sets Subprotocol
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.ProtocolInformation.SubprotocolBody">
+            <summary>
+            Gets or Sets SubprotocolBody
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.ProtocolInformation.SubprotocolBodyEncoding">
+            <summary>
+            Gets or Sets SubprotocolBodyEncoding
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.ProtocolInformation.SecurityAttributes">
+            <summary>
+            Gets or Sets SecurityAttributes
+            </summary>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.ProtocolInformation.ToString">
+            <summary>
+            Returns the string presentation of the object
+            </summary>
+            <returns>String presentation of the object</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.ProtocolInformation.ToJson">
+            <summary>
+            Returns the JSON string presentation of the object
+            </summary>
+            <returns>JSON string presentation of the object</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.ProtocolInformation.Equals(System.Object)">
+            <summary>
+            Returns true if objects are equal
+            </summary>
+            <param name="obj">Object to be compared</param>
+            <returns>Boolean</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.ProtocolInformation.Equals(IO.Swagger.Registry.Lib.V3.Models.ProtocolInformation)">
+            <summary>
+            Returns true if ProtocolInformation instances are equal
+            </summary>
+            <param name="other">Instance of ProtocolInformation to be compared</param>
+            <returns>Boolean</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.ProtocolInformation.GetHashCode">
+            <summary>
+            Gets the hash code
+            </summary>
+            <returns>Hash code</returns>
+        </member>
+        <member name="T:IO.Swagger.Registry.Lib.V3.Models.ProtocolInformationSecurityAttributes">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="T:IO.Swagger.Registry.Lib.V3.Models.ProtocolInformationSecurityAttributes.TypeEnum">
+            <summary>
+            Gets or Sets Type
+            </summary>
+        </member>
+        <member name="F:IO.Swagger.Registry.Lib.V3.Models.ProtocolInformationSecurityAttributes.TypeEnum.NONE">
+            <summary>
+            Enum NONE for NONE
+            </summary>
+        </member>
+        <member name="F:IO.Swagger.Registry.Lib.V3.Models.ProtocolInformationSecurityAttributes.TypeEnum.RFCTLSA">
+            <summary>
+            Enum RFCTLSA for RFC_TLSA
+            </summary>
+        </member>
+        <member name="F:IO.Swagger.Registry.Lib.V3.Models.ProtocolInformationSecurityAttributes.TypeEnum.W3CDID">
+            <summary>
+            Enum W3CDID for W3C_DID
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.ProtocolInformationSecurityAttributes.Type">
+            <summary>
+            Gets or Sets Type
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.ProtocolInformationSecurityAttributes.Key">
+            <summary>
+            Gets or Sets Key
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.ProtocolInformationSecurityAttributes.Value">
+            <summary>
+            Gets or Sets Value
+            </summary>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.ProtocolInformationSecurityAttributes.ToString">
+            <summary>
+            Returns the string presentation of the object
+            </summary>
+            <returns>String presentation of the object</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.ProtocolInformationSecurityAttributes.ToJson">
+            <summary>
+            Returns the JSON string presentation of the object
+            </summary>
+            <returns>JSON string presentation of the object</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.ProtocolInformationSecurityAttributes.Equals(System.Object)">
+            <summary>
+            Returns true if objects are equal
+            </summary>
+            <param name="obj">Object to be compared</param>
+            <returns>Boolean</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.ProtocolInformationSecurityAttributes.Equals(IO.Swagger.Registry.Lib.V3.Models.ProtocolInformationSecurityAttributes)">
+            <summary>
+            Returns true if ProtocolInformationSecurityAttributes instances are equal
+            </summary>
+            <param name="other">Instance of ProtocolInformationSecurityAttributes to be compared</param>
+            <returns>Boolean</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.ProtocolInformationSecurityAttributes.GetHashCode">
+            <summary>
+            Gets the hash code
+            </summary>
+            <returns>Hash code</returns>
+        </member>
+        <member name="T:IO.Swagger.Registry.Lib.V3.Models.Result">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.Result.Messages">
+            <summary>
+            Gets or Sets Messages
+            </summary>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.Result.ToString">
+            <summary>
+            Returns the string presentation of the object
+            </summary>
+            <returns>String presentation of the object</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.Result.ToJson">
+            <summary>
+            Returns the JSON string presentation of the object
+            </summary>
+            <returns>JSON string presentation of the object</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.Result.Equals(System.Object)">
+            <summary>
+            Returns true if objects are equal
+            </summary>
+            <param name="obj">Object to be compared</param>
+            <returns>Boolean</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.Result.Equals(IO.Swagger.Registry.Lib.V3.Models.Result)">
+            <summary>
+            Returns true if Result instances are equal
+            </summary>
+            <param name="other">Instance of Result to be compared</param>
+            <returns>Boolean</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.Result.GetHashCode">
+            <summary>
+            Gets the hash code
+            </summary>
+            <returns>Hash code</returns>
+        </member>
+        <member name="T:IO.Swagger.Registry.Lib.V3.Models.SubmodelDescriptor">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.SubmodelDescriptor.Administration">
+            <summary>
+            Gets or Sets Administration
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.SubmodelDescriptor.Endpoints">
+            <summary>
+            Gets or Sets Endpoints
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.SubmodelDescriptor.IdShort">
+            <summary>
+            Gets or Sets IdShort
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.SubmodelDescriptor.Id">
+            <summary>
+            Gets or Sets Id
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.SubmodelDescriptor.SemanticId">
+            <summary>
+            Gets or Sets SemanticId
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.SubmodelDescriptor.SupplementalSemanticId">
+            <summary>
+            Gets or Sets SupplementalSemanticId
+            </summary>
+        </member>
+        <member name="P:IO.Swagger.Registry.Lib.V3.Models.SubmodelDescriptor.FederatedElements">
+            <summary>
+            Gets or Sets SearchData
+            </summary>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.SubmodelDescriptor.ToString">
+            <summary>
+            Returns the string presentation of the object
+            </summary>
+            <returns>String presentation of the object</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.SubmodelDescriptor.ToJson">
+            <summary>
+            Returns the JSON string presentation of the object
+            </summary>
+            <returns>JSON string presentation of the object</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.SubmodelDescriptor.Equals(System.Object)">
+            <summary>
+            Returns true if objects are equal
+            </summary>
+            <param name="obj">Object to be compared</param>
+            <returns>Boolean</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.SubmodelDescriptor.Equals(IO.Swagger.Registry.Lib.V3.Models.SubmodelDescriptor)">
+            <summary>
+            Returns true if SubmodelDescriptor instances are equal
+            </summary>
+            <param name="other">Instance of SubmodelDescriptor to be compared</param>
+            <returns>Boolean</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Models.SubmodelDescriptor.GetHashCode">
+            <summary>
+            Gets the hash code
+            </summary>
+            <returns>Hash code</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Services.AasDescriptorWritingService.#ctor(IO.Swagger.Registry.Lib.V3.Services.ISubmodelPropertyExtractionService)">
+            <summary>
+            Initializes a new instance of the <see cref="T:IO.Swagger.Registry.Lib.V3.Services.AasDescriptorWritingService"/> class.
+            </summary>
+            <param name="submodelPropertyExtractionService">The service for extracting properties from submodel elements.</param>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Services.AasDescriptorWritingService.AddNewEntry(IO.Swagger.Registry.Lib.V3.Models.AssetAdministrationShellDescriptor,AasCore.Aas3_0.ISubmodel,AasCore.Aas3_0.ISubmodel,System.DateTime,System.String,System.String,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Services.AasDescriptorWritingService.OverwriteExistingEntryForEdenticalIds(IO.Swagger.Registry.Lib.V3.Models.AssetAdministrationShellDescriptor,AasCore.Aas3_0.ISubmodel,System.DateTime,System.Boolean,System.String,System.String,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Services.AasDescriptorWritingService.UpdateProperties(AasCore.Aas3_0.Property,AasCore.Aas3_0.Property,IO.Swagger.Registry.Lib.V3.Models.AssetAdministrationShellDescriptor,System.DateTime,System.String)">
+            <summary>
+            Updates properties of an existing AAS descriptor.
+            </summary>
+            <param name="jsonProperty">The JSON property to update.</param>
+            <param name="endpointProperty">The endpoint property to update.</param>
+            <param name="ad">The AAS descriptor.</param>
+            <param name="timestamp">The timestamp for the update.</param>
+            <param name="endpoint">The endpoint for the AAS.</param>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Services.AasDescriptorWritingService.ProcessSubmodelDescriptor(IO.Swagger.Registry.Lib.V3.Models.SubmodelDescriptor,System.DateTime,System.Collections.Generic.List{AasCore.Aas3_0.ISubmodelElement},AasCore.Aas3_0.ISubmodel)">
+            <inheritdoc />
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Services.AasDescriptorWritingService.ProcessFederatedElements(System.Collections.Generic.IEnumerable{System.String},AasCore.Aas3_0.SubmodelElementCollection,System.DateTime)">
+            <summary>
+            Processes federated elements and adds them to a federated collection.
+            </summary>
+            <param name="federatedElements">The federated elements to process.</param>
+            <param name="federatedCollection">The collection to which the elements will be added.</param>
+            <param name="timestamp">The timestamp for the processing.</param>
+        </member>
+        <member name="T:IO.Swagger.Registry.Lib.V3.Services.IAasDescriptorWritingService">
+            <summary>
+            Provides services to manage Asset Administration Shell (AAS) descriptors and their properties within submodel registries.
+            </summary>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Services.IAasDescriptorWritingService.AddNewEntry(IO.Swagger.Registry.Lib.V3.Models.AssetAdministrationShellDescriptor,AasCore.Aas3_0.ISubmodel,AasCore.Aas3_0.ISubmodel,System.DateTime,System.String,System.String,System.String)">
+            <summary>
+            Adds a new entry to the AAS registry.
+            </summary>
+            <param name="ad">The AAS descriptor to add.</param>
+            <param name="aasRegistry">The AAS registry submodel.</param>
+            <param name="submodelRegistry">The submodel registry.</param>
+            <param name="timestamp">The timestamp for when the entry is added.</param>
+            <param name="aasID">The ID of the AAS.</param>
+            <param name="assetID">The ID of the asset.</param>
+            <param name="endpoint">The endpoint for the AAS.</param>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Services.IAasDescriptorWritingService.OverwriteExistingEntryForEdenticalIds(IO.Swagger.Registry.Lib.V3.Models.AssetAdministrationShellDescriptor,AasCore.Aas3_0.ISubmodel,System.DateTime,System.Boolean,System.String,System.String,System.String)">
+            <summary>
+            Overwrites an existing entry in the AAS registry if the IDs match.
+            </summary>
+            <param name="ad">The AAS descriptor to overwrite.</param>
+            <param name="aasRegistry">The AAS registry submodel.</param>
+            <param name="timestamp">The timestamp for when the entry is overwritten.</param>
+            <param name="initial">Indicates if this is the initial entry.</param>
+            <param name="aasID">The ID of the AAS.</param>
+            <param name="assetID">The ID of the asset.</param>
+            <param name="endpoint">The endpoint for the AAS.</param>
+            <returns>True if the entry was overwritten, otherwise false.</returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Services.IAasDescriptorWritingService.ProcessSubmodelDescriptor(IO.Swagger.Registry.Lib.V3.Models.SubmodelDescriptor,System.DateTime,System.Collections.Generic.List{AasCore.Aas3_0.ISubmodelElement},AasCore.Aas3_0.ISubmodel)">
+            <summary>
+            Processes a submodel descriptor and adds it to the submodel registry.
+            </summary>
+            <param name="sd">The submodel descriptor to process.</param>
+            <param name="timestamp">The timestamp for the processing.</param>
+            <param name="parentCollection">The parent collection to which the descriptor will be added.</param>
+            <param name="submodelRegistry">The submodel registry.</param>
+        </member>
+        <member name="T:IO.Swagger.Registry.Lib.V3.Services.ISubmodelPropertyExtractionService">
+            <summary>
+            Provides methods for extracting and manipulating properties within a submodel element collection.
+            </summary>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Services.ISubmodelPropertyExtractionService.FindMatchingProperties(AasCore.Aas3_0.SubmodelElementCollection,System.String,System.String)">
+            <summary>
+            Finds and returns properties from a submodel element collection that match specific criteria.
+            </summary>
+            <param name="elementCollection">The collection of submodel elements to search through.</param>
+            <param name="aasID">The ID of the Asset Administration Shell to match against.</param>
+            <param name="assetID">The ID of the asset to match against.</param>
+            <returns>
+            A tuple containing:
+            - The count of found properties matching the criteria.
+            - The property with IdShort "descriptorJSON", if found.
+            - The property with IdShort "endpoint", if found.
+            </returns>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Services.ISubmodelPropertyExtractionService.AddPropertyToCollection(AasCore.Aas3_0.SubmodelElementCollection,System.String,System.String,System.DateTime,System.Boolean)">
+            <summary>
+            Adds a new property to a submodel element collection.
+            </summary>
+            <param name="collection">The collection to which the property will be added.</param>
+            <param name="idShort">The IdShort of the property.</param>
+            <param name="value">The value of the property.</param>
+            <param name="timestamp">The timestamp for when the property is created.</param>
+            <param name="checkEmpty">If true, the property is only added if the value is not empty.</param>
+            <example>
+            <code>
+            var collection = new SubmodelElementCollection();
+            SubmodelPropertyExtractionService.AddPropertyToCollection(collection, "exampleID", "exampleValue", DateTime.UtcNow);
+            </code>
+            </example>
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Services.ISubmodelPropertyExtractionService.CreateSubmodelElementCollection(System.String,System.DateTime)">
+            <summary>
+            Creates a new submodel element collection with a specified IdShort and timestamp.
+            </summary>
+            <param name="idShort">The IdShort of the collection.</param>
+            <param name="timestamp">The timestamp for when the collection is created.</param>
+            <returns>A new instance of <see cref="T:AasCore.Aas3_0.SubmodelElementCollection"/>.</returns>
+            <example>
+            <code>
+            var collection = SubmodelPropertyExtractionService.CreateSubmodelElementCollection("exampleID", DateTime.UtcNow);
+            </code>
+            </example>
+        </member>
+        <member name="T:IO.Swagger.Registry.Lib.V3.Services.SubmodelPropertyExtractionService">
+            <inheritdoc />
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Services.SubmodelPropertyExtractionService.FindMatchingProperties(AasCore.Aas3_0.SubmodelElementCollection,System.String,System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Services.SubmodelPropertyExtractionService.AddPropertyToCollection(AasCore.Aas3_0.SubmodelElementCollection,System.String,System.String,System.DateTime,System.Boolean)">
+            <inheritdoc />
+        </member>
+        <member name="M:IO.Swagger.Registry.Lib.V3.Services.SubmodelPropertyExtractionService.CreateSubmodelElementCollection(System.String,System.DateTime)">
+            <inheritdoc />
+        </member>
+        <member name="T:IO.Swagger.Controllers.AssetAdministrationShellRegistryAPIApiController">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:IO.Swagger.Controllers.AssetAdministrationShellRegistryAPIApiController.DeleteAssetAdministrationShellDescriptorById(System.Byte[])">
+            <summary>
+            Deletes an Asset Administration Shell Descriptor, i.e. de-registers an AAS
+            </summary>
+            <param name="aasIdentifier">The Asset Administration Shell’s unique id (UTF8-BASE64-URL-encoded)</param>
+            <response code="204">Asset Administration Shell Descriptor deleted successfully</response>
+            <response code="400">Bad Request, e.g. the request parameters of the format of the request body is wrong.</response>
+            <response code="404">Not Found</response>
+            <response code="500">Internal Server Error</response>
+            <response code="0">Default error handling for unmentioned status codes</response>
+        </member>
+        <member name="M:IO.Swagger.Controllers.AssetAdministrationShellRegistryAPIApiController.DeleteSubmodelDescriptorByIdThroughSuperpath(System.String,System.String)">
+            <summary>
+            Deletes a Submodel Descriptor, i.e. de-registers a submodel
+            </summary>
+            <param name="aasIdentifier">The Asset Administration Shell’s unique id (UTF8-BASE64-URL-encoded)</param>
+            <param name="submodelIdentifier">The Submodel’s unique id (UTF8-BASE64-URL-encoded)</param>
+            <response code="204">Submodel Descriptor deleted successfully</response>
+            <response code="400">Bad Request, e.g. the request parameters of the format of the request body is wrong.</response>
+            <response code="404">Not Found</response>
+            <response code="500">Internal Server Error</response>
+            <response code="0">Default error handling for unmentioned status codes</response>
+        </member>
+        <member name="M:IO.Swagger.Controllers.AssetAdministrationShellRegistryAPIApiController.GetAllAssetAdministrationShellDescriptors(System.Nullable{System.Int32},System.String,System.String,System.String)">
+            <summary>
+            Returns all Asset Administration Shell Descriptors
+            </summary>
+            <param name="limit">The maximum number of elements in the response array</param>
+            <param name="cursor">A server-generated identifier retrieved from pagingMetadata that specifies from which position the result listing should continue</param>
+            <param name="assetKind">The Asset&#x27;s kind (Instance or Type)</param>
+            <param name="assetType">The Asset&#x27;s type (UTF8-BASE64-URL-encoded)</param>
+            <response code="200">Requested Asset Administration Shell Descriptors</response>
+            <response code="400">Bad Request, e.g. the request parameters of the format of the request body is wrong.</response>
+            <response code="403">Forbidden</response>
+            <response code="500">Internal Server Error</response>
+            <response code="0">Default error handling for unmentioned status codes</response>
+        </member>
+        <member name="M:IO.Swagger.Controllers.AssetAdministrationShellRegistryAPIApiController.GetAllSubmodelDescriptors(System.Nullable{System.Int32},System.String,System.String,System.String)">
+            <summary>
+            Returns all Submodel Descriptors
+            </summary>
+            <param name="limit">The maximum number of elements in the response array</param>
+            <param name="cursor">A server-generated identifier retrieved from pagingMetadata that specifies from which position the result listing should continue</param>
+            <param name="assetKind">The Asset&#x27;s kind (Instance or Type)</param>
+            <param name="assetType">The Asset&#x27;s type (UTF8-BASE64-URL-encoded)</param>
+            <response code="200">Requested Asset Administration Shell Descriptors</response>
+            <response code="400">Bad Request, e.g. the request parameters of the format of the request body is wrong.</response>
+            <response code="403">Forbidden</response>
+            <response code="500">Internal Server Error</response>
+            <response code="0">Default error handling for unmentioned status codes</response>
+        </member>
+        <member name="M:IO.Swagger.Controllers.AssetAdministrationShellRegistryAPIApiController.GetSubmodelDescriptorById(System.String)">
+            <summary>
+            Returns all Submodel Descriptors
+            </summary>
+            <param name="limit">The maximum number of elements in the response array</param>
+            <param name="cursor">A server-generated identifier retrieved from pagingMetadata that specifies from which position the result listing should continue</param>
+            <param name="assetKind">The Asset&#x27;s kind (Instance or Type)</param>
+            <param name="assetType">The Asset&#x27;s type (UTF8-BASE64-URL-encoded)</param>
+            <response code="200">Requested Asset Administration Shell Descriptors</response>
+            <response code="400">Bad Request, e.g. the request parameters of the format of the request body is wrong.</response>
+            <response code="403">Forbidden</response>
+            <response code="500">Internal Server Error</response>
+            <response code="0">Default error handling for unmentioned status codes</response>
+        </member>
+        <member name="M:IO.Swagger.Controllers.AssetAdministrationShellRegistryAPIApiController.GetAllSubmodelDescriptorsThroughSuperpath(System.String,System.Nullable{System.Int32},System.String)">
+            <summary>
+            Returns all Submodel Descriptors
+            </summary>
+            <param name="aasIdentifier">The Asset Administration Shell’s unique id (UTF8-BASE64-URL-encoded)</param>
+            <param name="limit">The maximum number of elements in the response array</param>
+            <param name="cursor">A server-generated identifier retrieved from pagingMetadata that specifies from which position the result listing should continue</param>
+            <response code="200">Requested Submodel Descriptors</response>
+            <response code="400">Bad Request, e.g. the request parameters of the format of the request body is wrong.</response>
+            <response code="403">Forbidden</response>
+            <response code="404">Not Found</response>
+            <response code="500">Internal Server Error</response>
+            <response code="0">Default error handling for unmentioned status codes</response>
+        </member>
+        <member name="M:IO.Swagger.Controllers.AssetAdministrationShellRegistryAPIApiController.GetAssetAdministrationShellDescriptorById(System.String)">
+            <summary>
+            Returns a specific Asset Administration Shell Descriptor
+            </summary>
+            <param name="aasIdentifier">The Asset Administration Shell’s unique id (UTF8-BASE64-URL-encoded)</param>
+            <response code="200">Requested Asset Administration Shell Descriptor</response>
+            <response code="400">Bad Request, e.g. the request parameters of the format of the request body is wrong.</response>
+            <response code="403">Forbidden</response>
+            <response code="404">Not Found</response>
+            <response code="500">Internal Server Error</response>
+            <response code="0">Default error handling for unmentioned status codes</response>
+        </member>
+        <member name="M:IO.Swagger.Controllers.AssetAdministrationShellRegistryAPIApiController.GetSubmodelDescriptorByIdThroughSuperpath(System.String,System.String)">
+            <summary>
+            Returns a specific Submodel Descriptor
+            </summary>
+            <param name="aasIdentifier">The Asset Administration Shell’s unique id (UTF8-BASE64-URL-encoded)</param>
+            <param name="submodelIdentifier">The Submodel’s unique id (UTF8-BASE64-URL-encoded)</param>
+            <response code="200">Requested Submodel Descriptor</response>
+            <response code="400">Bad Request, e.g. the request parameters of the format of the request body is wrong.</response>
+            <response code="403">Forbidden</response>
+            <response code="404">Not Found</response>
+            <response code="500">Internal Server Error</response>
+            <response code="0">Default error handling for unmentioned status codes</response>
+        </member>
+        <member name="M:IO.Swagger.Controllers.AssetAdministrationShellRegistryAPIApiController.PostAssetAdministrationShellDescriptor(IO.Swagger.Registry.Lib.V3.Models.AssetAdministrationShellDescriptor)">
+            <summary>
+            Creates a new Asset Administration Shell Descriptor, i.e. registers an AAS
+            </summary>
+            <param name="body">Asset Administration Shell Descriptor object</param>
+            <response code="201">Asset Administration Shell Descriptor created successfully</response>
+            <response code="400">Bad Request, e.g. the request parameters of the format of the request body is wrong.</response>
+            <response code="403">Forbidden</response>
+            <response code="409">Conflict, a resource which shall be created exists already. Might be thrown if a Submodel or SubmodelElement with the same ShortId is contained in a POST request.</response>
+            <response code="500">Internal Server Error</response>
+            <response code="0">Default error handling for unmentioned status codes</response>
+        </member>
+        <member name="M:IO.Swagger.Controllers.AssetAdministrationShellRegistryAPIApiController.PostSubmodelDescriptorThroughSuperpath(IO.Swagger.Registry.Lib.V3.Models.SubmodelDescriptor,System.String)">
+            <summary>
+            Creates a new Submodel Descriptor, i.e. registers a submodel
+            </summary>
+            <param name="body">Submodel Descriptor object</param>
+            <param name="aasIdentifier">The Asset Administration Shell’s unique id (UTF8-BASE64-URL-encoded)</param>
+            <response code="201">Submodel Descriptor created successfully</response>
+            <response code="400">Bad Request, e.g. the request parameters of the format of the request body is wrong.</response>
+            <response code="403">Forbidden</response>
+            <response code="404">Not Found</response>
+            <response code="409">Conflict, a resource which shall be created exists already. Might be thrown if a Submodel or SubmodelElement with the same ShortId is contained in a POST request.</response>
+            <response code="500">Internal Server Error</response>
+            <response code="0">Default error handling for unmentioned status codes</response>
+        </member>
+        <member name="M:IO.Swagger.Controllers.AssetAdministrationShellRegistryAPIApiController.PutAssetAdministrationShellDescriptorById(IO.Swagger.Registry.Lib.V3.Models.AssetAdministrationShellDescriptor,System.Byte[])">
+            <summary>
+            Updates an existing Asset Administration Shell Descriptor
+            </summary>
+            <param name="body">Asset Administration Shell Descriptor object</param>
+            <param name="aasIdentifier">The Asset Administration Shell’s unique id (UTF8-BASE64-URL-encoded)</param>
+            <response code="204">Asset Administration Shell Descriptor updated successfully</response>
+            <response code="400">Bad Request, e.g. the request parameters of the format of the request body is wrong.</response>
+            <response code="403">Forbidden</response>
+            <response code="404">Not Found</response>
+            <response code="500">Internal Server Error</response>
+            <response code="0">Default error handling for unmentioned status codes</response>
+        </member>
+        <member name="M:IO.Swagger.Controllers.AssetAdministrationShellRegistryAPIApiController.PutSubmodelDescriptorByIdThroughSuperpath(IO.Swagger.Registry.Lib.V3.Models.SubmodelDescriptor,System.String,System.String)">
+            <summary>
+            Updates an existing Submodel Descriptor
+            </summary>
+            <param name="body">Submodel Descriptor object</param>
+            <param name="aasIdentifier">The Asset Administration Shell’s unique id (UTF8-BASE64-URL-encoded)</param>
+            <param name="submodelIdentifier">The Submodel’s unique id (UTF8-BASE64-URL-encoded)</param>
+            <response code="204">Submodel Descriptor updated successfully</response>
+            <response code="400">Bad Request, e.g. the request parameters of the format of the request body is wrong.</response>
+            <response code="403">Forbidden</response>
+            <response code="404">Not Found</response>
+            <response code="500">Internal Server Error</response>
+            <response code="0">Default error handling for unmentioned status codes</response>
+        </member>
+        <member name="M:IO.Swagger.Controllers.AssetAdministrationShellRegistryAPIApiController.GetAllAssetAdministrationShellIdsByAssetLink(System.Collections.Generic.List{AasCore.Aas3_0.SpecificAssetId},System.String)">
+            <summary>
+            Returns a list of Asset Administration Shell ids based on Asset identifier key-value-pairs
+            </summary>
+            <param name="assetIds">The key-value-pair of an Asset identifier (BASE64-URL-encoded JSON-serialized key-value-pairs)</param>
+            <param name="assetId">An Asset identifier (BASE64-URL-encoded identifier)</param>
+            <response code="200">Requested Asset Administration Shell ids</response>
+        </member>
+        <member name="T:IO.Swagger.Startup">
+            <summary>
+            Startup
+            </summary>
+        </member>
+        <member name="M:IO.Swagger.Startup.#ctor(Microsoft.AspNetCore.Hosting.IWebHostEnvironment,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Constructor
+            </summary>
+            <param name="env"></param>
+            <param name="configuration"></param>
+        </member>
+        <member name="M:IO.Swagger.Startup.ConfigureServices(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            This method gets called by the runtime. Use this method to add services to the container.
+            </summary>
+            <param name="services"></param>
+        </member>
+        <member name="M:IO.Swagger.Startup.Configure(Microsoft.AspNetCore.Builder.IApplicationBuilder,Microsoft.AspNetCore.Hosting.IWebHostEnvironment,Microsoft.Extensions.Logging.ILoggerFactory)">
+            <summary>
+            This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+            </summary>
+            <param name="app"></param>
+            <param name="env"></param>
+            <param name="loggerFactory"></param>
+        </member>
+    </members>
+</doc>

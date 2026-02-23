@@ -1,0 +1,39 @@
+{
+  "idShort": "AssembledParts",
+  "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/AssembledParts"}]},
+  "id": "https://aausmartlab.com/submodels/AssembledParts/PlateWithHole",
+  "description":[{"language": "en", "text": "List of currently assembled parts of the product."}],
+
+  "submodelElements" : [
+    {
+      "modelType": "SubmodelElementList",
+      "idShort": "ListOfCurrentlyAssembledComponents",
+      "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Product/PlateWithHole/ListOfCurrentlyAssembledComponents"}]},
+      "typeValueListElement": "SubmodelElementCollection",
+      "valueTypeListElement": null,
+      "orderRelevant": true,
+      "description": [
+            {
+              "language": "en",
+              "text": "Ordered list of operations required to manufacture and assemble the product."
+            }
+          ],
+        
+      "value" : [
+        {
+          "modelType": "Property",
+          "idShort": "Plate_Shell_Id",
+          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/References/Shells/Parts"}]},
+          "description": [
+            {
+              "language": "en",
+              "text": "Reference to the plate used in the product."
+            }
+          ],
+          "valueType": "xs:string",
+          "value": "https://aausmartlab.com/aas/Parts/Plate/0129379862934723aisudh" 
+        }
+      ]
+    }
+  ]
+}

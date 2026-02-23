@@ -1,0 +1,57 @@
+{
+  "idShort": "Storage",
+  "id": "https://aausmartlab.com/aas/Resource/DanishProduction/Storage/002",
+  "modelType": "AssetAdministrationShell",
+  "assetInformation": {
+    "assetKind": "Instance",
+    "globalAssetId": "https://aausmartlab.com/aas/Resource/DanishProduction/Storage/002"
+  },
+  "submodels": [
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/aas/Resource/DanishProduction/Storage/002/Documentation"
+        }
+      ]
+    },
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/aas/Resource/DanishProduction/Storage/002/Skills"
+        }
+      ]
+    },
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/aas/Resource/DanishProduction/Storage/002/Communication"
+        }
+      ]
+    },
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/aas/Resource/DanishProduction/Storage/002/Location"
+        }
+      ]
+    },
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/aas/Resource/DanishProduction/Storage/002/Item_Capacity"
+        }
+      ]
+    }
+  ]
+}
+

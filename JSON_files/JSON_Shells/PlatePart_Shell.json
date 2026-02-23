@@ -1,0 +1,21 @@
+{
+  "idShort": "Plate",
+  "id": "https://aausmartlab.com/aas/Parts/Plate",
+  "modelType": "AssetAdministrationShell",
+  "assetInformation": {
+    "assetKind": "Instance",
+    "globalAssetId": "https://aausmartlab.com/assets/Plate/3284_7641_9661_3375"
+  },
+  "submodels": [
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/submodels/Parts/Plate/Variant_001"
+        }
+      ]
+    }
+  ]
+}
+
