@@ -1,0 +1,48 @@
+{
+  "idShort": "Telefon",
+  "id": "https://aausmartlab.com/aas/Product/AAU/Telefon/001",
+  "modelType": "AssetAdministrationShell",
+  "assetInformation": {
+    "assetKind": "Instance",
+    "globalAssetId": "https://aausmartlab.com/aas/Product/AAU/Telefon/001"
+  },
+  "submodels": [
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/aas/Product/AAU/Telefon/001/Documentation"
+        }
+      ]
+    },
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/aas/Product/AAU/Telefon/001/Bill_Of_Processes"
+        }
+      ]
+    },
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/aas/Product/AAU/Telefon/001/Bill_Of_Materials"
+        }
+      ]
+    },
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/aas/Product/AAU/Telefon/001/Assembled_Components"
+        }
+      ]
+    }
+  ]
+}
+

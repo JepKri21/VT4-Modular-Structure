@@ -1,0 +1,48 @@
+{
+  "idShort": "Housing_With_PCB",
+  "id": "https://aausmartlab.com/Asset/Product/Sub_Assemblies/AAU/Housing_With_PCB/001",
+  "modelType": "AssetAdministrationShell",
+  "assetInformation": {
+    "assetKind": "Instance",
+    "globalAssetId": "https://aausmartlab.com/Asset/Product/Sub_Assemblies/AAU/Housing_With_PCB/001"
+  },
+  "submodels": [
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/Asset/Product/Sub_Assemblies/AAU/Housing_With_PCB/001/Documentation"
+        }
+      ]
+    },
+    {
+        "type": "ModelReference",
+        "keys": [
+          {
+            "type": "Submodel",
+            "value": "https://aausmartlab.com/Asset/Product/Sub_Assemblies/AAU/Housing_With_PCB/001/Classification"
+          }
+        ]
+    },
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/Asset/Product/Sub_Assemblies/AAU/Housing_With_PCB/001/BillOfMaterials"
+        }
+      ]
+    },
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/Asset/Product/Sub_Assemblies/AAU/Housing_With_PCB/001/BillOfProcesses"
+        }
+      ]
+    }
+  ]
+}
+
