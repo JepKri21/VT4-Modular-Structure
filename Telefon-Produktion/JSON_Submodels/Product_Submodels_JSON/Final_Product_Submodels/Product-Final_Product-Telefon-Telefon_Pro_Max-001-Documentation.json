@@ -1,0 +1,109 @@
+{
+  "idShort": "Documentation",
+  "semanticId": {"type": "ExternalReference","keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Assets/Product/Submodels/Documentation"}]},
+  "id": "https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max/001/Documentation",
+  "description": [{"language": "en","text": "Basic documentation metadata for the product."}],
+  "submodelElements": [
+    {
+      "modelType": "SubmodelElementCollection",
+      "idShort": "GeneralInformation",
+      "value": [
+        {
+          "modelType": "Property",
+          "idShort": "DocumentVersion",
+          "valueType": "xs:string",
+          "value": "1.0"
+        },
+        {
+          "modelType": "Property",
+          "idShort": "ReleaseDate",
+          "valueType": "xs:date",
+          "value": "2026-02-25"
+        }
+      ]
+    },
+    {
+      "modelType": "SubmodelElementCollection",
+      "idShort": "TechnicalDetails",
+      "value": [
+        {
+          "modelType": "Property",
+          "idShort": "MaterialSpecification",
+          "valueType": "xs:string",
+          "value": "Plastic PLA-31212, Red, Glossy finish"
+        },
+        {
+          "modelType": "MultiLanguageProperty",
+          "idShort": "SafetyNote",
+          "value": [
+            {
+              "language": "en",
+              "text": "Dont expose to high temperatures, may deform."
+            }
+          ]
+        },
+        {
+          "modelType": "Property",
+          "idShort": "RecyclingInformation",
+          "valueType": "xs:string",
+          "value": "This component is recyclable. Please dispose of it in accordance with local recycling regulations."
+         },
+         {
+          "modelType": "Property",
+          "idShort": "ComponentWeight",
+          "valueType": "xs:float",
+          "value": "0.15"
+         },
+         {
+          "modelType": "Property",
+          "idShort": "Dimensions",
+          "valueType": "xs:string",
+          "value": "100mm x 50mm x 20mm"
+         },
+         {
+          "modelType": "Property",
+          "idShort": "ColorCode",
+          "valueType": "xs:string",
+          "value": "#FF0000"
+         }
+
+      ]
+    },
+    {
+      "modelType": "SubmodelElementCollection",
+      "idShort": "Product Classification",
+      "value": [
+        {
+          "modelType": "Property",
+          "idShort": "Product Type",
+          "valueType": "xs:string",
+          "value": "Final Product"
+        },
+        {
+          "modelType": "Property",
+          "idShort": "Product Family",
+          "valueType": "xs:string",
+          "value": "Telefon"
+        },
+        {
+          "modelType": "Property",
+          "idShort": "Product Variant",
+          "valueType": "xs:string",
+          "value": "Telefon Pro Max"
+        },
+        {
+          "modelType": "Property",
+          "idShort": "Shell ID",
+          "valueType": "xs:string",
+          "value": "001"
+        }
+      ]
+    },
+    {
+      "modelType": "File",
+      "idShort": "DocumentationFile",
+      "contentType": "application/pdf",
+      "value": "https://aausmartlab.com/docs/bottom_cover_datasheet.pdf"
+    }
+  ]
+}

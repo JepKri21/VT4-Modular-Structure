@@ -7,14 +7,15 @@ from tkinter import ttk
 import json
 import requests
 import base64
+from pathlib import Path
 
 
 bash_path = r"C:\Program Files\Git\bin\bash.exe"
 script_dir = ".\AasxServerBlazor.v0.3.1.343-aasV3-alpha-latest\AasxServerBlazor"
 script_name = "00startForDemo.sh"
 
-shell_folder = ".\JSON_files\JSON_Shells"
-submodel_folder = ".\JSON_files\JSON_Submodels"
+shell_folder = ".\Telefon-Produktion\JSON_Shells"
+submodel_folder = ".\Telefon-Produktion\JSON_Submodels"
 
 PORT = "5001"
 SERVER_BASE = f"http://localhost:{PORT}"  # your server base URL
@@ -71,16 +72,16 @@ class ServerGUI:
 
         # --- Shell files dropdown (post)---
         self.shell_file_var = tk.StringVar(master=root)
-        self.shell_files = ["Nothing Selected"] + [f for f in os.listdir(shell_folder) if f.endswith(".json")]
+        self.shell_files = ["Nothing Selected"] + self.find_json_files(shell_folder)
         self.shell_dropdown = ttk.Combobox(root,textvariable=self.shell_file_var,values=self.shell_files,state="readonly")
-        self.shell_dropdown.place(x=320, y=40, width=300, height=40)
+        self.shell_dropdown.place(x=320, y=40, width=650, height=40)
         self.shell_dropdown.current(0)
 
         # --- Submodel files dropdown (post)---
         self.submodel_file_var = tk.StringVar(master=root)
-        self.submodel_files = ["Nothing Selected"] + [f for f in os.listdir(submodel_folder) if f.endswith(".json")]
+        self.submodel_files = ["Nothing Selected"] + self.find_json_files(submodel_folder)
         self.submodel_dropdown = ttk.Combobox(root,textvariable=self.submodel_file_var,values=self.submodel_files,state="readonly")
-        self.submodel_dropdown.place(x=320, y=80, width=300, height=40)
+        self.submodel_dropdown.place(x=320, y=80, width=650, height=40)
         self.submodel_dropdown.current(0)
 
         # --- Shell IDs dropdown (FROM SERVER) ---
@@ -107,6 +108,9 @@ class ServerGUI:
         self.terminal_output.place(x=50, y=300, width=400, height=200)
 
     #=======================================GUI Functions================================0
+
+    def find_json_files(self, folder):
+        return [str(p) for p in Path(folder).rglob("*.json")]
 
     def start_server(self):
         if self.process and self.process.poll() is None:
@@ -156,7 +160,7 @@ class ServerGUI:
         if selected_file == "Nothing Selected":
             self.append_terminal("No shell file selected")
             return
-        full_path = os.path.join(shell_folder, selected_file)
+        full_path = selected_file
         with open(full_path, "r", encoding="utf-8") as f:
             data = json.load(f)
         response = requests.post(SHELL_ENDPOINT, json=data, headers={"Content-Type": "application/json"})
@@ -167,7 +171,7 @@ class ServerGUI:
         if selected_file == "Nothing Selected":
             self.append_terminal("No submodel file selected")
             return
-        full_path = os.path.join(submodel_folder, selected_file)
+        full_path = selected_file
         with open(full_path, "r", encoding="utf-8") as f:
             data = json.load(f)
         response = requests.post(SUBMODEL_ENDPOINT, json=data, headers={"Content-Type": "application/json"})

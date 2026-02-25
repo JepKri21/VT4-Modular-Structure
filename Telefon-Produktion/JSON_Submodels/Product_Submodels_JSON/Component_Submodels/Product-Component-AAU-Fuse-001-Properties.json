@@ -1,0 +1,60 @@
+{
+  "idShort": "Properties",
+  "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/Parts/Variants"}]},
+  "id": "https://aausmartlab.com/Assets/Product/Component/AAU/Fuse/001/Properties",
+  "description":[{"language": "en", "text": "List of design elemtent for this variant"}],
+
+  "submodelElements" : [
+    {
+      "modelType": "SubmodelElementList",
+      "idShort": "List_Of_Properties",
+      "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Submodels/List_Of_Properties"}]},
+      "typeValueListElement": "SubmodelElementCollection",
+      "valueTypeListElement": null,
+      "orderRelevant": true,
+      "description": [
+            {
+              "language": "en",
+              "text": "List of properties of this component."
+            }
+          ],
+      "value" : [
+        {
+          "modelType": "Property",
+          "idShort": "Length",
+          "valueType": "xs:integer",
+          "value": "20",
+          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/Millimeters"}]}
+        },
+        {
+          "modelType": "Property",
+          "idShort": "Diameter",
+          "valueType": "xs:integer",
+          "value": "5",
+          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/Millimeters"}]}
+        },
+        {
+          "modelType" : "Property",
+          "idShort" : "Wire Material",
+          "valueType" : "xs:string",
+          "value": "Copper",
+          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Materials/Copper"}]}
+        },
+        {
+          "modelType" : "Property",
+          "idShort" : "AmpereRating",
+          "valueType" : "xs:integer",
+          "value": "2",
+          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/Ampere"}]}
+        },
+        {
+          "modelType" : "Property",
+          "idShort" : "Wire Width",
+          "valueType" : "xs:integer",
+          "value": "0.5",
+          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/Millimeter"}]}
+        }    
+      ]
+    }
+  ]
+}
