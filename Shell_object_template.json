@@ -27,7 +27,16 @@
           "value": "https://aausmartlab.com/submodels/DrillStationCommunication"
         }
       ]
+    },
+
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/submodels/DrillStationAssetClassification"
+        }
+      ]
     }
   ]
 }
-
