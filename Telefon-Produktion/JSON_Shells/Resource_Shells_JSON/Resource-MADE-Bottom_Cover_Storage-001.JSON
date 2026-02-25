@@ -1,10 +1,10 @@
 {
   "idShort": "Bottom Cover Storage",
-  "id": "https://aausmartlab.com/Assets/Resource/MADE_REACT/Drill_Station/001",
+  "id": "https://aausmartlab.com/Assets/Resource/MADE/Drill_Station/001",
   "modelType": "AssetAdministrationShell",
   "assetInformation": {
     "assetKind": "Instance",
-    "globalAssetId": "https://aausmartlab.com/Assets/Resource/MADE_REACT/Bottom_Cover_Storage/001"
+    "globalAssetId": "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover_Storage/001"
   },
   "submodels": [
     {
@@ -12,7 +12,7 @@
       "keys": [
         {
           "type": "Submodel",
-          "value": "https://aausmartlab.com/Assets/Resource/MADE_REACT/Bottom_Cover_Storage/001/Documentation"
+          "value": "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover_Storage/001/Documentation"
         }
       ]
     },
@@ -21,7 +21,7 @@
       "keys": [
         {
           "type": "Submodel",
-          "value": "https://aausmartlab.com/Assets/Resource/MADE_REACT/Bottom_Cover_Storage/001/Skills"
+          "value": "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover_Storage/001/Skills"
         }
       ]
     },
@@ -30,7 +30,7 @@
       "keys": [
         {
           "type": "Submodel",
-          "value": "https://aausmartlab.com/Assets/Resource/MADE_REACT/Bottom_Cover_Storage/001/Communication"
+          "value": "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover_Storage/001/Communication"
         }
       ]
     },
@@ -39,7 +39,7 @@
       "keys": [
         {
           "type": "Submodel",
-          "value": "https://aausmartlab.com/Assets/Resource/MADE_REACT/Bottom_Cover_Storage/001/Location"
+          "value": "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover_Storage/001/Location"
         }           
       ]
     },
@@ -48,7 +48,7 @@
       "keys": [
         {
           "type": "Submodel",
-          "value": "https://aausmartlab.com/Assets/Resource/MADE_REACT/Bottom_Cover_Storage/001/Item_Capacity"
+          "value": "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover_Storage/001/Item_Capacity"
         }           
       ]
     }

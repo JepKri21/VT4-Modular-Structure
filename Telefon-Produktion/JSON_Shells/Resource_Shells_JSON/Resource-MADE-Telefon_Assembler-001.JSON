@@ -1,10 +1,10 @@
 {
   "idShort": "Telefon_Assembler",
-  "id": "https://aausmartlab.com/Assets/Resource/MADE_REACT/Telefon_Assembler/001",
+  "id": "https://aausmartlab.com/Assets/Resource/MADE/Telefon_Assembler/001",
   "modelType": "AssetAdministrationShell",
   "assetInformation": {
     "assetKind": "Instance",
-    "globalAssetId": "https://aausmartlab.com/Assets/Resource/MADE_REACT/Telefon_Assembler/001"
+    "globalAssetId": "https://aausmartlab.com/Assets/Resource/MADE/Telefon_Assembler/001"
   },
   "submodels": [
     {
@@ -12,7 +12,7 @@
       "keys": [
         {
           "type": "Submodel",
-          "value": "https://aausmartlab.com/Assets/Resource/MADE_REACT/Telefon_Assembler/001/Documentation"
+          "value": "https://aausmartlab.com/Assets/Resource/MADE/Telefon_Assembler/001/Documentation"
         }
       ]
     },
@@ -21,7 +21,7 @@
       "keys": [
         {
           "type": "Submodel",
-          "value": "https://aausmartlab.com/Assets/Resource/MADE_REACT/Telefon_Assembler/001/Skills"
+          "value": "https://aausmartlab.com/Assets/Resource/MADE/Telefon_Assembler/001/Skills"
         }
       ]
     },
@@ -30,7 +30,7 @@
       "keys": [
         {
           "type": "Submodel",
-          "value": "https://aausmartlab.com/Assets/Resource/MADE_REACT/Telefon_Assembler/001/Communication"
+          "value": "https://aausmartlab.com/Assets/Resource/MADE/Telefon_Assembler/001/Communication"
         }
       ]
     },
@@ -39,7 +39,7 @@
       "keys": [
         {
           "type": "Submodel",
-          "value": "https://aausmartlab.com/Assets/Resource/MADE_REACT/Telefon_Assembler/001/Location"
+          "value": "https://aausmartlab.com/Assets/Resource/MADE/Telefon_Assembler/001/Location"
         }           
       ]
     },
@@ -48,7 +48,7 @@
       "keys": [
         {
           "type": "Submodel",
-          "value": "https://aausmartlab.com/Assets/Resource/MADE_REACT/Telefon_Assembler/001/Item_Capacity"
+          "value": "https://aausmartlab.com/Assets/Resource/MADE/Telefon_Assembler/001/Item_Capacity"
         }           
       ]
     }

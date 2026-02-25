@@ -1,0 +1,88 @@
+{
+    "idShort": "Item_Capacity",
+    "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/OperationalData"}]},
+    "id": "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover_Storage/001/Item_Capacity",
+    "submodelElements": [
+        {
+            "modelType": "SubmodelElementList",
+            "idShort": "Internal_Part_Storages",
+            "typeValueListElement": "SubmodelElementCollection",
+            "valueTypeListElement": null,
+            "orderRelevant": true,
+            "value" : [
+                {
+                    "modelType" : "SubmodelElementCollection",
+                    "idShort" : "Internal_Part_Storage_1",
+                    "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/DrillStation/Internal_Part_Storage"}]},
+                    "value" : [
+                        {
+                            "modelType": "Property",
+                            "idShort": "Storage_Size",
+                            "valueType": "xs:integer",
+                            "value": "50"
+                        },
+                        {
+                            "modelType": "Property",
+                            "idShort": "Storing_Method",
+                            "valueType": "xs:string",
+                            "value": "First_In_First_Out"
+                        },
+                        {
+                            "modelType": "Property",
+                            "idShort": "Storage_Type",
+                            "valueType": "xs:string",
+                            "value": "Output"
+                        },                        
+                        {
+                            "modelType" : "SubmodelElementCollection",
+                            "idShort" : "Part_Types",
+                            "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/DrillStation/Internal_Part_Storage"}]},
+                            "value" : [
+                                {
+
+                                    "modelType" : "SubmodelElementCollection",
+                                    "idShort" : "Part_Type_1",
+                                    "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/DrillStation/Internal_Part_Storage"}]},
+                                    "value" : [
+                                        {
+                                            "modelType": "Property",
+                                            "idShort": "Part_Type_reference",
+                                            "valueType": "xs:string",
+                                            "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover"
+                                        },
+                                        {
+                                            "modelType": "Property",
+                                            "idShort": "Parts_Currently_Stored",
+                                            "valueType": "xs:integer",
+                                            "value": "23"
+                                        }
+                                    ]
+                                },
+                                {
+
+                                    "modelType" : "SubmodelElementCollection",
+                                    "idShort" : "Part_Type_2",
+                                    "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/DrillStation/Internal_Part_Storage"}]},
+                                    "value" : [
+                                        {
+                                            "modelType": "Property",
+                                            "idShort": "Part_Type_reference",
+                                            "valueType": "xs:string",
+                                            "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Top_Cover"
+                                        },
+                                        {
+                                            "modelType": "Property",
+                                            "idShort": "Parts_Currently_Stored",
+                                            "valueType": "xs:integer",
+                                            "value": "0"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }  
+            ]
+        }
+  ]
+}
