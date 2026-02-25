@@ -1,10 +1,10 @@
 {
   "idShort": "PCB_With_Fuse",
-  "id": "https://aausmartlab.com/Asset/Product/Sub_Assemblies/AAU/PCB_With_Fuse/001",
+  "id": "https://aausmartlab.com/Asset/Product/Sub_Assembly/AAU/PCB_With_Fuse/001",
   "modelType": "AssetAdministrationShell",
   "assetInformation": {
     "assetKind": "Instance",
-    "globalAssetId": "https://aausmartlab.com/Asset/Product/Sub_Assemblies/AAU/PCB_With_Fuse/001"
+    "globalAssetId": "https://aausmartlab.com/Asset/Product/Sub_Assembly/AAU/PCB_With_Fuse/001"
   },
   "submodels": [
     {
@@ -12,7 +12,7 @@
       "keys": [
         {
           "type": "Submodel",
-          "value": "https://aausmartlab.com/Asset/Product/Sub_Assemblies/AAU/PCB_With_Fuse/001/Documentation"
+          "value": "https://aausmartlab.com/Asset/Product/Sub_Assembly/AAU/PCB_With_Fuse/001/Documentation"
         }
       ]
     },
@@ -21,7 +21,7 @@
         "keys": [
           {
             "type": "Submodel",
-            "value": "https://aausmartlab.com/Asset/Product/Sub_Assemblies/AAU/PCB_With_Fuse/001/Classification"
+            "value": "https://aausmartlab.com/Asset/Product/Sub_Assembly/AAU/PCB_With_Fuse/001/Classification"
           }
         ]
     },
@@ -30,7 +30,7 @@
       "keys": [
         {
           "type": "Submodel",
-          "value": "https://aausmartlab.com/Asset/Product/Sub_Assemblies/AAU/PCB_With_Fuse/001/Properties"
+          "value": "https://aausmartlab.com/Asset/Product/Sub_Assembly/AAU/PCB_With_Fuse/001/Properties"
         }
       ]
     }

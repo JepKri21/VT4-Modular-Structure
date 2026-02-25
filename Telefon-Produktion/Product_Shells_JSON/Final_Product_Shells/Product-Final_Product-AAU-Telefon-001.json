@@ -1,6 +1,6 @@
 {
   "idShort": "Telefon",
-  "id": "https://aausmartlab.com/aas/Product/AAU/Telefon/001",
+  "id": "https://aausmartlab.com/aas/Product/Final_Product/Telefon/Telefon_Pro_Max/001",
   "modelType": "AssetAdministrationShell",
   "assetInformation": {
     "assetKind": "Instance",
@@ -12,7 +12,7 @@
       "keys": [
         {
           "type": "Submodel",
-          "value": "https://aausmartlab.com/aas/Product/AAU/Telefon/001/Documentation"
+          "value": "https://aausmartlab.com/aas/Product/Final_Product/Telefon/Telefon_Pro_Max/001/Documentation"
         }
       ]
     },
@@ -21,7 +21,7 @@
       "keys": [
         {
           "type": "Submodel",
-          "value": "https://aausmartlab.com/aas/Product/AAU/Telefon/001/Bill_Of_Processes"
+          "value": "https://aausmartlab.com/aas/Product/Final_Product/Telefon/Telefon_Pro_Max/001/Bill_Of_Processes"
         }
       ]
     },
@@ -30,7 +30,7 @@
       "keys": [
         {
           "type": "Submodel",
-          "value": "https://aausmartlab.com/aas/Product/AAU/Telefon/001/Bill_Of_Materials"
+          "value": "https://aausmartlab.com/aas/Product/Final_Product/Telefon/Telefon_Pro_Max/001/Bill_Of_Materials"
         }
       ]
     },
@@ -39,7 +39,7 @@
       "keys": [
         {
           "type": "Submodel",
-          "value": "https://aausmartlab.com/aas/Product/AAU/Telefon/001/Assembled_Components"
+          "value": "https://aausmartlab.com/aas/Product/Final_Product/Telefon/Telefon_Pro_Max/001/Assembled_Components"
         }
       ]
     }

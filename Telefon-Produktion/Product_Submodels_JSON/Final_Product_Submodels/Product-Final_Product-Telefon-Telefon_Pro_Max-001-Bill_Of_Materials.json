@@ -1,0 +1,49 @@
+{
+  "idShort": "Bill_Of_Materials",
+  "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/Bill_Of_Materials"}]},
+  "id": "https://aausmartlab.com/aas/Product/Final_Product/Telefon/Telefon_Pro_Max/001/Bill_Of_Materials",
+  "description":[{"language": "en", "text": "List of materials required to produce the product."}],
+
+  "submodelElements" : [
+    {
+      "modelType": "SubmodelElementList",
+      "idShort": "List_Of_Materials",
+      "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/ListOfMaterials"}]},
+      "typeValueListElement": "SubmodelElementCollection",
+      "valueTypeListElement": null,
+      "orderRelevant": true,
+      "description": [
+            {
+              "language": "en",
+              "text": "Collection of all parts in the product."
+            }
+          ],
+      "value" : [
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "PCB_With_Fuse_1",
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Component_Variant",
+              "valueType": "xs:string",
+              "value": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/PCB_With_Fuse"
+            }         
+          ] 
+        },
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Top_Cover_1",
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Component_Variant",
+              "valueType": "xs:string",
+              "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Top_Cover"
+            }         
+          ] 
+        }
+      ]
+    }
+  ]
+}

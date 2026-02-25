@@ -1,7 +1,7 @@
 {
   "idShort": "Bill_Of_Processes",
   "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/BillOfOperations"}]},
-  "id": "https://aausmartlab.com/Asset/Product/Component/AAU/Fuse/001/BillOfProcesses",
+  "id": "https://aausmartlab.com/Asset/Product/Component/AAU/Fuse/001/Bill_Of_Processes",
   "description":[{"language": "en", "text": "List of manufacturing and assembly operations for the product."}],
 
   "submodelElements" : [

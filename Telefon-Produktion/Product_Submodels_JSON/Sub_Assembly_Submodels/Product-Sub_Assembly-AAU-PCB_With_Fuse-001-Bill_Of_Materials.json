@@ -1,0 +1,49 @@
+{
+  "idShort": "Bill_Of_Materials",
+  "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/Bill_Of_Materials"}]},
+  "id": "https://aausmartlab.com/aas/Product/Sub_Assembly/AAU/PCB_With_Fuse/001/Bill_Of_Materials",
+  "description":[{"language": "en", "text": "List of materials required to produce the product."}],
+
+  "submodelElements" : [
+    {
+      "modelType": "SubmodelElementList",
+      "idShort": "List_Of_Materials",
+      "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/ListOfMaterials"}]},
+      "typeValueListElement": "SubmodelElementCollection",
+      "valueTypeListElement": null,
+      "orderRelevant": true,
+      "description": [
+            {
+              "language": "en",
+              "text": "Collection of all parts in the product."
+            }
+          ],
+      "value" : [
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Fuse_1",
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Component_Variant",
+              "valueType": "xs:string",
+              "value": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Fuse"
+            }         
+          ] 
+        },
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Housing_With_PCB_1",
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Component_Variant",
+              "valueType": "xs:string",
+              "value": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Housing_With_PCB"
+            }         
+          ] 
+        }
+      ]
+    }
+  ]
+}

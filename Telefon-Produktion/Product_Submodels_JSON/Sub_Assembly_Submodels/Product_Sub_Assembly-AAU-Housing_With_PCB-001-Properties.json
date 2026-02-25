@@ -1,7 +1,7 @@
 {
   "idShort": "Properties",
   "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/Parts/Variants"}]},
-  "id": "https://aausmartlab.com/Assets/Product/AAU/Fuse/001/Properties",
+  "id": "https://aausmartlab.com/aas/Product/Sub_Assembly/AAU/Housing_With_PCB/001/Properties",
   "description":[{"language": "en", "text": "List of design elemtent for this variant"}],
 
   "submodelElements" : [
@@ -23,36 +23,43 @@
           "modelType": "Property",
           "idShort": "Length",
           "valueType": "xs:integer",
-          "value": "20",
+          "value": "150",
           "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/Millimeters"}]}
         },
         {
           "modelType": "Property",
-          "idShort": "Diameter",
+          "idShort": "Width",
           "valueType": "xs:integer",
-          "value": "5",
+          "value": "60",
+          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/Millimeters"}]}
+        },  
+        {
+          "modelType": "Property",
+          "idShort": "Height",
+          "valueType": "xs:integer",
+          "value": "8",
           "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/Millimeters"}]}
         },
         {
           "modelType" : "Property",
-          "idShort" : "Wire Material",
+          "idShort" : "Material",
           "valueType" : "xs:string",
-          "value": "Copper",
-          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Materials/Copper"}]}
+          "value": "PLA-31212",
+          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Materials/PLA-31212"}]}
         },
         {
           "modelType" : "Property",
-          "idShort" : "AmpereRating",
-          "valueType" : "xs:integer",
-          "value": "2",
-          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/Ampere"}]}
+          "idShort" : "Color",
+          "valueType" : "xs:string",
+          "value": "Red",
+          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Colors/Red"}]}
         },
         {
           "modelType" : "Property",
-          "idShort" : "Wire Width",
-          "valueType" : "xs:integer",
-          "value": "0.5",
-          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/Millimeter"}]}
+          "idShort" : "Finish",
+          "valueType" : "xs:string",
+          "value": "Glossy",
+          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Finish/Glossy"}]}
         }    
       ]
     }
