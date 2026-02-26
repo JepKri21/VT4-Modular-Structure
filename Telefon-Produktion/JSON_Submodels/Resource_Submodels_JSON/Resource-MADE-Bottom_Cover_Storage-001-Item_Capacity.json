@@ -13,19 +13,20 @@
                 {
                     "modelType" : "SubmodelElementCollection",
                     "idShort" : "Internal_Part_Storage_1",
-                    "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/DrillStation/Internal_Part_Storage"}]},
+                    "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Cover_Storage/Internal_Part_Storage"}]},
                     "value" : [
-                        {
-                            "modelType": "Property",
-                            "idShort": "Storage_Size",
-                            "valueType": "xs:integer",
-                            "value": "50"
-                        },
+                        
                         {
                             "modelType": "Property",
                             "idShort": "Storing_Method",
                             "valueType": "xs:string",
                             "value": "First_In_First_Out"
+                        },
+                        {
+                            "modelType": "Property",
+                            "idShort": "Storage_Size",
+                            "valueType": "xs:integer",
+                            "value": "50"
                         },
                         {
                             "modelType": "Property",
@@ -36,13 +37,13 @@
                         {
                             "modelType" : "SubmodelElementCollection",
                             "idShort" : "Part_Types",
-                            "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/DrillStation/Internal_Part_Storage"}]},
+                            "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Cover_Storage/Internal_Part_Storage"}]},
                             "value" : [
                                 {
 
                                     "modelType" : "SubmodelElementCollection",
                                     "idShort" : "Part_Type_1",
-                                    "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/DrillStation/Internal_Part_Storage"}]},
+                                    "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Cover_Storage/Internal_Part_Storage"}]},
                                     "value" : [
                                         {
                                             "modelType": "Property",
@@ -57,12 +58,45 @@
                                             "value": "23"
                                         }
                                     ]
-                                },
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "modelType" : "SubmodelElementCollection",
+                    "idShort" : "Internal_Part_Storage_2",
+                    "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Cover_Storage/Internal_Part_Storage"}]},
+                    "value" : [
+                        
+                        {
+                            "modelType": "Property",
+                            "idShort": "Storing_Method",
+                            "valueType": "xs:string",
+                            "value": "First_In_First_Out"
+                        },
+                        {
+                            "modelType": "Property",
+                            "idShort": "Storage_Size",
+                            "valueType": "xs:integer",
+                            "value": "30"
+                        },
+                        {
+                            "modelType": "Property",
+                            "idShort": "Storage_Type",
+                            "valueType": "xs:string",
+                            "value": "Output"
+                        },                        
+                        {
+                            "modelType" : "SubmodelElementCollection",
+                            "idShort" : "Part_Types",
+                            "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Cover_Storage/Internal_Part_Storage"}]},
+                            "value" : [
                                 {
 
                                     "modelType" : "SubmodelElementCollection",
                                     "idShort" : "Part_Type_2",
-                                    "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/DrillStation/Internal_Part_Storage"}]},
+                                    "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Cover_Storage/Internal_Part_Storage"}]},
                                     "value" : [
                                         {
                                             "modelType": "Property",
