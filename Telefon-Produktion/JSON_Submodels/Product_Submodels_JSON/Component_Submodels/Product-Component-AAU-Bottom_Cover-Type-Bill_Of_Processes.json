@@ -1,0 +1,49 @@
+{
+  "idShort": "Bill_Of_Processes",
+  "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/BOP"}]},
+  "id": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover/Type/Bill_Of_Processes",
+  "description": [{"language": "en", "text": "Generic process structure for Bottom_Cover component"}],
+
+  "submodelElements": [
+    {
+      "modelType": "SubmodelElementList",
+      "idShort": "Process_Categories",
+      "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Submodels/BOP/ProcessCategories"}]},
+      "typeValueListElement": "SubmodelElementCollection",
+      "valueTypeListElement": null,
+      "orderRelevant": true,
+      "value": [
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Drilling",
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Category_Name",
+              "valueType": "xs:string",
+              "value": "Drilling"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Required_For_All",
+              "valueType": "xs:boolean",
+              "value": "true"
+            },
+            {
+              "modelType": "MultiLanguageProperty",
+              "idShort": "Description",
+              "value": [{"language": "en", "text": "Drilling mounting holes - parameters vary by material"}]
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Configuration_Dependent",
+              "valueType": "xs:boolean",
+              "value": "true",
+              "description": [{"language": "en", "text": "Drill speed and feed rate depend on material"}]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

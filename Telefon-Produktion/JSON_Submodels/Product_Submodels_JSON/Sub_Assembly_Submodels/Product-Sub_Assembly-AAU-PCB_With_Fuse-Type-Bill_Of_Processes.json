@@ -1,0 +1,48 @@
+{
+  "idShort": "Bill_Of_Processes",
+  "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/BOP"}]},
+  "id": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/PCB_With_Fuse/Type/Bill_Of_Processes",
+  "description": [{"language": "en", "text": "Generic process structure for PCB_With_Fuse sub-assembly"}],
+
+  "submodelElements": [
+    {
+      "modelType": "SubmodelElementList",
+      "idShort": "Process_Categories",
+      "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Submodels/BOP/ProcessCategories"}]},
+      "typeValueListElement": "SubmodelElementCollection",
+      "valueTypeListElement": null,
+      "orderRelevant": true,
+      "value": [
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Fuse_Assembly",
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Category_Name",
+              "valueType": "xs:string",
+              "value": "Fuse Assembly"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Required_For_All",
+              "valueType": "xs:boolean",
+              "value": "true"
+            },
+            {
+              "modelType": "MultiLanguageProperty",
+              "idShort": "Description",
+              "value": [{"language": "en", "text": "Mounting fuses onto PCB - number of operations varies (1-3 fuses)"}]
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Configuration_Dependent",
+              "valueType": "xs:boolean",
+              "value": "true"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

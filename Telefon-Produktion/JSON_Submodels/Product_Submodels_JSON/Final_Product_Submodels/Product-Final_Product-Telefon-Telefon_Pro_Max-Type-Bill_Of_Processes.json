@@ -1,0 +1,236 @@
+{
+  "idShort": "Bill_Of_Processes",
+  "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/BOP"}]},
+  "id": "https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max/Type/Bill_Of_Processes",
+  "description": [{"language": "en", "text": "Generic process structure for Telefon_Pro_Max - actual processes determined by configuration and production line"}],
+
+  "submodelElements": [
+    {
+      "modelType": "SubmodelElementList",
+      "idShort": "Process_Categories",
+      "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Submodels/BOP/ProcessCategories"}]},
+      "typeValueListElement": "SubmodelElementCollection",
+      "valueTypeListElement": null,
+      "orderRelevant": true,
+      "description": [{"language": "en", "text": "High-level process categories required - specific steps determined at production planning"}],
+      "value": [
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Component_Preparation",
+          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/ProcessCategory/Preparation"}]},
+          "description": [{"language": "en", "text": "Preparation and pre-processing of components"}],
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Category_Name",
+              "valueType": "xs:string",
+              "value": "Component Preparation"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Required_For_All",
+              "valueType": "xs:boolean",
+              "value": "true",
+              "description": [{"language": "en", "text": "Required regardless of configuration"}]
+            },
+            {
+              "modelType": "MultiLanguageProperty",
+              "idShort": "Description",
+              "value": [
+                {
+                  "language": "en",
+                  "text": "May include drilling, surface treatment, or other preparation based on material type and configuration"
+                }
+              ]
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Configuration_Dependent",
+              "valueType": "xs:boolean",
+              "value": "true",
+              "description": [{"language": "en", "text": "Specific preparation steps vary based on material selection"}]
+            }
+          ]
+        },
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "PCB_Assembly",
+          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/ProcessCategory/PCB_Assembly"}]},
+          "description": [{"language": "en", "text": "Assembly of PCB with fuses"}],
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Category_Name",
+              "valueType": "xs:string",
+              "value": "PCB Assembly"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Required_For_All",
+              "valueType": "xs:boolean",
+              "value": "true"
+            },
+            {
+              "modelType": "MultiLanguageProperty",
+              "idShort": "Description",
+              "value": [
+                {
+                  "language": "en",
+                  "text": "Assembling fuse(s) onto PCB - number of operations varies with fuse configuration (1-3 fuses)"
+                }
+              ]
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Configuration_Dependent",
+              "valueType": "xs:boolean",
+              "value": "true",
+              "description": [{"language": "en", "text": "Number of fuse placement operations depends on configuration"}]
+            }
+          ]
+        },
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Housing_Assembly",
+          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/ProcessCategory/Housing_Assembly"}]},
+          "description": [{"language": "en", "text": "Assembly of housing components"}],
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Category_Name",
+              "valueType": "xs:string",
+              "value": "Housing Assembly"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Required_For_All",
+              "valueType": "xs:boolean",
+              "value": "true"
+            },
+            {
+              "modelType": "MultiLanguageProperty",
+              "idShort": "Description",
+              "value": [
+                {
+                  "language": "en",
+                  "text": "Assembling bottom cover with PCB assembly"
+                }
+              ]
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Configuration_Dependent",
+              "valueType": "xs:boolean",
+              "value": "false"
+            }
+          ]
+        },
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Final_Assembly",
+          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/ProcessCategory/Final_Assembly"}]},
+          "description": [{"language": "en", "text": "Final product assembly"}],
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Category_Name",
+              "valueType": "xs:string",
+              "value": "Final Assembly"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Required_For_All",
+              "valueType": "xs:boolean",
+              "value": "true"
+            },
+            {
+              "modelType": "MultiLanguageProperty",
+              "idShort": "Description",
+              "value": [
+                {
+                  "language": "en",
+                  "text": "Attaching top cover to complete the telefon"
+                }
+              ]
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Configuration_Dependent",
+              "valueType": "xs:boolean",
+              "value": "false"
+            }
+          ]
+        },
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Quality_Control",
+          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/ProcessCategory/Quality_Control"}]},
+          "description": [{"language": "en", "text": "Quality inspection and testing"}],
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Category_Name",
+              "valueType": "xs:string",
+              "value": "Quality Control"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Required_For_All",
+              "valueType": "xs:boolean",
+              "value": "true"
+            },
+            {
+              "modelType": "MultiLanguageProperty",
+              "idShort": "Description",
+              "value": [
+                {
+                  "language": "en",
+                  "text": "Testing and inspection - specific tests may vary by configuration"
+                }
+              ]
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Configuration_Dependent",
+              "valueType": "xs:boolean",
+              "value": "true",
+              "description": [{"language": "en", "text": "Testing procedures may vary based on material and fuse configuration"}]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "modelType": "SubmodelElementCollection",
+      "idShort": "Process_Planning_Notes",
+      "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/BOP/Planning"}]},
+      "description": [{"language": "en", "text": "Information for process planning systems"}],
+      "value": [
+        {
+          "modelType": "MultiLanguageProperty",
+          "idShort": "Planning_Instructions",
+          "value": [
+            {
+              "language": "en",
+              "text": "Detailed Bill_Of_Processes must be generated at order time based on: 1) Customer configuration (material, color, fuse count), 2) Available production line and resources, 3) Current production schedule and capacity"
+            }
+          ]
+        },
+        {
+          "modelType": "Property",
+          "idShort": "Process_Selection_Required",
+          "valueType": "xs:boolean",
+          "value": "true",
+          "description": [{"language": "en", "text": "Production planner must select specific processes and resources"}]
+        },
+        {
+          "modelType": "Property",
+          "idShort": "Routing_Flexibility",
+          "valueType": "xs:string",
+          "value": "High",
+          "description": [{"language": "en", "text": "Multiple production routes possible depending on line configuration"}]
+        }
+      ]
+    }
+  ]
+}

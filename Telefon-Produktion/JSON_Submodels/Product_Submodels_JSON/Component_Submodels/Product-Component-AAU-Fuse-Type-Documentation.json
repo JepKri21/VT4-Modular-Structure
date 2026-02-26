@@ -1,0 +1,31 @@
+{
+  "idShort": "Documentation",
+  "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/Documentation"}]},
+  "id": "https://aausmartlab.com/Assets/Product/Component/AAU/Fuse/Type/Documentation",
+  "description": [{"language": "en", "text": "Documentation for Fuse component type"}],
+
+  "submodelElements": [
+    {
+      "modelType": "Property",
+      "idShort": "Product_Name",
+      "valueType": "xs:string",
+      "value": "Electrical Fuse"
+    },
+    {
+      "modelType": "Property",
+      "idShort": "Product_Type",
+      "valueType": "xs:string",
+      "value": "Component"
+    },
+    {
+      "modelType": "MultiLanguageProperty",
+      "idShort": "Description",
+      "value": [
+        {
+          "language": "en",
+          "text": "Electrical safety fuse for overcurrent protection"
+        }
+      ]
+    }
+  ]
+}
