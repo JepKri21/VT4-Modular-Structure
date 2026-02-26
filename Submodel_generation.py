@@ -27,6 +27,24 @@ with open(classification_submodel_json_file, "r") as f:
 with open(shell_json_file, "r") as f:
     shell_data = json.load(f)
 
+import base64
+
+def image_to_base64(image_path):
+    with open(image_path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode("utf-8")
+
+# Path to your local image
+image_path = "/Users/lucasn.bonde/Desktop/Privat/Programming/Speciale/VT4-Modular-Structure/CircImage.png"
+
+# Convert image
+image_base64 = image_to_base64(image_path)
+
+# Inject into shell JSON
+shell_data["assetInformation"]["defaultThumbnail"] = {
+    "contentType": "image/png",
+    "value": image_base64
+}
+
 # 1️⃣ Post submodels FIRST
 for sm in [
     operation_submodel_data,

@@ -4,10 +4,13 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
+  --color-blue-500: #d7d3ed;
   --color-blue-400: #211955;
   --color-blue-200: #bfb5ff;
-  --color-blue-500: #d7d3ed;
+  --color-blue-300: #4b4287;
+
   --color-dark-400: #0d0d0d;
+  --color-dark-300: #1a1344;
   --color-gray-200: #f8f8fa;
 
   --color-midnight: #121063;
@@ -59,15 +62,15 @@
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
+  --card: var(--color-blue-500);
+  --card-foreground: var(--color-blue-200);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
+  --primary: var(--color-blue-400);
   --primary-foreground: oklch(0.984 0.003 247.858);
   --secondary: oklch(0.968 0.007 247.896);
   --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
+  --muted: var(--color-gray-200);
   --muted-foreground: oklch(0.554 0.046 257.417);
   --accent: oklch(0.968 0.007 247.896);
   --accent-foreground: oklch(0.208 0.042 265.755);
@@ -91,17 +94,17 @@
 }
 
 .dark {
-  --background: oklch(0.129 0.042 264.695);
+  --background: var(--color-blue-400);
   --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
+  --card: var(--color-blue-200);
+  --card-foreground: var(--color-blue-300);
   --popover: oklch(0.208 0.042 265.755);
   --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
+  --primary: var(--color-white);
   --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
+  --secondary: var(--color-blue-500);
   --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
+  --muted: var(--color-dark-300);
   --muted-foreground: oklch(0.704 0.04 256.788);
   --accent: oklch(0.279 0.041 260.031);
   --accent-foreground: oklch(0.984 0.003 247.858);
@@ -465,6 +468,16 @@
   border: 1px solid #30333a;
   border-radius: 8px !important;
   overflow: hidden !important;
+}
+
+/* skjul scrollbar men behold scroll */
+.hide-scrollbar {
+  -ms-overflow-style: none; /* IE & Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
 }
 
 /* Custom scrollbar that shows on hover */
