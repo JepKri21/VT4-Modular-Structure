@@ -2,7 +2,7 @@
 
     "idShort": "Communication",
     "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/OperationalData"}]},
-    "id": "https://aausmartlab.com/Assets/Resource/MADE/DrillStation/001/Communication",
+    "id": "https://aausmartlab.com/Assets/Resource/MADE/Drill_Station/001/Communication",
     "submodelElements": [
         {
             "modelType" : "SubmodelElementCollection",

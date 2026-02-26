@@ -1,7 +1,7 @@
 {
     "idShort": "Location",
     "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/OperationalData"}]},
-    "id": "https://aausmartlab.com/Assets/Resource/MADE/ACOPOS6D/001/Location",
+    "id": "https://aausmartlab.com/Assets/Resource/B&R/ACOPOS6D/001/Location",
     "submodelElements": [
         {
             "modelType" : "SubmodelElementCollection",

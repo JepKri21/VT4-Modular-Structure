@@ -1,7 +1,7 @@
 {
     "idShort": "Location",
     "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/OperationalData"}]},
-    "id": "https://aausmartlab.com/Assets/Resource/MADE/DrillStation/001/Location",
+    "id": "https://aausmartlab.com/Assets/Resource/MADE/Drill_Station/001/Location",
     "submodelElements": [
         {
             "modelType" : "SubmodelElementCollection",
