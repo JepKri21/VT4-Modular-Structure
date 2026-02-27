@@ -96,13 +96,13 @@
                 },
                 {
                   "modelType": "SubmodelElementCollection",
-                  "idShort": "PETG_7777",
+                  "idShort": "PETG_7700",
                   "value": [
                     {
                       "modelType": "Property",
                       "idShort": "Material_ID",
                       "valueType": "xs:string",
-                      "value": "PETG-7777"
+                      "value": "PETG-7700"
                     },
                     {
                       "modelType": "Property",

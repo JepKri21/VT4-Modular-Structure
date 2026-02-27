@@ -1,0 +1,41 @@
+{
+  "description": "Registry tracking all created product instances for ID management",
+  "last_updated": "2026-02-27",
+  "product_types": {
+    "Telefon_Pro_Max": {
+      "type_id": "https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max/Type",
+      "last_instance_number": 0,
+      "instances": []
+    },
+    "Bottom_Cover": {
+      "type_id": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover/Type",
+      "last_instance_number": 0,
+      "instances": []
+    },
+    "Top_Cover": {
+      "type_id": "https://aausmartlab.com/Assets/Product/Component/AAU/Top_Cover/Type",
+      "last_instance_number": 0,
+      "instances": []
+    },
+    "PCB": {
+      "type_id": "https://aausmartlab.com/Assets/Product/Component/AAU/PCB/Type",
+      "last_instance_number": 0,
+      "instances": []
+    },
+    "Fuse": {
+      "type_id": "https://aausmartlab.com/Assets/Product/Component/AAU/Fuse/Type",
+      "last_instance_number": 0,
+      "instances": []
+    },
+    "PCB_With_Fuse": {
+      "type_id": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/PCB_With_Fuse/Type",
+      "last_instance_number": 0,
+      "instances": []
+    },
+    "Housing_With_PCB": {
+      "type_id": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Housing_With_PCB/Type",
+      "last_instance_number": 0,
+      "instances": []
+    }
+  }
+}

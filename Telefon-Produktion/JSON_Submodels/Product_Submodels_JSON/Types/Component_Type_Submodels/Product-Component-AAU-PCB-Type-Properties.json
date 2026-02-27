@@ -18,6 +18,7 @@
           "modelType": "Property",
           "idShort": "Length",
           "valueType": "xs:integer",
+          "value": "140",
           "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/Millimeters"}]},
           "description": [{"language": "en", "text": "Length in millimeters"}]
         },
@@ -25,6 +26,7 @@
           "modelType": "Property",
           "idShort": "Width",
           "valueType": "xs:integer",
+          "value": "55",
           "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/Millimeters"}]},
           "description": [{"language": "en", "text": "Width in millimeters"}]
         },
@@ -32,6 +34,7 @@
           "modelType": "Property",
           "idShort": "Layers",
           "valueType": "xs:integer",
+          "value": "2",
           "description": [{"language": "en", "text": "Number of PCB layers"}]
         }
       ]

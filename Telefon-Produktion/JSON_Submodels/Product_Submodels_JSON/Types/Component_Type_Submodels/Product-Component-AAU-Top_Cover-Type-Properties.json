@@ -1,8 +1,8 @@
 {
   "idShort": "Properties",
   "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/Parts/Variants"}]},
-  "id": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover/Type/Properties",
-  "description":[{"language": "en", "text": "Property structure definition for Bottom_Cover type"}],
+  "id": "https://aausmartlab.com/Assets/Product/Component/AAU/Top_Cover/Type/Properties",
+  "description":[{"language": "en", "text": "Property structure definition for Top_Cover type"}],
 
   "submodelElements" : [
     {
@@ -12,12 +12,13 @@
       "typeValueListElement": "SubmodelElementCollection",
       "valueTypeListElement": null,
       "orderRelevant": true,
-      "description": [{"language": "en", "text": "Structure defining properties for bottom cover component"}],
+      "description": [{"language": "en", "text": "Structure defining properties for top cover component"}],
       "value" : [
         {
           "modelType": "Property",
           "idShort": "Length",
           "valueType": "xs:integer",
+          "value": "150",
           "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/Millimeters"}]},
           "description": [{"language": "en", "text": "Length in millimeters"}]
         },
@@ -25,6 +26,7 @@
           "modelType": "Property",
           "idShort": "Width",
           "valueType": "xs:integer",
+          "value": "75",
           "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/Millimeters"}]},
           "description": [{"language": "en", "text": "Width in millimeters"}]
         },
@@ -32,6 +34,7 @@
           "modelType": "Property",
           "idShort": "Height",
           "valueType": "xs:integer",
+          "value": "3",
           "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/Millimeters"}]},
           "description": [{"language": "en", "text": "Height in millimeters"}]
         },
@@ -39,19 +42,19 @@
           "modelType": "Property",
           "idShort": "Material",
           "valueType": "xs:string",
-          "description": [{"language": "en", "text": "Material type"}]
+          "description": [{"language": "en", "text": "Material type - configured at instance creation"}]
         },
         {
           "modelType": "Property",
           "idShort": "Color",
           "valueType": "xs:string",
-          "description": [{"language": "en", "text": "Color"}]
+          "description": [{"language": "en", "text": "Color - configured at instance creation"}]
         },
         {
           "modelType": "Property",
           "idShort": "Finish",
           "valueType": "xs:string",
-          "description": [{"language": "en", "text": "Surface finish"}]
+          "description": [{"language": "en", "text": "Surface finish - configured at instance creation"}]
         }
       ]
     }

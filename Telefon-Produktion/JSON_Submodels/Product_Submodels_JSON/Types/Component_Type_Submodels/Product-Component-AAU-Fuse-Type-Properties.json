@@ -18,6 +18,7 @@
           "modelType": "Property",
           "idShort": "Voltage_Rating",
           "valueType": "xs:integer",
+          "value": "250",
           "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/Volts"}]},
           "description": [{"language": "en", "text": "Maximum voltage rating in volts"}]
         },
@@ -25,6 +26,7 @@
           "modelType": "Property",
           "idShort": "Current_Rating",
           "valueType": "xs:double",
+          "value": "5.0",
           "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/Amperes"}]},
           "description": [{"language": "en", "text": "Current rating in amperes"}]
         },
@@ -32,6 +34,7 @@
           "modelType": "Property",
           "idShort": "Type",
           "valueType": "xs:string",
+          "value": "Fast-acting",
           "description": [{"language": "en", "text": "Fuse type (e.g., fast-acting, slow-blow)"}]
         }
       ]
