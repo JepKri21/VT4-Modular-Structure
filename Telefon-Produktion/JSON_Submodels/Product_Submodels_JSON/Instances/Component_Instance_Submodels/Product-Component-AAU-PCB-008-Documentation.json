@@ -1,0 +1,67 @@
+{
+  "idShort": "Documentation",
+  "semanticId": {
+    "type": "ExternalReference",
+    "keys": [
+      {
+        "type": "GlobalReference",
+        "value": "https://aausmartlab.com/Data/Documentation"
+      }
+    ]
+  },
+  "id": "https://aausmartlab.com/Assets/Product/Component/AAU/PCB/008/Documentation",
+  "description": [
+    {
+      "language": "en",
+      "text": "Documentation for PCB component type"
+    }
+  ],
+  "submodelElements": [
+    {
+      "modelType": "Property",
+      "idShort": "Product_Name",
+      "valueType": "xs:string",
+      "value": "Printed Circuit Board"
+    },
+    {
+      "modelType": "Property",
+      "idShort": "Product_Type",
+      "valueType": "xs:string",
+      "value": "Component"
+    },
+    {
+      "modelType": "MultiLanguageProperty",
+      "idShort": "Description",
+      "value": [
+        {
+          "language": "en",
+          "text": "Printed circuit board with mounting points for 1-3 fuses"
+        }
+      ]
+    },
+    {
+      "modelType": "Property",
+      "idShort": "Instance_Number",
+      "valueType": "xs:string",
+      "value": "",
+      "description": [
+        {
+          "language": "en",
+          "text": "Filled in at instance creation"
+        }
+      ]
+    },
+    {
+      "modelType": "Property",
+      "idShort": "Created_Date",
+      "valueType": "xs:string",
+      "value": "",
+      "description": [
+        {
+          "language": "en",
+          "text": "Date the instance was created (YYYY-MM-DD)"
+        }
+      ]
+    }
+  ]
+}

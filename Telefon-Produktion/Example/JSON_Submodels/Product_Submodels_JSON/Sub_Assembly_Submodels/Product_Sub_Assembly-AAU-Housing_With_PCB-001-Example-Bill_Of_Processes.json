@@ -18,105 +18,7 @@
               "text": "Ordered list of operations required to manufacture and assemble the product."
             }
           ],
-      "value" : [
-        {
-          "modelType": "SubmodelElementCollection",
-          "idShort": "Transport",
-          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Operations/Drilling"}]},
-          "description": [
-            {
-              "language": "en",
-              "text": "List of parameters to perform Transport process."
-            }
-          ],
-          "value": [
-            {
-              "modelType": "Property",
-              "idShort": "Process_Id",
-              "valueType": "xs:string",
-              "value": "Transport_1"
-            },
-            {
-              "modelType": "SubmodelElementCollection",
-              "idShort": "Execution_Constraints",
-              "value": [
-                {
-                    "modelType": "Property",
-                    "idShort": "Constraint_Id",
-                    "valueType": "xs:string",
-                    "value": ""
-                }
-              ]
-            },
-            {
-              "modelType": "SubmodelElementCollection",
-              "idShort": "Parameters",
-              "value": [
-                {
-                  "modelType": "Property",
-                  "idShort": "Component_Type",
-                  "valueType": "xs:string",
-                  "value": "Bottom_Cover_1"
-                },
-                {
-                  "modelType": "Property",
-                  "idShort": "To",
-                  "valueType": "xs:string",
-                  "value": "Assemble_1"
-                }
-              ]
-            }
-          ] 
-        },
-        {
-          "modelType": "SubmodelElementCollection",
-          "idShort": "Transport",
-          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Operations/Drilling"}]},
-          "description": [
-            {
-              "language": "en",
-              "text": "List of parameters to perform Transport process."
-            }
-          ],
-          "value": [
-            {
-              "modelType": "Property",
-              "idShort": "Process_Id",
-              "valueType": "xs:string",
-              "value": "Transport_2"
-            },
-            {
-              "modelType": "SubmodelElementCollection",
-              "idShort": "Execution_Constraints",
-              "value": [
-                {
-                    "modelType": "Property",
-                    "idShort": "Constraint_Id",
-                    "valueType": "xs:string",
-                    "value": ""
-                }
-              ]
-            },
-            {
-              "modelType": "SubmodelElementCollection",
-              "idShort": "Parameters",
-              "value": [
-                {
-                  "modelType": "Property",
-                  "idShort": "Component_Type",
-                  "valueType": "xs:string",
-                  "value": "PCB_1"
-                },
-                {
-                  "modelType": "Property",
-                  "idShort": "To",
-                  "valueType": "xs:string",
-                  "value": "Assemble_1"
-                }
-              ]
-            }
-          ] 
-        },
+      "value" : [        
         {
           "modelType": "SubmodelElementCollection",
           "idShort": "Assemble",
@@ -142,13 +44,13 @@
                     "modelType": "Property",
                     "idShort": "Constraint_Id",
                     "valueType": "xs:string",
-                    "value": "Transport_1"
+                    "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover"
                 },
                 {
                     "modelType": "Property",
                     "idShort": "Constraint_Id",
                     "valueType": "xs:string",
-                    "value": "Transport_2"
+                    "value": "https://aausmartlab.com/Assets/Product/Component/AAU/PCB"
                 }
               ]
             },
@@ -163,49 +65,6 @@
                   "value": "Assemble_Housing_With_PCB"
                 }
               ]
-            }
-          ] 
-        },
-        {
-          "modelType": "SubmodelElementCollection",
-          "idShort": "Retrieve",
-          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Operations/Drilling"}]},
-          "description": [
-            {
-              "language": "en",
-              "text": "List of parameters to perform Assemble process."
-            }
-          ],
-          "value": [
-            {
-              "modelType": "Property",
-              "idShort": "Process_Id",
-              "valueType": "xs:string",
-              "value": "Retrieve_1"
-            },
-            {
-              "modelType": "SubmodelElementCollection",
-              "idShort": "Execution_Constraints",
-              "value": [
-                {
-                    "modelType": "Property",
-                    "idShort": "Constraint_Id",
-                    "valueType": "xs:string",
-                    "value": "Assemble_1"
-                }
-              ]
-            },
-            {
-              "modelType": "Property",
-              "idShort": "Component_Type",
-              "valueType": "xs:string",
-              "value": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Housing_With_PCB"
-            },
-            {
-              "modelType": "Property",
-              "idShort": "To",
-              "valueType": "xs:string",
-              "value": "Transport_3"
             }
           ] 
         }

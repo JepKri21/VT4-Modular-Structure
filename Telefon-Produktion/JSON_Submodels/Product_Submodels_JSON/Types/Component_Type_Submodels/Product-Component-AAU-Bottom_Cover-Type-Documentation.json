@@ -26,6 +26,20 @@
           "text": "Bottom housing cover component - configurable material, color, and finish"
         }
       ]
+    },
+    {
+      "modelType": "Property",
+      "idShort": "Instance_Number",
+      "valueType": "xs:string",
+      "value": "",
+      "description": [{"language": "en", "text": "Filled in at instance creation"}]
+    },
+    {
+      "modelType": "Property",
+      "idShort": "Created_Date",
+      "valueType": "xs:string",
+      "value": "",
+      "description": [{"language": "en", "text": "Date the instance was created (YYYY-MM-DD)"}]
     }
   ]
 }

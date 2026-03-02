@@ -60,6 +60,20 @@
       "valueType": "xs:string",
       "value": "Configurable",
       "description": [{"language": "en", "text": "Indicates this product type supports configuration"}]
+    },
+    {
+      "modelType": "Property",
+      "idShort": "Instance_Number",
+      "valueType": "xs:string",
+      "value": "",
+      "description": [{"language": "en", "text": "Filled in at instance creation"}]
+    },
+    {
+      "modelType": "Property",
+      "idShort": "Created_Date",
+      "valueType": "xs:string",
+      "value": "",
+      "description": [{"language": "en", "text": "Date the instance was created (YYYY-MM-DD)"}]
     }
   ]
 }

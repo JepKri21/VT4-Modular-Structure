@@ -1,0 +1,99 @@
+{
+  "idShort": "Properties",
+  "semanticId": {
+    "type": "ExternalReference",
+    "keys": [
+      {
+        "type": "GlobalReference",
+        "value": "https://aausmartlab.com/Data/Parts/Variants"
+      }
+    ]
+  },
+  "id": "https://aausmartlab.com/Assets/Product/Component/AAU/Fuse/010/Properties",
+  "description": [
+    {
+      "language": "en",
+      "text": "Property structure definition for Fuse type"
+    }
+  ],
+  "submodelElements": [
+    {
+      "modelType": "SubmodelElementList",
+      "idShort": "List_Of_Properties",
+      "semanticId": {
+        "type": "ExternalReference",
+        "keys": [
+          {
+            "type": "GlobalReference",
+            "value": "https://aausmartlab.com/Submodels/List_Of_Properties"
+          }
+        ]
+      },
+      "typeValueListElement": "SubmodelElementCollection",
+      "valueTypeListElement": null,
+      "orderRelevant": true,
+      "description": [
+        {
+          "language": "en",
+          "text": "Structure defining properties for fuse component"
+        }
+      ],
+      "value": [
+        {
+          "modelType": "Property",
+          "idShort": "Voltage_Rating",
+          "valueType": "xs:integer",
+          "value": "250",
+          "semanticId": {
+            "type": "ExternalReference",
+            "keys": [
+              {
+                "type": "GlobalReference",
+                "value": "https://aausmartlab.com/Units/Volts"
+              }
+            ]
+          },
+          "description": [
+            {
+              "language": "en",
+              "text": "Maximum voltage rating in volts"
+            }
+          ]
+        },
+        {
+          "modelType": "Property",
+          "idShort": "Current_Rating",
+          "valueType": "xs:double",
+          "value": "5.0",
+          "semanticId": {
+            "type": "ExternalReference",
+            "keys": [
+              {
+                "type": "GlobalReference",
+                "value": "https://aausmartlab.com/Units/Amperes"
+              }
+            ]
+          },
+          "description": [
+            {
+              "language": "en",
+              "text": "Current rating in amperes"
+            }
+          ]
+        },
+        {
+          "modelType": "Property",
+          "idShort": "Type",
+          "valueType": "xs:string",
+          "value": "Fast-acting",
+          "description": [
+            {
+              "language": "en",
+              "text": "Fuse type (e.g., fast-acting, slow-blow)"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

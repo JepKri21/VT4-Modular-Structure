@@ -1,0 +1,38 @@
+{
+  "idShort": "Top_Cover",
+  "id": "https://aausmartlab.com/Assets/Product/Component/AAU/Top_Cover/006",
+  "modelType": "AssetAdministrationShell",
+  "assetInformation": {
+    "assetKind": "Instance",
+    "globalAssetId": "https://aausmartlab.com/Assets/Product/AAU/Top_Cover/006"
+  },
+  "submodels": [
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Top_Cover/006/Documentation"
+        }
+      ]
+    },
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Top_Cover/006/Bill_Of_Processes"
+        }
+      ]
+    },
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Top_Cover/006/Properties"
+        }
+      ]
+    }
+  ]
+}

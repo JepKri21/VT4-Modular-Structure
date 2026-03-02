@@ -1,0 +1,67 @@
+{
+  "idShort": "Documentation",
+  "semanticId": {
+    "type": "ExternalReference",
+    "keys": [
+      {
+        "type": "GlobalReference",
+        "value": "https://aausmartlab.com/Data/Documentation"
+      }
+    ]
+  },
+  "id": "https://aausmartlab.com/Assets/Product/Component/AAU/Top_Cover/008/Documentation",
+  "description": [
+    {
+      "language": "en",
+      "text": "Documentation for Top_Cover component type"
+    }
+  ],
+  "submodelElements": [
+    {
+      "modelType": "Property",
+      "idShort": "Product_Name",
+      "valueType": "xs:string",
+      "value": "Top Cover"
+    },
+    {
+      "modelType": "Property",
+      "idShort": "Product_Type",
+      "valueType": "xs:string",
+      "value": "Component"
+    },
+    {
+      "modelType": "MultiLanguageProperty",
+      "idShort": "Description",
+      "value": [
+        {
+          "language": "en",
+          "text": "Top housing cover component - configurable material, color, and finish"
+        }
+      ]
+    },
+    {
+      "modelType": "Property",
+      "idShort": "Instance_Number",
+      "valueType": "xs:string",
+      "value": "",
+      "description": [
+        {
+          "language": "en",
+          "text": "Filled in at instance creation"
+        }
+      ]
+    },
+    {
+      "modelType": "Property",
+      "idShort": "Created_Date",
+      "valueType": "xs:string",
+      "value": "",
+      "description": [
+        {
+          "language": "en",
+          "text": "Date the instance was created (YYYY-MM-DD)"
+        }
+      ]
+    }
+  ]
+}

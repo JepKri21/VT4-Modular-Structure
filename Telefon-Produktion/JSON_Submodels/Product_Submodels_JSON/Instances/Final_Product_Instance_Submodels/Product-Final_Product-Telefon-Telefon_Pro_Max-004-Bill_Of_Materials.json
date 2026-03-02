@@ -1,0 +1,243 @@
+{
+  "idShort": "Bill_Of_Materials",
+  "semanticId": {
+    "type": "ExternalReference",
+    "keys": [
+      {
+        "type": "GlobalReference",
+        "value": "https://aausmartlab.com/Data/BOM"
+      }
+    ]
+  },
+  "id": "https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max/004/Bill_Of_Materials",
+  "description": [
+    {
+      "language": "en",
+      "text": "Bill of Materials structure defining what components make up a Telefon_Pro_Max"
+    }
+  ],
+  "submodelElements": [
+    {
+      "modelType": "SubmodelElementList",
+      "idShort": "Components",
+      "semanticId": {
+        "type": "ExternalReference",
+        "keys": [
+          {
+            "type": "GlobalReference",
+            "value": "https://aausmartlab.com/Submodels/BOM/Components"
+          }
+        ]
+      },
+      "typeValueListElement": "SubmodelElementCollection",
+      "valueTypeListElement": null,
+      "orderRelevant": true,
+      "description": [
+        {
+          "language": "en",
+          "text": "List of components required to build the product"
+        }
+      ],
+      "value": [
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Bottom_Cover",
+          "semanticId": {
+            "type": "ExternalReference",
+            "keys": [
+              {
+                "type": "GlobalReference",
+                "value": "https://aausmartlab.com/Components/Bottom_Cover"
+              }
+            ]
+          },
+          "description": [
+            {
+              "language": "en",
+              "text": "Bottom housing cover"
+            }
+          ],
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Component_Type",
+              "valueType": "xs:string",
+              "value": "Product-Component-AAU-Bottom_Cover"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Quantity",
+              "valueType": "xs:integer",
+              "value": "1"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Is_Configurable",
+              "valueType": "xs:boolean",
+              "value": "true",
+              "description": [
+                {
+                  "language": "en",
+                  "text": "This component has configurable options (material, color, finish)"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Top_Cover",
+          "semanticId": {
+            "type": "ExternalReference",
+            "keys": [
+              {
+                "type": "GlobalReference",
+                "value": "https://aausmartlab.com/Components/Top_Cover"
+              }
+            ]
+          },
+          "description": [
+            {
+              "language": "en",
+              "text": "Top housing cover"
+            }
+          ],
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Component_Type",
+              "valueType": "xs:string",
+              "value": "Product-Component-AAU-Top_Cover"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Quantity",
+              "valueType": "xs:integer",
+              "value": "1"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Is_Configurable",
+              "valueType": "xs:boolean",
+              "value": "true",
+              "description": [
+                {
+                  "language": "en",
+                  "text": "This component has configurable options (material, color, finish)"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "PCB",
+          "semanticId": {
+            "type": "ExternalReference",
+            "keys": [
+              {
+                "type": "GlobalReference",
+                "value": "https://aausmartlab.com/Components/PCB"
+              }
+            ]
+          },
+          "description": [
+            {
+              "language": "en",
+              "text": "Printed Circuit Board"
+            }
+          ],
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Component_Type",
+              "valueType": "xs:string",
+              "value": "Product-Component-AAU-PCB"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Quantity",
+              "valueType": "xs:integer",
+              "value": "1"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Is_Configurable",
+              "valueType": "xs:boolean",
+              "value": "false",
+              "description": [
+                {
+                  "language": "en",
+                  "text": "This component is not configurable"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Fuse",
+          "semanticId": {
+            "type": "ExternalReference",
+            "keys": [
+              {
+                "type": "GlobalReference",
+                "value": "https://aausmartlab.com/Components/Fuse"
+              }
+            ]
+          },
+          "description": [
+            {
+              "language": "en",
+              "text": "Electrical fuse"
+            }
+          ],
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Component_Type",
+              "valueType": "xs:string",
+              "value": "Product-Component-AAU-Fuse"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Quantity_Min",
+              "valueType": "xs:integer",
+              "value": "1",
+              "description": [
+                {
+                  "language": "en",
+                  "text": "Minimum quantity required"
+                }
+              ]
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Quantity_Max",
+              "valueType": "xs:integer",
+              "value": "3",
+              "description": [
+                {
+                  "language": "en",
+                  "text": "Maximum quantity allowed"
+                }
+              ]
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Is_Configurable",
+              "valueType": "xs:boolean",
+              "value": "true",
+              "description": [
+                {
+                  "language": "en",
+                  "text": "This component has configurable quantity"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

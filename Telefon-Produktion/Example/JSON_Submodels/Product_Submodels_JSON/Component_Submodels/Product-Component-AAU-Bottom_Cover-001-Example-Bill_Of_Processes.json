@@ -18,106 +18,7 @@
               "text": "Ordered list of operations required to manufacture and assemble the product."
             }
           ],
-      "value" : [
-        {
-          "modelType": "SubmodelElementCollection",
-          "idShort": "Retrieve",
-          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Operations/Drilling"}]},
-          "description": [
-            {
-              "language": "en",
-              "text": "List of parameters to perform Retrieve process."
-            }
-          ],
-          "value": [
-            {
-              "modelType": "Property",
-              "idShort": "Process_Id",
-              "valueType": "xs:string",
-              "value": "Retrieve_1"
-            },
-            {
-              "modelType": "SubmodelElementCollection",
-              "idShort": "Execution_Constraints",
-              "value": [
-                {
-                    "modelType": "Property",
-                    "idShort": "Constraint_Id",
-                    "valueType": "xs:string",
-                    "value": ""
-                }
-              ]
-            },
-            {
-              "modelType": "SubmodelElementCollection",
-              "idShort": "Parameters",
-              "value": [
-                {
-                  "modelType": "Property",
-                  "idShort": "Component_Type",
-                  "valueType": "xs:string",
-                  "value": "https://aausmartlab.com/Asset/Product/Component/AAU/Bottom_Cover"
-                },
-                {
-                  "modelType": "Property",
-                  "idShort": "To",
-                  "valueType": "xs:string",
-                  "value": "Transport_1"
-                }
-              ]
-            }
-          ] 
-        },
-        {
-          "modelType": "SubmodelElementCollection",
-          "idShort": "Transport",
-          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Operations/Drilling"}]},
-          "description": [
-            {
-              "language": "en",
-              "text": "List of parameters to perform Transport process."
-            }
-          ],
-          "value": [
-            {
-              "modelType": "Property",
-              "idShort": "Process_Id",
-              "valueType": "xs:string",
-              "value": "Transport_1"
-            },
-            {
-              "modelType": "SubmodelElementCollection",
-              "idShort": "Execution_Constraints",
-              "value": [
-                {
-                    "modelType": "Property",
-                    "idShort": "Constraint_Id",
-                    "valueType": "xs:string",
-                    "value": "Retrieve_1"
-                }
-              ]
-            },
-            {
-              "modelType": "SubmodelElementCollection",
-              "idShort": "Parameters",
-              "value": [
-                {
-                  "modelType": "Property",
-                  "idShort": "Component_Type",
-                  "valueType": "xs:string",
-                  "value": "https://aausmartlab.com/Asset/Product/Component/AAU/Bottom_Cover"
-                },
-                {
-                  "modelType": "Property",
-                  "idShort": "To",
-                  "valueType": "xs:string",
-                  "value": "Drilling_1"
-                }
-              ]
-            }
-            
-          ] 
-        },
+      "value" : [        
         {
           "modelType": "SubmodelElementCollection",
           "idShort": "Drilling",
@@ -143,7 +44,7 @@
                     "modelType": "Property",
                     "idShort": "Constraint_Id",
                     "valueType": "xs:string",
-                    "value": "Transport_1"
+                    "value": ""
                 }
               ]
             },
@@ -162,55 +63,6 @@
                   "idShort": "Selected_Operation",
                   "valueType": "xs:string",
                   "value": "Bottom_Cover_Operation_1"
-                }
-              ]
-            }
-          ] 
-        },
-        {
-          "modelType": "SubmodelElementCollection",
-          "idShort": "Retrieve",
-          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Operations/Drilling"}]},
-          "description": [
-            {
-              "language": "en",
-              "text": "List of parameters to perform Retrieve process."
-            }
-          ],
-          "value": [
-            {
-              "modelType": "Property",
-              "idShort": "Process_Id",
-              "valueType": "xs:string",
-              "value": "Retrieve_2"
-            },
-            {
-              "modelType": "SubmodelElementCollection",
-              "idShort": "Execution_Constraints",
-              "value": [
-                {
-                    "modelType": "Property",
-                    "idShort": "Constraint_Id",
-                    "valueType": "xs:string",
-                    "value": "Drilling_1"
-                }
-              ]
-            },
-            {
-              "modelType": "SubmodelElementCollection",
-              "idShort": "Parameters",
-              "value": [
-                {
-                  "modelType": "Property",
-                  "idShort": "Component_Type",
-                  "valueType": "xs:string",
-                  "value": "https://aausmartlab.com/Asset/Product/Component/AAU/Bottom_Cover"
-                },
-                {
-                  "modelType": "Property",
-                  "idShort": "To",
-                  "valueType": "xs:string",
-                  "value": "Transport_2"
                 }
               ]
             }

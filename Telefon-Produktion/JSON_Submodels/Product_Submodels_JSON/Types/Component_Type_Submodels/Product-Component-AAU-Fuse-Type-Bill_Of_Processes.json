@@ -1,44 +1,40 @@
 {
   "idShort": "Bill_Of_Processes",
-  "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/BOP"}]},
+  "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/BillOfOperations"}]},
   "id": "https://aausmartlab.com/Assets/Product/Component/AAU/Fuse/Type/Bill_Of_Processes",
-  "description": [{"language": "en", "text": "Generic process structure for Fuse component"}],
+  "description": [{"language": "en", "text": "List of manufacturing and assembly operations for the product."}],
 
   "submodelElements": [
     {
       "modelType": "SubmodelElementList",
-      "idShort": "Process_Categories",
-      "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Submodels/BOP/ProcessCategories"}]},
+      "idShort": "List_Of_Processes",
+      "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Submodel/Bill/List_Of_Processes"}]},
       "typeValueListElement": "SubmodelElementCollection",
       "valueTypeListElement": null,
       "orderRelevant": true,
+      "description": [{"language": "en", "text": "Ordered list of operations required to manufacture and assemble the product."}],
       "value": [
         {
           "modelType": "SubmodelElementCollection",
-          "idShort": "Quality_Inspection",
+          "idShort": "Retrieve",
+          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Operations/Retrieve"}]},
+          "description": [{"language": "en", "text": "List of parameters to perform Retrieve process."}],
           "value": [
+            {"modelType": "Property", "idShort": "Process_Id", "valueType": "xs:string", "value": "Retrieve_1"},
             {
-              "modelType": "Property",
-              "idShort": "Category_Name",
-              "valueType": "xs:string",
-              "value": "Quality Inspection"
+              "modelType": "SubmodelElementCollection",
+              "idShort": "Execution_Constraints",
+              "value": [
+                {"modelType": "Property", "idShort": "Constraint_Id", "valueType": "xs:string", "value": ""}
+              ]
             },
             {
-              "modelType": "Property",
-              "idShort": "Required_For_All",
-              "valueType": "xs:boolean",
-              "value": "true"
-            },
-            {
-              "modelType": "MultiLanguageProperty",
-              "idShort": "Description",
-              "value": [{"language": "en", "text": "Visual and electrical testing of fuse"}]
-            },
-            {
-              "modelType": "Property",
-              "idShort": "Configuration_Dependent",
-              "valueType": "xs:boolean",
-              "value": "false"
+              "modelType": "SubmodelElementCollection",
+              "idShort": "Parameters",
+              "value": [
+                {"modelType": "Property", "idShort": "Component_Type", "valueType": "xs:string", "value": "https://aausmartlab.com/Asset/Product/Component/AAU/Fuse"},
+                {"modelType": "Property", "idShort": "To", "valueType": "xs:string", "value": "Transport_1"}
+              ]
             }
           ]
         }

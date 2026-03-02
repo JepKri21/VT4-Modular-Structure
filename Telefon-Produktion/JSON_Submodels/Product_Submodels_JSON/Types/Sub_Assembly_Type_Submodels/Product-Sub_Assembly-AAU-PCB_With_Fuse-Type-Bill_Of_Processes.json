@@ -1,44 +1,98 @@
 {
   "idShort": "Bill_Of_Processes",
-  "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/BOP"}]},
+  "semanticId": {
+    "type": "ExternalReference",
+    "keys": [
+      {
+        "type": "GlobalReference",
+        "value": "https://aausmartlab.com/Data/BillOfOperations"
+      }
+    ]
+  },
   "id": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/PCB_With_Fuse/Type/Bill_Of_Processes",
-  "description": [{"language": "en", "text": "Generic process structure for PCB_With_Fuse sub-assembly"}],
-
+  "description": [
+    {
+      "language": "en",
+      "text": "List of manufacturing and assembly operations for the product."
+    }
+  ],
   "submodelElements": [
     {
       "modelType": "SubmodelElementList",
-      "idShort": "Process_Categories",
-      "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Submodels/BOP/ProcessCategories"}]},
+      "idShort": "List_Of_Processes",
+      "semanticId": {
+        "type": "ExternalReference",
+        "keys": [
+          {
+            "type": "GlobalReference",
+            "value": "https://aausmartlab.com/Submodel/Bill/List_Of_Processes"
+          }
+        ]
+      },
       "typeValueListElement": "SubmodelElementCollection",
       "valueTypeListElement": null,
       "orderRelevant": true,
+      "description": [
+        {
+          "language": "en",
+          "text": "Ordered list of operations required to manufacture and assemble the product."
+        }
+      ],
       "value": [
         {
           "modelType": "SubmodelElementCollection",
-          "idShort": "Fuse_Assembly",
+          "idShort": "Assemble",
+          "semanticId": {
+            "type": "ExternalReference",
+            "keys": [
+              {
+                "type": "GlobalReference",
+                "value": "https://aausmartlab.com/Operations/Assemble"
+              }
+            ]
+          },
+          "description": [
+            {
+              "language": "en",
+              "text": "List of parameters to perform Assemble process."
+            }
+          ],
           "value": [
             {
               "modelType": "Property",
-              "idShort": "Category_Name",
+              "idShort": "Process_Id",
               "valueType": "xs:string",
-              "value": "Fuse Assembly"
+              "value": "Assemble_1"
             },
             {
-              "modelType": "Property",
-              "idShort": "Required_For_All",
-              "valueType": "xs:boolean",
-              "value": "true"
+              "modelType": "SubmodelElementCollection",
+              "idShort": "Execution_Constraints",
+              "value": [
+                {
+                  "modelType": "Property",
+                  "idShort": "Constraint_Id",
+                  "valueType": "xs:string",
+                  "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Fuse"
+                },
+                {
+                  "modelType": "Property",
+                  "idShort": "Constraint_Id",
+                  "valueType": "xs:string",
+                  "value": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Housing_With_PCB"
+                }
+              ]
             },
             {
-              "modelType": "MultiLanguageProperty",
-              "idShort": "Description",
-              "value": [{"language": "en", "text": "Mounting fuses onto PCB - number of operations varies (1-3 fuses)"}]
-            },
-            {
-              "modelType": "Property",
-              "idShort": "Configuration_Dependent",
-              "valueType": "xs:boolean",
-              "value": "true"
+              "modelType": "SubmodelElementCollection",
+              "idShort": "Parameters",
+              "value": [
+                {
+                  "modelType": "Property",
+                  "idShort": "Selected_Operation",
+                  "valueType": "xs:string",
+                  "value": "Assemble_Housing_With_PCB"
+                }
+              ]
             }
           ]
         }

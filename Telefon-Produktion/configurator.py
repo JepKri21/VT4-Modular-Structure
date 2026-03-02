@@ -88,6 +88,18 @@ class TelefonConfigurator:
                 "Documentation": "Product-Component-AAU-Fuse-Type-Documentation.json",
                 "Bill_Of_Processes": "Product-Component-AAU-Fuse-Type-Bill_Of_Processes.json",
             },
+            "PCB_With_Fuse": {
+                "Properties": "Product-Sub_Assembly-AAU-PCB_With_Fuse-Type-Properties.json",
+                "Bill_Of_Materials": "Product-Sub_Assembly-AAU-PCB_With_Fuse-Type-Bill_Of_Materials.json",
+                "Documentation": "Product-Sub_Assembly-AAU-PCB_With_Fuse-Type-Documentation.json",
+                "Bill_Of_Processes": "Product-Sub_Assembly-AAU-PCB_With_Fuse-Type-Bill_Of_Processes.json",
+            },
+            "Housing_With_PCB": {
+                "Properties": "Product-Sub_Assembly-AAU-Housing_With_PCB-Type-Properties.json",
+                "Bill_Of_Materials": "Product-Sub_Assembly-AAU-Housing_With_PCB-Type-Bill_Of_Materials.json",
+                "Documentation": "Product-Sub_Assembly-AAU-Housing_With_PCB-Type-Documentation.json",
+                "Bill_Of_Processes": "Product-Sub_Assembly-AAU-Housing_With_PCB-Type-Bill_Of_Processes.json",
+            },
         }
         
         # Determine folder based on product type
@@ -134,6 +146,129 @@ class TelefonConfigurator:
                     prop['value'] = config_overrides[prop['idShort']]
         
         return property_list
+    
+    def _get_type_bill_of_processes(self, product_type: str, instance_id: str) -> Dict[str, Any]:
+        """Build a Bill_Of_Processes instance submodel matching the Example format.
+
+        Uses List_Of_Processes with Process_Id, Execution_Constraints and Parameters
+        for each asset type's main process.
+
+        Args:
+            product_type: The product type (e.g., "Bottom_Cover", "PCB")
+            instance_id: The instance ID to use in the BOP
+
+        Returns:
+            Complete Bill_Of_Processes submodel in List_Of_Processes format
+        """
+        # --- Define main process steps per asset type ---
+        def _assemble_step(process_id: str, constraints: List[str], selected_operation: str) -> Dict:
+            return {
+                "modelType": "SubmodelElementCollection",
+                "idShort": "Assemble",
+                "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Operations/Assemble"}]},
+                "description": [{"language": "en", "text": "List of parameters to perform Assemble process."}],
+                "value": [
+                    {"modelType": "Property", "idShort": "Process_Id", "valueType": "xs:string", "value": process_id},
+                    {
+                        "modelType": "SubmodelElementCollection",
+                        "idShort": "Execution_Constraints",
+                        "value": [
+                            {"modelType": "Property", "idShort": "Constraint_Id", "valueType": "xs:string", "value": c}
+                            for c in constraints
+                        ]
+                    },
+                    {
+                        "modelType": "SubmodelElementCollection",
+                        "idShort": "Parameters",
+                        "value": [
+                            {"modelType": "Property", "idShort": "Selected_Operation", "valueType": "xs:string", "value": selected_operation}
+                        ]
+                    }
+                ]
+            }
+
+        process_steps_map = {
+            "Bottom_Cover": [
+                {
+                    "modelType": "SubmodelElementCollection",
+                    "idShort": "Drilling",
+                    "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Operations/Drilling"}]},
+                    "description": [{"language": "en", "text": "List of parameters to perform Drilling process."}],
+                    "value": [
+                        {"modelType": "Property", "idShort": "Process_Id", "valueType": "xs:string", "value": "Drilling_1"},
+                        {
+                            "modelType": "SubmodelElementCollection",
+                            "idShort": "Execution_Constraints",
+                            "value": [
+                                {"modelType": "Property", "idShort": "Constraint_Id", "valueType": "xs:string", "value": ""}
+                            ]
+                        },
+                        {
+                            "modelType": "SubmodelElementCollection",
+                            "idShort": "Parameters",
+                            "value": [
+                                {"modelType": "Property", "idShort": "Component_Type", "valueType": "xs:string", "value": "https://aausmartlab.com/Asset/Product/Component/AAU/Bottom_Cover"},
+                                {"modelType": "Property", "idShort": "Selected_Operation", "valueType": "xs:string", "value": "Bottom_Cover_Operation_1"}
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "Top_Cover": [{}],
+            "PCB": [{}],
+            "Fuse": [{}],
+            "PCB_With_Fuse": [
+                _assemble_step(
+                    "Assemble_1",
+                    [
+                        "https://aausmartlab.com/Assets/Product/Component/AAU/Fuse",
+                        "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Housing_With_PCB"
+                    ],
+                    "Assemble_Housing_With_PCB"
+                )
+            ],
+            "Housing_With_PCB": [
+                _assemble_step(
+                    "Assemble_1",
+                    [
+                        "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover",
+                        "https://aausmartlab.com/Assets/Product/Component/AAU/PCB"
+                    ],
+                    "Assemble_Housing_With_PCB"
+                )
+            ],
+            "Telefon": [
+                _assemble_step(
+                    "Assemble_1",
+                    [
+                        "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/PCB_With_Fuse",
+                        "https://aausmartlab.com/Assets/Product/Component/AAU/Top_Cover"
+                    ],
+                    "Assemble_Final_Telefon"
+                )
+            ],
+        }
+
+        process_steps = process_steps_map.get(product_type, [{}])
+
+        return {
+            "idShort": "Bill_Of_Processes",
+            "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/BillOfOperations"}]},
+            "id": f"{instance_id}/Bill_Of_Processes",
+            "description": [{"language": "en", "text": "List of manufacturing and assembly operations for the product."}],
+            "submodelElements": [
+                {
+                    "modelType": "SubmodelElementList",
+                    "idShort": "List_Of_Processes",
+                    "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Submodel/Bill/List_Of_Processes"}]},
+                    "typeValueListElement": "SubmodelElementCollection",
+                    "valueTypeListElement": None,
+                    "orderRelevant": True,
+                    "description": [{"language": "en", "text": "Ordered list of operations required to manufacture and assemble the product."}],
+                    "value": process_steps
+                }
+            ]
+        }
     
     def get_next_instance_number(self, product_type: str) -> str:
         """Get the next available instance number for a product type."""
@@ -266,6 +401,7 @@ class TelefonConfigurator:
         
         self._create_telefon_properties(instance_num, config)
         self._create_telefon_bom(instance_num, config)
+        self._create_telefon_bill_of_processes(instance_num, config)
         self._create_telefon_documentation(instance_num)
         
         # 4. Update registry
@@ -467,6 +603,20 @@ class TelefonConfigurator:
         
         print(f"  ✓ Created Bill_Of_Materials submodel: {output_path.name}")
     
+    def _create_telefon_bill_of_processes(self, instance_num: str, config: Dict[str, Any]):
+        """Create the Telefon Bill_Of_Processes submodel."""
+        instance_id = f"https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max/{instance_num}"
+        
+        # Load Process_Categories from Telefon Type
+        bop = self._get_type_bill_of_processes("Telefon", instance_id)
+        
+        # Save Bill_Of_Processes
+        output_path = self.base_path / "JSON_Submodels" / "Product_Submodels_JSON" / "Instances" / "Final_Product_Instance_Submodels" / f"Product-Final_Product-Telefon-Telefon_Pro_Max-{instance_num}-Bill_Of_Processes.json"
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump(bop, f, indent=2, ensure_ascii=False)
+        
+        print(f"  ✓ Created Bill_Of_Processes submodel: {output_path.name}")
+    
     def _create_telefon_documentation(self, instance_num: str):
         """Create the Telefon Documentation submodel."""
         instance_id = f"https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max/{instance_num}"
@@ -575,14 +725,8 @@ class TelefonConfigurator:
         with open(doc_path, 'w', encoding='utf-8') as f:
             json.dump(doc, f, indent=2, ensure_ascii=False)
         
-        # Create Bill_Of_Processes submodel (copy from Type with instance ID)
-        bop = {
-            "idShort": "Bill_Of_Processes",
-            "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/BOP"}]},
-            "id": f"{instance_id}/Bill_Of_Processes",
-            "description": [{"language": "en", "text": "Process plan for this Bottom_Cover instance"}],
-            "submodelElements": []
-        }
+        # Create Bill_Of_Processes submodel (copy Process_Categories from Type)
+        bop = self._get_type_bill_of_processes("Bottom_Cover", instance_id)
         
         bop_path = self.base_path / "JSON_Submodels" / "Product_Submodels_JSON" / "Instances" / "Component_Instance_Submodels" / f"Product-Component-AAU-Bottom_Cover-{instance_num}-Bill_Of_Processes.json"
         with open(bop_path, 'w', encoding='utf-8') as f:
@@ -669,14 +813,8 @@ class TelefonConfigurator:
         with open(doc_path, 'w', encoding='utf-8') as f:
             json.dump(doc, f, indent=2, ensure_ascii=False)
         
-        # Create Bill_Of_Processes submodel
-        bop = {
-            "idShort": "Bill_Of_Processes",
-            "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/BOP"}]},
-            "id": f"{instance_id}/Bill_Of_Processes",
-            "description": [{"language": "en", "text": "Process plan for this Top_Cover instance"}],
-            "submodelElements": []
-        }
+        # Create Bill_Of_Processes submodel (copy Process_Categories from Type)
+        bop = self._get_type_bill_of_processes("Top_Cover", instance_id)
         
         bop_path = self.base_path / "JSON_Submodels" / "Product_Submodels_JSON" / "Instances" / "Component_Instance_Submodels" / f"Product-Component-AAU-Top_Cover-{instance_num}-Bill_Of_Processes.json"
         with open(bop_path, 'w', encoding='utf-8') as f:
@@ -756,13 +894,8 @@ class TelefonConfigurator:
         with open(doc_path, 'w', encoding='utf-8') as f:
             json.dump(doc, f, indent=2, ensure_ascii=False)
         
-        # Create Bill_Of_Processes submodel
-        bop = {
-            "idShort": "Bill_Of_Processes",
-            "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/BOP"}]},
-            "id": f"{instance_id}/Bill_Of_Processes",
-            "submodelElements": []
-        }
+        # Create Bill_Of_Processes submodel (copy Process_Categories from Type)
+        bop = self._get_type_bill_of_processes("PCB", instance_id)
         
         bop_path = self.base_path / "JSON_Submodels" / "Product_Submodels_JSON" / "Instances" / "Component_Instance_Submodels" / f"Product-Component-AAU-PCB-{instance_num}-Bill_Of_Processes.json"
         with open(bop_path, 'w', encoding='utf-8') as f:
@@ -845,13 +978,8 @@ class TelefonConfigurator:
             with open(doc_path, 'w', encoding='utf-8') as f:
                 json.dump(doc, f, indent=2, ensure_ascii=False)
             
-            # Create Bill_Of_Processes submodel
-            bop = {
-                "idShort": "Bill_Of_Processes",
-                "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/BOP"}]},
-                "id": f"{instance_id}/Bill_Of_Processes",
-                "submodelElements": []
-            }
+            # Create Bill_Of_Processes submodel (copy Process_Categories from Type)
+            bop = self._get_type_bill_of_processes("Fuse", instance_id)
             
             bop_path = self.base_path / "JSON_Submodels" / "Product_Submodels_JSON" / "Instances" / "Component_Instance_Submodels" / f"Product-Component-AAU-Fuse-{fuse_instance_num}-Bill_Of_Processes.json"
             with open(bop_path, 'w', encoding='utf-8') as f:
@@ -969,14 +1097,54 @@ class TelefonConfigurator:
         with open(doc_path, 'w', encoding='utf-8') as f:
             json.dump(doc, f, indent=2, ensure_ascii=False)
         
-        # Create Bill_Of_Processes submodel
+        # Create Bill_Of_Processes submodel — one Assemble step per fuse
+        assemble_steps = [
+            {
+                "modelType": "SubmodelElementCollection",
+                "idShort": "Assemble",
+                "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Operations/Assemble"}]},
+                "description": [{"language": "en", "text": "List of parameters to perform Assemble process."}],
+                "value": [
+                    {"modelType": "Property", "idShort": "Process_Id", "valueType": "xs:string", "value": f"Assemble_{i + 1}"},
+                    {
+                        "modelType": "SubmodelElementCollection",
+                        "idShort": "Execution_Constraints",
+                        "value": [
+                            {"modelType": "Property", "idShort": "Constraint_Id", "valueType": "xs:string", "value": fuse_id},
+                            {"modelType": "Property", "idShort": "Constraint_Id", "valueType": "xs:string", "value": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Housing_With_PCB"}
+                        ]
+                    },
+                    {
+                        "modelType": "SubmodelElementCollection",
+                        "idShort": "Parameters",
+                        "value": [
+                            {"modelType": "Property", "idShort": "Selected_Operation", "valueType": "xs:string", "value": "Assemble_Housing_With_PCB"}
+                        ]
+                    }
+                ]
+            }
+            for i, fuse_id in enumerate(fuse_ids)
+        ]
+
         bop = {
             "idShort": "Bill_Of_Processes",
-            "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/BOP"}]},
+            "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/BillOfOperations"}]},
             "id": f"{instance_id}/Bill_Of_Processes",
-            "submodelElements": []
+            "description": [{"language": "en", "text": "List of manufacturing and assembly operations for the product."}],
+            "submodelElements": [
+                {
+                    "modelType": "SubmodelElementList",
+                    "idShort": "List_Of_Processes",
+                    "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Submodel/Bill/List_Of_Processes"}]},
+                    "typeValueListElement": "SubmodelElementCollection",
+                    "valueTypeListElement": None,
+                    "orderRelevant": True,
+                    "description": [{"language": "en", "text": "Ordered list of operations required to manufacture and assemble the product."}],
+                    "value": assemble_steps
+                }
+            ]
         }
-        
+
         bop_path = self.base_path / "JSON_Submodels" / "Product_Submodels_JSON" / "Instances" / "Sub_Assembly_Instance_Submodels" / f"Product-Sub_Assembly-AAU-PCB_With_Fuse-{instance_num}-Bill_Of_Processes.json"
         with open(bop_path, 'w', encoding='utf-8') as f:
             json.dump(bop, f, indent=2, ensure_ascii=False)
@@ -1093,13 +1261,8 @@ class TelefonConfigurator:
         with open(doc_path, 'w', encoding='utf-8') as f:
             json.dump(doc, f, indent=2, ensure_ascii=False)
         
-        # Create Bill_Of_Processes submodel
-        bop = {
-            "idShort": "Bill_Of_Processes",
-            "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/BOP"}]},
-            "id": f"{instance_id}/Bill_Of_Processes",
-            "submodelElements": []
-        }
+        # Create Bill_Of_Processes submodel (copy Process_Categories from Type)
+        bop = self._get_type_bill_of_processes("Housing_With_PCB", instance_id)
         
         bop_path = self.base_path / "JSON_Submodels" / "Product_Submodels_JSON" / "Instances" / "Sub_Assembly_Instance_Submodels" / f"Product-Sub_Assembly-AAU-Housing_With_PCB-{instance_num}-Bill_Of_Processes.json"
         with open(bop_path, 'w', encoding='utf-8') as f:

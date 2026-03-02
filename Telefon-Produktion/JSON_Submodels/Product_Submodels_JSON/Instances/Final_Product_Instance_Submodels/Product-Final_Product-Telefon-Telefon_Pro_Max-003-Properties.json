@@ -1,0 +1,141 @@
+{
+  "idShort": "Properties",
+  "semanticId": {
+    "type": "ExternalReference",
+    "keys": [
+      {
+        "type": "GlobalReference",
+        "value": "https://aausmartlab.com/Data/Parts/Variants"
+      }
+    ]
+  },
+  "id": "https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max/003/Properties",
+  "description": [
+    {
+      "language": "en",
+      "text": "Property structure definition for Telefon_Pro_Max type"
+    }
+  ],
+  "submodelElements": [
+    {
+      "modelType": "SubmodelElementList",
+      "idShort": "List_Of_Properties",
+      "semanticId": {
+        "type": "ExternalReference",
+        "keys": [
+          {
+            "type": "GlobalReference",
+            "value": "https://aausmartlab.com/Submodels/List_Of_Properties"
+          }
+        ]
+      },
+      "typeValueListElement": "SubmodelElementCollection",
+      "valueTypeListElement": null,
+      "orderRelevant": true,
+      "description": [
+        {
+          "language": "en",
+          "text": "Structure defining what properties all Telefon_Pro_Max instances must have"
+        }
+      ],
+      "value": [
+        {
+          "modelType": "Property",
+          "idShort": "Length",
+          "valueType": "xs:integer",
+          "semanticId": {
+            "type": "ExternalReference",
+            "keys": [
+              {
+                "type": "GlobalReference",
+                "value": "https://aausmartlab.com/Units/Millimeters"
+              }
+            ]
+          },
+          "description": [
+            {
+              "language": "en",
+              "text": "Overall length of the phone in millimeters"
+            }
+          ]
+        },
+        {
+          "modelType": "Property",
+          "idShort": "Width",
+          "valueType": "xs:integer",
+          "semanticId": {
+            "type": "ExternalReference",
+            "keys": [
+              {
+                "type": "GlobalReference",
+                "value": "https://aausmartlab.com/Units/Millimeters"
+              }
+            ]
+          },
+          "description": [
+            {
+              "language": "en",
+              "text": "Overall width of the phone in millimeters"
+            }
+          ]
+        },
+        {
+          "modelType": "Property",
+          "idShort": "Height",
+          "valueType": "xs:integer",
+          "semanticId": {
+            "type": "ExternalReference",
+            "keys": [
+              {
+                "type": "GlobalReference",
+                "value": "https://aausmartlab.com/Units/Millimeters"
+              }
+            ]
+          },
+          "description": [
+            {
+              "language": "en",
+              "text": "Overall height of the phone in millimeters"
+            }
+          ]
+        },
+        {
+          "modelType": "Property",
+          "idShort": "Material",
+          "valueType": "xs:string",
+          "description": [
+            {
+              "language": "en",
+              "text": "Material used for the housing"
+            }
+          ],
+          "value": "PETG-7777"
+        },
+        {
+          "modelType": "Property",
+          "idShort": "Color",
+          "valueType": "xs:string",
+          "description": [
+            {
+              "language": "en",
+              "text": "Color of the phone housing"
+            }
+          ],
+          "value": "White"
+        },
+        {
+          "modelType": "Property",
+          "idShort": "Nr_Fuses",
+          "valueType": "xs:integer",
+          "description": [
+            {
+              "language": "en",
+              "text": "Number of fuses installed in the phone"
+            }
+          ],
+          "value": "1"
+        }
+      ]
+    }
+  ]
+}

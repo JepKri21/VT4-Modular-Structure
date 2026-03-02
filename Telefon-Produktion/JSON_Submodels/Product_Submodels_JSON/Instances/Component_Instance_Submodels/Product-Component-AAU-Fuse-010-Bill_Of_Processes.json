@@ -1,0 +1,102 @@
+{
+  "idShort": "Bill_Of_Processes",
+  "semanticId": {
+    "type": "ExternalReference",
+    "keys": [
+      {
+        "type": "GlobalReference",
+        "value": "https://aausmartlab.com/Data/BillOfOperations"
+      }
+    ]
+  },
+  "id": "https://aausmartlab.com/Assets/Product/Component/AAU/Fuse/010/Bill_Of_Processes",
+  "description": [
+    {
+      "language": "en",
+      "text": "List of manufacturing and assembly operations for the product."
+    }
+  ],
+  "submodelElements": [
+    {
+      "modelType": "SubmodelElementList",
+      "idShort": "List_Of_Processes",
+      "semanticId": {
+        "type": "ExternalReference",
+        "keys": [
+          {
+            "type": "GlobalReference",
+            "value": "https://aausmartlab.com/Submodel/Bill/List_Of_Processes"
+          }
+        ]
+      },
+      "typeValueListElement": "SubmodelElementCollection",
+      "valueTypeListElement": null,
+      "orderRelevant": true,
+      "description": [
+        {
+          "language": "en",
+          "text": "Ordered list of operations required to manufacture and assemble the product."
+        }
+      ],
+      "value": [
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Retrieve",
+          "semanticId": {
+            "type": "ExternalReference",
+            "keys": [
+              {
+                "type": "GlobalReference",
+                "value": "https://aausmartlab.com/Operations/Retrieve"
+              }
+            ]
+          },
+          "description": [
+            {
+              "language": "en",
+              "text": "List of parameters to perform Retrieve process."
+            }
+          ],
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Process_Id",
+              "valueType": "xs:string",
+              "value": "Retrieve_1"
+            },
+            {
+              "modelType": "SubmodelElementCollection",
+              "idShort": "Execution_Constraints",
+              "value": [
+                {
+                  "modelType": "Property",
+                  "idShort": "Constraint_Id",
+                  "valueType": "xs:string",
+                  "value": ""
+                }
+              ]
+            },
+            {
+              "modelType": "SubmodelElementCollection",
+              "idShort": "Parameters",
+              "value": [
+                {
+                  "modelType": "Property",
+                  "idShort": "Component_Type",
+                  "valueType": "xs:string",
+                  "value": "https://aausmartlab.com/Asset/Product/Component/AAU/Fuse"
+                },
+                {
+                  "modelType": "Property",
+                  "idShort": "To",
+                  "valueType": "xs:string",
+                  "value": "Transport_1"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
