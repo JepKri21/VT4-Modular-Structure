@@ -1,9 +1,9 @@
 {
   "description": "Registry tracking all created product instances for ID management",
-  "last_updated": "2026-03-02",
+  "last_updated": "2026-03-03",
   "product_types": {
     "Bottom_Cover": {
-      "last_instance_number": 8,
+      "last_instance_number": 11,
       "instances": [
         {
           "instance_number": "001",
@@ -124,11 +124,56 @@
             "number_of_fuses": 1
           },
           "notes": "Created by configurator_v3"
+        },
+        {
+          "instance_number": "009",
+          "instance_id": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover/009",
+          "created_date": "2026-03-03",
+          "configuration": {
+            "bottom_cover_material": "PLA-31212",
+            "bottom_cover_color": "Black",
+            "bottom_cover_finish": "Matte",
+            "top_cover_material": "PLA-31212",
+            "top_cover_color": "Black",
+            "top_cover_finish": "Matte",
+            "number_of_fuses": 2
+          },
+          "notes": "Created by configurator_v2"
+        },
+        {
+          "instance_number": "010",
+          "instance_id": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover/010",
+          "created_date": "2026-03-03",
+          "configuration": {
+            "bottom_cover_material": "ABS-5500",
+            "bottom_cover_color": "Blue",
+            "bottom_cover_finish": "Matte",
+            "top_cover_material": "ABS-5500",
+            "top_cover_color": "Blue",
+            "top_cover_finish": "Matte",
+            "number_of_fuses": 2
+          },
+          "notes": "Created by configurator_v2"
+        },
+        {
+          "instance_number": "011",
+          "instance_id": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover/011",
+          "created_date": "2026-03-03",
+          "configuration": {
+            "bottom_cover_material": "PETG-7777",
+            "bottom_cover_color": "Blue",
+            "bottom_cover_finish": "Glossy",
+            "top_cover_material": "ABS-5500",
+            "top_cover_color": "Black",
+            "top_cover_finish": "Textured",
+            "number_of_fuses": 2
+          },
+          "notes": "Created by configurator_v2"
         }
       ]
     },
     "Top_Cover": {
-      "last_instance_number": 8,
+      "last_instance_number": 11,
       "instances": [
         {
           "instance_number": "001",
@@ -249,11 +294,56 @@
             "number_of_fuses": 1
           },
           "notes": "Created by configurator_v3"
+        },
+        {
+          "instance_number": "009",
+          "instance_id": "https://aausmartlab.com/Assets/Product/Component/AAU/Top_Cover/009",
+          "created_date": "2026-03-03",
+          "configuration": {
+            "bottom_cover_material": "PLA-31212",
+            "bottom_cover_color": "Black",
+            "bottom_cover_finish": "Matte",
+            "top_cover_material": "PLA-31212",
+            "top_cover_color": "Black",
+            "top_cover_finish": "Matte",
+            "number_of_fuses": 2
+          },
+          "notes": "Created by configurator_v2"
+        },
+        {
+          "instance_number": "010",
+          "instance_id": "https://aausmartlab.com/Assets/Product/Component/AAU/Top_Cover/010",
+          "created_date": "2026-03-03",
+          "configuration": {
+            "bottom_cover_material": "ABS-5500",
+            "bottom_cover_color": "Blue",
+            "bottom_cover_finish": "Matte",
+            "top_cover_material": "ABS-5500",
+            "top_cover_color": "Blue",
+            "top_cover_finish": "Matte",
+            "number_of_fuses": 2
+          },
+          "notes": "Created by configurator_v2"
+        },
+        {
+          "instance_number": "011",
+          "instance_id": "https://aausmartlab.com/Assets/Product/Component/AAU/Top_Cover/011",
+          "created_date": "2026-03-03",
+          "configuration": {
+            "bottom_cover_material": "PETG-7777",
+            "bottom_cover_color": "Blue",
+            "bottom_cover_finish": "Glossy",
+            "top_cover_material": "ABS-5500",
+            "top_cover_color": "Black",
+            "top_cover_finish": "Textured",
+            "number_of_fuses": 2
+          },
+          "notes": "Created by configurator_v2"
         }
       ]
     },
     "PCB": {
-      "last_instance_number": 8,
+      "last_instance_number": 11,
       "instances": [
         {
           "instance_number": "001",
@@ -374,11 +464,56 @@
             "number_of_fuses": 1
           },
           "notes": "Created by configurator_v3"
+        },
+        {
+          "instance_number": "009",
+          "instance_id": "https://aausmartlab.com/Assets/Product/Component/AAU/PCB/009",
+          "created_date": "2026-03-03",
+          "configuration": {
+            "bottom_cover_material": "PLA-31212",
+            "bottom_cover_color": "Black",
+            "bottom_cover_finish": "Matte",
+            "top_cover_material": "PLA-31212",
+            "top_cover_color": "Black",
+            "top_cover_finish": "Matte",
+            "number_of_fuses": 2
+          },
+          "notes": "Created by configurator_v2"
+        },
+        {
+          "instance_number": "010",
+          "instance_id": "https://aausmartlab.com/Assets/Product/Component/AAU/PCB/010",
+          "created_date": "2026-03-03",
+          "configuration": {
+            "bottom_cover_material": "ABS-5500",
+            "bottom_cover_color": "Blue",
+            "bottom_cover_finish": "Matte",
+            "top_cover_material": "ABS-5500",
+            "top_cover_color": "Blue",
+            "top_cover_finish": "Matte",
+            "number_of_fuses": 2
+          },
+          "notes": "Created by configurator_v2"
+        },
+        {
+          "instance_number": "011",
+          "instance_id": "https://aausmartlab.com/Assets/Product/Component/AAU/PCB/011",
+          "created_date": "2026-03-03",
+          "configuration": {
+            "bottom_cover_material": "PETG-7777",
+            "bottom_cover_color": "Blue",
+            "bottom_cover_finish": "Glossy",
+            "top_cover_material": "ABS-5500",
+            "top_cover_color": "Black",
+            "top_cover_finish": "Textured",
+            "number_of_fuses": 2
+          },
+          "notes": "Created by configurator_v2"
         }
       ]
     },
     "Fuse": {
-      "last_instance_number": 15,
+      "last_instance_number": 21,
       "instances": [
         {
           "instance_number": "001",
@@ -604,11 +739,101 @@
             "number_of_fuses": 1
           },
           "notes": "Created by configurator_v3"
+        },
+        {
+          "instance_number": "016",
+          "instance_id": "https://aausmartlab.com/Assets/Product/Component/AAU/Fuse/016",
+          "created_date": "2026-03-03",
+          "configuration": {
+            "bottom_cover_material": "PLA-31212",
+            "bottom_cover_color": "Black",
+            "bottom_cover_finish": "Matte",
+            "top_cover_material": "PLA-31212",
+            "top_cover_color": "Black",
+            "top_cover_finish": "Matte",
+            "number_of_fuses": 2
+          },
+          "notes": "Created by configurator_v2"
+        },
+        {
+          "instance_number": "017",
+          "instance_id": "https://aausmartlab.com/Assets/Product/Component/AAU/Fuse/017",
+          "created_date": "2026-03-03",
+          "configuration": {
+            "bottom_cover_material": "PLA-31212",
+            "bottom_cover_color": "Black",
+            "bottom_cover_finish": "Matte",
+            "top_cover_material": "PLA-31212",
+            "top_cover_color": "Black",
+            "top_cover_finish": "Matte",
+            "number_of_fuses": 2
+          },
+          "notes": "Created by configurator_v2"
+        },
+        {
+          "instance_number": "018",
+          "instance_id": "https://aausmartlab.com/Assets/Product/Component/AAU/Fuse/018",
+          "created_date": "2026-03-03",
+          "configuration": {
+            "bottom_cover_material": "ABS-5500",
+            "bottom_cover_color": "Blue",
+            "bottom_cover_finish": "Matte",
+            "top_cover_material": "ABS-5500",
+            "top_cover_color": "Blue",
+            "top_cover_finish": "Matte",
+            "number_of_fuses": 2
+          },
+          "notes": "Created by configurator_v2"
+        },
+        {
+          "instance_number": "019",
+          "instance_id": "https://aausmartlab.com/Assets/Product/Component/AAU/Fuse/019",
+          "created_date": "2026-03-03",
+          "configuration": {
+            "bottom_cover_material": "ABS-5500",
+            "bottom_cover_color": "Blue",
+            "bottom_cover_finish": "Matte",
+            "top_cover_material": "ABS-5500",
+            "top_cover_color": "Blue",
+            "top_cover_finish": "Matte",
+            "number_of_fuses": 2
+          },
+          "notes": "Created by configurator_v2"
+        },
+        {
+          "instance_number": "020",
+          "instance_id": "https://aausmartlab.com/Assets/Product/Component/AAU/Fuse/020",
+          "created_date": "2026-03-03",
+          "configuration": {
+            "bottom_cover_material": "PETG-7777",
+            "bottom_cover_color": "Blue",
+            "bottom_cover_finish": "Glossy",
+            "top_cover_material": "ABS-5500",
+            "top_cover_color": "Black",
+            "top_cover_finish": "Textured",
+            "number_of_fuses": 2
+          },
+          "notes": "Created by configurator_v2"
+        },
+        {
+          "instance_number": "021",
+          "instance_id": "https://aausmartlab.com/Assets/Product/Component/AAU/Fuse/021",
+          "created_date": "2026-03-03",
+          "configuration": {
+            "bottom_cover_material": "PETG-7777",
+            "bottom_cover_color": "Blue",
+            "bottom_cover_finish": "Glossy",
+            "top_cover_material": "ABS-5500",
+            "top_cover_color": "Black",
+            "top_cover_finish": "Textured",
+            "number_of_fuses": 2
+          },
+          "notes": "Created by configurator_v2"
         }
       ]
     },
     "PCB_With_Fuse": {
-      "last_instance_number": 5,
+      "last_instance_number": 11,
       "instances": [
         {
           "instance_number": "001",
@@ -684,11 +909,56 @@
             "number_of_fuses": 3
           },
           "notes": "Created by configurator_v2"
+        },
+        {
+          "instance_number": "009",
+          "instance_id": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/PCB_With_Fuse/009",
+          "created_date": "2026-03-03",
+          "configuration": {
+            "bottom_cover_material": "PLA-31212",
+            "bottom_cover_color": "Black",
+            "bottom_cover_finish": "Matte",
+            "top_cover_material": "PLA-31212",
+            "top_cover_color": "Black",
+            "top_cover_finish": "Matte",
+            "number_of_fuses": 2
+          },
+          "notes": "Created by configurator_v2"
+        },
+        {
+          "instance_number": "010",
+          "instance_id": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/PCB_With_Fuse/010",
+          "created_date": "2026-03-03",
+          "configuration": {
+            "bottom_cover_material": "ABS-5500",
+            "bottom_cover_color": "Blue",
+            "bottom_cover_finish": "Matte",
+            "top_cover_material": "ABS-5500",
+            "top_cover_color": "Blue",
+            "top_cover_finish": "Matte",
+            "number_of_fuses": 2
+          },
+          "notes": "Created by configurator_v2"
+        },
+        {
+          "instance_number": "011",
+          "instance_id": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/PCB_With_Fuse/011",
+          "created_date": "2026-03-03",
+          "configuration": {
+            "bottom_cover_material": "PETG-7777",
+            "bottom_cover_color": "Blue",
+            "bottom_cover_finish": "Glossy",
+            "top_cover_material": "ABS-5500",
+            "top_cover_color": "Black",
+            "top_cover_finish": "Textured",
+            "number_of_fuses": 2
+          },
+          "notes": "Created by configurator_v2"
         }
       ]
     },
     "Housing_With_PCB": {
-      "last_instance_number": 5,
+      "last_instance_number": 11,
       "instances": [
         {
           "instance_number": "001",
@@ -764,11 +1034,56 @@
             "number_of_fuses": 3
           },
           "notes": "Created by configurator_v2"
+        },
+        {
+          "instance_number": "009",
+          "instance_id": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Housing_With_PCB/009",
+          "created_date": "2026-03-03",
+          "configuration": {
+            "bottom_cover_material": "PLA-31212",
+            "bottom_cover_color": "Black",
+            "bottom_cover_finish": "Matte",
+            "top_cover_material": "PLA-31212",
+            "top_cover_color": "Black",
+            "top_cover_finish": "Matte",
+            "number_of_fuses": 2
+          },
+          "notes": "Created by configurator_v2"
+        },
+        {
+          "instance_number": "010",
+          "instance_id": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Housing_With_PCB/010",
+          "created_date": "2026-03-03",
+          "configuration": {
+            "bottom_cover_material": "ABS-5500",
+            "bottom_cover_color": "Blue",
+            "bottom_cover_finish": "Matte",
+            "top_cover_material": "ABS-5500",
+            "top_cover_color": "Blue",
+            "top_cover_finish": "Matte",
+            "number_of_fuses": 2
+          },
+          "notes": "Created by configurator_v2"
+        },
+        {
+          "instance_number": "011",
+          "instance_id": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Housing_With_PCB/011",
+          "created_date": "2026-03-03",
+          "configuration": {
+            "bottom_cover_material": "PETG-7777",
+            "bottom_cover_color": "Blue",
+            "bottom_cover_finish": "Glossy",
+            "top_cover_material": "ABS-5500",
+            "top_cover_color": "Black",
+            "top_cover_finish": "Textured",
+            "number_of_fuses": 2
+          },
+          "notes": "Created by configurator_v2"
         }
       ]
     },
     "Telefon_Pro_Max": {
-      "last_instance_number": 8,
+      "last_instance_number": 11,
       "instances": [
         {
           "instance_number": "001",
@@ -889,6 +1204,51 @@
             "number_of_fuses": 1
           },
           "notes": "Created by configurator_v3"
+        },
+        {
+          "instance_number": "009",
+          "instance_id": "https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max/009",
+          "created_date": "2026-03-03",
+          "configuration": {
+            "bottom_cover_material": "PLA-31212",
+            "bottom_cover_color": "Black",
+            "bottom_cover_finish": "Matte",
+            "top_cover_material": "PLA-31212",
+            "top_cover_color": "Black",
+            "top_cover_finish": "Matte",
+            "number_of_fuses": 2
+          },
+          "notes": "Created by configurator_v2"
+        },
+        {
+          "instance_number": "010",
+          "instance_id": "https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max/010",
+          "created_date": "2026-03-03",
+          "configuration": {
+            "bottom_cover_material": "ABS-5500",
+            "bottom_cover_color": "Blue",
+            "bottom_cover_finish": "Matte",
+            "top_cover_material": "ABS-5500",
+            "top_cover_color": "Blue",
+            "top_cover_finish": "Matte",
+            "number_of_fuses": 2
+          },
+          "notes": "Created by configurator_v2"
+        },
+        {
+          "instance_number": "011",
+          "instance_id": "https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max/011",
+          "created_date": "2026-03-03",
+          "configuration": {
+            "bottom_cover_material": "PETG-7777",
+            "bottom_cover_color": "Blue",
+            "bottom_cover_finish": "Glossy",
+            "top_cover_material": "ABS-5500",
+            "top_cover_color": "Black",
+            "top_cover_finish": "Textured",
+            "number_of_fuses": 2
+          },
+          "notes": "Created by configurator_v2"
         }
       ]
     }
