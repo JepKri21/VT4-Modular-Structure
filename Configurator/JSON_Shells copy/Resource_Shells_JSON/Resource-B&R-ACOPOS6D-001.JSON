@@ -1,0 +1,57 @@
+{
+  "idShort": "ACOPOS6D",
+  "id": "https://aausmartlab.com/Assets/Resource/B&R/ACOPOS6D/001",
+  "modelType": "AssetAdministrationShell",
+  "assetInformation": {
+    "assetKind": "Instance",
+    "globalAssetId": "https://aausmartlab.com/Assets/Resource/B&R/ACOPOS6D/001"
+  },
+  "submodels": [
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/Assets/Resource/B&R/ACOPOS6D/001/Documentation"
+        }
+      ]
+    },
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/Assets/Resource/B&R/ACOPOS6D/001/Skills"
+        }
+      ]
+    },
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/Assets/Resource/B&R/ACOPOS6D/001/Communication"
+        }
+      ]
+    },
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/Assets/Resource/B&R/ACOPOS6D/001/Location"
+        }           
+      ]
+    },
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/Assets/Resource/B&R/ACOPOS6D/001/Item_Capacity"
+        }           
+      ]
+    }
+  ]
+}
+

@@ -1,0 +1,320 @@
+{
+  "idShort": "Skills",
+  "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/OperationalData"}]},
+  "id": "https://aausmartlab.com/Assets/Resource/B&R/ACOPOS6D/001/Skills",
+  "submodelElements": [
+    
+    {
+      "modelType": "SubmodelElementList",
+      "idShort": "Agents",
+      "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/ACOPOS6D/Skills"}]},
+      "typeValueListElement": "SubmodelElementCollection",
+      "valueTypeListElement": null,
+      "orderRelevant": true,
+      "value": [
+        {
+          "modelType": "SubmodelElementList",
+          "idShort": "Shuttle_1",
+          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/ACOPOS6D/Skills/Agents"}]},
+          "typeValueListElement": "SubmodelElementCollection",
+          "valueTypeListElement": null,
+          "orderRelevant": true,
+
+          "value": [
+            {
+              "modelType": "SubmodelElementCollection",
+              "idShort": "Transport",
+              "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/ACOPOS6D/Retrieve"}]},
+              "value": [
+                {
+                  "modelType": "Property",
+                  "idShort": "Estimated_Duration",
+                  "valueType": "xs:double",
+                  "value": "3",
+                  "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/Seconds"}]}
+                },
+                {
+                  "modelType": "SubmodelElementCollection",
+                  "idShort": "Parameters",
+                  "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/ACOPOS6D/Retrieve"}]},
+                  "value":[
+                    {
+                      "modelType": "Property",
+                      "idShort": "Max_Speed",
+                      "valueType": "xs:double",
+                      "value": "1",
+                      "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/MeterPerSecond"}]}
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Max_Acceleration",
+                      "valueType": "xs:double",
+                      "value": "0.5",
+                      "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/MeterPerSecondPerSecond"}]}
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Hover_Heigt",
+                      "valueType": "xs:double",
+                      "value": "2",
+                      "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/Millimeters"}]}
+                    }
+                  ]
+                },
+                {
+                  "modelType": "SubmodelElementList",
+                  "idShort": "Supported_Connection_Points",
+                  "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/ACOPOS6D/Retrieve"}]},
+                  "typeValueListElement": "Property",
+                  "valueTypeListElement": "xs:string",
+                  "orderRelevant": true,
+                  "value":[
+                    {
+                      "modelType": "Property",
+                      "idShort": "Connection_Point_Id",
+                      "valueType": "xs:string",
+                      "value": "ACOPOS6D_Connection_Point_1"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Connection_Point_Id",
+                      "valueType": "xs:string",
+                      "value": "ACOPOS6D_Connection_Point_2"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Connection_Point_Id",
+                      "valueType": "xs:string",
+                      "value": "ACOPOS6D_Connection_Point_3"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Connection_Point_Id",
+                      "valueType": "xs:string",
+                      "value": "ACOPOS6D_Connection_Point_4"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Connection_Point_Id",
+                      "valueType": "xs:string",
+                      "value": "ACOPOS6D_Connection_Point_5"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Connection_Point_Id",
+                      "valueType": "xs:string",
+                      "value": "ACOPOS6D_Connection_Point_6"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Connection_Point_Id",
+                      "valueType": "xs:string",
+                      "value": "ACOPOS6D_Connection_Point_7"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Connection_Point_Id",
+                      "valueType": "xs:string",
+                      "value": "ACOPOS6D_Connection_Point_8"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Connection_Point_Id",
+                      "valueType": "xs:string",
+                      "value": "ACOPOS6D_Connection_Point_9"
+                    }
+                  ]
+                },
+                {
+                  "modelType": "SubmodelElementList",
+                  "idShort": "Supported_Components",
+                  "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/ACOPOS6D/Supported_Components"}]},
+                  "typeValueListElement": "Property",
+                  "valueTypeListElement": "xs:string",
+                  "orderRelevant": true,
+                  "value":[
+                    {
+                      "modelType": "Property",
+                      "idShort": "Component_Type",
+                      "valueType": "xs:string",
+                      "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Component_Type",
+                      "valueType": "xs:string",
+                      "value": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Housing_With_PCB"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Component_Type",
+                      "valueType": "xs:string",
+                      "value": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/PCB_With_Fuse"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Component_Type",
+                      "valueType": "xs:string",
+                      "value": "https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "modelType": "SubmodelElementList",
+          "idShort": "Shuttle_2_Skills",
+          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/ACOPOS6D/Skills/Agents"}]},
+          "typeValueListElement": "SubmodelElementCollection",
+          "valueTypeListElement": null,
+          "orderRelevant": true,
+
+          "value": [
+            {
+              "modelType": "SubmodelElementCollection",
+              "idShort": "Transport",
+              "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/ACOPOS6D/Retrieve"}]},
+              "value": [
+                {
+                  "modelType": "Property",
+                  "idShort": "EstimatedDuration",
+                  "valueType": "xs:double",
+                  "value": "3",
+                  "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/Seconds"}]}
+                },
+                {
+                  "modelType": "SubmodelElementCollection",
+                  "idShort": "Parameters",
+                  "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/ACOPOS6D/Retrieve"}]},
+                  "value":[
+                    {
+                      "modelType": "Property",
+                      "idShort": "Max_Speed",
+                      "valueType": "xs:double",
+                      "value": "1",
+                      "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/MeterPerSecond"}]}
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Max_Acceleration",
+                      "valueType": "xs:double",
+                      "value": "0.5",
+                      "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/MeterPerSecondPerSecond"}]}
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Hover_Heigt",
+                      "valueType": "xs:double",
+                      "value": "2",
+                      "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/Millimeters"}]}
+                    }
+                  ]
+                },
+                {
+                  "modelType": "SubmodelElementList",
+                  "idShort": "Supported_Connection_Points",
+                  "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/ACOPOS6D/Retrieve"}]},
+                  "typeValueListElement": "Property",
+                  "valueTypeListElement": "xs:string",
+                  "orderRelevant": true,
+                  "value":[
+                    {
+                      "modelType": "Property",
+                      "idShort": "Connection_Point_Id",
+                      "valueType": "xs:string",
+                      "value": "ACOPOS6D_Connection_Point_1"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Connection_Point_Id",
+                      "valueType": "xs:string",
+                      "value": "ACOPOS6D_Connection_Point_2"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Connection_Point_Id",
+                      "valueType": "xs:string",
+                      "value": "ACOPOS6D_Connection_Point_3"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Connection_Point_Id",
+                      "valueType": "xs:string",
+                      "value": "ACOPOS6D_Connection_Point_4"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Connection_Point_Id",
+                      "valueType": "xs:string",
+                      "value": "ACOPOS6D_Connection_Point_5"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Connection_Point_Id",
+                      "valueType": "xs:string",
+                      "value": "ACOPOS6D_Connection_Point_6"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Connection_Point_Id",
+                      "valueType": "xs:string",
+                      "value": "ACOPOS6D_Connection_Point_7"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Connection_Point_Id",
+                      "valueType": "xs:string",
+                      "value": "ACOPOS6D_Connection_Point_8"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Connection_Point_Id",
+                      "valueType": "xs:string",
+                      "value": "ACOPOS6D_Connection_Point_9"
+                    }
+                  ]
+                },
+                {
+                  "modelType": "SubmodelElementList",
+                  "idShort": "Supported_Components",
+                  "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/ACOPOS6D/Supported_Components"}]},
+                  "typeValueListElement": "Property",
+                  "valueTypeListElement": "xs:string",
+                  "orderRelevant": true,
+                  "value":[
+                    {
+                      "modelType": "Property",
+                      "idShort": "Component_Type",
+                      "valueType": "xs:string",
+                      "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Component_Type",
+                      "valueType": "xs:string",
+                      "value": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Housing_With_PCB"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Component_Type",
+                      "valueType": "xs:string",
+                      "value": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/PCB_With_Fuse"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Component_Type",
+                      "valueType": "xs:string",
+                      "value": "https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "idShort": "Bottom Cover Storage",
+  "id": "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover_Storage/001",
+  "modelType": "AssetAdministrationShell",
+  "assetInformation": {
+    "assetKind": "Instance",
+    "globalAssetId": "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover_Storage/001"
+  },
+  "submodels": [
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover_Storage/001/Documentation"
+        }
+      ]
+    },
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover_Storage/001/Skills"
+        }
+      ]
+    },
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover_Storage/001/Communication"
+        }
+      ]
+    },
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover_Storage/001/Location"
+        }           
+      ]
+    },
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover_Storage/001/Item_Capacity"
+        }           
+      ]
+    }
+  ]
+}
+

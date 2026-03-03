@@ -1,0 +1,38 @@
+{
+  "idShort": "Fuse",
+  "id": "https://aausmartlab.com/Assets/Product/Component/AAU/Fuse/008",
+  "modelType": "AssetAdministrationShell",
+  "assetInformation": {
+    "assetKind": "Instance",
+    "globalAssetId": "https://aausmartlab.com/Assets/Product/AAU/Fuse/008"
+  },
+  "submodels": [
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Fuse/008/Documentation"
+        }
+      ]
+    },
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Fuse/008/Bill_Of_Processes"
+        }
+      ]
+    },
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Fuse/008/Properties"
+        }
+      ]
+    }
+  ]
+}
