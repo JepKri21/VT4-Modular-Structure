@@ -20,6 +20,7 @@
           ],
       "value" : [        
         {
+          
           "modelType": "SubmodelElementCollection",
           "idShort": "Drilling",
           "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Operations/Drilling"}]},
