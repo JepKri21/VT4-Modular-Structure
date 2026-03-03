@@ -29,7 +29,7 @@ const Navbar = () => {
       {/* LEFT SIDE */}
       <div className="flex justify-between items-center gap-5">
         <Button
-          className="group px-3 py-3 rounded-full bg-muted text-foreground hover:bg-primary"
+          className="group cursor-pointer px-3 py-3 rounded-full bg-muted text-foreground hover:bg-primary"
           onClick={toggleSidebar}
         >
           <Menu className="w-4 h-4 transition-colors group-hover:text-background" />

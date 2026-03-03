@@ -96,7 +96,7 @@ const Sidebar = () => {
           Flexible Manufacturing System
         </h1>
         <Button
-          className="group px-3 py-3 rounded-full bg-muted text-foreground hover:bg-primary"
+          className="group cursor-pointer px-3 py-3 rounded-full bg-muted text-foreground hover:bg-primary md:hidden"
           onClick={toggleSidebar}
         >
           <Menu className="w-4 h-4 transition-colors group-hover:text-background" />
@@ -142,30 +142,40 @@ const Sidebar = () => {
           label="Alarms"
           isCollapsed={isSidebarCollapsed}
         />
-        <SidebarLink
-          href="/inventory-management"
-          icon={PackageOpen}
-          label="Inventory Management"
-          isCollapsed={isSidebarCollapsed}
-        />
-        <SidebarLink
-          href="/expenses"
-          icon={Coins}
-          label="Expenses"
-          isCollapsed={isSidebarCollapsed}
-        />
+
         <SidebarLink
           href="/scheduling"
           icon={Calendar}
           label="Scheduling"
           isCollapsed={isSidebarCollapsed}
         />
+
+        {/* BUSINESS */}
+        <div
+          className={` flex items-center gap-3 transition-colors rounded-md px-4 py-4 mt-4 ${isSidebarCollapsed ? "hidden" : "block"}`}
+        >
+          <h3 className="text-xs text-primary ">BUSINESS</h3>
+        </div>
+        <SidebarLink
+          href="/expenses"
+          icon={Coins}
+          label="Expenses"
+          isCollapsed={isSidebarCollapsed}
+        />
+
         <SidebarLink
           href="/orders"
           icon={ShoppingCart}
           label="Orders"
           isCollapsed={isSidebarCollapsed}
         />
+        <SidebarLink
+          href="/inventory-management"
+          icon={PackageOpen}
+          label="Inventory Management"
+          isCollapsed={isSidebarCollapsed}
+        />
+
         {/* ADMIN CONTROL */}
         <div
           className={` flex items-center gap-3 transition-colors rounded-md px-4 py-4 mt-4 ${isSidebarCollapsed ? "hidden" : "block"}`}
@@ -187,7 +197,7 @@ const Sidebar = () => {
       </div>
       {/* FOOTER */}
       <div
-        className={`${isSidebarCollapsed ? "hidden" : "block"} text-center text-xs mask-b-to-10 text-gray-500`}
+        className={`${isSidebarCollapsed ? "hidden" : "block"} text-center text-xs mt-10 mb-10 text-card`} //
       >
         <p>&copy; 2026 Aalborg Universitet</p>
       </div>
