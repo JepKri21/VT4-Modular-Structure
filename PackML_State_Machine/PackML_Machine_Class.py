@@ -8,14 +8,6 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from MQTT_Server_Client.MQTT_Client import MQTT_Client_Resource
 
-
-BROKER = "172.20.10.236"
-PORT = 1883
-CLIENT_ID = "Drilling_1"
-BASE_TOPIC = "AAU/Smartlab/PL1/Drilling_Station"
-
-mqtt_information = [BROKER, PORT, CLIENT_ID,BASE_TOPIC]
-
 class PackMLState(enum.Enum):
     # Main states
     IDLE = "IDLE"
@@ -43,13 +35,50 @@ class PackMLState(enum.Enum):
     CLEARING = "CLEARING"
 
 
+class StationBehavior:
+    async def idle(self, machine): pass
+    async def starting(self, machine): pass
+    async def execute(self, machine): pass
+    async def completing(self, machine): pass
+    async def stopping(self, machine): pass
+    async def holding(self, machine): pass
+    async def unholding(self, machine): pass
+    async def suspending(self, machine): pass
+    async def unsuspending(self, machine): pass
+    async def aborting(self, machine): pass
+    async def resetting(self, machine): pass
+    async def clearing(self, machine): pass
+
 
 class PackMLStateMachine:
-    def __init__(self, mqtt_info):
+    def __init__(self, mqtt_info, behavior: StationBehavior):
+        self.behavior = behavior
         self.state = PackMLState.IDLE
-        self.current_task = None
-        self.mqtt_client = MQTT_Client_Resource(mqtt_info[0],mqtt_info[1], mqtt_info[2],mqtt_info[3])
+
+        #PACKML INFO:
+        self.current_task = None            #Tracking the state it is currently doing
+        self.current_job = None             #Containing job data for whatever job is being sent
+        self.job_id = None                  #Updated when a job has been given
+        self.job_result = None              #Updated when a job has been given
+        self.order_id = None                #Updated when a job has been given
+        self.ideal_cycle_time_ms = None     #Updated when a job has been given
+        self.cycle_time_ms = None           #Updated when a job has been given
+        self.job_quality = None             #Updated when a job has been given
+
+
+        #MQTT INFO:
+        self.BROKER = mqtt_info[0]
+        self.PORT = mqtt_info [1]
+        self.CLIENT_ID = mqtt_info[2]
+        self.BASE_TOPIC = mqtt_info[3]
+        self.mqtt_client = MQTT_Client_Resource(self.BROKER,self.PORT, self.CLIENT_ID,self.BASE_TOPIC, self)
         self.mqtt_client.start_mqtt_connection()
+        try:
+            self.loop = asyncio.get_running_loop()
+        except RuntimeError:
+            # fallback hvis ingen running loop (kan ske ved sync init)
+            self.loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self.loop)
 
     async def state_command_callback(self, cmd):
         if cmd == "start":
@@ -108,62 +137,51 @@ class PackMLStateMachine:
 
     async def execute_state(self):
         print("State: EXECUTE")
-        await asyncio.sleep(2)
-        await self.transition_to(PackMLState.COMPLETING)
+        await self.behavior.execute(self)
 
     async def idle_state(self):
         print("State: IDLE")
+        await self.behavior.idle(self)
 
     async def starting_state(self):
         print("State: STARTING")
-        await asyncio.sleep(2)
-        await self.transition_to(PackMLState.EXECUTE)
+        await self.behavior.starting(self)
 
     async def stopping_state(self):
         print("State: STOPPING")
-        await asyncio.sleep(2)
-        await self.transition_to(PackMLState.STOPPED)
+        await self.behavior.stopping(self)
 
     async def holding_state(self):
         print("State: HOLDING")
-        await asyncio.sleep(2)
-        await self.transition_to(PackMLState.HELD)
+        await self.behavior.holding(self)
 
     async def unholding_state(self):
         print("State: UNHOLDING")
-        await asyncio.sleep(2)
-        await self.transition_to(PackMLState.EXECUTE)
+        await self.behavior.unholding(self)
 
     async def suspending_state(self):
         print("State: SUSPENDING")
-        await asyncio.sleep(2)
-        await self.transition_to(PackMLState.SUSPENDED)
+        await self.behavior.suspending(self)
 
     async def unsuspending_state(self):
         print("State: UNSUSPENDING")
-        await asyncio.sleep(2)
-        await self.transition_to(PackMLState.EXECUTE)
+        await self.behavior.unsuspending(self)
 
     async def completing_state(self):
         print("State: COMPLETING")
-        await asyncio.sleep(2)
-        await self.transition_to(PackMLState.COMPLETE)
+        await self.behavior.completing(self)
 
     async def aborting_state(self):
         print("State: ABORTING")
-        await asyncio.sleep(2)
-        await self.transition_to(PackMLState.ABORTED)
+        await self.behavior.aborting(self)
 
     async def resetting_state(self):
         print("State: RESETTING")
-        await asyncio.sleep(2)
-        await self.transition_to(PackMLState.IDLE)
+        await self.behavior.resetting(self)
 
     async def clearing_state(self):
         print("State: CLEARING")
-        await asyncio.sleep(2)
-        await self.transition_to(PackMLState.STOPPED)
-
+        await self.behavior.clearing(self)
 
     async def transition_to(self, new_state):
         self.state = new_state
@@ -220,7 +238,6 @@ class PackMLStateMachine:
                 self.mqtt_client.publish_state(state)
                 print("State: ABORTED")
             elif state == PackMLState.COMPLETE:
-                self.mqtt_client.publish_state(state)
                 print("State: COMPLETE")
                 await self.transition_to(PackMLState.RESETTING)
 
@@ -250,35 +267,38 @@ class PackMLStateMachine:
 #==============================================Only for testing the class==================================================
 #==========================================================================================================================
 
-async def produce_n_products(machine, n):
-    for i in range(n):
-        print(f"\n--- Producing product {i+1} ---")
-
-        # Start cycle
-        await machine.state_command_callback("start")
-
-        await machine.wait_for_state(PackMLState.IDLE)
-
-    print("\nProduction finished.")
-
-
-async def manual_control(machine):
-    while True:
-        cmd = await asyncio.to_thread(input, "Enter command: ")
-        await machine.state_command_callback(cmd)
-
-
-machine = PackMLStateMachine(mqtt_info=mqtt_information)
-
-
-async def main():
-    production_task = asyncio.create_task(produce_n_products(machine, 5))
-    manual_task = asyncio.create_task(manual_control(machine))
-
-    await production_task
-
-    # Optionally cancel manual input when done
-    manual_task.cancel()
-
-
-asyncio.run(main())
+#async def produce_n_products(machine, n):
+#    for i in range(n):
+#        print(f"\n--- Producing product {i+1} ---")
+#
+#        # Start cycle
+#        await machine.state_command_callback("start")
+#
+#        await machine.wait_for_state(PackMLState.IDLE)
+#
+#    print("\nProduction finished.")
+#
+#
+#async def manual_control(machine):
+#    while True:
+#        cmd = await asyncio.to_thread(input, "Enter command: ")
+#        await machine.state_command_callback(cmd)
+#
+#
+#machine = PackMLStateMachine(mqtt_info=mqtt_information)
+#
+#
+#
+#async def main():
+#    # production_task = asyncio.create_task(produce_n_products(machine, 5))
+#    # manual_task = asyncio.create_task(manual_control(machine))
+#
+#    # await production_task
+#
+#    # # Optionally cancel manual input when done
+#    # manual_task.cancel()
+#    while True:
+#        await asyncio.sleep(1)
+#
+#
+#asyncio.run(main())
