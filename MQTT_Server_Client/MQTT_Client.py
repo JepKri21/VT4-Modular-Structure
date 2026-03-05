@@ -17,7 +17,9 @@ class MQTT_Client_Resource():
         #Potentially add a list for sequence numbers, you update the list every time you send a message with it's seq_no, 
         #that way you can ensure that if you send two messages before an acknowledgement has been sent from the controller
         #That you still check for the correct seq_no's.
-
+        #The same could be done for the line controller, creating a list of all the messages that it is expecting 
+        # an acknowledge from. And maybe it is actually smart to save the entire message in that list
+        # that way it is easier to retransmit it, incase you don't recieve an acknowledge
 
         self.CLIENT = mqtt.Client(client_id=self.CLIENT_ID, callback_api_version=mqtt.CallbackAPIVersion.VERSION1)
     
