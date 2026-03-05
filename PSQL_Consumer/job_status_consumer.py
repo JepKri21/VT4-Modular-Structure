@@ -6,7 +6,7 @@ from datetime import datetime
 # ====== CONFIG ======
 MQTT_BROKER = "localhost"
 MQTT_PORT = 1883
-MQTT_TOPIC = "AAU/Smartlab/PL1/Stations/Drilling_1/JobStatus"
+MQTT_TOPIC = "AAU/Smartlab/PL1/Stations/Drilling_1/job_status"
 
 PG_HOST = "localhost"
 PG_PORT = 5432

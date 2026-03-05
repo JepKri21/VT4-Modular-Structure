@@ -54,6 +54,7 @@ class PackMLStateMachine:
     def __init__(self, mqtt_info, behavior: StationBehavior):
         self.behavior = behavior
         self.state = PackMLState.IDLE
+        self.active_alarms = []
 
         #PACKML INFO:
         self.current_task = None            #Tracking the state it is currently doing
@@ -245,6 +246,7 @@ class PackMLStateMachine:
             print(f"{state} cancelled")
             raise
 
+    
 
     async def wait_for_state(self, target_state: PackMLState):
         while True:

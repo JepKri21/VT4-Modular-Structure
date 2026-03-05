@@ -147,6 +147,7 @@ class DrillingStationBehavior(StationBehavior):
 async def main():
     behavior = DrillingStationBehavior()
     machine = PackMLStateMachine(mqtt_information, behavior)
+    machine.active_alarms = [51,62]
     # Keep machine alive forever
     await asyncio.Event().wait()
 
