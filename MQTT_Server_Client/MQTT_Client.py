@@ -195,7 +195,8 @@ class MQTT_Client_Resource():
         if requested_info == "system_state":
             self.publish_state(self.MACHINE.state)
         if requested_info == "active_alarms":
-            self.publish_alarms(self.MACHINE.alarm_ids)
+            self.publish_alarms(self.MACHINE.active_alarms)
+            # self.publish_alarms(self.MACHINE.alarm_ids)
 
 
     def start_mqtt_connection(self):
