@@ -1,35 +1,29 @@
-from dataclasses import dataclass, asdict
-from typing import List, Optional
+
+from dataclasses import dataclass, field
+from typing import List, Union, Optional
+
+import sys
+from pathlib import Path
+
+# Add Station_Simulators to import path
+sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
+
+from Station_Simulators.General_Dataclasses import *
+
 
 @dataclass
-class Property:
-    modelType: str
+class CommunicationMethod(AutoCollection):
     idShort: str
-    valueType: str
-    value: str
-
+    extra_elements: List[Union[Property, Range, SubmodelElementCollection]] = field(default_factory=list)
 
 @dataclass
-class CommunicationMethod:
-    name: str
-    properties: List[Property]
-
-    def to_dict(self):
-        return {
-            "modelType" : "SubmodelElementCollection",
-            "idShort" : self.name,
-            "value" : [asdict(property) for property in self.properties]
-        }
-    
-@dataclass
-class CommunicationSubmodelData:
+class CommunicationMethods(AutoCollection):
+    idShort = "Communication_Methods"
     communication_methods: List[CommunicationMethod]
 
-    def to_dict(self, shell_id: str):
-        return {
-            "idShort": "Communication",
-            "id" : f"{shell_id}/Communication",
-            "submodelElements": [
-                [com_method.to_dict() for com_method in self.communication_methods]
-            ]
-        }
+
+@dataclass
+class CommunicationSubmodelData(AutoSubmodel):
+    idShort: str = "Communication"          # enforced submodel name
+    submodel_data: AutoCollection = None     # the collection for the submodel
+    shell_id: Optional[str] = None          # can be set later

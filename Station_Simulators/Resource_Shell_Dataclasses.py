@@ -5,7 +5,7 @@ from typing import List, Optional
 class SubmodelReference:
     submodel_name: str
 
-    def to_dict(self, shell_id):
+    def convert_to_dict(self, shell_id):
         return  { 
                   "type": "ModelReference",
                   "keys": [
@@ -23,7 +23,7 @@ class ResourceShellData:
     id: str
     idShort: str
 
-    def to_dict(self):
+    def convert_to_dict(self):
         return {
             "idShort" : self.idShort,
             "id" : self.id,
@@ -32,5 +32,5 @@ class ResourceShellData:
                 "assetKind": "Instance",
                 "globalAssetId": self.id
                 },
-            "submodels": [reference.to_dict(self.id) for reference in self.references]
+            "submodels": [reference.convert_to_dict(self.id) for reference in self.references]
         }

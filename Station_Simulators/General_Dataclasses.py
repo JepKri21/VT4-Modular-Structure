@@ -1,5 +1,5 @@
-from dataclasses import dataclass
-from typing import List, Union
+from dataclasses import dataclass, fields, is_dataclass
+from typing import List, Union, Optional
 
 @dataclass
 class Property:
@@ -62,4 +62,74 @@ class SubmodelElementList:
             "valueTypeListElement": self.valueTypeListElement,
             "orderRelevant": self.orderRelevant,
             "value": [v.to_dict() for v in self.value]
+        }
+    
+
+
+#This one class will can be inherited to other data classes such that they automatically have the convert_to_collection function
+class AutoCollection:
+
+    extra_elements: List[Union[Property, Range, SubmodelElementCollection]] = None
+
+    def convert_to_collection(self) -> SubmodelElementCollection:
+        elements = []
+
+        for f in fields(self):
+            name = f.name
+            value = getattr(self, name)
+
+            if name in ["idShort", "extra_elements"]:
+                continue
+
+            # Nested AutoCollection
+            if isinstance(value, AutoCollection):
+                elements.append(value.convert_to_collection())
+
+            # List of AutoCollections
+            elif isinstance(value, list):
+                for v in value:
+                    if isinstance(v, AutoCollection):
+                        elements.append(v.convert_to_collection())
+
+            # int -> Property
+            elif isinstance(value, int):
+                elements.append(Property(idShort=name, valueType="xs:integer", value=str(value)))
+
+            # str -> Property
+            elif isinstance(value, str):
+                elements.append(Property(idShort=name, valueType="xs:string", value=value))
+
+        # Append any extra elements (Property, Range, Collection)
+        if getattr(self, "extra_elements", None):
+            elements.extend(self.extra_elements)
+
+        return SubmodelElementCollection(
+            idShort=self.idShort,
+            value=elements
+        )
+    
+
+#Allows a class to inherit the covert_to_dict function
+class AutoSubmodel:
+    """
+    Base class for automatically converting a root AutoCollection into a full submodel dict.
+    """
+
+    idShort: str  # fixed submodel name
+    submodel_data: List[AutoCollection]
+    shell_id: Optional[str] = None
+
+    def convert_to_dict(self):
+        if self.shell_id is None:
+            raise ValueError("shell_id must be set before generating the submodel dict")
+        
+        elements = []
+
+        for element in self.submodel_data:
+            elements.append(element.convert_to_collection().to_dict())
+
+        return {
+            "idShort": self.idShort,
+            "id": f"{self.shell_id}/{self.idShort}",
+            "submodelElements": elements
         }
