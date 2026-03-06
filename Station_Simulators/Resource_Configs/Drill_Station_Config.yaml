@@ -1,0 +1,106 @@
+shell:
+  id: "https://aausmartlab.com/Assets/Resource/MADE/Drill_Station/1e1d4a58-e403-4d5e-81fa-19c544835561"
+  idShort: "Drill_Station"
+
+  submodels:
+    - Item_Capacity
+    - Location
+    - Communication
+    - Skills
+    - Documentation
+
+
+item_capacity:
+
+  internal_part_storages:
+
+    - idShort: "Internal_Part_Storage_1"
+      storage_size: 1
+      storing_method: "First_In_First_Out"
+      storage_type: "Input_Output"
+
+      part_types:
+        - idShort: "Part_Type_1"
+          part_type_id: "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover"
+          quantity: 0
+
+
+communication:
+
+  methods:
+
+    - idShort: "UNS_Communication"
+      properties:
+
+        broker_address: "mqtt://broker.company.com:1883"
+        protocol: "MQTT"
+        topic: "AAU/FIB14/SmartLab/PL1/Stations/Drilling_1"
+        qos: 2
+
+
+location:
+
+  general_information:
+    building: "FIB_14"
+    production_line: "Production_Line_1"
+
+  connection_points:
+
+    - idShort: "Connection_Point_1"
+      connection_point_id: "Drill_Station_Connection_Point_1"
+      connection_type: "In-Outfeed"
+
+  resource_connections:
+
+    - idShort: "Resource_Connection_1"
+      own_connection_point_id: "Drill_Station_Connection_Point_1"
+      connected_resource_id: "https://aausmartlab.com/Assets/Resource/B&R/ACOPOS6D/001"
+      other_resource_connection_point_id: "ACOPOS6D_Connection_Point_7"
+      position:
+        x: 480
+        y: 120
+
+
+skills:
+
+  agents:
+
+    - idShort: "KUKA_Manipulator"
+
+      skills:
+
+        - idShort: "Drilling"
+          estimated_duration: 5.0
+
+          parameters:
+
+            ranges:
+
+              - idShort: "DrillDepth"
+                value_type: "xs:integer"
+                min: 1
+                max: 20
+
+              - idShort: "RotationalSpeed"
+                value_type: "xs:integer"
+                min: 1500
+                max: 2000
+
+              - idShort: "Feed"
+                value_type: "xs:integer"
+                min: 100
+                max: 200
+
+            properties:
+
+              - idShort: "DrillSize"
+                value_type: "xs:integer"
+                value: 5
+
+          supported_connection_points:
+
+            - connection_point_id: "Drill_Station_Connection_Point_1"
+
+          supported_components:
+
+            - "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover"

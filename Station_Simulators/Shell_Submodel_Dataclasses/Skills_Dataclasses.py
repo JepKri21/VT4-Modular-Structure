@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from Station_Simulators.General_Dataclasses import *
+from .General_Dataclasses import *
 
 @dataclass
 class Parameters(AutoCollection):

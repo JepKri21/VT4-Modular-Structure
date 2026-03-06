@@ -2,13 +2,7 @@
 from dataclasses import dataclass
 from typing import List, Union, Optional
 
-import sys
-from pathlib import Path
-
-# Add Station_Simulators to import path
-sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
-
-from Station_Simulators.General_Dataclasses import AutoCollection, AutoSubmodel
+from .General_Dataclasses import *
 
 
 @dataclass
