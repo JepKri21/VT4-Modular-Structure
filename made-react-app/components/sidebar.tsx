@@ -15,6 +15,7 @@ import {
   Store,
   TriangleAlert,
   Wrench,
+  Bot,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/app/redux";
 import { setIsSidebarCollapsed } from "@/state";
@@ -173,6 +174,12 @@ const Sidebar = () => {
           href="/inventory-management"
           icon={PackageOpen}
           label="Inventory Management"
+          isCollapsed={isSidebarCollapsed}
+        />
+        <SidebarLink
+          href="/SILAS"
+          icon={Bot}
+          label="SILAS"
           isCollapsed={isSidebarCollapsed}
         />
 
