@@ -41,6 +41,18 @@
     },
     {
       "modelType": "Property",
+      "idShort": "Model_Number",
+      "valueType": "xs:string",
+      "value": "PCB-AAU",
+      "description": [
+        {
+          "language": "en",
+          "text": "Fixed model number \u00e2\u20ac\u201d all PCB instances are the same type"
+        }
+      ]
+    },
+    {
+      "modelType": "Property",
       "idShort": "Instance_Number",
       "valueType": "xs:string",
       "value": "003",
@@ -55,7 +67,7 @@
       "modelType": "Property",
       "idShort": "Created_Date",
       "valueType": "xs:string",
-      "value": "2026-03-03",
+      "value": "2026-03-06",
       "description": [
         {
           "language": "en",

@@ -28,11 +28,32 @@
       ]
     },
     {
+      "modelType": "SubmodelElementCollection",
+      "idShort": "Model_Number_Configuration",
+      "description": [{"language": "en", "text": "Configurator directive: defines how Model_Number is generated at instance creation. Removed from instances."}],
+      "value": [
+        {
+          "modelType": "Property",
+          "idShort": "Template",
+          "valueType": "xs:string",
+          "value": "HWP-{bottom_cover_material}-{bottom_cover_color}-F{number_of_fuses}",
+          "description": [{"language": "en", "text": "{key} placeholders are replaced with values from the order configuration"}]
+        }
+      ]
+    },
+    {
       "modelType": "Property",
-      "idShort": "Instance_Number",
+      "idShort": "Model_Number",
       "valueType": "xs:string",
-      "value": "",
-      "description": [{"language": "en", "text": "Filled in at instance creation"}]
+      "value": [
+        {
+          "modelType": "Property",
+          "idShort": "Template",
+          "valueType": "xs:string",
+          "value": "HWP-{bottom_cover_material}-{bottom_cover_color}-{bottom_cover_finish}-F{number_of_fuses}",
+          "description": [{"language": "en", "text": "{key} placeholders are replaced with values from the order configuration. Same model number for every Housing with identical bottom cover material, color, surface finish, and fuse count."}]
+        }
+      ]
     },
     {
       "modelType": "Property",

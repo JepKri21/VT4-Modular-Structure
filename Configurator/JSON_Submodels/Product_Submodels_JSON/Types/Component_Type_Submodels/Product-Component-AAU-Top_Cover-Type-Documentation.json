@@ -28,11 +28,32 @@
       ]
     },
     {
+      "modelType": "SubmodelElementCollection",
+      "idShort": "Model_Number_Configuration",
+      "description": [{"language": "en", "text": "Configurator directive: defines how Model_Number is generated at instance creation. Removed from instances."}],
+      "value": [
+        {
+          "modelType": "Property",
+          "idShort": "Template",
+          "valueType": "xs:string",
+          "value": "TC-{top_cover_material}-{top_cover_color}",
+          "description": [{"language": "en", "text": "{key} placeholders are replaced with values from the order configuration"}]
+        }
+      ]
+    },
+    {
       "modelType": "Property",
-      "idShort": "Instance_Number",
+      "idShort": "Model_Number",
       "valueType": "xs:string",
-      "value": "",
-      "description": [{"language": "en", "text": "Filled in at instance creation"}]
+      "value": [
+        {
+          "modelType": "Property",
+          "idShort": "Template",
+          "valueType": "xs:string",
+          "value": "TC-{top_cover_material}-{top_cover_color}-{top_cover_finish}",
+          "description": [{"language": "en", "text": "{key} placeholders are replaced with values from the order configuration. Same model number for every Top Cover with identical material, color, and surface finish."}]
+        }
+      ]
     },
     {
       "modelType": "Property",

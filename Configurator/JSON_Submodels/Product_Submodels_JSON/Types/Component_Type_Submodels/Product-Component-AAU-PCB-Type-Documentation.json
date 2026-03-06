@@ -28,6 +28,27 @@
       ]
     },
     {
+      "modelType": "SubmodelElementCollection",
+      "idShort": "Model_Number_Configuration",
+      "description": [{"language": "en", "text": "Configurator directive: defines how Model_Number is generated at instance creation. Removed from instances."}],
+      "value": [
+        {
+          "modelType": "Property",
+          "idShort": "Template",
+          "valueType": "xs:string",
+          "value": "PCB-AAU",
+          "description": [{"language": "en", "text": "Fixed model number — all PCB instances are the same type"}]
+        }
+      ]
+    },
+    {
+      "modelType": "Property",
+      "idShort": "Model_Number",
+      "valueType": "xs:string",
+      "value": "PCB-AAU",
+      "description": [{"language": "en", "text": "Fixed model number — all PCB instances are the same type"}]
+    },
+    {
       "modelType": "Property",
       "idShort": "Instance_Number",
       "valueType": "xs:string",

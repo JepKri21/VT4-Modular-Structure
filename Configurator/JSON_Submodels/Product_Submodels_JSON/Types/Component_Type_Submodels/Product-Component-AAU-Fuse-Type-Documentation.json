@@ -29,6 +29,13 @@
     },
     {
       "modelType": "Property",
+      "idShort": "Model_Number",
+      "valueType": "xs:string",
+      "value": "FUSE-AAU",
+      "description": [{"language": "en", "text": "Fixed model number — all Fuse instances are the same type"}]
+    },
+    {
+      "modelType": "Property",
       "idShort": "Instance_Number",
       "valueType": "xs:string",
       "value": "",

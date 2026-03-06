@@ -112,7 +112,7 @@
               "text": "Material type - configured at instance creation"
             }
           ],
-          "value": "PLA"
+          "value": "PLA-31212"
         },
         {
           "modelType": "Property",
@@ -124,7 +124,7 @@
               "text": "Color - configured at instance creation"
             }
           ],
-          "value": "Blue"
+          "value": "Black"
         },
         {
           "modelType": "Property",

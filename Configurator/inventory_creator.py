@@ -15,9 +15,12 @@ Generated files are saved in:
 import json
 import copy
 import os
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+
+import inventory_db
 
 
 # =============================================================================
@@ -74,6 +77,35 @@ COMPONENT_REGISTRY: Dict[str, Dict[str, Any]] = {
         "properties_config_map": {},
     },
 }
+
+
+# =============================================================================
+# Standard Shopping List
+# =============================================================================
+
+# Each entry: (component_type, quantity, config_values)
+# Edit this list to define your standard stock mix.
+SHOPPING_LIST: List[Tuple[str, int, Dict[str, str]]] = [
+    # ── Bottom Covers ────────────────────────────────────────────────────────
+    ("Bottom_Cover", 2, {"Material": "PLA-31212",  "Color": "Red",   "Finish": "Glossy"}),
+    ("Bottom_Cover", 2, {"Material": "PLA-31212",  "Color": "Blue",  "Finish": "Glossy"}),
+    ("Bottom_Cover", 2, {"Material": "PLA-31212",  "Color": "Black", "Finish": "Matte"}),
+    ("Bottom_Cover", 2, {"Material": "PLA-31212",  "Color": "White", "Finish": "Matte"}),
+    ("Bottom_Cover", 1, {"Material": "ABS-5500",   "Color": "Black", "Finish": "Textured"}),
+    ("Bottom_Cover", 1, {"Material": "ABS-5500",   "Color": "White", "Finish": "Glossy"}),
+    ("Bottom_Cover", 1, {"Material": "PETG-7700",  "Color": "Green", "Finish": "Matte"}),
+    # ── Top Covers ───────────────────────────────────────────────────────────
+    ("Top_Cover",    2, {"Material": "PLA-31212",  "Color": "Red",   "Finish": "Glossy"}),
+    ("Top_Cover",    2, {"Material": "PLA-31212",  "Color": "Blue",  "Finish": "Glossy"}),
+    ("Top_Cover",    2, {"Material": "PLA-31212",  "Color": "Black", "Finish": "Matte"}),
+    ("Top_Cover",    2, {"Material": "PLA-31212",  "Color": "White", "Finish": "Matte"}),
+    ("Top_Cover",    1, {"Material": "ABS-5500",   "Color": "Black", "Finish": "Textured"}),
+    ("Top_Cover",    1, {"Material": "ABS-5500",   "Color": "White", "Finish": "Glossy"}),
+    ("Top_Cover",    1, {"Material": "PETG-7700",  "Color": "Green", "Finish": "Matte"}),
+    # ── PCBs & Fuses ─────────────────────────────────────────────────────────
+    ("PCB",          5, {}),
+    ("Fuse",        20, {}),
+]
 
 
 # =============================================================================
@@ -182,16 +214,77 @@ def update_instance_ids(
 def update_documentation_submodel(
     doc_submodel: Dict[str, Any],
     instance_num: int,
-    created_date: str
+    created_date: str,
+    config_values: Dict[str, str] = None,
+    properties_config_map: Dict[str, str] = None,
 ) -> None:
     """
-    Update Documentation submodel with instance number and creation date.
+    Update Documentation submodel with instance number, creation date, and
+    auto-generated model number.
+
+    If the Type defines a Model_Number_Configuration collection, this method
+    reads the mapping from it and generates Model_Number. The collection is
+    then removed from the instance — it belongs in the Type only.
+
+    config_values uses property names as keys (e.g. {"Material": "PLA-31212"}).
+    properties_config_map bridges them to the config keys used in templates
+    (e.g. {"Material": "bottom_cover_material"}).
     """
-    for element in doc_submodel.get("submodelElements", []):
-        if element.get("idShort") == "Instance_Number":
-            element["value"] = f"{instance_num:03d}"
-        elif element.get("idShort") == "Created_Date":
-            element["value"] = created_date
+    # Build reverse map: config_key -> value  (e.g. "bottom_cover_material" -> "PLA-31212")
+    config_by_key: Dict[str, str] = {}
+    if config_values and properties_config_map:
+        for prop_name, config_key in properties_config_map.items():
+            if prop_name in config_values:
+                config_by_key[config_key] = config_values[prop_name]
+
+    patch = {
+        "Instance_Number": f"{instance_num:03d}",
+        "Created_Date": created_date,
+    }
+
+    # Read Model_Number_Configuration from the Type JSON if present
+    elements = doc_submodel.get("submodelElements", [])
+    model_num_cfg = next(
+        (e for e in elements if e.get("idShort") == "Model_Number_Configuration"),
+        None,
+    )
+
+    if model_num_cfg:
+        cfg_children = {e["idShort"]: e for e in model_num_cfg.get("value", [])}
+
+        # Template approach: "{bottom_cover_material}" placeholders -> config value
+        template_elem = cfg_children.get("Template")
+        if template_elem:
+            model_number = re.sub(
+                r"\{(\w+)\}",
+                lambda m: str(config_by_key.get(m.group(1), m.group(0))),
+                template_elem["value"],
+            )
+            patch["Model_Number"] = model_number
+
+        # Material code lookup approach: Material_ID -> short code
+        else:
+            material_key_elem = cfg_children.get("Material_Config_Key")
+            material_codes_col = cfg_children.get("Material_Codes")
+
+            if material_key_elem and material_codes_col:
+                material_value = config_by_key.get(material_key_elem["value"], "")
+                for entry in material_codes_col.get("value", []):
+                    entry_props = {p["idShort"]: p["value"] for p in entry.get("value", [])}
+                    if entry_props.get("Material_ID") == material_value:
+                        code = entry_props.get("Code", "")
+                        if code:
+                            patch["Model_Number"] = code
+                        break
+
+        # Remove the configuration directive — it belongs in the Type only
+        doc_submodel["submodelElements"] = [
+            e for e in elements if e.get("idShort") != "Model_Number_Configuration"
+        ]
+
+    for elem in doc_submodel.get("submodelElements", []):
+        if elem.get("idShort") in patch:
+            elem["value"] = patch[elem["idShort"]]
 
 
 def update_properties_submodel(
@@ -368,7 +461,9 @@ def create_inventory_items(component_type: str, quantity: int, config_values: Di
         update_documentation_submodel(
             instance_data["submodels"]["Documentation"],
             instance_num,
-            created_date
+            created_date,
+            config_values,
+            COMPONENT_REGISTRY[component_type]["properties_config_map"],
         )
         
         # Update Properties submodel with configured values
@@ -387,6 +482,60 @@ def create_inventory_items(component_type: str, quantity: int, config_values: Di
     print(f"✓ Successfully created {quantity} instance(s) of {component_type}")
     print("=" * 70)
 
+    # Sync newly created instances to the inventory database
+    print("\nSyncing to inventory database...")
+    inventory_db.sync(
+        db_path=str(Path(__file__).parent / inventory_db.DEFAULT_DB_FILE),
+        base_path=Path(__file__).parent,
+    )
+
+
+# =============================================================================
+# Shopping List Runner
+# =============================================================================
+
+def run_shopping_list(shopping_list: List[Tuple[str, int, Dict[str, str]]] = None) -> None:
+    """
+    Create all components defined in the shopping list (or SHOPPING_LIST by
+    default) without any interactive prompts.
+    """
+    if shopping_list is None:
+        shopping_list = SHOPPING_LIST
+
+    total_entries = len(shopping_list)
+    total_units = sum(qty for _, qty, _ in shopping_list)
+
+    print("\n" + "=" * 70)
+    print("SHOPPING LIST — Standard Stock Creation")
+    print("=" * 70)
+    print(f"  Entries : {total_entries}")
+    print(f"  Total   : {total_units} component instance(s)")
+    print("=" * 70)
+    print(f"  {'#':<4} {'Component Type':<16} {'Qty':>4}  Configuration")
+    print("-" * 70)
+    for i, (comp_type, qty, cfg) in enumerate(shopping_list, 1):
+        cfg_str = ", ".join(f"{k}={v}" for k, v in cfg.items()) if cfg else "(default)"
+        print(f"  {i:<4} {comp_type:<16} {qty:>4}  {cfg_str}")
+    print("=" * 70)
+    print()
+
+    response = input("Proceed with creation? (yes/no): ").strip().lower()
+    if response not in ("yes", "y"):
+        print("Operation cancelled.")
+        return
+
+    print()
+    created_total = 0
+    for comp_type, qty, cfg in shopping_list:
+        cfg_str = ", ".join(f"{k}={v}" for k, v in cfg.items()) if cfg else "default"
+        print(f"\n── {comp_type} x{qty}  [{cfg_str}] ──")
+        create_inventory_items(comp_type, qty, cfg)
+        created_total += qty
+
+    print("\n" + "=" * 70)
+    print(f"✓ Shopping list complete — {created_total} instance(s) created and synced.")
+    print("=" * 70 + "\n")
+
 
 # =============================================================================
 # Main Entry Point
@@ -394,7 +543,20 @@ def create_inventory_items(component_type: str, quantity: int, config_values: Di
 
 def main():
     """Main entry point for the inventory creator."""
+    import argparse
+    parser = argparse.ArgumentParser(description="Inventory Creator — Component Instance Generator")
+    parser.add_argument(
+        "--shopping-list",
+        action="store_true",
+        help="Create the standard hardcoded shopping list of components without prompts",
+    )
+    args = parser.parse_args()
+
     try:
+        if args.shopping_list:
+            run_shopping_list()
+            return
+
         component_type, quantity, config_values = display_menu()
         
         if confirm_and_create(component_type, quantity, config_values):

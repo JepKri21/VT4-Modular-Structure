@@ -14,6 +14,7 @@ changes needed.
 import json
 import copy
 import random
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -288,18 +289,71 @@ class TelefonConfiguratorV2:
                             prop["value"] = str(val)
         return submodel
 
-    def _patch_documentation(self, submodel: Dict, instance_num: str) -> Dict:
+    def _patch_documentation(
+        self,
+        submodel: Dict,
+        instance_num: str,
+        config: Dict[str, Any] = None,
+    ) -> Dict:
         """
-        Set Instance_Number and Created_Date in Documentation.
+        Set Instance_Number, Model_Number, and Created_Date in Documentation.
 
-        The Type Documentation defines these fields with empty values.
-        This method finds them by idShort and fills in the instance values.
-        The Type fully controls the layout — no fields are added here.
+        If the Type defines a Model_Number_Configuration collection, this method
+        reads the material-to-code mapping from it and auto-generates Model_Number.
+        The Model_Number_Configuration is then removed from the instance so only
+        real data appears in the output.
+
+        Adding or changing model number codes only requires editing the Type JSON —
+        no code changes needed here.
         """
+        if config is None:
+            config = {}
+
         patch = {
             "Instance_Number": instance_num,
             "Created_Date": datetime.now().strftime("%Y-%m-%d"),
         }
+
+        # Read Model_Number_Configuration from the Type if present
+        elements = submodel.get("submodelElements", [])
+        model_num_cfg = next(
+            (e for e in elements if e.get("idShort") == "Model_Number_Configuration"),
+            None,
+        )
+
+        if model_num_cfg and config:
+            cfg_children = {e["idShort"]: e for e in model_num_cfg.get("value", [])}
+
+            # Template approach: "{number_of_fuses}" → config value substitution
+            template_elem = cfg_children.get("Template")
+            if template_elem:
+                model_number = re.sub(
+                    r"\{(\w+)\}",
+                    lambda m: str(config.get(m.group(1), m.group(0))),
+                    template_elem["value"],
+                )
+                patch["Model_Number"] = model_number
+
+            # Material code lookup approach: Material_ID → short code
+            else:
+                material_key_elem = cfg_children.get("Material_Config_Key")
+                material_codes_col = cfg_children.get("Material_Codes")
+
+                if material_key_elem and material_codes_col:
+                    material_value = config.get(material_key_elem["value"], "")
+                    for entry in material_codes_col.get("value", []):
+                        entry_props = {p["idShort"]: p["value"] for p in entry.get("value", [])}
+                        if entry_props.get("Material_ID") == material_value:
+                            code = entry_props.get("Code", "")
+                            if code:
+                                patch["Model_Number"] = code
+                            break
+
+            # Remove the configuration directive — it belongs in the Type only
+            submodel["submodelElements"] = [
+                e for e in elements if e.get("idShort") != "Model_Number_Configuration"
+            ]
+
         for elem in submodel.get("submodelElements", []):
             if elem.get("idShort") in patch:
                 elem["value"] = patch[elem["idShort"]]
@@ -436,7 +490,7 @@ class TelefonConfiguratorV2:
                 sm = self._patch_properties(sm, config, cfg["properties_config_map"])
 
             elif submodel_name == "Documentation":
-                sm = self._patch_documentation(sm, instance_num)
+                sm = self._patch_documentation(sm, instance_num, config)
 
             elif submodel_name == "Bill_Of_Materials" and cfg["bom_dynamic_quantities"]:
                 sm = self._patch_bom(sm, config, cfg["bom_dynamic_quantities"])
