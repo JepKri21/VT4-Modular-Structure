@@ -1,111 +1,90 @@
 "use client";
+import React, { useState, useEffect } from "react";
+import OEECard from "@/components/OEECard";
 
-import { useEffect, useState } from "react";
-import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+interface StationOEE {
+  stationId: string;
+  currentOEE: number;
+  previousOEE: number;
+  latestActivity: string;
+}
 
-type OEEData = {
-  station: string;
-  A: number;
-  P: number;
-  Q: number;
-  OEE: number;
-  totalParts: number;
+// Dummy fetch-funktion, som du kan erstatte med PSQL fetch
+const fetchStationOEE = async (
+  filter: "line" | "station",
+  hoursInterval: number,
+): Promise<StationOEE[]> => {
+  // TODO: Lav et API endpoint der returnerer OEE per station eller line
+  return [
+    {
+      stationId: "Drilling_1",
+      currentOEE: 75,
+      previousOEE: 56,
+      latestActivity: "2h ago",
+    },
+    {
+      stationId: "Drilling_2",
+      currentOEE: 82,
+      previousOEE: 79,
+      latestActivity: "1h ago",
+    },
+  ];
 };
 
-const stations = ["Drilling_1", "Drilling_2"];
-
-export default function ProductionMonitoringPage() {
-  const [mode, setMode] = useState<"station" | "line">("station");
-  const [hours, setHours] = useState<number>(24);
-  const [data, setData] = useState<OEEData[]>([]);
+const ProductionMonitoring: React.FC = () => {
+  const [filter, setFilter] = useState<"line" | "station">("station");
+  const [interval, setInterval] = useState(24);
+  const [stations, setStations] = useState<StationOEE[]>([]);
 
   useEffect(() => {
-    fetchOEE();
-  }, [mode, hours]);
-
-  async function fetchOEE() {
-    if (mode === "station") {
-      const results = await Promise.all(
-        stations.map(async (station) => {
-          const res = await fetch(`/api/oee?station=${station}&hours=${hours}`);
-          return res.json();
-        }),
+    const loadData = async () => {
+      const res = await fetch(
+        `/api/oee-new?filter=${filter}&hours=${interval}`,
       );
-      setData(results);
-    } else {
-      // Line aggregation
-      const res = await fetch(`/api/oee-line?hours=${hours}`);
-      const result = await res.json();
-      setData([result]);
-    }
-  }
-
-  const percent = (val: number) => Math.round(val * 100);
+      const data = await res.json();
+      setStations(data);
+    };
+    loadData();
+  }, [filter, interval]);
 
   return (
-    <main className="p-6 space-y-6">
-      {/* FILTER BAR */}
-      <div className="flex gap-4 items-center">
+    <div className="p-4">
+      {/* Filter Controls */}
+      <div className="flex gap-4 mb-4">
         <select
-          className="bg-muted px-3 py-2 rounded-md"
-          value={mode}
-          onChange={(e) => setMode(e.target.value as "station" | "line")}
+          value={filter}
+          onChange={(e) => setFilter(e.target.value as "line" | "station")}
+          className="border p-1 rounded"
         >
           <option value="station">Station Specific</option>
           <option value="line">Line Specific</option>
         </select>
 
         <select
-          className="bg-muted px-3 py-2 rounded-md"
-          value={hours}
-          onChange={(e) => setHours(Number(e.target.value))}
+          value={interval}
+          onChange={(e) => setInterval(Number(e.target.value))}
+          className="border p-1 rounded"
         >
           <option value={1}>Last 1 hour</option>
           <option value={8}>Last 8 hours</option>
           <option value={24}>Last 24 hours</option>
-          <option value={168}>Last 7 days</option>
+          <option value={72}>Last 3 days</option>
         </select>
       </div>
 
-      {/* CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {data.map((item) => (
-          <Card key={item.station} className="p-4 bg-muted border-background">
-            <CardHeader>
-              <CardTitle className="text-lg font-bold text-center">
-                {item.station}
-              </CardTitle>
-            </CardHeader>
-
-            <CardContent className="space-y-4">
-              <div>
-                <p className="font-bold text-xl">OEE: {percent(item.OEE)}%</p>
-                <Progress value={percent(item.OEE)} />
-              </div>
-
-              <div>
-                <p>Availability: {percent(item.A)}%</p>
-                <Progress value={percent(item.A)} />
-              </div>
-
-              <div>
-                <p>Performance: {percent(item.P)}%</p>
-                <Progress value={percent(item.P)} />
-              </div>
-
-              <div>
-                <p>Quality: {percent(item.Q)}%</p>
-                <Progress value={percent(item.Q)} />
-              </div>
-
-              <div className="text-sm text-muted-foreground">
-                Produced parts: {item.totalParts}
-              </div>
-            </CardContent>
-          </Card>
+      {/* OEE Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-15">
+        {stations.map((station) => (
+          <OEECard
+            key={station.stationId}
+            stationId={station.stationId}
+            currentOEE={station.currentOEE}
+            previousOEE={station.previousOEE}
+            latestActivity={station.latestActivity}
+          />
         ))}
       </div>
-    </main>
+    </div>
   );
-}
+};
+export default ProductionMonitoring;
