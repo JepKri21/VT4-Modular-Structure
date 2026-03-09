@@ -1,64 +1,27 @@
-import { NextResponse } from "next/server";
-
-const AAS_BASE_URL = "http://localhost:8081";
-
-function encodeId(id: string) {
-  return Buffer.from(id).toString("base64");
-}
-
-async function fetchSubmodel(id: string) {
-  const encoded = encodeId(id);
-  const res = await fetch(`${AAS_BASE_URL}/submodels/${encoded}`, {
-    headers: { Accept: "application/json" },
-    cache: "no-store",
-  });
-  if (!res.ok) return null;
-  return res.json();
-}
-
-function extractClassification(submodel: any) {
-  if (!submodel?.submodelElements) return {};
-
-  const map: any = {};
-
-  for (const el of submodel.submodelElements) {
-    map[el.idShort] = el.value;
-  }
-
-  return map;
-}
-
 export async function GET() {
-  const res = await fetch(`${AAS_BASE_URL}/shells`, {
-    headers: { Accept: "application/json" },
-    cache: "no-store",
-  });
+  try {
+    const res = await fetch("http://100.117.139.24:5001/shells", {
+      cache: "no-store",
+    });
 
-  const data = await res.json();
-  const shells = data.result ?? [];
+    if (!res.ok) {
+      throw new Error("Failed to fetch AAS shells");
+    }
 
-  const enriched = await Promise.all(
-    shells.map(async (shell: any) => {
-      const submodelIds = shell.submodels?.map((s: any) => s.keys[0].value);
+    const shells = await res.json();
 
-      let classification = {};
+    const assets = shells.map((shell: any) => ({
+      id: shell.identification?.id || "",
+      idShort: shell.idShort || "Unknown",
+      AssetCategory: shell.category || "Product",
+      Family: shell.idShort || "Unknown",
+      Variant: "Default",
+    }));
 
-      for (const id of submodelIds) {
-        if (id.includes("AssetClassification")) {
-          const sm = await fetchSubmodel(id);
-          classification = extractClassification(sm);
-        }
-      }
+    return Response.json(assets);
+  } catch (error) {
+    console.error("Assets API error:", error);
 
-      return {
-        id: shell.id,
-        idShort: shell.idShort,
-        globalAssetId: shell.assetInformation?.globalAssetId,
-        assetKind: shell.assetInformation?.assetKind,
-        ...classification,
-      };
-    }),
-  );
-
-  return NextResponse.json(enriched);
+    return Response.json({ error: "Failed to load assets" }, { status: 500 });
+  }
 }

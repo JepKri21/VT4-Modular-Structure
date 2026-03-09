@@ -32,8 +32,8 @@ const fetchStationOEE = async (
 };
 
 const ProductionMonitoring: React.FC = () => {
-  const [filter, setFilter] = useState<"line" | "station">("station");
-  const [interval, setInterval] = useState(24);
+  const [filter, setFilter] = useState<"line" | "station">("line");
+  const [interval, setInterval] = useState(168);
   const [stations, setStations] = useState<OEEItem[]>([]);
 
   useEffect(() => {
