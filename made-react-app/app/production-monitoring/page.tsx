@@ -73,7 +73,7 @@ const ProductionMonitoring: React.FC = () => {
       </div>
 
       {/* OEE Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-15">
+      <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-15">
         {stations.map((station) => (
           <OEECard
             key={station.stationId}
