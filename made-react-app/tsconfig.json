@@ -31,7 +31,8 @@
     "**/*.mts",
     "app/api/routes.js",
     "app/production-monitoring/page.js",
-    "app/api/execution-log/route.js"
+    "app/api/execution-log/route.js",
+    "lib/oee.js"
   ],
   "exclude": ["node_modules"]
 }

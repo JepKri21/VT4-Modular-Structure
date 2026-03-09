@@ -22,6 +22,7 @@ import { setIsSidebarCollapsed } from "@/state";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import layout from "@/app/dashboard/layout";
+import Image from "next/image";
 
 interface sidebarLinkProps {
   href: string;
@@ -90,7 +91,7 @@ const Sidebar = () => {
       <div
         className={`flex justify-between gap-3 md:justify-normal items-center pt-8 ${isSidebarCollapsed ? "px-5" : "px-8"}`}
       >
-        <div>logo</div>
+        <Image src="/FMSLogo.png" width={50} height={50} alt="Business Logo" />
         <h1
           className={`${isSidebarCollapsed ? "hidden" : "block"} font-extrabold text-m text-primary`}
         >
@@ -174,12 +175,6 @@ const Sidebar = () => {
           href="/inventory-management"
           icon={PackageOpen}
           label="Inventory Management"
-          isCollapsed={isSidebarCollapsed}
-        />
-        <SidebarLink
-          href="/SILAS"
-          icon={Bot}
-          label="SILAS"
           isCollapsed={isSidebarCollapsed}
         />
 

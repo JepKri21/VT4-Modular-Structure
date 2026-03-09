@@ -70,13 +70,15 @@ export default function AlarmsPage() {
               <td className="p-2">{alarm.cleared_at ? "Cleared" : "Active"}</td>
 
               <td className="p-2">
-                {!alarm.acknowledged && (
-                  <Button
-                    className="text-background hover:underline"
+                {alarm.acknowledged ? (
+                  <span className="text-card">Acknowledged</span>
+                ) : (
+                  <button
                     onClick={() => acknowledgeAlarm(alarm.id)}
+                    className="text-primary hover:underline"
                   >
                     Acknowledge
-                  </Button>
+                  </button>
                 )}
               </td>
             </tr>
