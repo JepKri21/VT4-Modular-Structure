@@ -9,10 +9,10 @@ SUBMODEL_ENDPOINT = f"{SERVER_BASE}/submodels"  # change if needed
 SHELL_ENDPOINT = f"{SERVER_BASE}/shells"             # change if needed
 
 # Paths to your existing JSON files
+
 operation_submodel_json_file = r"C:\Users\silas\Desktop\Manufacturing_Technology_4\Software\Python_Tests\Submodel_object_template.json"
 communication_submodel_json_file = r"C:\Users\silas\Desktop\Manufacturing_Technology_4\Software\Python_Tests\CommunicationEndpoint.json"
 shell_json_file = r"C:\Users\silas\Desktop\Manufacturing_Technology_4\Software\Python_Tests\Shell_object_template.json"
-
 
 # -------------------------------
 # Step 1: Load JSON files
@@ -75,3 +75,7 @@ print("Communication Submodel POST:", response.status_code, response.text)
 #  ],
 #  "modelType": "Submodel"
 #}
+
+classification_submodel_json_file = r"/Users/lucasn.bonde/Desktop/Privat/Programming/Speciale/VT4-Modular-Structure/DrillStationAssetClassification.json"
+operation_submodel_json_file = r"/Users/lucasn.bonde/Desktop/Privat/Programming/Speciale/VT4-Modular-Structure/DrillStationVisualization.json"
+communication_submodel_json_file = r"/Users/lucasn.bonde/Desktop/Privat/Programming/Speciale/VT4-Modular-Structure/CommunicationEndpoint.json"
