@@ -1,0 +1,84 @@
+{
+  "idShort": "Documentation",
+  "semanticId": {"type": "ExternalReference","keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Assets/Product/Submodels/Documentation"}]},
+  "id": "https://aausmartlab.com/Assets/Product/Component/AAU/Fuse/001/Documentation",
+  "description": [{"language": "en","text": "Basic documentation metadata for the product."}],
+  "submodelElements": [
+    {
+      "modelType": "SubmodelElementCollection",
+      "idShort": "GeneralInformation",
+      "value": [
+        {
+          "modelType": "Property",
+          "idShort": "DocumentVersion",
+          "valueType": "xs:string",
+          "value": "1.0"
+        },
+        {
+          "modelType": "Property",
+          "idShort": "ReleaseDate",
+          "valueType": "xs:date",
+          "value": "2026-02-24"
+        }
+      ]
+    },
+    {
+      "modelType": "SubmodelElementCollection",
+      "idShort": "TechnicalDetails",
+      "value": [
+        {
+          "modelType": "Property",
+          "idShort": "MaterialSpecification",
+          "valueType": "xs:string",
+          "value": "1mm Copper Wire Diameter, Rated: 2A"
+        },
+        {
+          "modelType": "MultiLanguageProperty",
+          "idShort": "SafetyNote",
+          "value": [
+            {
+              "language": "en",
+              "text": "Exposing the fuse to amps larger than 2A, will cause it to break."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "modelType": "SubmodelElementCollection",
+      "idShort": "Product Classification",
+      "value": [
+        {
+          "modelType": "Property",
+          "idShort": "Product Type",
+          "valueType": "xs:string",
+          "value": "Component"
+        },
+        {
+          "modelType": "Property",
+          "idShort": "Manufacturer",
+          "valueType": "xs:string",
+          "value": "AAU"
+        },
+        {
+          "modelType": "Property",
+          "idShort": "Component Variant",
+          "valueType": "xs:string",
+          "value": "Fuse"
+         },
+         {
+          "modelType": "Property",
+          "idShort": "Shell ID",
+          "valueType": "xs:string",
+          "value": "001"
+         }
+      ]
+    },
+    {
+      "modelType": "File",
+      "idShort": "DocumentationFile",
+      "contentType": "application/pdf",
+      "value": "https://aausmartlab.com/docs/fuse_datasheet.pdf"
+    }
+  ]
+}

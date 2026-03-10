@@ -1,0 +1,109 @@
+{
+  "idShort": "Documentation",
+  "semanticId": {
+    "type": "ExternalReference",
+    "keys": [
+      {
+        "type": "GlobalReference",
+        "value": "https://aausmartlab.com/Assets/Station/Submodels/Documentation"
+      }
+    ]
+  },
+  "id": "https://aausmartlab.com/Assets/Resource/B&R/ACOPOS6D/001/Documentation",
+  "description": [
+    {
+      "language": "en",
+      "text": "Basic documentation metadata for the station."
+    }
+  ],
+  "submodelElements": [
+    {
+      "modelType": "SubmodelElementCollection",
+      "idShort": "General Information",
+      "value": [
+        {
+          "modelType": "Property",
+          "idShort": "Document Version",
+          "valueType": "xs:string",
+          "value": "1.0"
+        },
+        {
+          "modelType": "Property",
+          "idShort": "Release Date",
+          "valueType": "xs:date",
+          "value": "2026-02-26"
+        }
+      ]
+    },
+    {
+      "modelType": "SubmodelElementCollection",
+      "idShort": "Resource Classification",
+      "value": [
+        {
+          "modelType": "Property",
+          "idShort": "Manufacturer",
+          "valueType": "xs:string",
+          "value": "B&R"
+        },
+        {
+          "modelType": "Property",
+          "idShort": "Station Type",
+          "valueType": "xs:string",
+          "value": "ACOPOS6D Station"
+        },
+        {
+          "modelType": "Property",
+          "idShort": "Shell ID",
+          "valueType": "xs:string",
+          "value": "001"
+        }
+      ]
+    },
+    {
+      "modelType": "SubmodelElementCollection",
+      "idShort": "Operational Details",
+      "value": [
+        {
+          "modelType": "Property",
+          "idShort": "Power Requirement",
+          "valueType": "xs:string",
+          "value": "230V AC"
+        },
+        {
+          "modelType": "MultiLanguageProperty",
+          "idShort": "Safety Note",
+          "value": [
+            {
+              "language": "en",
+              "text": "Ensure shuttles are not handled without proper safety orientation."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "modelType": "SubmodelElementCollection",
+      "idShort": "Maintenance",
+      "value": [
+        {
+          "modelType": "Property",
+          "idShort": "Maintenance Interval",
+          "valueType": "xs:string",
+          "value": "Every 6 months"
+        },
+        {
+          "modelType": "Property",
+          "idShort": "Service Contact",
+          "valueType": "xs:string",
+          "value": "AAU Smart Lab Support"
+        }
+      ]
+    },
+    {
+      "modelType": "File",
+      "idShort": "Documentation File",
+      "contentType": "application/pdf",
+      "value": "https://aausmartlab.com/docs/acopos6d_manual.pdf"
+    }
+  ]
+}
