@@ -18,7 +18,7 @@ shell_folder = ".\Telefon-Produktion\JSON_Shells"
 submodel_folder = ".\Telefon-Produktion\JSON_Submodels"
 
 PORT = "5001"
-SERVER_BASE = f"http://localhost:{PORT}"  # your server base URL
+SERVER_BASE = f"http://172.20.11.8:{PORT}"  # your server base URL
 SUBMODEL_ENDPOINT = f"{SERVER_BASE}/submodels"
 SHELL_ENDPOINT = f"{SERVER_BASE}/shells"
 
