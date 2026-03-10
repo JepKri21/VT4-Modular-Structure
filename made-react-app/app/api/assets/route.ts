@@ -1,6 +1,6 @@
 export async function GET() {
   try {
-    const res = await fetch("http://100.117.139.24:5001/shells", {
+    const res = await fetch("http://localhost:8081/shells", {
       cache: "no-store",
     });
 
