@@ -5,8 +5,9 @@ import asyncio
 import sys
 from pathlib import Path
 
-sys.path.append(str(Path(__file__).resolve().parent.parent))
-from MQTT_Server_Client.MQTT_Client import MQTT_Client_Resource
+sys.path.append(str(Path(__file__).resolve().parent))
+
+from MQTT.Resource_MQTT_Client import MQTT_Client_Resource
 
 class PackMLState(enum.Enum):
     # Main states
@@ -255,52 +256,3 @@ class PackMLStateMachine:
             ):
                 return
             await asyncio.sleep(0.05)
-
-
-
-
-
-
-
-
-
-
-#==========================================================================================================================
-#==============================================Only for testing the class==================================================
-#==========================================================================================================================
-
-#async def produce_n_products(machine, n):
-#    for i in range(n):
-#        print(f"\n--- Producing product {i+1} ---")
-#
-#        # Start cycle
-#        await machine.state_command_callback("start")
-#
-#        await machine.wait_for_state(PackMLState.IDLE)
-#
-#    print("\nProduction finished.")
-#
-#
-#async def manual_control(machine):
-#    while True:
-#        cmd = await asyncio.to_thread(input, "Enter command: ")
-#        await machine.state_command_callback(cmd)
-#
-#
-#machine = PackMLStateMachine(mqtt_info=mqtt_information)
-#
-#
-#
-#async def main():
-#    # production_task = asyncio.create_task(produce_n_products(machine, 5))
-#    # manual_task = asyncio.create_task(manual_control(machine))
-#
-#    # await production_task
-#
-#    # # Optionally cancel manual input when done
-#    # manual_task.cancel()
-#    while True:
-#        await asyncio.sleep(1)
-#
-#
-#asyncio.run(main())

@@ -1,14 +1,35 @@
-from PackML_Machine_Class import StationBehavior, PackMLState, PackMLStateMachine
+
 import asyncio
 import time
 import random
 
 
-# BROKER = "172.20.10.236"
-BROKER = "localhost"
-PORT = 1883
-CLIENT_ID = "Drilling_1"
-BASE_TOPIC = "AAU/Smartlab/PL1/Stations"
+import sys
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
+
+from PackML.PackML_Machine_Class import StationBehavior, PackMLState, PackMLStateMachine
+from Shell_And_Submodels.Shell_Generator_Class import ShellGenerator
+
+yaml_config = r"C:\Users\silas\Desktop\Manufacturing_Technology_4\Github\VT4-Modular-Structure\Generating_Resources\Resource_Configs\Drilling_Resource\Drilling_Resource_Config.yaml"
+
+Drilling_Resource_AAS = ShellGenerator(yaml_config)
+
+submodel_communication = Drilling_Resource_AAS.communication
+
+
+#I cannot seem to find the communication values in the submodel
+BROKER = Drilling_Resource_AAS.find_value(submodel_communication,'broker_address')
+print(BROKER)
+PORT = Drilling_Resource_AAS.find_value(submodel_communication,'port')
+print(PORT)
+CLIENT_ID = Drilling_Resource_AAS.shell_id
+BASE_TOPIC = Drilling_Resource_AAS.find_value(submodel_communication,'topic')
+print(BASE_TOPIC)
+
+
+
 
 mqtt_information = [BROKER, PORT, CLIENT_ID,BASE_TOPIC]
 

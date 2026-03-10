@@ -32,8 +32,9 @@ communication:
     - idShort: "UNS_Communication"
       properties:
 
-        broker_address: "mqtt://broker.company.com:1883"
+        broker_address: "http://192.168.38.200"
         protocol: "MQTT"
+        port: "8081"
         topic: "AAU/FIB14/SmartLab/PL1/Stations/Drilling_1"
         qos: 2
 
