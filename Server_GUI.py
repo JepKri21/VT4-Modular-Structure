@@ -14,10 +14,10 @@ bash_path = r"C:\Program Files\Git\bin\bash.exe"
 script_dir = ".\AasxServerBlazor.v0.3.1.343-aasV3-alpha-latest\AasxServerBlazor"
 script_name = "00startForDemo.sh"
 
-shell_folder = ".\Telefon-Produktion\JSON_Shells"
-submodel_folder = ".\Telefon-Produktion\JSON_Submodels"
+shell_folder = "Configurator\JSON_Shells\Product_Shells_JSON\Instances\Component_Instances"
+submodel_folder = "Configurator\JSON_Submodels\Product_Submodels_JSON\Instances\Component_Instance_Submodels"
 
-PORT = "5001"
+PORT = "8081"
 SERVER_BASE = f"http://localhost:{PORT}"  # your server base URL
 SUBMODEL_ENDPOINT = f"{SERVER_BASE}/submodels"
 SHELL_ENDPOINT = f"{SERVER_BASE}/shells"
