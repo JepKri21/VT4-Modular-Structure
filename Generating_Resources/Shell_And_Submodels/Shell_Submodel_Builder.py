@@ -127,7 +127,7 @@ def build_location(config, shell_id):
             )
         )
 
-    cp_obj = LocationConnectionPoints(connection_points)
+    cp_obj = LocationConnectionPoints(Connection_Points=connection_points)
 
     resource_connections = []
 
@@ -144,7 +144,7 @@ def build_location(config, shell_id):
             )
         )
 
-    rc_obj = ResourceConnectionPoints(resource_connections)
+    rc_obj = ResourceConnectionPoints(Resource_Connections=resource_connections)
 
     return LocationSubmodelData(
         submodel_data=[general_location, cp_obj, rc_obj],
@@ -185,15 +185,16 @@ def build_skills(config, shell_id):
 
             parameters = Parameters(extra_elements=params)
 
-            scp = SkillSupportedConnectionPoints([
+            scp = SkillSupportedConnectionPoints(connection_points=[
                 SkillConnectionPoint(
+                    idShort=x['connection_point_id'],
                     Connection_Point_Id=x["connection_point_id"]
                 )
                 for x in skill_cfg["supported_connection_points"]
             ])
 
-            components = SupportedComponents([
-                SupportedComponent(c)
+            components = SupportedComponents(components=[
+                SupportedComponent(idShort=c, Component_Type=c)
                 for c in skill_cfg["supported_components"]
             ])
 
@@ -214,7 +215,7 @@ def build_skills(config, shell_id):
 
         agents.append(agent)
 
-    agents_obj = Agents(agents)
+    agents_obj = Agents(agents=agents)
 
     return SkillsSubmodelData(
         submodel_data=[agents_obj],

@@ -1,6 +1,6 @@
 shell:
   id: "https://aausmartlab.com/Assets/Resource/MADE/Drill_Station/1e1d4a58-e403-4d5e-81fa-19c544835561"
-  idShort: "Drill_Station"
+  idShort: "Drilling_Station_test"
 
   submodels:
     - Item_Capacity
@@ -32,10 +32,10 @@ communication:
     - idShort: "UNS_Communication"
       properties:
 
-        broker_address: "http://192.168.38.200"
+        broker_address: "192.168.38.200"
         protocol: "MQTT"
-        port: "8081"
-        topic: "AAU/FIB14/SmartLab/PL1/Stations/Drilling_1"
+        port: "1883"
+        topic: "AAU/FIB14/SmartLab/PL1/Stations"
         qos: 2
 
 

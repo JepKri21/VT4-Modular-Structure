@@ -192,6 +192,8 @@ class ServerGUI:
             else:
                 self.append_terminal(f"FAIL ({response.status_code}) → {file_path.name}")
 
+        self.get_shells()
+
     def post_all_submodels(self):
         self.append_terminal("Posting ALL submodel JSON files...")
         files = list(Path(submodel_folder).rglob("*.json"))
@@ -209,11 +211,14 @@ class ServerGUI:
             else:
                 self.append_terminal(f"FAIL ({response.status_code}) → {file_path.name}")
 
+        self.get_submodels()
+
     def delete_all_shells(self):
         self.append_terminal("Deleting Shells")
         for id in self.shell_ids:
             response = requests.delete(f"{SHELL_ENDPOINT}/{self.base64encode(id)}")
             print(f"Deleting {id} shell, Response: {response.status_code}")
+        self.get_shells()
         
 
 
@@ -222,6 +227,7 @@ class ServerGUI:
         for id in self.submodel_ids:
             response = requests.delete(f"{SUBMODEL_ENDPOINT}/{self.base64encode(id)}")
             print(f"Deleting {id} shell, Response: {response.status_code}")
+        self.get_submodels()
         
         
 

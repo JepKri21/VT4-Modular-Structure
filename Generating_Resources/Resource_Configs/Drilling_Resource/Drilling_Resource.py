@@ -2,8 +2,6 @@
 import asyncio
 import time
 import random
-
-
 import sys
 from pathlib import Path
 
@@ -16,22 +14,33 @@ yaml_config = r"C:\Users\silas\Desktop\Manufacturing_Technology_4\Github\VT4-Mod
 
 Drilling_Resource_AAS = ShellGenerator(yaml_config)
 
-submodel_communication = Drilling_Resource_AAS.communication
+submodel_communication = Drilling_Resource_AAS.communication.convert_to_dict()
+
+communication_properties = submodel_communication['submodelElements'][0]['value'][0]['value'][0]['value']
+
+#It is very possible that things like port, broker address, and things like AAS server port and endpoints should not be in the communication submodel,
+#  as it will change depending where the machine is located and there is not very static or transferable, say if a new company obtains it.
+#I think we just need to assume that the line controller will have access to the same networks as the stations and that you just have to match them.
+# It would really only be necessary if a production line is on multiple MQTT brokers that the line controller needs to connect to.
+
+for property in communication_properties:
+    if property['idShort'] == 'broker_address':
+        BROKER = property['value']
+    if property['idShort'] == 'port':
+        MQTT_PORT = int(property['value'])
+    if property['idShort'] == 'topic':
+        BASE_TOPIC = property['value']
+
+CLIENT_ID = Drilling_Resource_AAS.shell_idShort
 
 
-#I cannot seem to find the communication values in the submodel
-BROKER = Drilling_Resource_AAS.find_value(submodel_communication,'broker_address')
-print(BROKER)
-PORT = Drilling_Resource_AAS.find_value(submodel_communication,'port')
-print(PORT)
-CLIENT_ID = Drilling_Resource_AAS.shell_id
-BASE_TOPIC = Drilling_Resource_AAS.find_value(submodel_communication,'topic')
-print(BASE_TOPIC)
+mqtt_information = [BROKER, MQTT_PORT, CLIENT_ID,BASE_TOPIC]
 
 
-
-
-mqtt_information = [BROKER, PORT, CLIENT_ID,BASE_TOPIC]
+AAS_PORT = "8081"
+SERVER_BASE = f"http://{BROKER}:{AAS_PORT}"  # your server base URL
+SUBMODEL_ENDPOINT = f"{SERVER_BASE}/submodels"
+SHELL_ENDPOINT = f"{SERVER_BASE}/shells"
 
 class DrillingStationBehavior(StationBehavior):
 
@@ -161,14 +170,13 @@ class DrillingStationBehavior(StationBehavior):
 
 
 
-
-
-
-
 async def main():
     behavior = DrillingStationBehavior()
     machine = PackMLStateMachine(mqtt_information, behavior)
-    machine.active_alarms = [51,62]
+
+    Drilling_Resource_AAS.post_shell_and_submodels(SHELL_ENDPOINT=SHELL_ENDPOINT, SUBMODEL_ENDPOINT=SUBMODEL_ENDPOINT)
+    
+    #machine.active_alarms = [51,62]
     # Keep machine alive forever
     await asyncio.Event().wait()
 

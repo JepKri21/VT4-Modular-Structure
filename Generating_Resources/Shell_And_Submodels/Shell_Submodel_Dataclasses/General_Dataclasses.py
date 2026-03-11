@@ -87,9 +87,19 @@ class AutoCollection:
 
             # List of AutoCollections
             elif isinstance(value, list):
+                sub_elements = []
+            
                 for v in value:
                     if isinstance(v, AutoCollection):
-                        elements.append(v.convert_to_collection())
+                        sub_elements.append(v.convert_to_collection())
+            
+                if sub_elements:
+                    elements.append(
+                        SubmodelElementCollection(
+                            idShort=name,
+                            value=sub_elements
+                        )
+                    )
 
             # int -> Property
             elif isinstance(value, int):

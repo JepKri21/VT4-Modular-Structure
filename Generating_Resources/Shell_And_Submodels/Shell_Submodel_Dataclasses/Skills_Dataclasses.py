@@ -3,11 +3,12 @@ from .General_Dataclasses import *
 
 @dataclass
 class Parameters(AutoCollection):
-    idShort = "Parameters",
+    idShort = "Parameters"
     extra_elements: List[Union[Property, Range, SubmodelElementCollection]] = field(default_factory=list)
 
 @dataclass
 class SkillConnectionPoint(AutoCollection):
+    idShort : str
     Connection_Point_Id: str
 
 
@@ -18,6 +19,7 @@ class SkillSupportedConnectionPoints(AutoCollection):
 
 @dataclass
 class SupportedComponent(AutoCollection):
+    idShort: str
     Component_Type: str
 
 

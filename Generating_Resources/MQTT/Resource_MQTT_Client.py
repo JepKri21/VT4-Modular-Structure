@@ -24,7 +24,7 @@ class MQTT_Client_Resource():
         self.CLIENT = mqtt.Client(client_id=self.CLIENT_ID, callback_api_version=mqtt.CallbackAPIVersion.VERSION1)
     
     def on_connect(self,client, userdata, flags, rc):
-
+        
         if rc == 0:
             print(f"{self.CLIENT_ID} connected to MQTT Broker!")
             client.subscribe(f"{self.BASE_TOPIC}/{self.CLIENT_ID}/CMD")
@@ -205,7 +205,8 @@ class MQTT_Client_Resource():
         self.CLIENT.on_connect = self.on_connect
         self.CLIENT.on_message = self.on_message
 
-        self.CLIENT.connect(self.BROKER,self.PORT)
+        rc = self.CLIENT.connect(self.BROKER,self.PORT)
+        print("Connect result:", rc)
         self.CLIENT.loop_start()
         time.sleep(2)
     
