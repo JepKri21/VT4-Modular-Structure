@@ -13,10 +13,12 @@ import json
 import re
 import sqlite3
 import copy
+import base64
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from inventory_db import _create_tables
+import requests
+from inventory_db import _create_tables, _rebuild_stock, _get_list_prop, _parse_model_number_properties
 from configurator_v3 import ASSET_REGISTRY
 
 
@@ -25,6 +27,13 @@ from configurator_v3 import ASSET_REGISTRY
 # =============================================================================
 
 INVENTORY_DB = "inventory.db"
+
+DEFAULT_SERVER_BASE = "http://localhost:8081"
+
+
+def _b64url(s: str) -> str:
+    """Base64url-encode a string (no padding) for AAS REST path segments."""
+    return base64.urlsafe_b64encode(s.encode()).rstrip(b"=").decode()
 
 
 # =============================================================================
@@ -47,9 +56,68 @@ class AssemblyManager:
     Manages the assembly phase: converts orders to product instances.
     """
 
-    def __init__(self, base_path: str, db_path: str = INVENTORY_DB):
+    def __init__(
+        self,
+        base_path: str,
+        db_path: str = INVENTORY_DB,
+        upload: bool = True,
+        server_base: str = DEFAULT_SERVER_BASE,
+    ):
         self.base_path = Path(base_path)
         self.db_path = db_path
+        self.upload = upload
+        self.server_base = server_base
+
+    # =========================================================================
+    # AAS Server upload helpers
+    # =========================================================================
+
+    def _upload_to_server(self, shell: Dict, submodels: Dict[str, Dict]) -> None:
+        """
+        POST submodels then shell to the AAS server.
+        These are always brand-new resources (unique instance IDs created at
+        assembly time) so POST is correct. PUT is only used when updating an
+        existing resource (see _update_submodel_on_server).
+        """
+        if not self.upload:
+            return
+        submodel_endpoint = f"{self.server_base}/submodels"
+        shell_endpoint = f"{self.server_base}/shells"
+        for sm_name, sm_data in submodels.items():
+            try:
+                r = requests.post(
+                    submodel_endpoint, json=sm_data,
+                    headers={"Content-Type": "application/json"}, timeout=5,
+                )
+                print(f"  {'OK' if r.ok else f'FAIL ({r.status_code})'} → server submodel: {sm_name}")
+            except requests.ConnectionError:
+                print(f"  ERROR → could not connect to AAS server at {self.server_base}")
+                return
+        try:
+            r = requests.post(
+                shell_endpoint, json=shell,
+                headers={"Content-Type": "application/json"}, timeout=5,
+            )
+            print(f"  {'OK' if r.ok else f'FAIL ({r.status_code})'} → server shell: {shell.get('id', '')}")
+        except requests.ConnectionError:
+            print(f"  ERROR → could not connect to AAS server at {self.server_base}")
+
+    def _update_submodel_on_server(self, submodel: Dict) -> None:
+        """PUT an updated submodel back to the AAS server (replaces the existing one)."""
+        if not self.upload:
+            return
+        sm_id = submodel.get("id", "")
+        url = f"{self.server_base}/submodels/{_b64url(sm_id)}"
+        try:
+            r = requests.put(
+                url, json=submodel,
+                headers={"Content-Type": "application/json"}, timeout=5,
+            )
+            print(f"  {'OK' if r.ok else f'FAIL ({r.status_code})'} → server UPDATE submodel: {sm_id}")
+        except requests.ConnectionError:
+            print(f"  ERROR → could not connect to AAS server at {self.server_base}")
+
+    # =========================================================================
 
     def _load_type_shell(self, asset_key: str) -> Dict[str, Any]:
         """Load the Type AAS shell for the given asset type key."""
@@ -143,6 +211,7 @@ class AssemblyManager:
         instance_id: str = shell["id"]
 
         # --- Submodels ---
+        submodels: Dict[str, Dict] = {}
         for submodel_name in cfg["submodels"]:
             sm = self._type_to_instance(
                 copy.deepcopy(self._load_type_submodel(asset_key, submodel_name)),
@@ -154,6 +223,12 @@ class AssemblyManager:
 
             sm_filename = f"{cfg['instance_file_prefix']}-{instance_num}-{submodel_name}.json"
             self._save_json(cfg["instance_submodels_dir"], sm_filename, sm)
+            submodels[submodel_name] = sm
+
+        # Upload new instance to AAS server
+        if self.upload:
+            print(f"  Uploading {asset_key} instance {instance_num} to AAS server ({self.server_base})...")
+            self._upload_to_server(shell, submodels)
 
         return instance_id
 
@@ -320,6 +395,153 @@ class AssemblyManager:
             )
 
     # =========================================================================
+    # DB registration helper for sub-assemblies
+    # =========================================================================
+
+    def _register_instance_as_consumed(
+        self,
+        asset_key: str,
+        instance_num: str,
+        conn: sqlite3.Connection,
+    ) -> None:
+        """
+        Read the instance Documentation (and Properties) JSON just created and
+        upsert it into inventory_items with status='consumed'.
+
+        Without this, sub-assembly instances created during live assembly are
+        invisible to the DB until the next --sync run, at which point they
+        would appear as 'available' instead of consumed.
+        """
+        cfg = ASSET_REGISTRY[asset_key]
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        # Load Documentation submodel to get model_number / instance_id
+        doc_path = (
+            self.base_path
+            / cfg["instance_submodels_dir"]
+            / f"{cfg['instance_file_prefix']}-{instance_num}-Documentation.json"
+        )
+        with open(doc_path, encoding="utf-8") as f:
+            doc = json.load(f)
+        elements = doc.get("submodelElements", [])
+        model_number = next(
+            (e.get("value") for e in elements if e.get("idShort") == "Model_Number"), ""
+        )
+        product_name = next(
+            (e.get("value") for e in elements if e.get("idShort") == "Product_Name"), None
+        )
+        instance_id = doc.get("id", "")
+
+        # Load Properties submodel for material / color / finish
+        props_path = (
+            self.base_path
+            / cfg["instance_submodels_dir"]
+            / f"{cfg['instance_file_prefix']}-{instance_num}-Properties.json"
+        )
+        material = color = finish = None
+        if props_path.exists():
+            with open(props_path, encoding="utf-8") as f:
+                props_doc = json.load(f)
+            prop_elems = props_doc.get("submodelElements", [])
+            material = _get_list_prop(prop_elems, "List_Of_Properties", "Material")
+            color    = _get_list_prop(prop_elems, "List_Of_Properties", "Color")
+            finish   = _get_list_prop(prop_elems, "List_Of_Properties", "Finish")
+
+        # Supplement with anything decodable from the model number
+        parsed = _parse_model_number_properties(model_number, asset_key)
+        if material is None: material = parsed.get("material")
+        if color    is None: color    = parsed.get("color")
+        nr_fuses = parsed.get("nr_fuses")
+
+        conn.execute("""
+            INSERT INTO inventory_items (
+                instance_id, instance_number, model_number, component_type,
+                product_name, material, color, finish, nr_fuses,
+                created_date, status, last_updated
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'consumed', ?)
+            ON CONFLICT(instance_id) DO UPDATE SET
+                status       = 'consumed',
+                model_number = excluded.model_number,
+                material     = excluded.material,
+                color        = excluded.color,
+                finish       = excluded.finish,
+                nr_fuses     = excluded.nr_fuses,
+                last_updated = excluded.last_updated
+        """, (
+            instance_id, instance_num, model_number, asset_key,
+            product_name, material, color, finish, nr_fuses,
+            now, now,
+        ))
+
+    def _register_telefon_as_available(
+        self,
+        instance_num: str,
+        conn: sqlite3.Connection,
+        config: Dict = None,
+    ) -> None:
+        """
+        Register the newly assembled Telefon (final product) into inventory_items
+        as status='available' so it shows up in stock and can later be released
+        (shipped) from the Orders UI.
+
+        The Telefon's own Properties JSON is not filled with actual values during
+        assembly (only Documentation is patched), so we pull material/color/finish
+        and nr_fuses directly from the order configuration dict.
+        """
+        cfg = ASSET_REGISTRY["Telefon"]
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        doc_path = (
+            self.base_path
+            / cfg["instance_submodels_dir"]
+            / f"{cfg['instance_file_prefix']}-{instance_num}-Documentation.json"
+        )
+        with open(doc_path, encoding="utf-8") as f:
+            doc = json.load(f)
+        elements = doc.get("submodelElements", [])
+        model_number = next(
+            (e.get("value") for e in elements if e.get("idShort") == "Model_Number"), ""
+        )
+        product_name = next(
+            (e.get("value") for e in elements if e.get("idShort") == "Product_Name"), None
+        )
+        instance_id = doc.get("id", "")
+
+        # Telefon Properties JSON contains template placeholders, not actual values.
+        # Use the order configuration instead.
+        material = color = finish = None
+        nr_fuses = None
+        if config:
+            material = config.get("bottom_cover_material")
+            color    = config.get("bottom_cover_color")
+            finish   = config.get("bottom_cover_finish")
+            nr_fuses = config.get("number_of_fuses")
+
+        conn.execute("""
+            INSERT INTO inventory_items (
+                instance_id, instance_number, model_number, component_type,
+                product_name, material, color, finish, nr_fuses,
+                created_date, status, last_updated
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'available', ?)
+            ON CONFLICT(instance_id) DO UPDATE SET
+                status       = CASE
+                    WHEN inventory_items.status IN ('consumed', 'reserved')
+                    THEN inventory_items.status
+                    ELSE 'available'
+                END,
+                model_number = excluded.model_number,
+                material     = excluded.material,
+                color        = excluded.color,
+                finish       = excluded.finish,
+                nr_fuses     = excluded.nr_fuses,
+                last_updated = excluded.last_updated
+        """, (
+            instance_id, instance_num, model_number, "Telefon",
+            product_name, material, color, finish, nr_fuses,
+            now, now,
+        ))
+
+    # =========================================================================
     # Three-step assembly (each step corresponds to a physical assembly station)
     # =========================================================================
 
@@ -444,7 +666,12 @@ class AssemblyManager:
                 (now, reserved[fk]["instance_id"]),
             )
             print(f"  ✓ Consumed {fk} instance {reserved[fk]['instance_number']}")
+        # Register Housing_With_PCB as consumed — it has been incorporated into
+        # PCB_With_Fuse and is no longer a standalone available item.
+        self._register_instance_as_consumed("Housing_With_PCB", progress["housing_with_pcb_num"], conn)
+        print(f"  \u2713 Registered Housing_With_PCB instance {progress['housing_with_pcb_num']} as consumed")
 
+        _rebuild_stock(conn)
         progress["pcb_with_fuse_num"] = pwf_num
         progress["pcb_with_fuse_id"] = pwf_id
         conn.execute(
@@ -484,6 +711,8 @@ class AssemblyManager:
 
         reserved = json.loads(order["reserved_instances"])
         progress = json.loads(order["assembly_progress"])
+        order_config = json.loads(order["configuration"])
+        order_config["number_of_fuses"] = sum(1 for k in reserved if k.startswith("Fuse"))
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         # ── Prerequisite check ────────────────────────────────────────────────
@@ -498,13 +727,10 @@ class AssemblyManager:
         print(f"  Top_Cover     : {reserved['Top_Cover']['model_number']} "
               f"(instance {reserved['Top_Cover']['instance_number']})")
 
-        assembled_count = conn.execute(
-            "SELECT COUNT(*) FROM configuration_orders WHERE status = 'assembled'"
-        ).fetchone()[0]
-        product_instance_num = f"{assembled_count + 1:03d}"
+        product_instance_num = self._get_next_instance_num("Telefon")
 
         print(f"\nCreating final product instance {product_instance_num}...")
-        product_instance_id = self._create_asset_instance("Telefon", product_instance_num)
+        product_instance_id = self._create_asset_instance("Telefon", product_instance_num, order_config)
         print(f"  ✓ Created instance: {product_instance_id}")
 
         # Fill Assembly_Traceability
@@ -523,13 +749,31 @@ class AssemblyManager:
             json.dump(documentation, f, indent=2, ensure_ascii=False)
         print("  ✓ Filled Assembly_Traceability")
 
+        # Push the updated Documentation (with Assembly_Traceability) back to the server
+        if self.upload:
+            print(f"  Updating assembled Telefon Documentation on AAS server...")
+            self._update_submodel_on_server(documentation)
+
         # Consume Top_Cover at this station
         conn.execute(
             "UPDATE inventory_items SET status = 'consumed', last_updated = ? WHERE instance_id = ?",
             (now, reserved["Top_Cover"]["instance_id"]),
         )
         print(f"  ✓ Consumed Top_Cover instance {reserved['Top_Cover']['instance_number']}")
+        # Register PCB_With_Fuse as consumed — it has been incorporated into
+        # the final Telefon and is no longer a standalone available item.
+        self._register_instance_as_consumed("PCB_With_Fuse", progress["pcb_with_fuse_num"], conn)
+        print(f"  \u2713 Registered PCB_With_Fuse instance {progress['pcb_with_fuse_num']} as consumed")
 
+        # Register the finished Telefon as available in inventory so it shows in stock
+        self._register_telefon_as_available(product_instance_num, conn, order_config)
+        print(f"  \u2713 Registered Telefon instance {product_instance_num} as available in inventory")
+
+        # Store Telefon IDs in progress so the release endpoint can find the instance
+        progress["telefon_instance_num"] = product_instance_num
+        progress["telefon_instance_id"] = product_instance_id
+
+        _rebuild_stock(conn)
         conn.execute(
             "UPDATE configuration_orders SET status = 'assembled', assembled_date = ?, "
             "assembly_progress = ? WHERE order_id = ?",

@@ -36,7 +36,7 @@
           "modelType": "Property",
           "idShort": "Template",
           "valueType": "xs:string",
-          "value": "BC-{bottom_cover_material}-{bottom_cover_color}",
+          "value": "BC-{bottom_cover_material}-{bottom_cover_color}-{bottom_cover_finish}",
           "description": [{"language": "en", "text": "{key} placeholders are replaced with values from the order configuration"}]
         }
       ]

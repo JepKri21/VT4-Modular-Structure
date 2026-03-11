@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    const res = await fetch("http://localhost:2001/api/inventory");
+    const res = await fetch("http://localhost:2002/api/v4/inventory");
     if (!res.ok) {
       return NextResponse.json({ error: "Failed to fetch inventory" }, { status: 500 });
     }

@@ -20,7 +20,18 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+import requests
 import inventory_db
+
+
+# =============================================================================
+# AAS Server Configuration
+# =============================================================================
+
+PORT = "8081"
+SERVER_BASE = f"http://localhost:{PORT}"
+SUBMODEL_ENDPOINT = f"{SERVER_BASE}/submodels"
+SHELL_ENDPOINT = f"{SERVER_BASE}/shells"
 
 
 # =============================================================================
@@ -308,6 +319,38 @@ def update_properties_submodel(
                     prop["value"] = config_values[prop_name]
 
 
+def upload_instance_to_server(instance_data: Dict[str, Any]) -> None:
+    """
+    Upload the instance shell and all its submodels to the AAS server,
+    exactly as Server_GUI.py does via POST requests.
+    """
+    # Upload submodels first so the shell reference resolves immediately
+    for submodel_name, submodel_data in instance_data["submodels"].items():
+        try:
+            response = requests.post(
+                SUBMODEL_ENDPOINT,
+                json=submodel_data,
+                headers={"Content-Type": "application/json"},
+            )
+            status = "OK" if response.ok else f"FAIL ({response.status_code})"
+            print(f"  {status} → submodel: {submodel_name}")
+        except requests.ConnectionError:
+            print(f"  ERROR → could not connect to AAS server at {SERVER_BASE}")
+            return
+
+    # Upload shell
+    try:
+        response = requests.post(
+            SHELL_ENDPOINT,
+            json=instance_data["shell"],
+            headers={"Content-Type": "application/json"},
+        )
+        status = "OK" if response.ok else f"FAIL ({response.status_code})"
+        print(f"  {status} → shell: {instance_data['shell'].get('id', '')}")
+    except requests.ConnectionError:
+        print(f"  ERROR → could not connect to AAS server at {SERVER_BASE}")
+
+
 def save_instance_files(
     instance_data: Dict[str, Any],
     component_type: str,
@@ -431,9 +474,10 @@ def confirm_and_create(component_type: str, quantity: int, config_values: Dict[s
     return response in ['yes', 'y']
 
 
-def create_inventory_items(component_type: str, quantity: int, config_values: Dict[str, str]) -> None:
+def create_inventory_items(component_type: str, quantity: int, config_values: Dict[str, str], upload: bool = True) -> None:
     """
     Main logic: Create and save the specified number of instances.
+    If upload=True, each instance is also posted to the AAS server.
     """
     print(f"\nCreating {quantity} instances of {component_type}...\n")
     
@@ -476,6 +520,11 @@ def create_inventory_items(component_type: str, quantity: int, config_values: Di
         # Save files
         print(f"Instance #{instance_num:03d}:")
         save_instance_files(instance_data, component_type, instance_num, COMPONENT_REGISTRY)
+
+        # Upload to AAS server
+        if upload:
+            print(f"  Uploading to AAS server ({SERVER_BASE})...")
+            upload_instance_to_server(instance_data)
         print()
     
     print("=" * 70)
@@ -494,10 +543,11 @@ def create_inventory_items(component_type: str, quantity: int, config_values: Di
 # Shopping List Runner
 # =============================================================================
 
-def run_shopping_list(shopping_list: List[Tuple[str, int, Dict[str, str]]] = None) -> None:
+def run_shopping_list(shopping_list: List[Tuple[str, int, Dict[str, str]]] = None, upload: bool = True) -> None:
     """
     Create all components defined in the shopping list (or SHOPPING_LIST by
     default) without any interactive prompts.
+    If upload=True, each instance is also posted to the AAS server.
     """
     if shopping_list is None:
         shopping_list = SHOPPING_LIST
@@ -529,7 +579,7 @@ def run_shopping_list(shopping_list: List[Tuple[str, int, Dict[str, str]]] = Non
     for comp_type, qty, cfg in shopping_list:
         cfg_str = ", ".join(f"{k}={v}" for k, v in cfg.items()) if cfg else "default"
         print(f"\n── {comp_type} x{qty}  [{cfg_str}] ──")
-        create_inventory_items(comp_type, qty, cfg)
+        create_inventory_items(comp_type, qty, cfg, upload=upload)
         created_total += qty
 
     print("\n" + "=" * 70)
@@ -550,17 +600,24 @@ def main():
         action="store_true",
         help="Create the standard hardcoded shopping list of components without prompts",
     )
+    parser.add_argument(
+        "--no-upload",
+        action="store_true",
+        help="Skip uploading created instances to the AAS server (save files only)",
+    )
     args = parser.parse_args()
+
+    upload = not args.no_upload
 
     try:
         if args.shopping_list:
-            run_shopping_list()
+            run_shopping_list(upload=upload)
             return
 
         component_type, quantity, config_values = display_menu()
-        
+
         if confirm_and_create(component_type, quantity, config_values):
-            create_inventory_items(component_type, quantity, config_values)
+            create_inventory_items(component_type, quantity, config_values, upload=upload)
             print("\nDone! Your inventory items have been generated.")
         else:
             print("\nOperation cancelled.")

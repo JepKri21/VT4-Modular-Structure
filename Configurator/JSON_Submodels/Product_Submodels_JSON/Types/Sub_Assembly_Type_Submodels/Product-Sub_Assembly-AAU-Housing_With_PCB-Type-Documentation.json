@@ -36,7 +36,7 @@
           "modelType": "Property",
           "idShort": "Template",
           "valueType": "xs:string",
-          "value": "HWP-{bottom_cover_material}-{bottom_cover_color}-F{number_of_fuses}",
+          "value": "HWP-{bottom_cover_material}-{bottom_cover_color}-{bottom_cover_finish}-F{number_of_fuses}",
           "description": [{"language": "en", "text": "{key} placeholders are replaced with values from the order configuration"}]
         }
       ]
@@ -45,15 +45,8 @@
       "modelType": "Property",
       "idShort": "Model_Number",
       "valueType": "xs:string",
-      "value": [
-        {
-          "modelType": "Property",
-          "idShort": "Template",
-          "valueType": "xs:string",
-          "value": "HWP-{bottom_cover_material}-{bottom_cover_color}-{bottom_cover_finish}-F{number_of_fuses}",
-          "description": [{"language": "en", "text": "{key} placeholders are replaced with values from the order configuration. Same model number for every Housing with identical bottom cover material, color, surface finish, and fuse count."}]
-        }
-      ]
+      "value": "",
+      "description": [{"language": "en", "text": "Filled in at instance creation — same model number for every Housing with identical bottom cover material, color, surface finish, and fuse count."}]
     },
     {
       "modelType": "Property",

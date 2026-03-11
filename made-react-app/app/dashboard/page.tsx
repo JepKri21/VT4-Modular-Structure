@@ -57,7 +57,7 @@ const Dashboard = () => {
                 {currentOEE}
               </h1>
               {currentOEE >= targetValue ? (
-                <TrendingUp className="text-green-500 mb-1" size={28} />
+                <TrendingUp className="text-teal-400 mb-1" size={28} />
               ) : (
                 <TrendingDown className="text-red-500 mb-1" size={28} />
               )}
@@ -113,7 +113,7 @@ const Dashboard = () => {
                   {previousOEE}%
                 </span>
                 <span
-                  className={`text-[8px] font-bold ${diff >= 0 ? "text-green-500" : "text-red-500"}`}
+                  className={`text-[8px] font-bold ${diff >= 0 ? "text-teal-400" : "text-red-500"}`}
                 >
                   {diff >= 0 ? `+${diff}` : diff}%
                 </span>
@@ -132,19 +132,19 @@ const Dashboard = () => {
         <AlarmCard
           title="Warnings"
           count={alarms.warnings}
-          color="text-yellow-500"
+          color="text-yellow-400"
         />
 
         <AlarmCard
           title="Cleared Alarms"
           count={alarms.cleared}
-          color="text-green-500"
+          color="text-teal-400"
         />
 
         <AlarmCard
           title="Recent Alarms"
           count={alarms.recent}
-          color="text-blue-500"
+          color="text-blue-600"
         />
       </div>
     </main>
