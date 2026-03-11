@@ -47,8 +47,8 @@ def main():
     order = ProductionOrder(
         "Order_1",
         "Bottom_Cover",
-        3,
-        "08:00"
+        7,
+        "09:00"
     )
 
     products = generate_products(order)
