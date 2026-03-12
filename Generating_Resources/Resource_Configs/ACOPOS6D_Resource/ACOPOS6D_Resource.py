@@ -10,11 +10,11 @@ sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 from PackML.PackML_Machine_Class import StationBehavior, PackMLState, PackMLStateMachine
 from Shell_And_Submodels.Shell_Generator_Class import ShellGenerator
 
-yaml_config = r"C:\Users\silas\Desktop\Manufacturing_Technology_4\Github\VT4-Modular-Structure\Generating_Resources\Resource_Configs\Drilling_Resource\Drilling_Resource_Config.yaml"
+yaml_config = r"C:\Users\silas\Desktop\Manufacturing_Technology_4\Github\VT4-Modular-Structure\Generating_Resources\Resource_Configs\ACOPOS6D_Resource\ACOPOS6D_Resource_Config.yaml"
 
-Drilling_Resource_AAS = ShellGenerator(yaml_config)
+ACOPOS6D_Resource_AAS = ShellGenerator(yaml_config)
 
-communication_submodel = Drilling_Resource_AAS.builder.get_submodel("Communication")
+communication_submodel = ACOPOS6D_Resource_AAS.builder.get_submodel("Communication")
 
 communication_properties = communication_submodel['submodelElements'][0]['value'][0]['value']
 
@@ -32,7 +32,7 @@ for property in communication_properties:
     if property['idShort'] == 'Base_Topic':
         BASE_TOPIC = property['value']
 
-CLIENT_ID = Drilling_Resource_AAS.shell_idShort
+CLIENT_ID = ACOPOS6D_Resource_AAS.shell_idShort
 
 
 mqtt_information = [BROKER, MQTT_PORT, CLIENT_ID,BASE_TOPIC]
@@ -45,43 +45,46 @@ SHELL_ENDPOINT = f"{SERVER_BASE}/shells"
 
 
 
-class DrillingStationBehavior(StationBehavior):
+class ACOPOS6DStationBehavior(StationBehavior):
 
     def __init__(self):
         # Station-specific variables live HERE
         self.skill = None
         self.component_reference = None
-        self.drill_depth = None
-        self.rpm = None
+        self.speed = None
+        self.acceleration = None
         self.base_time_ms = None
-        self.depth_factor = None
-        self.rpm_factor = None
+        self.hover_height = None
 
     async def starting(self, machine):
-        print("Drill warming up... and reading job parameters")
+        print("Reading job parameters")
         machine.cycle_start_time = time.time()
         machine.job_id = machine.current_job["job_id"]
         machine.order_id = machine.current_job["order_id"]
 
+        print("Getting parameters")
         params = machine.current_job.get("parameters", {})
 
+        print("Reading parameters")
         self.skill = params.get("skill",0)
-        self.drill_depth = params.get("drill_depth", 0)
-        self.rpm = params.get("rpm", 0)
+        self.speed = params.get("speed", 0)
+        self.acceleration = params.get("acceleration", 0)
+        self.hover_height = params.get("hover_height", 0)
         self.component_reference = params.get("component_reference", "")
 
+        print("Calculating Ideal time")
         #Use parameters to calculate ideal cycle time..
         self.base_time_ms = 2000
-        self.depth_factor = self.drill_depth * 100    # 100ms per mm
-        self.rpm_factor = 1200 / self.rpm * 500      # højere rpm → kortere tid
-
-        machine.ideal_cycle_time_ms = int(self.base_time_ms + self.depth_factor - self.rpm_factor)
+        self.speed_factor = 1200 / self.speed * 100    
+        self.acceleration_factor = 1200 / self.acceleration * 500      # højere rpm → kortere tid
+        print("Adding Ideal Time")
+        machine.ideal_cycle_time_ms = int(self.base_time_ms + self.speed_factor - self.acceleration_factor)
 
         print("All parameters are read, now transitioning to EXECUTE")
         await machine.transition_to(PackMLState.EXECUTE)
 
     async def execute(self, machine):
-        print(f"Drilling of component: {self.component_reference} in progress...")
+        print(f"Transporting component: {self.component_reference} in progress...")
         
         await asyncio.sleep((machine.ideal_cycle_time_ms + random.randint(0, 300)) / 1000)
 
@@ -107,7 +110,7 @@ class DrillingStationBehavior(StationBehavior):
         await machine.transition_to(PackMLState.COMPLETE)
 
     async def resetting(self, machine):
-        print("Resetting drill...")
+        print("Resetting Shuttle...")
         self.skill = None
         self.component_reference = None
         self.drill_depth = None
@@ -124,42 +127,42 @@ class DrillingStationBehavior(StationBehavior):
         await machine.transition_to(PackMLState.IDLE)
 
     async def stopping(self, machine):
-        print("Stopping Drill")
+        print("Stopping Shuttle")
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.STOPPED)
         
     async def holding(self, machine): 
-        print("Holding Drill")
+        print("Holding Shuttle")
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.HELD)
     
     async def unholding(self, machine): 
-        print("Unholding Drill")
+        print("Unholding Shuttle")
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.EXECUTE)
 
     async def suspending(self, machine):
-        print("Suspending Drill")
+        print("Suspending Shuttle")
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.SUSPENDED)
 
     async def unsuspending(self, machine):
-        print("Unsuspending Drill")
+        print("Unsuspending Shuttle")
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.EXECUTE)
 
     async def aborting(self, machine): 
-        print("Aborting Drill")
+        print("Aborting Shuttle")
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.ABORTED)
 
     async def clearing(self, machine): 
-        print("Clearing Drill")
+        print("Clearing Shuttle")
 
         self.skill = None
         self.component_reference = None
-        self.drill_depth = None
-        self.rpm = None
+        self.speed = None
+        self.acceleration = None
 
         machine.job_result = None
         machine.order_id = None
@@ -174,9 +177,9 @@ class DrillingStationBehavior(StationBehavior):
 
 
 async def main():
-    behavior = DrillingStationBehavior()
+    behavior = ACOPOS6DStationBehavior()
     machine = PackMLStateMachine(mqtt_information, behavior)
-    Drilling_Resource_AAS.post_shell_and_submodels(SHELL_ENDPOINT=SHELL_ENDPOINT, SUBMODEL_ENDPOINT=SUBMODEL_ENDPOINT)
+    ACOPOS6D_Resource_AAS.post_shell_and_submodels(SHELL_ENDPOINT=SHELL_ENDPOINT, SUBMODEL_ENDPOINT=SUBMODEL_ENDPOINT)
     
     #machine.active_alarms = [51,62]
     # Keep machine alive forever
