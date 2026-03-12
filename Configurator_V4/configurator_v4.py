@@ -77,10 +77,18 @@ class TelefonConfiguratorV4:
     # AAS Server upload
     # -------------------------------------------------------------------------
 
+    def _post_or_put(self, endpoint: str, resource_id: str, data: Dict) -> requests.Response:
+        """POST to create; fall back to PUT if the server returns 409 (already exists)."""
+        headers = {"Content-Type": "application/json"}
+        r = requests.post(endpoint, json=data, headers=headers, timeout=5)
+        if r.status_code == 409:
+            r = requests.put(f"{endpoint}/{_b64url(resource_id)}", json=data, headers=headers, timeout=5)
+        return r
+
     def _upload_to_server(self, shell: Dict, submodels: Dict[str, Dict]) -> None:
         """
         POST submodels then shell to the AAS server.
-        These are brand-new resources created at order time, so POST is correct.
+        Falls back to PUT if a resource already exists (409).
         """
         if not self.upload:
             return
@@ -88,20 +96,28 @@ class TelefonConfiguratorV4:
         shell_endpoint = f"{self.server_base}/shells"
         for sm_name, sm_data in submodels.items():
             try:
-                r = requests.post(
-                    submodel_endpoint, json=sm_data,
-                    headers={"Content-Type": "application/json"}, timeout=5,
-                )
-                print(f"  {'OK' if r.ok else f'FAIL ({r.status_code})'} → server submodel: {sm_name}")
+                r = self._post_or_put(submodel_endpoint, sm_data.get("id", ""), sm_data)
+                if r.ok:
+                    print(f"  OK → server submodel: {sm_name}")
+                else:
+                    print(f"  FAIL ({r.status_code}) → server submodel: {sm_name}")
+                    try:
+                        print(f"    Server: {r.json()}")
+                    except Exception:
+                        print(f"    Server: {r.text[:300]}")
             except requests.ConnectionError:
                 print(f"  ERROR → could not connect to AAS server at {self.server_base}")
                 return
         try:
-            r = requests.post(
-                shell_endpoint, json=shell,
-                headers={"Content-Type": "application/json"}, timeout=5,
-            )
-            print(f"  {'OK' if r.ok else f'FAIL ({r.status_code})'} → server shell: {shell.get('id', '')}")
+            r = self._post_or_put(shell_endpoint, shell.get("id", ""), shell)
+            if r.ok:
+                print(f"  OK → server shell: {shell.get('id', '')}")
+            else:
+                print(f"  FAIL ({r.status_code}) → server shell: {shell.get('id', '')}")
+                try:
+                    print(f"    Server: {r.json()}")
+                except Exception:
+                    print(f"    Server: {r.text[:300]}")
         except requests.ConnectionError:
             print(f"  ERROR → could not connect to AAS server at {self.server_base}")
 
@@ -563,6 +579,123 @@ class TelefonConfiguratorV4:
         return instance_id
 
     # -------------------------------------------------------------------------
+    # Registry reset
+    # -------------------------------------------------------------------------
+
+    def reset_registry(self, delete_instances: bool = False) -> bool:
+        """
+        Reset the v4 order registry:
+          - Clears configuration_orders, assembly_log, and model_type_reservations tables.
+          - Restores any 'reserved' inventory items back to 'available'.
+          - Optionally deletes all generated instance JSON files and clears
+            inventory_items / inventory_stock (model_catalog is preserved).
+        """
+        print("\n⚠️  WARNING: This will clear all configuration orders and assembly history.")
+        if delete_instances:
+            print("⚠️  WARNING: All instance JSON files will be PERMANENTLY DELETED!")
+            print("             inventory_items and inventory_stock will also be cleared.")
+        else:
+            print("   Existing instance JSON files are kept; only DB order records are removed.")
+        print()
+        if input("Are you sure you want to continue? (yes/no): ").strip().lower() != "yes":
+            print("Registry reset cancelled.")
+            return False
+
+        conn = _get_connection(self.db_path)
+        _create_tables(conn)
+
+        # Release any reserved items back to available
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        released = conn.execute(
+            "UPDATE inventory_items SET status = 'available', last_updated = ? WHERE status = 'reserved'",
+            (now,),
+        ).rowcount
+        if released:
+            print(f"  ✓ Released {released} reserved inventory item(s) back to 'available'")
+
+        # Clear order tables (including v4-specific model_type_reservations)
+        conn.execute("DELETE FROM model_type_reservations")
+        conn.execute("DELETE FROM assembly_log")
+        conn.execute("DELETE FROM configuration_orders")
+        print("  ✓ Cleared configuration_orders, assembly_log, and model_type_reservations")
+
+        if delete_instances:
+            from inventory_db import INSTANCE_SUBMODEL_DIRS
+            instance_shell_dirs = [
+                cfg["instance_shell_dir"]
+                for cfg in ASSET_REGISTRY.values()
+            ]
+            instance_submodel_dirs = list(INSTANCE_SUBMODEL_DIRS)
+
+            # ── Delete shells and their submodels from the AAS server ──
+            server_deleted = 0
+            shell_endpoint = f"{self.server_base}/shells"
+            submodel_endpoint = f"{self.server_base}/submodels"
+
+            for rel_dir in set(instance_shell_dirs):
+                folder = self.base_path / rel_dir
+                if not folder.exists():
+                    continue
+                for file in folder.glob("*.json"):
+                    try:
+                        with open(file, encoding="utf-8") as f:
+                            shell = json.load(f)
+                    except (json.JSONDecodeError, OSError):
+                        continue
+                    # Delete each referenced submodel from the server
+                    for ref in shell.get("submodels", []):
+                        for key in ref.get("keys", []):
+                            sm_id = key.get("value", "")
+                            if sm_id:
+                                try:
+                                    r = requests.delete(
+                                        f"{submodel_endpoint}/{_b64url(sm_id)}",
+                                        timeout=5,
+                                    )
+                                    if r.ok:
+                                        server_deleted += 1
+                                except requests.ConnectionError:
+                                    pass
+                    # Delete the shell itself from the server
+                    shell_id = shell.get("id", "")
+                    if shell_id:
+                        try:
+                            r = requests.delete(
+                                f"{shell_endpoint}/{_b64url(shell_id)}",
+                                timeout=5,
+                            )
+                            if r.ok:
+                                server_deleted += 1
+                        except requests.ConnectionError:
+                            pass
+
+            if server_deleted:
+                print(f"  ✓ Deleted {server_deleted} resource(s) from AAS server")
+            else:
+                print("  ⓘ No resources deleted from AAS server (server not reachable or nothing to delete)")
+
+            # ── Delete local instance JSON files ──
+            deleted_count = 0
+            for rel_dir in set(instance_shell_dirs) | set(instance_submodel_dirs):
+                folder = self.base_path / rel_dir
+                if folder.exists():
+                    for file in folder.glob("*.json"):
+                        file.unlink()
+                        deleted_count += 1
+            print(f"  ✓ Deleted {deleted_count} instance JSON file(s)")
+
+            # Clear inventory tables (preserve model_catalog)
+            conn.execute("DELETE FROM inventory_items")
+            conn.execute("DELETE FROM inventory_stock")
+            print("  ✓ Cleared inventory_items and inventory_stock (model_catalog preserved)")
+
+        conn.commit()
+        conn.close()
+
+        print("\n✓ Registry reset complete. All order numbers will start from ORD-001 for new orders.\n")
+        return True
+
+    # -------------------------------------------------------------------------
     # Phase 1 entry point
     # -------------------------------------------------------------------------
 
@@ -693,9 +826,17 @@ def main():
                         help="Create order using EXAMPLE_ORDERS[N] (0-based)")
     parser.add_argument("--list-options", action="store_true",
                         help="Show available configuration options")
+    parser.add_argument("--reset-registry", action="store_true",
+                        help="Clear all configuration orders and assembly history")
+    parser.add_argument("--delete-instances", action="store_true",
+                        help="Also delete instance JSON files and clear inventory (use with --reset-registry)")
     args = parser.parse_args()
 
     cfg = TelefonConfiguratorV4()
+
+    if args.reset_registry:
+        cfg.reset_registry(delete_instances=args.delete_instances)
+        return
 
     if args.list_options:
         opts = cfg._get_available_options()

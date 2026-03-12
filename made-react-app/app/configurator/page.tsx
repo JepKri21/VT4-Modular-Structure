@@ -362,6 +362,13 @@ export default function ConfiguratorPage() {
           >
             View Inventory
           </button>
+          <button
+            className="bg-primary text-primary-foreground px-4 py-2 rounded hover:bg-accent"
+            onClick={() => router.push("/configurator/Released")}
+            type="button"
+          >
+            Released
+          </button>
         </div>
       </div>
     </div>

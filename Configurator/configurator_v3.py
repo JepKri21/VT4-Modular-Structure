@@ -139,46 +139,6 @@ ASSET_REGISTRY: Dict[str, Dict[str, Any]] = {
 
 
 # =============================================================================
-# Example Orders (for testing — all configs use components from SHOPPING_LIST)
-# =============================================================================
-
-# Each entry is a config dict that can be passed to create_configuration_order().
-# All material/color/finish values match exactly what the shopping list produces.
-EXAMPLE_ORDERS: List[Dict[str, Any]] = [
-    # 1 — Matching covers, PLA Red Glossy, 1 fuse
-    {
-        "bottom_cover_material": "PLA-31212", "bottom_cover_color": "Red",   "bottom_cover_finish": "Glossy",
-        "top_cover_material":    "PLA-31212", "top_cover_color":    "Red",   "top_cover_finish":    "Glossy",
-        "number_of_fuses": 1,
-    },
-    # 2 — Matching covers, PLA Blue Glossy, 2 fuses
-    {
-        "bottom_cover_material": "PLA-31212", "bottom_cover_color": "Blue",  "bottom_cover_finish": "Glossy",
-        "top_cover_material":    "PLA-31212", "top_cover_color":    "Blue",  "top_cover_finish":    "Glossy",
-        "number_of_fuses": 2,
-    },
-    # 3 — Matching covers, PLA Black Matte, 1 fuse
-    {
-        "bottom_cover_material": "PLA-31212", "bottom_cover_color": "Black", "bottom_cover_finish": "Matte",
-        "top_cover_material":    "PLA-31212", "top_cover_color":    "Black", "top_cover_finish":    "Matte",
-        "number_of_fuses": 1,
-    },
-    # 4 — Mixed covers, ABS Black Textured bottom / PLA White Matte top, 3 fuses
-    {
-        "bottom_cover_material": "ABS-5500",  "bottom_cover_color": "Black", "bottom_cover_finish": "Textured",
-        "top_cover_material":    "PLA-31212", "top_cover_color":    "White", "top_cover_finish":    "Matte",
-        "number_of_fuses": 3,
-    },
-    # 5 — Mixed covers, PLA White Matte bottom / ABS White Glossy top, 2 fuses
-    {
-        "bottom_cover_material": "PLA-31212", "bottom_cover_color": "White", "bottom_cover_finish": "Matte",
-        "top_cover_material":    "ABS-5500",  "top_cover_color":    "White", "top_cover_finish":    "Glossy",
-        "number_of_fuses": 2,
-    },
-]
-
-
-# =============================================================================
 # Database helpers
 # =============================================================================
 
@@ -526,70 +486,6 @@ class TelefonConfiguratorV3:
 
         return order_id, order_details
 
-    def reset_registry(self, delete_instances: bool = False) -> bool:
-        """
-        Reset the v3 order registry:
-          - Clears configuration_orders and assembly_log tables.
-          - Restores any 'reserved' inventory items back to 'available'.
-          - Optionally deletes all generated instance JSON files and clears
-            inventory_items / inventory_stock (model_catalog is preserved).
-        """
-        print("\n⚠️  WARNING: This will clear all configuration orders and assembly history.")
-        if delete_instances:
-            print("⚠️  WARNING: All instance JSON files will be PERMANENTLY DELETED!")
-            print("             inventory_items and inventory_stock will also be cleared.")
-        else:
-            print("   Existing instance JSON files are kept; only DB order records are removed.")
-        print()
-        if input("Are you sure you want to continue? (yes/no): ").strip().lower() != "yes":
-            print("Registry reset cancelled.")
-            return False
-
-        conn = _get_connection(str(self.base_path / self.db_path))
-        _create_tables(conn)
-
-        # Release any reserved items back to available
-        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        released = conn.execute(
-            "UPDATE inventory_items SET status = 'available', last_updated = ? WHERE status = 'reserved'",
-            (now,),
-        ).rowcount
-        if released:
-            print(f"  ✓ Released {released} reserved inventory item(s) back to 'available'")
-
-        # Clear order tables
-        conn.execute("DELETE FROM assembly_log")
-        conn.execute("DELETE FROM configuration_orders")
-        print("  ✓ Cleared configuration_orders and assembly_log")
-
-        if delete_instances:
-            # Delete instance JSON files
-            from inventory_db import INSTANCE_SUBMODEL_DIRS
-            instance_shell_dirs = [
-                cfg["instance_shell_dir"]
-                for cfg in ASSET_REGISTRY.values()
-            ]
-            instance_submodel_dirs = list(INSTANCE_SUBMODEL_DIRS)
-            deleted_count = 0
-            for rel_dir in set(instance_shell_dirs) | set(instance_submodel_dirs):
-                folder = self.base_path / rel_dir
-                if folder.exists():
-                    for file in folder.glob("*.json"):
-                        file.unlink()
-                        deleted_count += 1
-            print(f"  ✓ Deleted {deleted_count} instance JSON file(s)")
-
-            # Clear inventory tables (preserve model_catalog)
-            conn.execute("DELETE FROM inventory_items")
-            conn.execute("DELETE FROM inventory_stock")
-            print("  ✓ Cleared inventory_items and inventory_stock (model_catalog preserved)")
-
-        conn.commit()
-        conn.close()
-
-        print("\n✓ Registry reset complete. All order numbers will start from ORD-001 for new orders.\n")
-        return True
-
 
 def main():
     import argparse
@@ -598,54 +494,10 @@ def main():
     parser.add_argument("--config", type=str, help="Path to a configuration JSON file")
     parser.add_argument("--interactive", action="store_true", help="Interactive configuration mode")
     parser.add_argument("--list-orders", action="store_true", help="List pending orders")
-    parser.add_argument("--reset-registry", action="store_true", help="Clear all configuration orders and assembly history")
-    parser.add_argument("--delete-instances", action="store_true", help="Also delete instance JSON files and clear inventory (use with --reset-registry)")
-    parser.add_argument("--example-orders", action="store_true", help="Create all example test orders from the built-in EXAMPLE_ORDERS list")
     args = parser.parse_args()
 
     workspace_path = Path(__file__).parent
     configurator = TelefonConfiguratorV3(str(workspace_path))
-
-    if args.reset_registry:
-        configurator.reset_registry(delete_instances=args.delete_instances)
-        return
-
-    if args.example_orders:
-        print("\n" + "=" * 70)
-        print("  EXAMPLE ORDERS — Creating test configuration orders")
-        print("=" * 70)
-        print(f"  {len(EXAMPLE_ORDERS)} orders to create\n")
-        created = []
-        failed = []
-        for i, config in enumerate(EXAMPLE_ORDERS, 1):
-            label = (
-                f"BC={config['bottom_cover_material']}/{config['bottom_cover_color']}/{config['bottom_cover_finish']} "
-                f"TC={config['top_cover_material']}/{config['top_cover_color']}/{config['top_cover_finish']} "
-                f"Fuses={config['number_of_fuses']}"
-            )
-            print(f"  [{i}/{len(EXAMPLE_ORDERS)}] {label}")
-            try:
-                order_id, _ = configurator.create_configuration_order(config)
-                created.append(order_id)
-                print(f"    ✓ Created {order_id}")
-            except (ValueError, Exception) as e:
-                failed.append((i, str(e)))
-                print(f"    ✗ Skipped: {e}")
-        print("\n" + "=" * 70)
-        print(f"  ✓ Created : {len(created)} order(s): {', '.join(created)}")
-        if failed:
-            print(f"  ✗ Failed  : {len(failed)} order(s) (insufficient stock or validation error)")
-        print("=" * 70)
-        print("\nAssemble all at once:")
-        for oid in created:
-            print(f"  python assembly_manager.py --assemble {oid}")
-        print("\nOr step-by-step (per station):")
-        for oid in created:
-            print(f"  python assembly_manager.py --assemble-step1 {oid}")
-            print(f"  python assembly_manager.py --assemble-step2 {oid}")
-            print(f"  python assembly_manager.py --assemble-step3 {oid}")
-        print()
-        return
 
     if args.list_orders:
         conn = _get_connection(str(workspace_path / INVENTORY_DB))

@@ -73,6 +73,10 @@ class ServerGUI:
         self.post_all_submodels_btn = tk.Button(root,text="Post All Submodels",width=18,command=self.post_all_submodels)
         self.post_all_submodels_btn.place(x=320, y=120, width=140, height=40)
 
+        # Clear All Shells Button
+        self.clear_all_shells_btn = tk.Button(root, text="Clear All Shells", width=18, command=self.delete_all_shells, bg="#c0392b", fg="white")
+        self.clear_all_shells_btn.place(x=470, y=120, width=140, height=40)
+
 
         #============================File Dropboxes================================
 
@@ -261,6 +265,47 @@ class ServerGUI:
                 self.append_terminal(f"OK  → {file_path.name}")
             else:
                 self.append_terminal(f"FAIL ({response.status_code}) → {file_path.name}")
+
+    def delete_all_shells(self):
+        from tkinter import messagebox
+        if not messagebox.askyesno(
+            "Confirm Clear",
+            "Delete ALL shells from the AAS server?\nThis cannot be undone.",
+        ):
+            self.append_terminal("Clear cancelled.")
+            return
+
+        self.append_terminal("Fetching shells from server...")
+        try:
+            response = requests.get(SHELL_ENDPOINT)
+            response.raise_for_status()
+        except Exception as e:
+            self.append_terminal(f"ERROR fetching shells: {e}")
+            return
+
+        shells = response.json().get("result", [])
+        if not shells:
+            self.append_terminal("No shells found on server.")
+            return
+
+        self.append_terminal(f"Deleting {len(shells)} shell(s)...")
+        ok_count = fail_count = 0
+        for shell in shells:
+            shell_id = shell.get("id", "")
+            encoded_id = self.base64encode(shell_id)
+            r = requests.delete(f"{SHELL_ENDPOINT}/{encoded_id}")
+            if r.ok:
+                self.append_terminal(f"DELETED → {shell_id}")
+                ok_count += 1
+            else:
+                self.append_terminal(f"FAIL ({r.status_code}) → {shell_id}")
+                fail_count += 1
+
+        self.append_terminal(f"Done — {ok_count} deleted, {fail_count} failed.")
+        # Refresh the shell ID dropdown
+        self.shell_ids = ["Nothing Selected"]
+        self.shell_id_dropdown["values"] = self.shell_ids
+        self.shell_id_dropdown.current(0)
 
 
 

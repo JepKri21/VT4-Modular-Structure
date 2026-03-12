@@ -20,8 +20,15 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+import base64
+
 import requests
 import inventory_db
+
+
+def _b64url(s: str) -> str:
+    """Base64url-encode a string (no padding) for AAS REST path segments."""
+    return base64.urlsafe_b64encode(s.encode()).rstrip(b"=").decode()
 
 
 # =============================================================================
@@ -319,34 +326,53 @@ def update_properties_submodel(
                     prop["value"] = config_values[prop_name]
 
 
+def _post_or_put(endpoint: str, resource_id: str, data: Dict[str, Any]) -> requests.Response:
+    """
+    POST to create; if the server returns 409 (already exists), fall back to
+    PUT /{base64url(id)} to update in place.
+    """
+    headers = {"Content-Type": "application/json"}
+    response = requests.post(endpoint, json=data, headers=headers, timeout=10)
+    if response.status_code == 409:
+        put_url = f"{endpoint}/{_b64url(resource_id)}"
+        response = requests.put(put_url, json=data, headers=headers, timeout=10)
+    return response
+
+
 def upload_instance_to_server(instance_data: Dict[str, Any]) -> None:
     """
-    Upload the instance shell and all its submodels to the AAS server,
-    exactly as Server_GUI.py does via POST requests.
+    Upload the instance shell and all its submodels to the AAS server.
+    Uses POST; falls back to PUT if the resource already exists (409).
     """
     # Upload submodels first so the shell reference resolves immediately
     for submodel_name, submodel_data in instance_data["submodels"].items():
+        sm_id = submodel_data.get("id", "")
         try:
-            response = requests.post(
-                SUBMODEL_ENDPOINT,
-                json=submodel_data,
-                headers={"Content-Type": "application/json"},
-            )
-            status = "OK" if response.ok else f"FAIL ({response.status_code})"
-            print(f"  {status} → submodel: {submodel_name}")
+            response = _post_or_put(SUBMODEL_ENDPOINT, sm_id, submodel_data)
+            if response.ok:
+                print(f"  OK → submodel: {submodel_name}")
+            else:
+                print(f"  FAIL ({response.status_code}) → submodel: {submodel_name}")
+                try:
+                    print(f"    Server: {response.json()}")
+                except Exception:
+                    print(f"    Server: {response.text[:300]}")
         except requests.ConnectionError:
             print(f"  ERROR → could not connect to AAS server at {SERVER_BASE}")
             return
 
     # Upload shell
+    shell_id = instance_data["shell"].get("id", "")
     try:
-        response = requests.post(
-            SHELL_ENDPOINT,
-            json=instance_data["shell"],
-            headers={"Content-Type": "application/json"},
-        )
-        status = "OK" if response.ok else f"FAIL ({response.status_code})"
-        print(f"  {status} → shell: {instance_data['shell'].get('id', '')}")
+        response = _post_or_put(SHELL_ENDPOINT, shell_id, instance_data["shell"])
+        if response.ok:
+            print(f"  OK → shell: {shell_id}")
+        else:
+            print(f"  FAIL ({response.status_code}) → shell: {shell_id}")
+            try:
+                print(f"    Server: {response.json()}")
+            except Exception:
+                print(f"    Server: {response.text[:300]}")
     except requests.ConnectionError:
         print(f"  ERROR → could not connect to AAS server at {SERVER_BASE}")
 

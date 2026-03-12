@@ -58,6 +58,7 @@ from assembly_manager_v4 import AssemblyManagerV4
 from inventory_db import (
     _create_tables, _get_connection, _rebuild_stock, reset_db, CONFIGURATOR_BASE, DEFAULT_DB_FILE,
 )
+from asset_registry import ASSET_REGISTRY
 
 # =============================================================================
 # App setup
@@ -80,13 +81,19 @@ def _get_inventory_rows():
     conn = _get_connection(DB_PATH)
     _create_tables(conn)
     _rebuild_stock(conn)
-    rows = conn.execute("""
+    # Only show raw components — exclude sub-assemblies and final products
+    non_component_types = [
+        k for k, cfg in ASSET_REGISTRY.items() if not cfg.get("is_component", False)
+    ]
+    placeholders = ",".join("?" * len(non_component_types))
+    rows = conn.execute(f"""
         SELECT model_number, component_type, material, color, finish, nr_fuses,
                qty_available, qty_reserved, qty_consumed, qty_total
         FROM inventory_stock
-        WHERE qty_total > 0
+        WHERE (qty_available > 0 OR qty_reserved > 0)
+          AND component_type NOT IN ({placeholders})
         ORDER BY component_type, model_number
-    """).fetchall()
+    """, non_component_types).fetchall()
     conn.close()
     return [dict(r) for r in rows]
 

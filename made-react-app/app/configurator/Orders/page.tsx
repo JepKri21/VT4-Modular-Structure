@@ -140,6 +140,13 @@ export default function OrdersPage() {
           </button>
           <button
             className="bg-muted text-muted-foreground px-3 py-1.5 rounded hover:bg-accent text-sm"
+            onClick={() => router.push("/configurator/Released")}
+            type="button"
+          >
+            Released Products
+          </button>
+          <button
+            className="bg-muted text-muted-foreground px-3 py-1.5 rounded hover:bg-accent text-sm"
             onClick={() => router.push("/configurator")}
             type="button"
           >

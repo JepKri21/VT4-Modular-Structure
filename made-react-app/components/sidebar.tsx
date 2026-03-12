@@ -11,6 +11,7 @@ import {
   Menu,
   PackageOpen,
   Paintbrush,
+  Server,
   ShoppingCart,
   Store,
   TriangleAlert,
@@ -199,6 +200,12 @@ const Sidebar = () => {
           href="/configurator"
           icon={Cog}
           label="Configurator"
+          isCollapsed={isSidebarCollapsed}
+        />
+        <SidebarLink
+          href="/aas-server"
+          icon={Server}
+          label="AAS Server"
           isCollapsed={isSidebarCollapsed}
         />
       </div>
