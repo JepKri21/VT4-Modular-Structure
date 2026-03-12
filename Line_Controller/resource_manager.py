@@ -8,9 +8,9 @@ class ResourceManager:
                 "current_product": None
             }
 
-    def is_available(self, station_id, time):
+    # def is_available(self, station_id, time): # Might be usefull later on ??
 
-        return time >= self.resources[station_id]["busy_until"]
+    #     return time >= self.resources[station_id]["busy_until"]
     
     def reserve(self, station_id, product_id, start_time, duration):
 
