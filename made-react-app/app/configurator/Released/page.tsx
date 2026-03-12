@@ -9,7 +9,7 @@ type ReleasedOrder = {
   status: string;
   created_date: string;
   assembled_date: string | null;
-  configuration: Record<string, string | number> | null;
+  configuration: Record<string, string | number | Record<string, string | number>> | null;
   model_numbers_needed: Record<string, string> | null;
   shell_instances: Record<string, string> | null;
 };
@@ -103,13 +103,27 @@ export default function ReleasedPage() {
 
             {/* Configuration */}
             {order.configuration && (
-              <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm border-t border-border pt-2">
-                {Object.entries(order.configuration).map(([k, v]) => (
-                  <div key={k} className="flex justify-between">
-                    <span className="text-muted-foreground">{configLabel(k)}</span>
-                    <span className="font-medium text-foreground">{String(v)}</span>
-                  </div>
-                ))}
+              <div className="text-sm border-t border-border pt-2 space-y-1">
+                {Object.entries(order.configuration).map(([k, v]) =>
+                  typeof v === "object" && v !== null ? (
+                    <div key={k}>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide mt-1 mb-0.5">{k.replace(/_/g, " ")}</p>
+                      <div className="grid grid-cols-2 gap-x-6 gap-y-0.5 ml-2">
+                        {Object.entries(v).map(([pk, pv]) => (
+                          <div key={pk} className="flex justify-between">
+                            <span className="text-muted-foreground capitalize">{pk}</span>
+                            <span className="font-medium text-foreground">{String(pv)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div key={k} className="flex justify-between">
+                      <span className="text-muted-foreground">{configLabel(k)}</span>
+                      <span className="font-medium text-foreground">{String(v)}</span>
+                    </div>
+                  )
+                )}
               </div>
             )}
 

@@ -1,7 +1,5 @@
-import React from "react";
+import { redirect } from "next/navigation";
 
-const Orders = () => {
-  return <div>Orders</div>;
-};
-
-export default Orders;
+export default function OrdersPage() {
+  redirect("/configurator/Orders");
+}

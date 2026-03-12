@@ -68,6 +68,15 @@ class AssemblyManagerV4:
         self.server_base = server_base
 
     # -------------------------------------------------------------------------
+    # Config / ID helpers
+    # -------------------------------------------------------------------------
+
+    @staticmethod
+    def _inst_num_from_id(asset_id: str) -> str:
+        """Extract the 3-digit instance number from a full asset ID (last path segment)."""
+        return asset_id.rstrip("/").split("/")[-1]
+
+    # -------------------------------------------------------------------------
     # AAS Server update
     # -------------------------------------------------------------------------
 
@@ -303,11 +312,19 @@ class AssemblyManagerV4:
         material = color = finish = None
         nr_fuses = None
         if config:
+            # Config is stored in the nested format; flatten for flat-key property_map lookups.
+            flat_config: Dict[str, Any] = {}
+            for key, val in config.items():
+                if isinstance(val, dict):
+                    for pk, pv in val.items():
+                        flat_config[f"{key.lower()}_{pk}"] = pv
+                else:
+                    flat_config[key] = val
             prop_map = ASSET_REGISTRY["Telefon"].get("properties_config_map", {})
-            material = config.get(prop_map.get("Material"))
-            color    = config.get(prop_map.get("Color"))
-            finish   = config.get(prop_map.get("Finish"))
-            nr_fuses = config.get(prop_map.get("Nr_Fuses"))
+            material = flat_config.get(prop_map.get("Material"))
+            color    = flat_config.get(prop_map.get("Color"))
+            finish   = flat_config.get(prop_map.get("Finish"))
+            nr_fuses = flat_config.get(prop_map.get("Nr_Fuses"))
 
         conn.execute("""
             INSERT INTO inventory_items (
@@ -405,10 +422,11 @@ class AssemblyManagerV4:
         progress      = self._get_assembly_progress(order)
         now           = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        hwp_num = shells.get("Housing_With_PCB")
-        if not hwp_num:
+        hwp_id = shells.get("Housing_With_PCB")
+        if not hwp_id:
             conn.close()
             raise Exception(f"shell_instances missing Housing_With_PCB for order {order_id}")
+        hwp_num = self._inst_num_from_id(hwp_id)
 
         print(f"\n── V4 STEP 1 (Station 1): Housing_With_PCB — order {order_id} ──")
 
@@ -505,10 +523,11 @@ class AssemblyManagerV4:
         n_fuses       = order_config.get("number_of_fuses", 1)
         now           = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        pwf_num = shells.get("PCB_With_Fuse")
-        if not pwf_num:
+        pwf_id = shells.get("PCB_With_Fuse")
+        if not pwf_id:
             conn.close()
             raise Exception(f"shell_instances missing PCB_With_Fuse for order {order_id}")
+        pwf_num = self._inst_num_from_id(pwf_id)
 
         if fuse_instance_ids and len(fuse_instance_ids) != n_fuses:
             conn.close()
@@ -533,9 +552,9 @@ class AssemblyManagerV4:
             print(f"  Fuse_{i:<3}      : {fuse['model_number']}  instance {fuse['instance_number']}")
             print(f"  ✓ Consumed Fuse_{i} instance {fuse['instance_number']}")
 
-        # Patch PCB_With_Fuse BOM — Fuse slot gets Instance_Reference_1..N
-        # Housing_With_PCB slot references the sub-assembly built in step 1
-        hwp_num = shells.get("Housing_With_PCB")
+        # In step 2 the HWP shell was already created — read its instance number for file access
+        hwp_id  = shells.get("Housing_With_PCB", "")
+        hwp_num = self._inst_num_from_id(hwp_id) if hwp_id else ""
         hwp_cfg = ASSET_REGISTRY["Housing_With_PCB"]
         hwp_shell_path = (
             self.base_path
@@ -610,9 +629,12 @@ class AssemblyManagerV4:
         n_fuses      = order_config.get("number_of_fuses", 1)
         now          = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        telefon_num = shells.get("Telefon")
-        hwp_num     = shells.get("Housing_With_PCB")
-        pwf_num     = shells.get("PCB_With_Fuse")
+        telefon_id  = shells.get("Telefon", "")
+        hwp_id      = shells.get("Housing_With_PCB", "")
+        pwf_id      = shells.get("PCB_With_Fuse", "")
+        telefon_num = self._inst_num_from_id(telefon_id) if telefon_id else None
+        hwp_num     = self._inst_num_from_id(hwp_id)     if hwp_id     else None
+        pwf_num     = self._inst_num_from_id(pwf_id)     if pwf_id     else None
 
         if not all([telefon_num, hwp_num, pwf_num]):
             conn.close()
@@ -639,9 +661,7 @@ class AssemblyManagerV4:
         print(f"  ✓ Registered Housing_With_PCB instance {hwp_num} as consumed")
         print(f"  ✓ Registered PCB_With_Fuse    instance {pwf_num} as consumed")
 
-        # Retrieve sub-assembly AAS IDs for Telefon BOM references
-        hwp_id = self._shell_aas_id("Housing_With_PCB", hwp_num)
-        pwf_id = self._shell_aas_id("PCB_With_Fuse",    pwf_num)
+        # hwp_id and pwf_id already hold the full AAS IDs (stored at order time)
 
         # Retrieve step 1 + step 2 consumed instance IDs for full Telefon BOM
         step1    = progress.get("step1", {})
@@ -669,8 +689,7 @@ class AssemblyManagerV4:
         self._register_telefon_as_available(telefon_num, conn, order_config)
         print(f"  ✓ Registered Telefon instance {telefon_num} as available in inventory")
 
-        # Load Telefon AAS ID for progress record
-        telefon_id = self._shell_aas_id("Telefon", telefon_num)
+        # telefon_id is already the full AAS ID from shell_instances (stored at order time)
 
         progress["step3"] = {
             "top_cover": {"instance_id": tc["instance_id"], "instance_number": tc["instance_number"]},

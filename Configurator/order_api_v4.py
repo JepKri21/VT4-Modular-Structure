@@ -48,6 +48,7 @@ Assemble request body (all optional — combines step 1+2+3 bodies):
 
 import argparse
 import json
+import re
 import sqlite3
 from pathlib import Path
 
@@ -113,7 +114,71 @@ def _get_order_row(order_id: str) -> dict:
             d[col] = json.loads(d[col]) if d[col] else None
         except (TypeError, ValueError):
             pass
+    _normalize_order(d)
     return d
+
+
+# ---------------------------------------------------------------------------
+# Output-normalization helpers
+# ---------------------------------------------------------------------------
+
+_SHELL_BASE_URL_CACHE: dict = {}
+
+
+def _get_shell_base_url(asset_key: str) -> str:
+    """Return the base instance URL for an asset (type URL without '/Type' suffix)."""
+    if asset_key not in _SHELL_BASE_URL_CACHE:
+        cfg = ASSET_REGISTRY[asset_key]
+        type_shell_path = AAS_FILES_BASE / cfg["type_shell"]
+        with open(type_shell_path) as f:
+            type_id: str = json.load(f)["id"]
+        # strip trailing '/Type' so we can append '/<instance_num>'
+        base = type_id[: -len("/Type")] if type_id.endswith("/Type") else type_id
+        _SHELL_BASE_URL_CACHE[asset_key] = base
+    return _SHELL_BASE_URL_CACHE[asset_key]
+
+
+def _normalize_shell_instances(shell_instances: dict) -> dict:
+    """Expand short instance numbers (e.g. '003') to full asset URLs."""
+    result = {}
+    for asset_key, value in shell_instances.items():
+        if isinstance(value, str) and re.fullmatch(r'\d+', value) and asset_key in ASSET_REGISTRY:
+            try:
+                result[asset_key] = _get_shell_base_url(asset_key) + "/" + value
+            except Exception:
+                result[asset_key] = value
+        else:
+            result[asset_key] = value
+    return result
+
+
+def _unflatten_config(config: dict) -> dict:
+    """Convert flat {bottom_cover_material: x} → nested {Bottom_Cover: {material: x}}."""
+    if not config or any(isinstance(v, dict) for v in config.values()):
+        return config  # already nested
+    # Build reverse map: flat_key → (component_name, lowercase_property)
+    reverse: dict = {}
+    for asset_key, cfg in ASSET_REGISTRY.items():
+        for prop_name, flat_key in cfg.get("properties_config_map", {}).items():
+            # Only map to component-level keys (avoid overwriting with sub-assembly duplicates)
+            if flat_key not in reverse and cfg.get("is_component", False):
+                reverse[flat_key] = (asset_key, prop_name.lower())
+    nested: dict = {}
+    for flat_key, value in config.items():
+        if flat_key in reverse:
+            comp, prop = reverse[flat_key]
+            nested.setdefault(comp, {})[prop] = value
+        else:
+            nested[flat_key] = value
+    return nested
+
+
+def _normalize_order(order: dict) -> None:
+    """Mutate an order dict in-place: nested config, full-URL shell_instances."""
+    if isinstance(order.get("configuration"), dict):
+        order["configuration"] = _unflatten_config(order["configuration"])
+    if isinstance(order.get("shell_instances"), dict):
+        order["shell_instances"] = _normalize_shell_instances(order["shell_instances"])
 
 
 # =============================================================================
@@ -181,9 +246,9 @@ def place_order():
         return jsonify({
             "order_id":             details["order_id"],
             "product_type":         details["product_type"],
-            "configuration":        details["configuration"],
+            "configuration":        _unflatten_config(details["configuration"]),
             "model_numbers_needed": details["model_numbers_needed"],
-            "shell_instances":      details["shell_instances"],
+            "shell_instances":      _normalize_shell_instances(details["shell_instances"]),
             "reservation_slots":    details["reservation_slots"],
             "inventory_status":     details["inventory_status"],
             "created_date":         details["created_date"],
@@ -207,6 +272,7 @@ def list_orders():
                     o[col] = json.loads(o[col]) if o[col] else None
                 except (TypeError, ValueError):
                     pass
+            _normalize_order(o)
         return jsonify(orders), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
