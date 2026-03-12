@@ -25,7 +25,8 @@ submodels:
     Communication_Methods:
       - UNS_Communication:
           Broker_Address:
-            value: "192.168.38.200"
+            # value: "192.168.38.200"
+            value: "100.117.139.24"
           Protocol:
             value: "MQTT"
           Port:
@@ -67,25 +68,20 @@ submodels:
     Agents:
       - KUKA_Manipulator:
           Capabilities:
-            - Drilling:
+            - Retrieve:
                 Estimated_Duration:
                   value: 5
                 Parameters:
-                  Drill_Depth:
-                    min: 1
-                    max: 20
-                  Rotational_Speed:
-                    min: 1500
-                    max: 2000
-                  Feed:
-                    min: 100
-                    max: 200
-                  Drill_Size:
-                    value: 5
+                  Speed:
+                    min: 0
+                    max: 2
+                  Acceleration:
+                    min: 0
+                    max: 4
                 Supported_Connection_Points:
-                  Drill_Station_Connection_Point_1:
+                  Bottom_Cover_Storage_Connection_Point_1:
                     Connection_Point_Id:
-                      value: "Drill_Station_Connection_Point_1"
+                      value: "Bottom_Cover_Storage_Connection_Point_1"
                 Supported_Components:
                   Bottom_Cover:
                     Component_Type:

@@ -10,7 +10,8 @@ sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 from PackML.PackML_Machine_Class import StationBehavior, PackMLState, PackMLStateMachine
 from Shell_And_Submodels.Shell_Generator_Class import ShellGenerator
 
-yaml_config = r"C:\Users\silas\Desktop\Manufacturing_Technology_4\Github\VT4-Modular-Structure\Generating_Resources\Resource_Configs\Drilling_Resource\Drilling_Resource_Config.yaml"
+BASE_DIR = Path(__file__).resolve().parent
+yaml_config = BASE_DIR / "Drilling_Resource_Config.yaml"
 
 Drilling_Resource_AAS = ShellGenerator(yaml_config)
 

@@ -1,7 +1,7 @@
 shell:
   id:
     value: "https://aausmartlab.com/Assets/Resource/MADE/ACOPOS6D/bf30b0a7-d2ba-41ab-989f-503e0b553ada"
-  idShort: 
+  idShort:
     value: "ACOPOS6D"
 
 submodels:
@@ -21,12 +21,11 @@ submodels:
                 Quantity:
                   value: 0
 
-
   Communication:
     Communication_Methods:
       - UNS_Communication:
           Broker_Address:
-            value: "192.168.38.200"
+            value: "100.117.139.24"
           Protocol:
             value: "MQTT"
           Port:
@@ -42,41 +41,49 @@ submodels:
         value: FIB_14
       Production_Line:
         value: "Production_Line_1"
-    
+
     Connection_Points:
-      - Connection_Point_1:
+      - ACOPOS6D_Connection_Point_1:
           Connection_Point_Id:
             value: "ACOPOS6D_Connection_Point_1"
           Connection_Type:
             value: "In-Outfeed"
+      - ACOPOS6D_Connection_Point_2:
           Connection_Point_Id:
             value: "ACOPOS6D_Connection_Point_2"
           Connection_Type:
             value: "In-Outfeed"
+      - ACOPOS6D_Connection_Point_3:
           Connection_Point_Id:
             value: "ACOPOS6D_Connection_Point_3"
           Connection_Type:
             value: "In-Outfeed"
+      - ACOPOS6D_Connection_Point_4:
           Connection_Point_Id:
             value: "ACOPOS6D_Connection_Point_4"
           Connection_Type:
             value: "In-Outfeed"
+      - ACOPOS6D_Connection_Point_5:
           Connection_Point_Id:
             value: "ACOPOS6D_Connection_Point_5"
           Connection_Type:
             value: "In-Outfeed"
+      - ACOPOS6D_Connection_Point_6:
           Connection_Point_Id:
             value: "ACOPOS6D_Connection_Point_6"
           Connection_Type:
             value: "In-Outfeed"
+      - ACOPOS6D_Connection_Point_7:
           Connection_Point_Id:
             value: "ACOPOS6D_Connection_Point_7"
           Connection_Type:
             value: "In-Outfeed"
+      - ACOPOS6D_Connection_Point_8:
           Connection_Point_Id:
             value: "ACOPOS6D_Connection_Point_8"
           Connection_Type:
-            value: "In-Outfeed"  
+            value: "In-Outfeed"
+      - ACOPOS6D_Connection_Point_9:
           Connection_Point_Id:
             value: "ACOPOS6D_Connection_Point_9"
           Connection_Type:
@@ -108,118 +115,117 @@ submodels:
             Y_Value:
               value: 120
 
-
   Skills:
     Agents:
       - Shuttle_1:
-         Capabilities:
-          - Transport:
-              Estimated_Duration:
-                value: 5
-              Parameters:
-                Speed:
-                  min: 0
-                  max: 1
-                Acceleration:
-                  min: 0
-                  max: 5
-                Hover_Height:
-                  min: 1
-                  max: 3
-              Supported_Connection_Points:
-                ACOPOS6D_Connection_Point_1:
-                  Connection_Point_Id:
-                    value: "ACOPOS6D_Connection_Point_1"
-                ACOPOS6D_Connection_Point_2:
-                  Connection_Point_Id:
-                    value: "ACOPOS6D_Connection_Point_2"
-                ACOPOS6D_Connection_Point_3:
-                  Connection_Point_Id:
-                    value: "ACOPOS6D_Connection_Point_3"
-                ACOPOS6D_Connection_Point_4:
-                  Connection_Point_Id:
-                    value: "ACOPOS6D_Connection_Point_4"
-                ACOPOS6D_Connection_Point_5:
-                  Connection_Point_Id:
-                    value: "ACOPOS6D_Connection_Point_5"
-                ACOPOS6D_Connection_Point_6:
-                  Connection_Point_Id:
-                    value: "ACOPOS6D_Connection_Point_6"
-                ACOPOS6D_Connection_Point_7:
-                  Connection_Point_Id:
-                    value: "ACOPOS6D_Connection_Point_7"
-                ACOPOS6D_Connection_Point_8:
-                  Connection_Point_Id:
-                    value: "ACOPOS6D_Connection_Point_8"
-                ACOPOS6D_Connection_Point_9:
-                  Connection_Point_Id:
-                    value: "ACOPOS6D_Connection_Point_9"
-              Supported_Components:
-                Bottom_Cover:
-                  Component_Type:
-                    value: "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover"
-                Housing_With_PCB:
-                  Component_Type:
-                    value: "https://aausmartlab.com/Assets/Product/Component/AAU/Housing_With_PCB"
-                PCB_With_Fuse:
-                  Component_Type:
-                    value: "https://aausmartlab.com/Assets/Product/Component/AAU/PCB_With_Fuse"
-                Telefon_Pro_Max:
-                  Component_Type:
-                    value: "https://aausmartlab.com/Assets/Product/Component/AAU/Telefon_Pro_Max"
+          Capabilities:
+            - Transport:
+                Estimated_Duration:
+                  value: 5
+                Parameters:
+                  Speed:
+                    min: 0
+                    max: 1
+                  Acceleration:
+                    min: 0
+                    max: 5
+                  Hover_Height:
+                    min: 1
+                    max: 3
+                Supported_Connection_Points:
+                  ACOPOS6D_Connection_Point_1:
+                    Connection_Point_Id:
+                      value: "ACOPOS6D_Connection_Point_1"
+                  ACOPOS6D_Connection_Point_2:
+                    Connection_Point_Id:
+                      value: "ACOPOS6D_Connection_Point_2"
+                  ACOPOS6D_Connection_Point_3:
+                    Connection_Point_Id:
+                      value: "ACOPOS6D_Connection_Point_3"
+                  ACOPOS6D_Connection_Point_4:
+                    Connection_Point_Id:
+                      value: "ACOPOS6D_Connection_Point_4"
+                  ACOPOS6D_Connection_Point_5:
+                    Connection_Point_Id:
+                      value: "ACOPOS6D_Connection_Point_5"
+                  ACOPOS6D_Connection_Point_6:
+                    Connection_Point_Id:
+                      value: "ACOPOS6D_Connection_Point_6"
+                  ACOPOS6D_Connection_Point_7:
+                    Connection_Point_Id:
+                      value: "ACOPOS6D_Connection_Point_7"
+                  ACOPOS6D_Connection_Point_8:
+                    Connection_Point_Id:
+                      value: "ACOPOS6D_Connection_Point_8"
+                  ACOPOS6D_Connection_Point_9:
+                    Connection_Point_Id:
+                      value: "ACOPOS6D_Connection_Point_9"
+                Supported_Components:
+                  Bottom_Cover:
+                    Component_Type:
+                      value: "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover"
+                  Housing_With_PCB:
+                    Component_Type:
+                      value: "https://aausmartlab.com/Assets/Product/Component/AAU/Housing_With_PCB"
+                  PCB_With_Fuse:
+                    Component_Type:
+                      value: "https://aausmartlab.com/Assets/Product/Component/AAU/PCB_With_Fuse"
+                  Telefon_Pro_Max:
+                    Component_Type:
+                      value: "https://aausmartlab.com/Assets/Product/Component/AAU/Telefon_Pro_Max"
       - Shuttle_2:
-         Capabilities:
-          - Transport:
-              Estimated_Duration:
-                value: 5
-              Parameters:
-                Speed:
-                  min: 0
-                  max: 1
-                Acceleration:
-                  min: 0
-                  max: 5
-                Hover_Height:
-                  min: 1
-                  max: 3
-              Supported_Connection_Points:
-                ACOPOS6D_Connection_Point_1:
-                  Connection_Point_Id:
-                    value: "ACOPOS6D_Connection_Point_1"
-                ACOPOS6D_Connection_Point_2:
-                  Connection_Point_Id:
-                    value: "ACOPOS6D_Connection_Point_2"
-                ACOPOS6D_Connection_Point_3:
-                  Connection_Point_Id:
-                    value: "ACOPOS6D_Connection_Point_3"
-                ACOPOS6D_Connection_Point_4:
-                  Connection_Point_Id:
-                    value: "ACOPOS6D_Connection_Point_4"
-                ACOPOS6D_Connection_Point_5:
-                  Connection_Point_Id:
-                    value: "ACOPOS6D_Connection_Point_5"
-                ACOPOS6D_Connection_Point_6:
-                  Connection_Point_Id:
-                    value: "ACOPOS6D_Connection_Point_6"
-                ACOPOS6D_Connection_Point_7:
-                  Connection_Point_Id:
-                    value: "ACOPOS6D_Connection_Point_7"
-                ACOPOS6D_Connection_Point_8:
-                  Connection_Point_Id:
-                    value: "ACOPOS6D_Connection_Point_8"
-                ACOPOS6D_Connection_Point_9:
-                  Connection_Point_Id:
-                    value: "ACOPOS6D_Connection_Point_9"
-              Supported_Components:
-                Bottom_Cover:
-                  Component_Type:
-                    value: "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover"
-                Housing_With_PCB:
-                  Component_Type:
-                    value: "https://aausmartlab.com/Assets/Product/Component/AAU/Housing_With_PCB"
-                PCB_With_Fuse:
-                  Component_Type:
-                    value: "https://aausmartlab.com/Assets/Product/Component/AAU/PCB_With_Fuse"
-                Telefon_Pro_Max:
-                  Component_Type:
-                    value: "https://aausmartlab.com/Assets/Product/Component/AAU/Telefon_Pro_Max"
+          Capabilities:
+            - Transport:
+                Estimated_Duration:
+                  value: 5
+                Parameters:
+                  Speed:
+                    min: 0
+                    max: 1
+                  Acceleration:
+                    min: 0
+                    max: 5
+                  Hover_Height:
+                    min: 1
+                    max: 3
+                Supported_Connection_Points:
+                  ACOPOS6D_Connection_Point_1:
+                    Connection_Point_Id:
+                      value: "ACOPOS6D_Connection_Point_1"
+                  ACOPOS6D_Connection_Point_2:
+                    Connection_Point_Id:
+                      value: "ACOPOS6D_Connection_Point_2"
+                  ACOPOS6D_Connection_Point_3:
+                    Connection_Point_Id:
+                      value: "ACOPOS6D_Connection_Point_3"
+                  ACOPOS6D_Connection_Point_4:
+                    Connection_Point_Id:
+                      value: "ACOPOS6D_Connection_Point_4"
+                  ACOPOS6D_Connection_Point_5:
+                    Connection_Point_Id:
+                      value: "ACOPOS6D_Connection_Point_5"
+                  ACOPOS6D_Connection_Point_6:
+                    Connection_Point_Id:
+                      value: "ACOPOS6D_Connection_Point_6"
+                  ACOPOS6D_Connection_Point_7:
+                    Connection_Point_Id:
+                      value: "ACOPOS6D_Connection_Point_7"
+                  ACOPOS6D_Connection_Point_8:
+                    Connection_Point_Id:
+                      value: "ACOPOS6D_Connection_Point_8"
+                  ACOPOS6D_Connection_Point_9:
+                    Connection_Point_Id:
+                      value: "ACOPOS6D_Connection_Point_9"
+                Supported_Components:
+                  Bottom_Cover:
+                    Component_Type:
+                      value: "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover"
+                  Housing_With_PCB:
+                    Component_Type:
+                      value: "https://aausmartlab.com/Assets/Product/Component/AAU/Housing_With_PCB"
+                  PCB_With_Fuse:
+                    Component_Type:
+                      value: "https://aausmartlab.com/Assets/Product/Component/AAU/PCB_With_Fuse"
+                  Telefon_Pro_Max:
+                    Component_Type:
+                      value: "https://aausmartlab.com/Assets/Product/Component/AAU/Telefon_Pro_Max"

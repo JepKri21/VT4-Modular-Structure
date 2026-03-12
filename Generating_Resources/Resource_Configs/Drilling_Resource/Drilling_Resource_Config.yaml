@@ -1,7 +1,7 @@
 shell:
   id:
     value: "https://aausmartlab.com/Assets/Resource/MADE/Drill_Station/1e1d4a58-e403-4d5e-81fa-19c544835561"
-  idShort: 
+  idShort:
     value: "Drilling_Station"
 
 submodels:
@@ -21,12 +21,12 @@ submodels:
                 Quantity:
                   value: 0
 
-
   Communication:
     Communication_Methods:
       - UNS_Communication:
           Broker_Address:
-            value: "192.168.38.200"
+            # value: "192.168.38.200"
+            value: "100.117.139.24"
           Protocol:
             value: "MQTT"
           Port:
@@ -42,7 +42,7 @@ submodels:
         value: FIB_14
       Production_Line:
         value: "Production_Line_1"
-    
+
     Connection_Points:
       - Connection_Point_1:
           Connection_Point_Id:
@@ -64,31 +64,30 @@ submodels:
             Y_Value:
               value: 120
 
-
   Skills:
     Agents:
       - KUKA_Manipulator:
-         Capabilities:
-          - Drilling:
-              Estimated_Duration:
-                value: 5
-              Parameters:
-                Drill_Depth:
-                  min: 1
-                  max: 20
-                Rotational_Speed:
-                  min: 1500
-                  max: 2000
-                Feed:
-                  min: 100
-                  max: 200
-                Drill_Size:
+          Capabilities:
+            - Drilling:
+                Estimated_Duration:
                   value: 5
-              Supported_Connection_Points:
-                Drill_Station_Connection_Point_1:
-                  Connection_Point_Id:
-                    value: "Drill_Station_Connection_Point_1"
-              Supported_Components:
-                Bottom_Cover:
-                  Component_Type:
-                    value: "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover"
+                Parameters:
+                  Drill_Depth:
+                    min: 1
+                    max: 20
+                  Rotational_Speed:
+                    min: 1500
+                    max: 2000
+                  Feed:
+                    min: 100
+                    max: 200
+                  Drill_Size:
+                    value: 5
+                Supported_Connection_Points:
+                  Drill_Station_Connection_Point_1:
+                    Connection_Point_Id:
+                      value: "Drill_Station_Connection_Point_1"
+                Supported_Components:
+                  Bottom_Cover:
+                    Component_Type:
+                      value: "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover"

@@ -30,7 +30,7 @@ class MQTT_Client_Resource():
             client.subscribe(f"{self.BASE_TOPIC}/{self.CLIENT_ID}/CMD")
             client.subscribe(f"{self.BASE_TOPIC}/{self.CLIENT_ID}/info_request")
             client.subscribe(f"{self.BASE_TOPIC}/{self.CLIENT_ID}/controller_ack")
-        
+            self.publish_state("PackMLState.IDLE")
         else:
             print(f"Connection failed with code: {rc}")
 
@@ -125,6 +125,7 @@ class MQTT_Client_Resource():
 
 
     def publish_state(self, new_state):
+        print(f"Publishing state to topic{self.BASE_TOPIC}/{self.CLIENT_ID}")
         state_data = {
             "seq_no" : self.station_seq_no,
             "station_id": self.CLIENT_ID, 
