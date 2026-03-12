@@ -15,12 +15,8 @@ export default function ConfiguratorPage() {
   const [options, setOptions] = useState<any>(null);
 
   const [config, setConfig] = useState({
-    bottom_cover_material: "",
-    bottom_cover_color: "",
-    bottom_cover_finish: "",
-    top_cover_material: "",
-    top_cover_color: "",
-    top_cover_finish: "",
+    Bottom_Cover: { material: "", color: "", finish: "" },
+    Top_Cover:    { material: "", color: "", finish: "" },
     number_of_fuses: 1,
   });
 
@@ -34,12 +30,8 @@ export default function ConfiguratorPage() {
   const [orderError, setOrderError] = useState<string | null>(null);
 
   const configComplete =
-    !!config.bottom_cover_material &&
-    !!config.bottom_cover_color &&
-    !!config.bottom_cover_finish &&
-    !!config.top_cover_material &&
-    !!config.top_cover_color &&
-    !!config.top_cover_finish;
+    !!config.Bottom_Cover.material && !!config.Bottom_Cover.color && !!config.Bottom_Cover.finish &&
+    !!config.Top_Cover.material   && !!config.Top_Cover.color   && !!config.Top_Cover.finish;
 
   const placeOrder = async () => {
     setSubmitting(true);
@@ -58,12 +50,8 @@ export default function ConfiguratorPage() {
         setOrderResult(data);
         // Reset dropdowns after successful order
         setConfig({
-          bottom_cover_material: "",
-          bottom_cover_color: "",
-          bottom_cover_finish: "",
-          top_cover_material: "",
-          top_cover_color: "",
-          top_cover_finish: "",
+          Bottom_Cover: { material: "", color: "", finish: "" },
+          Top_Cover:    { material: "", color: "", finish: "" },
           number_of_fuses: 1,
         });
       }
@@ -90,31 +78,27 @@ export default function ConfiguratorPage() {
   const bcMaterials = useMemo(() => {
     const base = bcCombos.filter(
       (c) =>
-        (!config.bottom_cover_color || c.color === config.bottom_cover_color) &&
-        (!config.bottom_cover_finish ||
-          c.finish === config.bottom_cover_finish),
+        (!config.Bottom_Cover.color  || c.color  === config.Bottom_Cover.color) &&
+        (!config.Bottom_Cover.finish || c.finish === config.Bottom_Cover.finish)
     );
     return [...new Set(base.map((c) => c.material))];
-  }, [bcCombos, config.bottom_cover_color, config.bottom_cover_finish]);
+  }, [bcCombos, config.Bottom_Cover.color, config.Bottom_Cover.finish]);
   const bcColors = useMemo(() => {
     const base = bcCombos.filter(
       (c) =>
-        (!config.bottom_cover_material ||
-          c.material === config.bottom_cover_material) &&
-        (!config.bottom_cover_finish ||
-          c.finish === config.bottom_cover_finish),
+        (!config.Bottom_Cover.material || c.material === config.Bottom_Cover.material) &&
+        (!config.Bottom_Cover.finish   || c.finish   === config.Bottom_Cover.finish)
     );
     return [...new Set(base.map((c) => c.color))];
-  }, [bcCombos, config.bottom_cover_material, config.bottom_cover_finish]);
+  }, [bcCombos, config.Bottom_Cover.material, config.Bottom_Cover.finish]);
   const bcFinishes = useMemo(() => {
     const base = bcCombos.filter(
       (c) =>
-        (!config.bottom_cover_material ||
-          c.material === config.bottom_cover_material) &&
-        (!config.bottom_cover_color || c.color === config.bottom_cover_color),
+        (!config.Bottom_Cover.material || c.material === config.Bottom_Cover.material) &&
+        (!config.Bottom_Cover.color    || c.color    === config.Bottom_Cover.color)
     );
     return [...new Set(base.map((c) => c.finish))];
-  }, [bcCombos, config.bottom_cover_material, config.bottom_cover_color]);
+  }, [bcCombos, config.Bottom_Cover.material, config.Bottom_Cover.color]);
 
   // ── Top Cover cascading options (any-order filtering) ───────────────────
   const tcCombos: Combo[] = useMemo(
@@ -124,88 +108,57 @@ export default function ConfiguratorPage() {
   const tcMaterials = useMemo(() => {
     const base = tcCombos.filter(
       (c) =>
-        (!config.top_cover_color || c.color === config.top_cover_color) &&
-        (!config.top_cover_finish || c.finish === config.top_cover_finish),
+        (!config.Top_Cover.color  || c.color  === config.Top_Cover.color) &&
+        (!config.Top_Cover.finish || c.finish === config.Top_Cover.finish)
     );
     return [...new Set(base.map((c) => c.material))];
-  }, [tcCombos, config.top_cover_color, config.top_cover_finish]);
+  }, [tcCombos, config.Top_Cover.color, config.Top_Cover.finish]);
   const tcColors = useMemo(() => {
     const base = tcCombos.filter(
       (c) =>
-        (!config.top_cover_material ||
-          c.material === config.top_cover_material) &&
-        (!config.top_cover_finish || c.finish === config.top_cover_finish),
+        (!config.Top_Cover.material || c.material === config.Top_Cover.material) &&
+        (!config.Top_Cover.finish   || c.finish   === config.Top_Cover.finish)
     );
     return [...new Set(base.map((c) => c.color))];
-  }, [tcCombos, config.top_cover_material, config.top_cover_finish]);
+  }, [tcCombos, config.Top_Cover.material, config.Top_Cover.finish]);
   const tcFinishes = useMemo(() => {
     const base = tcCombos.filter(
       (c) =>
-        (!config.top_cover_material ||
-          c.material === config.top_cover_material) &&
-        (!config.top_cover_color || c.color === config.top_cover_color),
+        (!config.Top_Cover.material || c.material === config.Top_Cover.material) &&
+        (!config.Top_Cover.color    || c.color    === config.Top_Cover.color)
     );
     return [...new Set(base.map((c) => c.finish))];
-  }, [tcCombos, config.top_cover_material, config.top_cover_color]);
+  }, [tcCombos, config.Top_Cover.material, config.Top_Cover.color]);
 
   // ── Smart field change: clear other fields only when pairwise incompatible ─
   const handleBcChange = (
-    field:
-      | "bottom_cover_material"
-      | "bottom_cover_color"
-      | "bottom_cover_finish",
-    value: string,
+    field: "material" | "color" | "finish",
+    value: string
   ) => {
-    const keyMap = {
-      bottom_cover_material: "material",
-      bottom_cover_color: "color",
-      bottom_cover_finish: "finish",
-    } as const;
-    const next = { ...config, [field]: value };
-    const changedKey = keyMap[field];
-    // For each OTHER selected field: clear only if no combo pairs it with the new value.
-    // This is order-independent — your first choice is always respected.
-    (
-      [
-        "bottom_cover_material",
-        "bottom_cover_color",
-        "bottom_cover_finish",
-      ] as const
-    )
+    const next = { ...config, Bottom_Cover: { ...config.Bottom_Cover, [field]: value } };
+    (["material", "color", "finish"] as const)
       .filter((f) => f !== field)
       .forEach((f) => {
-        const otherVal = next[f];
+        const otherVal = next.Bottom_Cover[f];
         if (!otherVal) return;
-        const otherKey = keyMap[f];
-        const ok = bcCombos.some(
-          (c) => c[changedKey] === value && c[otherKey] === otherVal,
-        );
-        if (!ok) next[f] = "";
+        const ok = bcCombos.some((c) => c[field] === value && c[f] === otherVal);
+        if (!ok) next.Bottom_Cover = { ...next.Bottom_Cover, [f]: "" };
       });
     setConfig(next);
   };
 
   const handleTcChange = (
-    field: "top_cover_material" | "top_cover_color" | "top_cover_finish",
-    value: string,
+    field: "material" | "color" | "finish",
+    value: string
   ) => {
-    const keyMap = {
-      top_cover_material: "material",
-      top_cover_color: "color",
-      top_cover_finish: "finish",
-    } as const;
-    const next = { ...config, [field]: value };
-    const changedKey = keyMap[field];
-    (["top_cover_material", "top_cover_color", "top_cover_finish"] as const)
+    const next = { ...config, Top_Cover: { ...config.Top_Cover, [field]: value } };
+    (["material", "color", "finish"] as const)
       .filter((f) => f !== field)
       .forEach((f) => {
-        const otherVal = next[f];
+        const otherVal = next.Top_Cover[f];
         if (!otherVal) return;
-        const otherKey = keyMap[f];
-        const ok = tcCombos.some(
-          (c) => c[changedKey] === value && c[otherKey] === otherVal,
-        );
-        if (!ok) next[f] = "";
+        const ok = tcCombos.some((c) => c[field] === value && c[f] === otherVal);
+        if (!ok) next.Top_Cover = { ...next.Top_Cover, [f]: "" };
       });
     setConfig(next);
   };
@@ -262,10 +215,8 @@ export default function ConfiguratorPage() {
         <h2 className="font-semibold text-primary">Bottom Cover</h2>
         <select
           className={selectClass}
-          value={config.bottom_cover_material}
-          onChange={(e) =>
-            handleBcChange("bottom_cover_material", e.target.value)
-          }
+          value={config.Bottom_Cover.material}
+          onChange={(e) => handleBcChange("material", e.target.value)}
         >
           <option value="" disabled hidden>
             Select Material
@@ -277,8 +228,8 @@ export default function ConfiguratorPage() {
 
         <select
           className={selectClass}
-          value={config.bottom_cover_color}
-          onChange={(e) => handleBcChange("bottom_cover_color", e.target.value)}
+          value={config.Bottom_Cover.color}
+          onChange={(e) => handleBcChange("color", e.target.value)}
         >
           <option value="" disabled hidden>
             Select Color
@@ -290,10 +241,8 @@ export default function ConfiguratorPage() {
 
         <select
           className={selectClass}
-          value={config.bottom_cover_finish}
-          onChange={(e) =>
-            handleBcChange("bottom_cover_finish", e.target.value)
-          }
+          value={config.Bottom_Cover.finish}
+          onChange={(e) => handleBcChange("finish", e.target.value)}
         >
           <option value="" disabled hidden>
             Select Finish
@@ -307,8 +256,8 @@ export default function ConfiguratorPage() {
         <h2 className="font-semibold text-primary">Top Cover</h2>
         <select
           className={selectClass}
-          value={config.top_cover_material}
-          onChange={(e) => handleTcChange("top_cover_material", e.target.value)}
+          value={config.Top_Cover.material}
+          onChange={(e) => handleTcChange("material", e.target.value)}
         >
           <option value="" disabled hidden>
             Select Material
@@ -320,8 +269,8 @@ export default function ConfiguratorPage() {
 
         <select
           className={selectClass}
-          value={config.top_cover_color}
-          onChange={(e) => handleTcChange("top_cover_color", e.target.value)}
+          value={config.Top_Cover.color}
+          onChange={(e) => handleTcChange("color", e.target.value)}
         >
           <option value="" disabled hidden>
             Select Color
@@ -333,8 +282,8 @@ export default function ConfiguratorPage() {
 
         <select
           className={selectClass}
-          value={config.top_cover_finish}
-          onChange={(e) => handleTcChange("top_cover_finish", e.target.value)}
+          value={config.Top_Cover.finish}
+          onChange={(e) => handleTcChange("finish", e.target.value)}
         >
           <option value="" disabled hidden>
             Select Finish
@@ -353,7 +302,7 @@ export default function ConfiguratorPage() {
             setConfig({ ...config, number_of_fuses: Number(e.target.value) })
           }
         >
-          {Object.keys(options.fuse_counts)
+          {options.fuse_counts && Object.keys(options.fuse_counts)
             .filter((n) => Number(n) <= 3)
             .map((n) => (
               <option key={n} value={n}>

@@ -74,6 +74,27 @@ class TelefonConfiguratorV4:
         self._config_template = self._load_config_template()
 
     # -------------------------------------------------------------------------
+    # Config helpers
+    # -------------------------------------------------------------------------
+
+    @staticmethod
+    def _flatten_config(config: Dict[str, Any]) -> Dict[str, Any]:
+        """Convert nested config {Bottom_Cover: {material: x}} to flat {bottom_cover_material: x}.
+
+        Nested component dicts are expanded using the pattern: {component_lower}_{property}.
+        Top-level scalar values (e.g. number_of_fuses, _order_id) are kept as-is.
+        """
+        flat: Dict[str, Any] = {}
+        for key, value in config.items():
+            if isinstance(value, dict):
+                prefix = key.lower()  # "Bottom_Cover" → "bottom_cover"
+                for prop, v in value.items():
+                    flat[f"{prefix}_{prop}"] = v
+            else:
+                flat[key] = value
+        return flat
+
+    # -------------------------------------------------------------------------
     # AAS Server upload
     # -------------------------------------------------------------------------
 
@@ -144,6 +165,7 @@ class TelefonConfiguratorV4:
 
     def _get_model_numbers_for_config(self, config: Dict[str, Any]) -> Dict[str, str]:
         """Return {component_type: model_number} for all components in the config."""
+        flat = self._flatten_config(config)
         model_numbers = {}
         for asset_key, cfg in ASSET_REGISTRY.items():
             if not cfg.get("is_component", False):
@@ -168,7 +190,7 @@ class TelefonConfiguratorV4:
             if template:
                 model_numbers[asset_key] = re.sub(
                     r"\{(\w+)\}",
-                    lambda m: str(config.get(m.group(1), m.group(0))),
+                    lambda m: str(flat.get(m.group(1), m.group(0))),
                     template,
                 )
             else:
@@ -187,6 +209,7 @@ class TelefonConfiguratorV4:
 
     def validate_configuration(self, config: Dict[str, Any]) -> Tuple[bool, List[str]]:
         errors = []
+        flat = self._flatten_config(config)
 
         # Collect required config fields from all properties_config_maps in ASSET_REGISTRY.
         # Sub-assembly maps (e.g. Housing_With_PCB) share the same config keys as components,
@@ -197,7 +220,7 @@ class TelefonConfiguratorV4:
             for config_key in cfg.get("properties_config_map", {}).values()
         }
         for field in required:
-            if field not in config:
+            if field not in flat:
                 errors.append(f"Missing required field: {field}")
 
         for elem in self._config_template.get("submodelElements", []):
@@ -220,10 +243,10 @@ class TelefonConfiguratorV4:
                             prop_map = asset_cfg.get("properties_config_map", {})
                             mat_key = prop_map.get("Material")
                             fin_key = prop_map.get("Finish")
-                            if mat_key and fin_key and mat_key in config and fin_key in config:
-                                if (config[mat_key], config[fin_key]) in incompatible:
+                            if mat_key and fin_key and mat_key in flat and fin_key in flat:
+                                if (flat[mat_key], flat[fin_key]) in incompatible:
                                     errors.append(
-                                        f"Invalid: {config[mat_key]} cannot be {config[fin_key]}"
+                                        f"Invalid: {flat[mat_key]} cannot be {flat[fin_key]}"
                                     )
 
         return len(errors) == 0, errors
@@ -374,6 +397,7 @@ class TelefonConfiguratorV4:
         """Set Instance_Number, Created_Date, Model_Number; remove Model_Number_Configuration."""
         elements = submodel.get("submodelElements", [])
         model_number = None
+        flat = self._flatten_config(config) if config else {}
 
         for elem in elements:
             if elem.get("idShort") == "Model_Number_Configuration" and config:
@@ -381,7 +405,7 @@ class TelefonConfiguratorV4:
                     if child.get("idShort") == "Template":
                         model_number = re.sub(
                             r"\{(\w+)\}",
-                            lambda m: str(config.get(m.group(1), m.group(0))),
+                            lambda m: str(flat.get(m.group(1), m.group(0))),
                             child.get("value", ""),
                         )
                 break
@@ -430,14 +454,15 @@ class TelefonConfiguratorV4:
         static_map = ASSET_REGISTRY[asset_key].get("static_properties", {})
         if not prop_map and not static_map:
             return submodel
+        flat = self._flatten_config(config)
         for elem in submodel.get("submodelElements", []):
             if elem.get("idShort") != "List_Of_Properties":
                 continue
             for prop in elem.get("value", []):
                 id_short = prop.get("idShort")
                 config_key = prop_map.get(id_short)
-                if config_key and config_key in config:
-                    prop["value"] = str(config[config_key])
+                if config_key and config_key in flat:
+                    prop["value"] = str(flat[config_key])
                 elif id_short in static_map:
                     prop["value"] = static_map[id_short]
         return submodel
@@ -742,12 +767,13 @@ class TelefonConfiguratorV4:
         # --- Create shells for sub-assemblies and final product ---
         print(f"\n── V4 Order {order_id}: creating shells ──")
         shell_instances: Dict[str, str] = {}
-        config_with_order = {**config, "_order_id": order_id}
+        flat_config = self._flatten_config(config)
+        config_with_order = {**flat_config, "_order_id": order_id}
 
         for asset_key in ORDER_TIME_SHELL_KEYS:
             inst_num = self._get_next_instance_num(asset_key)
             inst_id = self._create_sa_or_product_shell(asset_key, inst_num, config_with_order)
-            shell_instances[asset_key] = inst_num
+            shell_instances[asset_key] = inst_id   # full asset ID (not just instance number)
             print(f"  ✓ {asset_key:<20} instance {inst_num}  ({inst_id})")
 
         # --- Reserve model-type quantities for components ---
@@ -757,7 +783,7 @@ class TelefonConfiguratorV4:
         for comp_type, model_num in model_numbers.items():
             qty_cfg_key = ASSET_REGISTRY.get(comp_type, {}).get("quantity_config_key")
             if qty_cfg_key:
-                qty = config.get(qty_cfg_key, 1)
+                qty = flat_config.get(qty_cfg_key, 1)
                 for i in range(1, qty + 1):
                     reservation_slots[f"{comp_type}_{i}"] = model_num
             else:
@@ -807,13 +833,13 @@ class TelefonConfiguratorV4:
 
 EXAMPLE_ORDERS = [
     {
-        "bottom_cover_material": "PLA-31212", "bottom_cover_color": "Red",   "bottom_cover_finish": "Glossy",
-        "top_cover_material":    "PLA-31212", "top_cover_color":    "Red",   "top_cover_finish":    "Glossy",
+        "Bottom_Cover": {"material": "PLA-31212", "color": "Red",  "finish": "Glossy"},
+        "Top_Cover":    {"material": "PLA-31212", "color": "Red",  "finish": "Glossy"},
         "number_of_fuses": 1,
     },
     {
-        "bottom_cover_material": "PLA-31212", "bottom_cover_color": "Blue",  "bottom_cover_finish": "Glossy",
-        "top_cover_material":    "PLA-31212", "top_cover_color":    "Blue",  "top_cover_finish":    "Glossy",
+        "Bottom_Cover": {"material": "PLA-31212", "color": "Blue", "finish": "Glossy"},
+        "Top_Cover":    {"material": "PLA-31212", "color": "Blue", "finish": "Glossy"},
         "number_of_fuses": 2,
     },
 ]
