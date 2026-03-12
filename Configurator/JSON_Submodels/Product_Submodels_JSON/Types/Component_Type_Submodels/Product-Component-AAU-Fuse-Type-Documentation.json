@@ -1,0 +1,52 @@
+{
+  "idShort": "Documentation",
+  "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/Documentation"}]},
+  "id": "https://aausmartlab.com/Assets/Product/Component/AAU/Fuse/Type/Documentation",
+  "description": [{"language": "en", "text": "Documentation for Fuse component type"}],
+
+  "submodelElements": [
+    {
+      "modelType": "Property",
+      "idShort": "Product_Name",
+      "valueType": "xs:string",
+      "value": "Electrical Fuse"
+    },
+    {
+      "modelType": "Property",
+      "idShort": "Product_Type",
+      "valueType": "xs:string",
+      "value": "Component"
+    },
+    {
+      "modelType": "MultiLanguageProperty",
+      "idShort": "Description",
+      "value": [
+        {
+          "language": "en",
+          "text": "Electrical safety fuse for overcurrent protection"
+        }
+      ]
+    },
+    {
+      "modelType": "Property",
+      "idShort": "Model_Number",
+      "valueType": "xs:string",
+      "value": "FUSE-AAU",
+      "description": [{"language": "en", "text": "Fixed model number — all Fuse instances are the same type"}]
+    },
+    {
+      "modelType": "Property",
+      "idShort": "Instance_Number",
+      "valueType": "xs:string",
+      "value": "",
+      "description": [{"language": "en", "text": "Filled in at instance creation"}]
+    },
+    {
+      "modelType": "Property",
+      "idShort": "Created_Date",
+      "valueType": "xs:string",
+      "value": "",
+      "description": [{"language": "en", "text": "Date the instance was created (YYYY-MM-DD)"}]
+    }
+  ]
+}

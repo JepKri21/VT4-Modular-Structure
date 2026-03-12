@@ -1,0 +1,66 @@
+{
+  "idShort": "Documentation",
+  "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/Documentation"}]},
+  "id": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/PCB_With_Fuse/Type/Documentation",
+  "description": [{"language": "en", "text": "Documentation for PCB_With_Fuse sub-assembly type"}],
+
+  "submodelElements": [
+    {
+      "modelType": "Property",
+      "idShort": "Product_Name",
+      "valueType": "xs:string",
+      "value": "PCB With Fuse Assembly"
+    },
+    {
+      "modelType": "Property",
+      "idShort": "Product_Type",
+      "valueType": "xs:string",
+      "value": "Sub_Assembly"
+    },
+    {
+      "modelType": "MultiLanguageProperty",
+      "idShort": "Description",
+      "value": [
+        {
+          "language": "en",
+          "text": "Sub-assembly consisting of PCB with 1-3 fuses mounted"
+        }
+      ]
+    },
+    {
+      "modelType": "SubmodelElementCollection",
+      "idShort": "Model_Number_Configuration",
+      "description": [{"language": "en", "text": "Configurator directive: defines how Model_Number is generated at instance creation. Removed from instances."}],
+      "value": [
+        {
+          "modelType": "Property",
+          "idShort": "Template",
+          "valueType": "xs:string",
+          "value": "PWF-F{number_of_fuses}",
+          "description": [{"language": "en", "text": "{key} placeholders are replaced with values from the order configuration"}]
+        }
+      ]
+    },
+    {
+      "modelType": "Property",
+      "idShort": "Model_Number",
+      "valueType": "xs:string",
+      "value": "",
+      "description": [{"language": "en", "text": "Filled in at instance creation — same for all assemblies with the same fuse count"}]
+    },
+    {
+      "modelType": "Property",
+      "idShort": "Instance_Number",
+      "valueType": "xs:string",
+      "value": "",
+      "description": [{"language": "en", "text": "Filled in at instance creation"}]
+    },
+    {
+      "modelType": "Property",
+      "idShort": "Created_Date",
+      "valueType": "xs:string",
+      "value": "",
+      "description": [{"language": "en", "text": "Date the instance was created (YYYY-MM-DD)"}]
+    }
+  ]
+}

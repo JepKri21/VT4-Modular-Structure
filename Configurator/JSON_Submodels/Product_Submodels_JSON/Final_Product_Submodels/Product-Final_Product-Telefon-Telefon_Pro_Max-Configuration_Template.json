@@ -1,0 +1,617 @@
+{
+  "idShort": "Configuration_Template",
+  "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/Configuration/Template"}]},
+  "id": "https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max/Configuration_Template",
+  "description":[{"language": "en", "text": "Configuration template defining all available options for Telefon product variants"}],
+
+  "submodelElements": [
+    {
+      "modelType": "SubmodelElementCollection",
+      "idShort": "Configurable_Components",
+      "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Configuration/Components"}]},
+      "description": [{"language": "en", "text": "List of components that can be configured with available options"}],
+      "value": [
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Bottom_Cover_Options",
+          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Configuration/Component/Bottom_Cover"}]},
+          "description": [{"language": "en", "text": "Configuration options for Bottom Cover component"}],
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Component_Reference",
+              "valueType": "xs:string",
+              "value": "Product-Component-AAU-Bottom_Cover",
+              "description": [{"language": "en", "text": "Reference to the component type"}]
+            },
+            {
+              "modelType": "SubmodelElementList",
+              "idShort": "Available_Materials",
+              "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Configuration/Materials"}]},
+              "typeValueListElement": "SubmodelElementCollection",
+              "valueTypeListElement": null,
+              "orderRelevant": true,
+              "description": [{"language": "en", "text": "Available material options"}],
+              "value": [
+                {
+                  "modelType": "SubmodelElementCollection",
+                  "idShort": "PLA_31212",
+                  "value": [
+                    {
+                      "modelType": "Property",
+                      "idShort": "Material_ID",
+                      "valueType": "xs:string",
+                      "value": "PLA-31212"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Material_Name",
+                      "valueType": "xs:string",
+                      "value": "PLA Standard"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Cost_Factor",
+                      "valueType": "xs:double",
+                      "value": "1.0",
+                      "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/Relative"}]}
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Lead_Time_Days",
+                      "valueType": "xs:integer",
+                      "value": "1"
+                    }
+                  ]
+                },
+                {
+                  "modelType": "SubmodelElementCollection",
+                  "idShort": "ABS_5500",
+                  "value": [
+                    {
+                      "modelType": "Property",
+                      "idShort": "Material_ID",
+                      "valueType": "xs:string",
+                      "value": "ABS-5500"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Material_Name",
+                      "valueType": "xs:string",
+                      "value": "ABS High Strength"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Cost_Factor",
+                      "valueType": "xs:double",
+                      "value": "1.5"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Lead_Time_Days",
+                      "valueType": "xs:integer",
+                      "value": "2"
+                    }
+                  ]
+                },
+                {
+                  "modelType": "SubmodelElementCollection",
+                  "idShort": "PETG_7700",
+                  "value": [
+                    {
+                      "modelType": "Property",
+                      "idShort": "Material_ID",
+                      "valueType": "xs:string",
+                      "value": "PETG-7700"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Material_Name",
+                      "valueType": "xs:string",
+                      "value": "PETG Durable"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Cost_Factor",
+                      "valueType": "xs:double",
+                      "value": "1.3"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Lead_Time_Days",
+                      "valueType": "xs:integer",
+                      "value": "1"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "modelType": "SubmodelElementList",
+              "idShort": "Available_Colors",
+              "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Configuration/Colors"}]},
+              "typeValueListElement": "Property",
+              "valueTypeListElement": "xs:string",
+              "orderRelevant": true,
+              "description": [{"language": "en", "text": "Available color options"}],
+              "value": [
+                {
+                  "modelType": "Property",
+                  "idShort": "Color",
+                  "valueType": "xs:string",
+                  "value": "Red"
+                },
+                {
+                  "modelType": "Property",
+                  "idShort": "Color",
+                  "valueType": "xs:string",
+                  "value": "Blue"
+                },
+                {
+                  "modelType": "Property",
+                  "idShort": "Color",
+                  "valueType": "xs:string",
+                  "value": "Black"
+                },
+                {
+                  "modelType": "Property",
+                  "idShort": "Color",
+                  "valueType": "xs:string",
+                  "value": "White"
+                },
+                {
+                  "modelType": "Property",
+                  "idShort": "Color",
+                  "valueType": "xs:string",
+                  "value": "Green"
+                }
+              ]
+            },
+            {
+              "modelType": "SubmodelElementList",
+              "idShort": "Available_Finishes",
+              "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Configuration/Finishes"}]},
+              "typeValueListElement": "Property",
+              "valueTypeListElement": "xs:string",
+              "orderRelevant": true,
+              "description": [{"language": "en", "text": "Available finish options"}],
+              "value": [
+                {
+                  "modelType": "Property",
+                  "idShort": "Finish",
+                  "valueType": "xs:string",
+                  "value": "Glossy"
+                },
+                {
+                  "modelType": "Property",
+                  "idShort": "Finish",
+                  "valueType": "xs:string",
+                  "value": "Matte"
+                },
+                {
+                  "modelType": "Property",
+                  "idShort": "Finish",
+                  "valueType": "xs:string",
+                  "value": "Textured"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Top_Cover_Options",
+          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Configuration/Component/Top_Cover"}]},
+          "description": [{"language": "en", "text": "Configuration options for Top Cover component"}],
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Component_Reference",
+              "valueType": "xs:string",
+              "value": "Product-Component-AAU-Top_Cover",
+              "description": [{"language": "en", "text": "Reference to the component type"}]
+            },
+            {
+              "modelType": "SubmodelElementList",
+              "idShort": "Available_Materials",
+              "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Configuration/Materials"}]},
+              "typeValueListElement": "SubmodelElementCollection",
+              "valueTypeListElement": null,
+              "orderRelevant": true,
+              "description": [{"language": "en", "text": "Available material options"}],
+              "value": [
+                {
+                  "modelType": "SubmodelElementCollection",
+                  "idShort": "PLA_31212",
+                  "value": [
+                    {
+                      "modelType": "Property",
+                      "idShort": "Material_ID",
+                      "valueType": "xs:string",
+                      "value": "PLA-31212"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Material_Name",
+                      "valueType": "xs:string",
+                      "value": "PLA Standard"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Cost_Factor",
+                      "valueType": "xs:double",
+                      "value": "1.0"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Lead_Time_Days",
+                      "valueType": "xs:integer",
+                      "value": "1"
+                    }
+                  ]
+                },
+                {
+                  "modelType": "SubmodelElementCollection",
+                  "idShort": "ABS_5500",
+                  "value": [
+                    {
+                      "modelType": "Property",
+                      "idShort": "Material_ID",
+                      "valueType": "xs:string",
+                      "value": "ABS-5500"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Material_Name",
+                      "valueType": "xs:string",
+                      "value": "ABS High Strength"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Cost_Factor",
+                      "valueType": "xs:double",
+                      "value": "1.5"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Lead_Time_Days",
+                      "valueType": "xs:integer",
+                      "value": "2"
+                    }
+                  ]
+                },
+                {
+                  "modelType": "SubmodelElementCollection",
+                  "idShort": "PETG_7700",
+                  "value": [
+                    {
+                      "modelType": "Property",
+                      "idShort": "Material_ID",
+                      "valueType": "xs:string",
+                      "value": "PETG-7700"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Material_Name",
+                      "valueType": "xs:string",
+                      "value": "PETG Durable"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Cost_Factor",
+                      "valueType": "xs:double",
+                      "value": "1.3"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Lead_Time_Days",
+                      "valueType": "xs:integer",
+                      "value": "1"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "modelType": "SubmodelElementList",
+              "idShort": "Available_Colors",
+              "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Configuration/Colors"}]},
+              "typeValueListElement": "Property",
+              "valueTypeListElement": "xs:string",
+              "orderRelevant": true,
+              "description": [{"language": "en", "text": "Available color options"}],
+              "value": [
+                {
+                  "modelType": "Property",
+                  "idShort": "Color",
+                  "valueType": "xs:string",
+                  "value": "Red"
+                },
+                {
+                  "modelType": "Property",
+                  "idShort": "Color",
+                  "valueType": "xs:string",
+                  "value": "Blue"
+                },
+                {
+                  "modelType": "Property",
+                  "idShort": "Color",
+                  "valueType": "xs:string",
+                  "value": "Black"
+                },
+                {
+                  "modelType": "Property",
+                  "idShort": "Color",
+                  "valueType": "xs:string",
+                  "value": "White"
+                },
+                {
+                  "modelType": "Property",
+                  "idShort": "Color",
+                  "valueType": "xs:string",
+                  "value": "Green"
+                }
+              ]
+            },
+            {
+              "modelType": "SubmodelElementList",
+              "idShort": "Available_Finishes",
+              "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Configuration/Finishes"}]},
+              "typeValueListElement": "Property",
+              "valueTypeListElement": "xs:string",
+              "orderRelevant": true,
+              "description": [{"language": "en", "text": "Available finish options"}],
+              "value": [
+                {
+                  "modelType": "Property",
+                  "idShort": "Finish",
+                  "valueType": "xs:string",
+                  "value": "Glossy"
+                },
+                {
+                  "modelType": "Property",
+                  "idShort": "Finish",
+                  "valueType": "xs:string",
+                  "value": "Matte"
+                },
+                {
+                  "modelType": "Property",
+                  "idShort": "Finish",
+                  "valueType": "xs:string",
+                  "value": "Textured"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Fuse_Options",
+          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Configuration/Component/Fuse"}]},
+          "description": [{"language": "en", "text": "Configuration options for Fuse component"}],
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Component_Reference",
+              "valueType": "xs:string",
+              "value": "Product-Component-AAU-Fuse",
+              "description": [{"language": "en", "text": "Reference to the component type"}]
+            },
+            {
+              "modelType": "SubmodelElementList",
+              "idShort": "Available_Quantities",
+              "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Configuration/Quantities"}]},
+              "typeValueListElement": "SubmodelElementCollection",
+              "valueTypeListElement": null,
+              "orderRelevant": true,
+              "description": [{"language": "en", "text": "Available quantity options for number of fuses"}],
+              "value": [
+                {
+                  "modelType": "SubmodelElementCollection",
+                  "idShort": "Single_Fuse",
+                  "value": [
+                    {
+                      "modelType": "Property",
+                      "idShort": "Quantity",
+                      "valueType": "xs:integer",
+                      "value": "1"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Configuration_Name",
+                      "valueType": "xs:string",
+                      "value": "Standard (1 Fuse)"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Cost_Factor",
+                      "valueType": "xs:double",
+                      "value": "1.0",
+                      "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Units/Relative"}]}
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Assembly_Time_Factor",
+                      "valueType": "xs:double",
+                      "value": "1.0",
+                      "description": [{"language": "en", "text": "Relative assembly time multiplier"}]
+                    }
+                  ]
+                },
+                {
+                  "modelType": "SubmodelElementCollection",
+                  "idShort": "Dual_Fuse",
+                  "value": [
+                    {
+                      "modelType": "Property",
+                      "idShort": "Quantity",
+                      "valueType": "xs:integer",
+                      "value": "2"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Configuration_Name",
+                      "valueType": "xs:string",
+                      "value": "Enhanced Protection (2 Fuses)"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Cost_Factor",
+                      "valueType": "xs:double",
+                      "value": "1.8"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Assembly_Time_Factor",
+                      "valueType": "xs:double",
+                      "value": "1.5"
+                    }
+                  ]
+                },
+                {
+                  "modelType": "SubmodelElementCollection",
+                  "idShort": "Triple_Fuse",
+                  "value": [
+                    {
+                      "modelType": "Property",
+                      "idShort": "Quantity",
+                      "valueType": "xs:integer",
+                      "value": "3"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Configuration_Name",
+                      "valueType": "xs:string",
+                      "value": "Maximum Protection (3 Fuses)"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Cost_Factor",
+                      "valueType": "xs:double",
+                      "value": "2.5"
+                    },
+                    {
+                      "modelType": "Property",
+                      "idShort": "Assembly_Time_Factor",
+                      "valueType": "xs:double",
+                      "value": "2.0"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "modelType": "SubmodelElementCollection",
+      "idShort": "Configuration_Rules",
+      "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Configuration/Rules"}]},
+      "description": [{"language": "en", "text": "Rules and constraints for valid configurations"}],
+      "value": [
+        {
+          "modelType": "SubmodelElementList",
+          "idShort": "Material_Finish_Compatibility",
+          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Configuration/Compatibility"}]},
+          "typeValueListElement": "SubmodelElementCollection",
+          "valueTypeListElement": null,
+          "orderRelevant": true,
+          "description": [{"language": "en", "text": "Compatibility rules between materials and finishes"}],
+          "value": [
+            {
+              "modelType": "SubmodelElementCollection",
+              "idShort": "Rule_1",
+              "value": [
+                {
+                  "modelType": "Property",
+                  "idShort": "Material",
+                  "valueType": "xs:string",
+                  "value": "PETG-7700"
+                },
+                {
+                  "modelType": "Property",
+                  "idShort": "Incompatible_Finish",
+                  "valueType": "xs:string",
+                  "value": "Textured",
+                  "description": [{"language": "en", "text": "PETG cannot be textured due to material properties"}]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "modelType": "Property",
+          "idShort": "Covers_Must_Match",
+          "valueType": "xs:boolean",
+          "value": "false",
+          "description": [{"language": "en", "text": "If true, top and bottom covers must have same material/color/finish"}]
+        },
+        {
+          "modelType": "Property",
+          "idShort": "Minimum_Fuses",
+          "valueType": "xs:integer",
+          "value": "1",
+          "description": [{"language": "en", "text": "Minimum number of fuses required - phone cannot operate without at least one fuse"}]
+        },
+        {
+          "modelType": "Property",
+          "idShort": "Maximum_Fuses",
+          "valueType": "xs:integer",
+          "value": "3",
+          "description": [{"language": "en", "text": "Maximum number of fuses supported by PCB design"}]
+        }
+      ]
+    },
+    {
+      "modelType": "SubmodelElementCollection",
+      "idShort": "Default_Configuration",
+      "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Configuration/Default"}]},
+      "description": [{"language": "en", "text": "Default configuration values"}],
+      "value": [
+        {
+          "modelType": "Property",
+          "idShort": "Bottom_Cover_Material",
+          "valueType": "xs:string",
+          "value": "PLA-31212"
+        },
+        {
+          "modelType": "Property",
+          "idShort": "Bottom_Cover_Color",
+          "valueType": "xs:string",
+          "value": "Red"
+        },
+        {
+          "modelType": "Property",
+          "idShort": "Bottom_Cover_Finish",
+          "valueType": "xs:string",
+          "value": "Glossy"
+        },
+        {
+          "modelType": "Property",
+          "idShort": "Top_Cover_Material",
+          "valueType": "xs:string",
+          "value": "PLA-31212"
+        },
+        {
+          "modelType": "Property",
+          "idShort": "Top_Cover_Color",
+          "valueType": "xs:string",
+          "value": "Red"
+        },
+        {
+          "modelType": "Property",
+          "idShort": "Top_Cover_Finish",
+          "valueType": "xs:string",
+          "value": "Glossy"
+        },
+        {
+          "modelType": "Property",
+          "idShort": "Number_Of_Fuses",
+          "valueType": "xs:integer",
+          "value": "1"
+        }
+      ]
+    }
+  ]
+}
