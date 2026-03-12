@@ -6,7 +6,7 @@ adding or modifying a product only requires editing this one file.
 
 Fields per entry:
   is_component          : True = physical inventory component, False = sub-assembly / final product
-  type_shell            : relative path to the type shell JSON (from CONFIGURATOR_BASE)
+  type_shell            : relative path to the type shell JSON (from AAS_FILES_BASE)
   type_submodels_dir    : relative dir containing type submodel JSONs
   type_submodel_prefix  : filename prefix for type submodels
   instance_shell_dir    : relative dir for instance shell JSONs

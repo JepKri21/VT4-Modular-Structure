@@ -208,11 +208,9 @@ __marimo__/
 /Telefon-Produktion/JSON_Submodels/Product_Submodels_JSON/Instances
 Telefon-Produktion/instance_registry.json
 Telefon-Produktion/instance_registry.json
-/Configurator/JSON_Shells/Product_Shells_JSON/Instances
-/Configurator/JSON_Submodels/Product_Submodels_JSON/Instances
+/AAS_files/JSON_Shells/Product_Shells_JSON/Instances
+/AAS_files/JSON_Submodels/Product_Submodels_JSON/Instances
 Configurator/instance_registry.json
-/Configurator/JSON_Shells copy/Product_Shells_JSON/Instances
-/Configurator/JSON_Submodels/Product_Submodels_JSON/Instances
 
 
 # For made-react-app
@@ -257,5 +255,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-/Configurator/JSON_Shells/Product_Shells_JSON/Instances
-/Configurator/JSON_Submodels/Product_Submodels_JSON/Instances
+/AAS_files/JSON_Shells/Product_Shells_JSON/Instances
+/AAS_files/JSON_Submodels/Product_Submodels_JSON/Instances

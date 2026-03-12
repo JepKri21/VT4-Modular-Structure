@@ -31,7 +31,7 @@ import requests
 from inventory_db import (
     _create_tables, _get_connection, _rebuild_stock,
     _fulfill_reservation, _cancel_order_reservations,
-    CONFIGURATOR_BASE, DEFAULT_DB_FILE,
+    AAS_FILES_BASE, DEFAULT_DB_FILE,
 )
 from asset_registry import ASSET_REGISTRY
 
@@ -62,7 +62,7 @@ class AssemblyManagerV4:
         upload: bool = True,
         server_base: str = DEFAULT_SERVER_BASE,
     ):
-        self.base_path = Path(base_path) if base_path else CONFIGURATOR_BASE
+        self.base_path = Path(base_path) if base_path else AAS_FILES_BASE
         self.db_path = db_path or DEFAULT_DB_FILE
         self.upload = upload
         self.server_base = server_base

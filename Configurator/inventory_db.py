@@ -29,8 +29,11 @@ from asset_registry import ASSET_REGISTRY
 # Configuration
 # =============================================================================
 
-# All JSON type/instance files live alongside the Python scripts.
+# Python scripts live here; the DB stays in this directory.
 CONFIGURATOR_BASE = Path(__file__).parent
+
+# All JSON type/instance files live under AAS_files/ at the repo root.
+AAS_FILES_BASE = Path(__file__).parent.parent / "AAS_files"
 
 INSTANCE_SUBMODEL_DIRS = [
     "JSON_Submodels/Product_Submodels_JSON/Instances/Component_Instance_Submodels",
@@ -638,9 +641,9 @@ def main():
     args = parser.parse_args()
 
     if args.reset:
-        reset_db(args.db, CONFIGURATOR_BASE)
+        reset_db(args.db, AAS_FILES_BASE)
     elif args.sync:
-        sync(args.db, CONFIGURATOR_BASE)
+        sync(args.db, AAS_FILES_BASE)
     elif args.status:
         print_status(args.db)
     else:

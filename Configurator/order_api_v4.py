@@ -56,7 +56,7 @@ from flask import Flask, jsonify, request
 from configurator_v4 import TelefonConfiguratorV4
 from assembly_manager_v4 import AssemblyManagerV4
 from inventory_db import (
-    _create_tables, _get_connection, _rebuild_stock, reset_db, CONFIGURATOR_BASE, DEFAULT_DB_FILE,
+    _create_tables, _get_connection, _rebuild_stock, reset_db, AAS_FILES_BASE, DEFAULT_DB_FILE,
 )
 from asset_registry import ASSET_REGISTRY
 
@@ -332,7 +332,7 @@ def admin_reset():
     from the JSON instance files on disk.
     """
     try:
-        reset_db(DB_PATH, CONFIGURATOR_BASE)
+        reset_db(DB_PATH, AAS_FILES_BASE)
         return jsonify({"status": "ok", "message": "Database reset and re-synced."}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -364,7 +364,7 @@ if __name__ == "__main__":
 
     print(f"\n=== Order API V4 ===")
     print(f"  Inventory DB : {DB_PATH}")
-    print(f"  JSON base    : {CONFIGURATOR_BASE}")
+    print(f"  JSON base    : {AAS_FILES_BASE}")
     print(f"  Listening on : http://127.0.0.1:{args.port}\n")
 
     app.run(port=args.port, debug=args.debug)

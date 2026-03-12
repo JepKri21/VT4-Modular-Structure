@@ -24,6 +24,7 @@ import base64
 
 import requests
 import inventory_db
+from inventory_db import AAS_FILES_BASE
 
 
 def _b64url(s: str) -> str:
@@ -135,7 +136,7 @@ def get_next_instance_number(component_type: str, registry: Dict) -> int:
     Scan the instance directory to find the highest existing instance number
     for a component type and return the next available number.
     """
-    instance_dir = Path(registry[component_type]["instance_shell_dir"])
+    instance_dir = AAS_FILES_BASE / registry[component_type]["instance_shell_dir"]
     if not instance_dir.exists():
         return 1
     
@@ -162,7 +163,7 @@ def load_type_files(component_type: str, registry: Dict) -> Dict[str, Any]:
     Returns a dict with 'shell' and 'submodels' keys.
     """
     config = registry[component_type]
-    base_path = Path.cwd()
+    base_path = AAS_FILES_BASE
     
     # Load shell
     shell_path = base_path / config["type_shell"]
@@ -389,7 +390,7 @@ def save_instance_files(
     config = registry[component_type]
     instance_str = f"{instance_num:03d}"
     
-    base_path = Path.cwd()
+    base_path = AAS_FILES_BASE
     
     # Ensure directories exist
     shell_dir = base_path / config["instance_shell_dir"]
@@ -561,7 +562,7 @@ def create_inventory_items(component_type: str, quantity: int, config_values: Di
     print("\nSyncing to inventory database...")
     inventory_db.sync(
         db_path=str(Path(__file__).parent / inventory_db.DEFAULT_DB_FILE),
-        base_path=Path(__file__).parent,
+        base_path=AAS_FILES_BASE,
     )
 
 
