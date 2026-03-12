@@ -4,11 +4,15 @@ from AAS_Reader.resource_reader import AASNode, AAS, AASShellReader
 # 1: Hent alle shells og fordel dem i Resources og Products
 
 # 2: Hent Ordre:
-    #Ordre indeholder Final product og subassemblies
-    # Hent BoP
+    #Ordre indeholder Final product og subassemblies, dem skal vi holde styr på
+
+# 3: Hent BoP
+    # Find processer
     # Constraints
-    # Generér Sekvenser for BoP
-    # {"Parallel_Process1: [process1, process2, .....]", "Parallel_Process2: [process3, process4,....] "}
+    # Generér Sekvenser for BoP baseret på constraints, men også på Item_Capacity så vi ved om vi skal retrieve og transport det.
+    # {"Sequence1: [Process1, Process2, .....]", "Senquence2: [Process3, Process4,...., Sequence1] "}
+        # Der vil altid være en endelig process hvor man så siger at final product er færdig. 
+        # Men det betyder at parallele sekvenser skal mødes på et tidspunkt.
 
 # 3: Sammenlign Product BoP og Resource Skills
     # Hvis BoP og Skill matcher: 
