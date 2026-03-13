@@ -258,3 +258,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+/AAS_files/JSON_Submodels/Product_Submodels_JSON/Instances
+/AAS_files/JSON_Shells/Product_Shells_JSON/Instances
