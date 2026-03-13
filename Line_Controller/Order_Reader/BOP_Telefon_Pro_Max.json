@@ -1,0 +1,53 @@
+{
+  "idShort": "Bill_Of_Processes",
+  "id": "https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max/e739eb46-b993-4bed-a46d-6ac6793db1cb/Bill_Of_Processes",
+  "submodelElements": [
+    {
+      "modelType": "SubmodelElementCollection",
+      "idShort": "List_Of_Processes",
+      "value": [
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Assemble_1",
+          "value": [
+            {
+              "modelType": "SubmodelElementCollection",
+              "idShort": "Process_Constraints",
+              "value": []
+            },
+            {
+              "modelType": "SubmodelElementCollection",
+              "idShort": "Required_Components",
+              "value": [
+                {
+                  "modelType": "Property",
+                  "idShort": "Component_Id_1",
+                  "valueType": "xs:string",
+                  "value": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/PCB_With_Fuse"
+                },
+                {
+                  "modelType": "Property",
+                  "idShort": "Component_Id_2",
+                  "valueType": "xs:string",
+                  "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Top_Cover"
+                }
+              ]
+            },
+            {
+              "modelType": "SubmodelElementCollection",
+              "idShort": "Parameters",
+              "value": [
+                {
+                  "modelType": "Property",
+                  "idShort": "Selected_Operation",
+                  "valueType": "xs:string",
+                  "value": "Assemble"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

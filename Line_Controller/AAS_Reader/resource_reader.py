@@ -184,12 +184,11 @@ class AASShellReader:
 
         for asset in range(len(asset_list)):
             AAS_asset = AAS(asset_list[asset][0], [submodel for submodel in asset_list[asset][1:]])
-            AAS_name = AAS_asset.shell_idShort + "_Asset"
 
             if "/Resource/" in AAS_asset.shell_id:
-                resource_assets[AAS_name] = AAS_asset
+                resource_assets[AAS_asset.shell_id] = AAS_asset
             elif "/Product/" in AAS_asset.shell_id:
-                product_assets[AAS_name] = AAS_asset
+                product_assets[AAS_asset.shell_id] = AAS_asset
 
 
         return asset_list, resource_assets, product_assets
@@ -202,10 +201,14 @@ if __name__ == "__main__":
 
     All_Assets, Resources, Products = Reader.return_correlated_assets()
 
+    # Products[""]
+
     print(f"===============================================================================================================\n")
     print(Resources)
     print(f"===============================================================================================================\n")
     print(Products)
     print(f"===============================================================================================================\n")
+
+    #These has to be the actual ids, can no longer just be the idShort (as many products have the same idShort)
     print(Resources["Drill_Station_Asset"].Communication.UNS_Communication.Broker_Address())
     print(Resources["Drill_Station_Asset"].Skills.Agents.KUKA_Manipulator.Drilling.Parameters.DrillDepth.range)

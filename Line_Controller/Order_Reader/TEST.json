@@ -1,0 +1,95 @@
+{
+  "ORD-001": [
+    {
+      "https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max/e739eb46-b993-4bed-a46d-6ac6793db1cb": [
+        {
+          "Assemble_1": [
+            {
+              "Process_Constraints": []
+            },
+            {
+              "Required_Components": [
+                "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB-Fuse",
+                "https://aausmartlab.com/Assets/Product/Component/AAU/Top_Cover"
+              ]
+            },
+            {
+              "Parameters": [
+                {
+                  "Selected_Operation": "Assemble"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro/Bottom_Cover-PCB-Fuse/edff53e0-8150-430a-90b0-1553d888591b": [
+        {
+          "Assemble_1": [
+            {
+              "Process_Constraints": []
+            },
+            {
+              "Required_Components": [
+                "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Fuse",
+                "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover-PCB"
+              ]
+            },
+            {
+              "Parameters": [
+                {
+                  "Selected_Operation": "Assemble"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover-PCB/f0ab9bcf-e7e7-4418-9fb0-cdf25d290d22": [
+        {
+          "Assemble_1": [
+            {
+              "Process_Constraints": ["Drilling_1"]
+            },
+            {
+              "Required_Components": [
+                "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/PCB",
+                "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover"
+              ]
+            },
+            {
+              "Parameters": [
+                {
+                  "Selected_Operation": "Assemble"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "Drilling_1": [
+            {
+              "Process_Constraints": []
+            },
+            {
+              "Required_Components": [
+                "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover"
+              ]
+            },
+            {
+              "Parameters": [
+                {
+                  "Selected_Operation": "Drilling"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

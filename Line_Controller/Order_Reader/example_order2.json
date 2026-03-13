@@ -1,0 +1,25 @@
+{
+  "issue_date": "2026-03-12 15:07:19",
+  "order_id": "ORD-002",
+  "priority": "3",
+  "final_product_type": "Telefon_Pro_Max",
+  "configuration": {
+    "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover": {
+      "color": "White",
+      "finish": "Glossy",
+      "material": "ABS-5500"
+    },
+    "https://aausmartlab.com/Assets/Product/Component/AAU/Top_Cover": {
+      "color": "Black",
+      "finish": "Textured",
+      "material": "ABS-5500"
+    },
+    "https://aausmartlab.com/Assets/Product/Component/AAU/Fuse": {},
+    "https://aausmartlab.com/Assets/Product/Component/AAU/PCB": {}
+  },
+  "shell_instances": {
+    "Housing_With_PCB": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Housing_With_PCB/002",
+    "PCB_With_Fuse": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/PCB_With_Fuse/002",
+    "Telefon_Pro_Max": "https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max/003"
+  }
+}
