@@ -1,0 +1,111 @@
+{
+  "idShort": "Skills",
+  "semanticId": {
+    "type": "ExternalReference",
+    "keys": [
+      {
+        "type": "GlobalReference",
+        "value": "https://aausmartlab.com/Data/OperationalData"
+      }
+    ]
+  },
+  "id": "https://aausmartlab.com/Assets/Resource/MADE/Telefon_Assembler/001/Skills",
+  "submodelElements": [
+    {
+      "modelType": "SubmodelElementList",
+      "idShort": "Agents",
+      "semanticId": {
+        "type": "ExternalReference",
+        "keys": [
+          {
+            "type": "GlobalReference",
+            "value": "https://aausmartlab.com/Telefon_Assembler/Skills"
+          }
+        ]
+      },
+      "typeValueListElement": "SubmodelElementCollection",
+      "valueTypeListElement": null,
+      "orderRelevant": true,
+      "value": [
+        {
+          "modelType": "SubmodelElementList",
+          "idShort": "Telefon_Assembler_Agent",
+          "semanticId": {
+            "type": "ExternalReference",
+            "keys": [
+              {
+                "type": "GlobalReference",
+                "value": "https://aausmartlab.com/Telefon_Assembler/Skills/Agents"
+              }
+            ]
+          },
+          "typeValueListElement": "SubmodelElementCollection",
+          "valueTypeListElement": null,
+          "orderRelevant": true,
+          "value": [
+            {
+              "modelType": "SubmodelElementCollection",
+              "idShort": "Assemble",
+              "semanticId": {
+                "type": "ExternalReference",
+                "keys": [
+                  {
+                    "type": "GlobalReference",
+                    "value": "https://aausmartlab.com/Telefon_Assembler/Assemble"
+                  }
+                ]
+              },
+              "value": [
+                {
+                  "modelType": "Property",
+                  "idShort": "Estimated_Duration",
+                  "valueType": "xs:double",
+                  "value": "15",
+                  "semanticId": {
+                    "type": "ExternalReference",
+                    "keys": [
+                      {
+                        "type": "GlobalReference",
+                        "value": "https://aausmartlab.com/Units/Seconds"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "modelType": "SubmodelElementCollection",
+                  "idShort": "Parameters",
+                  "semanticId": {
+                    "type": "ExternalReference",
+                    "keys": [
+                      {
+                        "type": "GlobalReference",
+                        "value": "https://aausmartlab.com/Telefon_Assembler/Assemble"
+                      }
+                    ]
+                  },
+                  "value": [
+                    {
+                      "modelType": "Property",
+                      "idShort": "Operation_Type",
+                      "valueType": "xs:string",
+                      "value": "Final Assembly",
+                      "semanticId": {
+                        "type": "ExternalReference",
+                        "keys": [
+                          {
+                            "type": "GlobalReference",
+                            "value": "https://aausmartlab.com/Telefon_Assembler/Operation_Type"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

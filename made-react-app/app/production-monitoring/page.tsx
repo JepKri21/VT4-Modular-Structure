@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from "react";
 import OEECard from "@/components/OEECard";
 
-interface StationOEE {
-  stationId: string;
+interface OEEItem {
+  id: string;
   currentOEE: number;
   previousOEE: number;
   latestActivity: string;
@@ -13,17 +13,17 @@ interface StationOEE {
 const fetchStationOEE = async (
   filter: "line" | "station",
   hoursInterval: number,
-): Promise<StationOEE[]> => {
+): Promise<OEEItem[]> => {
   // TODO: Lav et API endpoint der returnerer OEE per station eller line
   return [
     {
-      stationId: "Drilling_1",
+      id: "Drilling_1",
       currentOEE: 75,
       previousOEE: 56,
       latestActivity: "2h ago",
     },
     {
-      stationId: "Drilling_2",
+      id: "Drilling_2",
       currentOEE: 82,
       previousOEE: 79,
       latestActivity: "1h ago",
@@ -32,9 +32,9 @@ const fetchStationOEE = async (
 };
 
 const ProductionMonitoring: React.FC = () => {
-  const [filter, setFilter] = useState<"line" | "station">("station");
-  const [interval, setInterval] = useState(24);
-  const [stations, setStations] = useState<StationOEE[]>([]);
+  const [filter, setFilter] = useState<"line" | "station">("line");
+  const [interval, setInterval] = useState(168);
+  const [stations, setStations] = useState<OEEItem[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -69,6 +69,7 @@ const ProductionMonitoring: React.FC = () => {
           <option value={8}>Last 8 hours</option>
           <option value={24}>Last 24 hours</option>
           <option value={72}>Last 3 days</option>
+          <option value={168}>Last 7 days</option>
         </select>
       </div>
 
@@ -76,8 +77,8 @@ const ProductionMonitoring: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-15">
         {stations.map((station) => (
           <OEECard
-            key={station.stationId}
-            stationId={station.stationId}
+            key={station.id}
+            stationId={station.id}
             currentOEE={station.currentOEE}
             previousOEE={station.previousOEE}
             latestActivity={station.latestActivity}

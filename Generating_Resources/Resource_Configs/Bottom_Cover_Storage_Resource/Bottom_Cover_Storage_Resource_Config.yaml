@@ -1,0 +1,88 @@
+shell:
+  id:
+    value: "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover_Storage/4830e725-8134-407a-ade3-8d1b4e2ea0ff"
+  idShort:
+    value: "Bottom_Cover_Storage"
+
+submodels:
+  Item_Capacity:
+    Internal_Part_Storages:
+      - Internal_Part_Storage_1:
+          Storage_Size:
+            value: 30
+          Storing_Method:
+            value: "Last_In_First_Out"
+          Storage_Type:
+            value: "Output"
+          Part_Types:
+            - Part_Type_1:
+                Part_Type_Id:
+                  value: "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover"
+                Quantity:
+                  value: 20
+
+  Communication:
+    Communication_Methods:
+      - UNS_Communication:
+          Broker_Address:
+            # value: "192.168.38.200"
+            value: "100.117.139.24"
+          Protocol:
+            value: "MQTT"
+          Port:
+            value: 1883
+          Base_Topic:
+            value: "AAU/FIB14/SmartLab/PL1/Stations"
+          QoS:
+            value: 2
+
+  Location:
+    General_Information:
+      Building:
+        value: FIB_14
+      Production_Line:
+        value: "Production_Line_1"
+
+    Connection_Points:
+      - Connection_Point_1:
+          Connection_Point_Id:
+            value: "Bottom_Cover_Storage_Connection_Point_1"
+          Connection_Type:
+            value: "In-Outfeed"
+
+    Resource_Connections:
+      - Resource_Connection_1:
+          Own_Connection_Point_Id:
+            value: "Bottom_Cover_Storage_Connection_Point_1"
+          Connection_Resource_Id:
+            value: "https://aausmartlab.com/Assets/Resource/B&R/ACOPOS6D/001"
+          Other_Resource_Connection_Point_Id:
+            value: "ACOPOS6D_Connection_Point_3"
+          Position:
+            X_Value:
+              value: 120
+            Y_Value:
+              value: 120
+
+  Skills:
+    Agents:
+      - KUKA_Manipulator:
+          Capabilities:
+            - Retrieve:
+                Estimated_Duration:
+                  value: 5
+                Parameters:
+                  Speed:
+                    min: 0
+                    max: 2
+                  Acceleration:
+                    min: 0
+                    max: 4
+                Supported_Connection_Points:
+                  Bottom_Cover_Storage_Connection_Point_1:
+                    Connection_Point_Id:
+                      value: "Bottom_Cover_Storage_Connection_Point_1"
+                Supported_Components:
+                  Bottom_Cover:
+                    Component_Type:
+                      value: "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover"

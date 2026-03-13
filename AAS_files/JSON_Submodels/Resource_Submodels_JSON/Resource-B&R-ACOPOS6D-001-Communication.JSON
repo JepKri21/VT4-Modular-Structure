@@ -1,0 +1,43 @@
+{
+
+    "idShort": "Communication",
+    "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/OperationalData"}]},
+    "id": "https://aausmartlab.com/Assets/Resource/B&R/ACOPOS6D/001/Communication",
+    "submodelElements": [
+        {
+            "modelType" : "SubmodelElementCollection",
+            "idShort" : "UNS_Communication",
+            "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/ACOPOS6D/Communication"}]},
+            "value": [
+                {
+                    "modelType": "Property",
+                    "idShort": "Broker_Address",
+                    "valueType": "xs:string",
+                    "value": "mqtt://broker.company.com:1883"
+                },
+
+                {
+                    "modelType": "Property",
+                    "idShort": "Protocol",
+                    "valueType": "xs:string",
+                    "value": "MQTT"
+                },
+
+                {
+                    "modelType": "Property",
+                    "idShort": "Topic",
+                    "valueType": "xs:string",
+                    "value": "AAU/FIB14/SmartLab/PL1/Stations"
+                },
+
+                {
+                    "modelType": "Property",
+                    "idShort": "QoS",
+                    "valueType": "xs:string",
+                    "value": "2"
+                }
+
+            ]
+        }
+  ]
+}

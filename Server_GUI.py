@@ -10,15 +10,11 @@ import base64
 from pathlib import Path
 
 
-bash_path = r"C:\Program Files\Git\bin\bash.exe"
-script_dir = ".\AasxServerBlazor.v0.3.1.343-aasV3-alpha-latest\AasxServerBlazor"
-script_name = "00startForDemo.sh"
-
-shell_folder = "Configurator\JSON_Shells\Product_Shells_JSON\Instances\Component_Instances"
-submodel_folder = "Configurator\JSON_Submodels\Product_Submodels_JSON\Instances\Component_Instance_Submodels"
+shell_folder = ".\Telefon-Produktion\JSON_Shells"
+submodel_folder = ".\Telefon-Produktion\JSON_Submodels"
 
 PORT = "8081"
-SERVER_BASE = f"http://localhost:{PORT}"  # your server base URL
+SERVER_BASE = f"http://192.168.38.200:{PORT}"  # your server base URL
 SUBMODEL_ENDPOINT = f"{SERVER_BASE}/submodels"
 SHELL_ENDPOINT = f"{SERVER_BASE}/shells"
 
@@ -28,18 +24,6 @@ class ServerGUI:
         self.process = None  # shared subprocess
 
         #============================Basic Server Buttons==========================
-
-        # Start button
-        self.start_btn = tk.Button(root,text="Start Server",width=18,command=self.start_server)
-        self.start_btn.place(x=50, y=40, width=120, height=40)
-
-        # Stop button
-        self.stop_btn = tk.Button(root,text="Stop Server",width=18,command=self.stop_server)
-        self.stop_btn.place(x=50, y=80, width=120, height=40)
-
-        # Reset button
-        self.reset_btn = tk.Button(root,text="Reset Server",width=18,command=self.reset_server)
-        self.reset_btn.place(x=50, y=120, width=120, height=40)
 
         #Post Shell Button
         self.post_shell_btn = tk.Button(root, text="Post Shell", width=18, command=self.post_shell)
@@ -73,9 +57,13 @@ class ServerGUI:
         self.post_all_submodels_btn = tk.Button(root,text="Post All Submodels",width=18,command=self.post_all_submodels)
         self.post_all_submodels_btn.place(x=320, y=120, width=140, height=40)
 
-        # Clear All Shells Button
-        self.clear_all_shells_btn = tk.Button(root, text="Clear All Shells", width=18, command=self.delete_all_shells, bg="#c0392b", fg="white")
-        self.clear_all_shells_btn.place(x=470, y=120, width=140, height=40)
+        # Delete ALL Shells Button
+        self.delete_all_shells_btn = tk.Button(root,text="Delete All Shells",width=18,command=self.delete_all_shells)
+        self.delete_all_shells_btn.place(x=200, y=0, width=120, height=40)
+
+        # Delete ALL Submodels Button
+        self.delete_all_submodels_btn = tk.Button(root,text="Delete All Submodels",width=18,command=self.delete_all_submodels)
+        self.delete_all_submodels_btn.place(x=320, y=0, width=140, height=40)
 
 
         #============================File Dropboxes================================
@@ -111,9 +99,6 @@ class ServerGUI:
 
         #============================Misc============================================
 
-        # --- Hook the window close event ---
-        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
-
         self.terminal_output = ScrolledText(root, state='disabled', width=120, height=20)
         self.terminal_output.place(x=50, y=350, width=600, height=200)
 
@@ -122,48 +107,6 @@ class ServerGUI:
     def find_json_files(self, folder):
         return [str(p) for p in Path(folder).rglob("*.json")]
 
-    def start_server(self):
-        if self.process and self.process.poll() is None:
-            self.append_terminal("Server already running")
-            return
-        self.append_terminal("Starting Server...")
-        self.process = subprocess.Popen(
-            [bash_path, "-lc", f"./{script_name}"],
-            cwd=script_dir,
-            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
-        )
-        self.append_terminal("Server Started")
-
-    def stop_server(self):
-        if not self.process or self.process.poll() is not None:
-            self.append_terminal("Server is not running")
-            return
-
-        self.append_terminal("Stopping server...")
-        self.process.send_signal(signal.CTRL_C_EVENT)
-
-        try:
-            self.process.wait(timeout=1)
-            self.append_terminal("Server stopped cleanly")
-        except subprocess.TimeoutExpired:
-            self.append_terminal("Graceful stop failed — forcing shutdown")
-            self.process.kill()
-            self.process.wait()
-            self.append_terminal("Server force stopped")
-
-        self.process = None
-
-    def reset_server(self):
-        self.append_terminal("Resetting server...")
-        self.stop_server()
-        self.start_server()
-        self.append_terminal("Server Reset")
-
-    def on_close(self):
-        if self.process and self.process.poll() is None:
-            self.append_terminal("Closing GUI, stopping server first...")
-            self.stop_server()
-        self.root.destroy()
     
     def post_shell(self):
         selected_file = self.shell_file_var.get()
@@ -249,6 +192,8 @@ class ServerGUI:
             else:
                 self.append_terminal(f"FAIL ({response.status_code}) → {file_path.name}")
 
+        self.get_shells()
+
     def post_all_submodels(self):
         self.append_terminal("Posting ALL submodel JSON files...")
         files = list(Path(submodel_folder).rglob("*.json"))
@@ -266,48 +211,25 @@ class ServerGUI:
             else:
                 self.append_terminal(f"FAIL ({response.status_code}) → {file_path.name}")
 
+        self.get_submodels()
+
     def delete_all_shells(self):
-        from tkinter import messagebox
-        if not messagebox.askyesno(
-            "Confirm Clear",
-            "Delete ALL shells from the AAS server?\nThis cannot be undone.",
-        ):
-            self.append_terminal("Clear cancelled.")
-            return
-
-        self.append_terminal("Fetching shells from server...")
-        try:
-            response = requests.get(SHELL_ENDPOINT)
-            response.raise_for_status()
-        except Exception as e:
-            self.append_terminal(f"ERROR fetching shells: {e}")
-            return
-
-        shells = response.json().get("result", [])
-        if not shells:
-            self.append_terminal("No shells found on server.")
-            return
-
-        self.append_terminal(f"Deleting {len(shells)} shell(s)...")
-        ok_count = fail_count = 0
-        for shell in shells:
-            shell_id = shell.get("id", "")
-            encoded_id = self.base64encode(shell_id)
-            r = requests.delete(f"{SHELL_ENDPOINT}/{encoded_id}")
-            if r.ok:
-                self.append_terminal(f"DELETED → {shell_id}")
-                ok_count += 1
-            else:
-                self.append_terminal(f"FAIL ({r.status_code}) → {shell_id}")
-                fail_count += 1
-
-        self.append_terminal(f"Done — {ok_count} deleted, {fail_count} failed.")
-        # Refresh the shell ID dropdown
-        self.shell_ids = ["Nothing Selected"]
-        self.shell_id_dropdown["values"] = self.shell_ids
-        self.shell_id_dropdown.current(0)
+        self.append_terminal("Deleting Shells")
+        for id in self.shell_ids:
+            response = requests.delete(f"{SHELL_ENDPOINT}/{self.base64encode(id)}")
+            print(f"Deleting {id} shell, Response: {response.status_code}")
+        self.get_shells()
+        
 
 
+    def delete_all_submodels(self):
+        self.append_terminal("Deleting Submodels")
+        for id in self.submodel_ids:
+            response = requests.delete(f"{SUBMODEL_ENDPOINT}/{self.base64encode(id)}")
+            print(f"Deleting {id} shell, Response: {response.status_code}")
+        self.get_submodels()
+        
+        
 
 root = tk.Tk()
 root.title("AAS Server Controller")
