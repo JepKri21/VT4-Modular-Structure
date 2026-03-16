@@ -2,7 +2,7 @@
 Assembly Manager V4 — Phase 2: Instance Binding & BOM Patching
 
 Operates on orders created by TelefonConfiguratorV4.
-The shells (Housing_With_PCB, PCB_With_Fuse, Telefon) already exist on disk
+The shells (Bottom_Cover-PCB, Bottom_Cover-PCB-Fuse, Telefon) already exist on disk
 from order-placement time.  Each assembly step:
   1. Picks a physical component instance (auto-selects first available OR
      accepts an explicit instance_id, e.g. from a barcode / RFID scan).
@@ -11,8 +11,8 @@ from order-placement time.  Each assembly step:
   4. Patches the pre-created BOM JSON file with the actual Instance_Reference.
 
 Assembly steps mirror the physical production stations:
-  Step 1 (Station 1) : Bottom_Cover  + PCB         → Housing_With_PCB
-  Step 2 (Station 2) : Fuse(s)                     → PCB_With_Fuse
+    Step 1 (Station 1) : Bottom_Cover  + PCB         -> Bottom_Cover-PCB
+    Step 2 (Station 2) : Fuse(s)                     -> Bottom_Cover-PCB-Fuse
   Step 3 (Station 3) : Top_Cover + sub-assemblies  → Final Telefon
 
 All steps are individually callable via the API, or run in sequence via
@@ -96,9 +96,9 @@ class AssemblyManagerV4:
                 url, json=sm_data,
                 headers={"Content-Type": "application/json"}, timeout=5,
             )
-            print(f"  {'OK' if r.ok else f'FAIL ({r.status_code})'} → server UPDATE BOM: {submodel_path.name}")
+            print(f"  {'OK' if r.ok else f'FAIL ({r.status_code})'} -> server UPDATE BOM: {submodel_path.name}")
         except requests.ConnectionError:
-            print(f"  ERROR → could not connect to AAS server at {self.server_base}")
+            print(f"  ERROR -> could not connect to AAS server at {self.server_base}")
 
     # -------------------------------------------------------------------------
     # Instance picking
@@ -192,19 +192,133 @@ class AssemblyManagerV4:
             / f"{cfg['instance_file_prefix']}-{instance_num}-Bill_Of_Materials.json"
         )
 
+    def _documentation_path(self, asset_key: str, instance_num: str) -> Path:
+        cfg = ASSET_REGISTRY[asset_key]
+        return (
+            self.base_path
+            / cfg["instance_submodels_dir"]
+            / f"{cfg['instance_file_prefix']}-{instance_num}-Documentation.json"
+        )
+
+    @staticmethod
+    def _child_collection(parent: Dict[str, Any], id_short: str) -> Optional[Dict[str, Any]]:
+        for child in parent.get("value", []):
+            if child.get("idShort") == id_short:
+                return child
+        return None
+
+    @staticmethod
+    def _set_prop_value(parent: Dict[str, Any], id_short: str, value: str) -> bool:
+        for child in parent.get("value", []):
+            if child.get("idShort") == id_short and child.get("modelType") == "Property":
+                child["value"] = "" if value is None else str(value)
+                return True
+        return False
+
+    def _model_number_from_doc(self, asset_key: str, instance_num: str) -> str:
+        doc_path = self._documentation_path(asset_key, instance_num)
+        if not doc_path.exists():
+            return ""
+        with open(doc_path, encoding="utf-8") as f:
+            doc = json.load(f)
+        for elem in doc.get("submodelElements", []):
+            if elem.get("idShort") == "Model_Number":
+                return str(elem.get("value", "") or "")
+        return ""
+
+    def _update_telefon_traceability(
+        self,
+        order_id: str,
+        telefon_num: str,
+        used_updates: Dict[str, Dict[str, str]],
+        assembly_date: str,
+    ) -> None:
+        """Patch Telefon Documentation Assembly_Traceability and upload it to server."""
+        doc_path = self._documentation_path("Telefon", telefon_num)
+        if not doc_path.exists():
+            return
+
+        with open(doc_path, encoding="utf-8") as f:
+            doc = json.load(f)
+
+        trace = next(
+            (e for e in doc.get("submodelElements", []) if e.get("idShort") == "Assembly_Traceability"),
+            None,
+        )
+        if not trace:
+            return
+
+        self._set_prop_value(trace, "Assembly_Date", assembly_date)
+        self._set_prop_value(trace, "Configuration_Order_ID", order_id)
+
+        used = self._child_collection(trace, "Used_Components")
+        if used:
+            for slot_id, payload in used_updates.items():
+                slot = self._child_collection(used, slot_id)
+                if not slot:
+                    continue
+                self._set_prop_value(slot, "instance_id", payload.get("instance_id", ""))
+                self._set_prop_value(slot, "instance_number", payload.get("instance_number", ""))
+                self._set_prop_value(slot, "model_number", payload.get("model_number", ""))
+
+        with open(doc_path, "w", encoding="utf-8") as f:
+            json.dump(doc, f, indent=2, ensure_ascii=False)
+
+        print(f"  [OK] Patched Telefon Documentation traceability ({doc_path.name})")
+        self._update_submodel_on_server(doc_path)
+
+    @staticmethod
+    def _normalize_token(value: str) -> str:
+        return "".join(ch for ch in (value or "").lower() if ch.isalnum())
+
+    @staticmethod
+    def _slot_property(slot: Dict[str, Any], id_short: str) -> Optional[Dict[str, Any]]:
+        for prop in slot.get("value", []):
+            if prop.get("idShort") == id_short:
+                return prop
+        return None
+
+    def _slot_component_type(self, slot: Dict[str, Any]) -> str:
+        prop = self._slot_property(slot, "Component_Type")
+        return (prop or {}).get("value", "")
+
+    def _component_type_to_asset_key(self, component_type: str) -> Optional[str]:
+        norm = self._normalize_token(component_type)
+        if not norm:
+            return None
+        for asset_key, cfg in ASSET_REGISTRY.items():
+            c_norm = self._normalize_token(cfg.get("type_submodel_prefix", ""))
+            if c_norm and (norm == c_norm or norm.endswith(c_norm) or c_norm.endswith(norm)):
+                return asset_key
+        return None
+
+    def _find_slot_update(self, slot: Dict[str, Any], slot_updates: Dict[str, Any]) -> Optional[Any]:
+        slot_id = slot.get("idShort", "")
+        comp_type = self._slot_component_type(slot)
+        asset_key = self._component_type_to_asset_key(comp_type)
+
+        candidates = [slot_id, comp_type]
+        if asset_key:
+            candidates.append(asset_key)
+
+        for key in candidates:
+            if key in slot_updates:
+                return slot_updates[key]
+        return None
+
     def _patch_bom(
         self,
         bom_path: Path,
         slot_updates: Dict[str, Any],
     ) -> None:
         """
-        Open a BOM JSON, find named slots under 'Components', and fill
-        Instance_Reference values.
+                Open a BOM JSON, find slots under 'Components', and fill
+                Instance_Reference values.
 
         slot_updates format:
           {
-            "Bottom_Cover": "urn:aas-instance-id",        # single reference
-            "PCB_With_Fuse": "urn:aas-instance-id",       # single reference
+                        "Bottom_Cover": "urn:aas-instance-id",        # by slot id / asset key / Component_Type
+                        "Product-Component-AAU-PCB": "urn:aas-id",    # by Component_Type value
             "Fuse": ["urn:fuse-1", "urn:fuse-2"],         # list for multiple fuses
           }
         """
@@ -215,29 +329,44 @@ class AssemblyManagerV4:
             if elem.get("idShort") != "Components":
                 continue
             for slot in elem.get("value", []):
-                slot_id = slot.get("idShort", "")
-                if slot_id not in slot_updates:
+                update = self._find_slot_update(slot, slot_updates)
+                if update is None:
                     continue
-                update = slot_updates[slot_id]
                 slot_props = slot.setdefault("value", [])
 
                 if isinstance(update, list):
-                    # Multiple fuse references: Instance_Reference_1, _2, ...
-                    for i, ref_id in enumerate(update, 1):
-                        ref_key = f"Instance_Reference_{i}"
-                        existing = next((p for p in slot_props if p.get("idShort") == ref_key), None)
-                        if existing:
-                            existing["value"] = ref_id
-                        else:
+                    # Preferred format: Instance_References list with Fuse_Ref entries.
+                    selected_qty = self._slot_property(slot, "Selected_Quantity")
+                    if selected_qty:
+                        selected_qty["value"] = str(len(update))
+
+                    refs_list = self._slot_property(slot, "Instance_References")
+                    if refs_list and refs_list.get("modelType") == "SubmodelElementList":
+                        refs_list["value"] = [
+                            {
+                                "modelType": "Property",
+                                "idShort": "Fuse_Ref",
+                                "valueType": "xs:string",
+                                "value": ref_id,
+                            }
+                            for ref_id in update
+                        ]
+                    else:
+                        # Legacy fallback: Instance_Reference_1..N
+                        slot_props[:] = [p for p in slot_props if not p.get("idShort", "").startswith("Instance_Reference_")]
+                        for i, ref_id in enumerate(update, 1):
                             slot_props.append({
                                 "modelType": "Property",
-                                "idShort": ref_key,
+                                "idShort": f"Instance_Reference_{i}",
                                 "valueType": "xs:string",
                                 "value": ref_id,
                                 "description": [{"language": "en", "text": f"AAS ID of fuse instance #{i} used"}],
                             })
                 else:
-                    existing = next((p for p in slot_props if p.get("idShort") == "Instance_Reference"), None)
+                    existing = next(
+                        (p for p in slot_props if p.get("idShort") in ("Instance_Reference", "Instance_Refference")),
+                        None,
+                    )
                     if existing:
                         existing["value"] = update
                     else:
@@ -367,6 +496,15 @@ class AssemblyManagerV4:
         except (TypeError, json.JSONDecodeError):
             return {}
 
+    @staticmethod
+    def _shell_instance_id(shells: Dict[str, str], *keys: str) -> str:
+        """Return first present shell instance ID for any provided key alias."""
+        for key in keys:
+            value = shells.get(key)
+            if value:
+                return value
+        return ""
+
     def _get_assembly_progress(self, order: sqlite3.Row) -> Dict[str, Any]:
         try:
             return json.loads(order["assembly_progress"] or "{}")
@@ -386,7 +524,7 @@ class AssemblyManagerV4:
             return {}
 
     # -------------------------------------------------------------------------
-    # Step 1 — Station 1: Bottom_Cover + PCB → Housing_With_PCB
+    # Step 1 — Station 1: Bottom_Cover + PCB -> Bottom_Cover-PCB
     # -------------------------------------------------------------------------
 
     def assemble_step1_housing(
@@ -399,7 +537,7 @@ class AssemblyManagerV4:
         Assembly Step 1 — Station 1.
 
         Consumes : Bottom_Cover + PCB physical instances.
-        Updates  : Housing_With_PCB BOM  (Instance_Reference for both slots).
+        Updates  : Bottom_Cover-PCB BOM (Instance_Reference for both slots).
         Transition: pending → step1_done.
 
         Parameters
@@ -422,13 +560,15 @@ class AssemblyManagerV4:
         progress      = self._get_assembly_progress(order)
         now           = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        hwp_id = shells.get("Housing_With_PCB")
+        hwp_id = self._shell_instance_id(shells, "Bottom_Cover-PCB")
         if not hwp_id:
             conn.close()
-            raise Exception(f"shell_instances missing Housing_With_PCB for order {order_id}")
+            raise Exception(
+                f"shell_instances missing Bottom_Cover-PCB for order {order_id}"
+            )
         hwp_num = self._inst_num_from_id(hwp_id)
 
-        print(f"\n── V4 STEP 1 (Station 1): Housing_With_PCB — order {order_id} ──")
+        print(f"\n-- V4 STEP 1 (Station 1): Bottom_Cover-PCB - order {order_id} --")
 
         already_picked: set = set()
 
@@ -449,30 +589,55 @@ class AssemblyManagerV4:
         # Consume both
         self._consume_instance(bc["instance_id"],  conn, now)
         self._consume_instance(pcb["instance_id"], conn, now)
-        print(f"  ✓ Consumed Bottom_Cover instance {bc['instance_number']}")
-        print(f"  ✓ Consumed PCB          instance {pcb['instance_number']}")
+        print(f"  [OK] Consumed Bottom_Cover instance {bc['instance_number']}")
+        print(f"  [OK] Consumed PCB          instance {pcb['instance_number']}")
 
         # Fulfill reservations
         _fulfill_reservation(conn, order_id, "Bottom_Cover")
         _fulfill_reservation(conn, order_id, "PCB")
 
-        # Patch Housing_With_PCB BOM
-        # BOM slots: "Bottom_Cover" → bc.instance_id, "PCB_With_Fuse" → pcb.instance_id
-        # (The type BOM uses "PCB_With_Fuse" as the slot name for the raw PCB component)
-        bom_path = self._bom_path("Housing_With_PCB", hwp_num)
+        # Patch Bottom_Cover-PCB BOM (slot resolution is BOM-driven).
+        bom_path = self._bom_path("Bottom_Cover-PCB", hwp_num)
         if bom_path.exists():
             self._patch_bom(bom_path, {
                 "Bottom_Cover": bc["instance_id"],
-                "PCB_With_Fuse": pcb["instance_id"],   # slot idShort from type template
+                "PCB": pcb["instance_id"],
             })
-            print(f"  ✓ Patched Housing_With_PCB BOM ({bom_path.name})")
+            print(f"  [OK] Patched Bottom_Cover-PCB BOM ({bom_path.name})")
             self._update_submodel_on_server(bom_path)
+
+        telefon_id = shells.get("Telefon", "")
+        if telefon_id:
+            telefon_num = self._inst_num_from_id(telefon_id)
+            self._update_telefon_traceability(
+                order_id=order_id,
+                telefon_num=telefon_num,
+                assembly_date=now[:10],
+                used_updates={
+                    "Bottom_Cover": {
+                        "instance_id": bc["instance_id"],
+                        "instance_number": bc["instance_number"],
+                        "model_number": bc["model_number"],
+                    },
+                    "PCB": {
+                        "instance_id": pcb["instance_id"],
+                        "instance_number": pcb["instance_number"],
+                        "model_number": pcb["model_number"],
+                    },
+                    "Housing_With_PCB": {
+                        "instance_id": hwp_id,
+                        "instance_number": hwp_num,
+                        "model_number": self._model_number_from_doc("Bottom_Cover-PCB", hwp_num),
+                    },
+                },
+            )
 
         # Update progress
         progress["step1"] = {
             "bottom_cover": {"instance_id": bc["instance_id"], "instance_number": bc["instance_number"]},
             "pcb":          {"instance_id": pcb["instance_id"], "instance_number": pcb["instance_number"]},
         }
+        progress["bottom_cover-pcb_id"] = hwp_id
         conn.execute(
             "UPDATE configuration_orders SET status = 'step1_done', "
             "assembly_progress = ? WHERE order_id = ?",
@@ -482,11 +647,11 @@ class AssemblyManagerV4:
         _rebuild_stock(conn)
         conn.close()
 
-        print(f"\n✓ Step 1 complete — order {order_id} ready for Step 2.\n")
-        return {"housing_with_pcb_instance": hwp_num, "consumed": {"bottom_cover": bc, "pcb": pcb}}
+        print(f"\n[OK] Step 1 complete - order {order_id} ready for Step 2.\n")
+        return {"bottom_cover-pcb_instance": hwp_num, "consumed": {"bottom_cover": bc, "pcb": pcb}}
 
     # -------------------------------------------------------------------------
-    # Step 2 — Station 2: Fuse(s) → PCB_With_Fuse
+    # Step 2 — Station 2: Fuse(s) -> Bottom_Cover-PCB-Fuse
     # -------------------------------------------------------------------------
 
     def assemble_step2_pcb_fuse(
@@ -498,7 +663,7 @@ class AssemblyManagerV4:
         Assembly Step 2 — Station 2.
 
         Consumes : All required Fuse physical instances.
-        Updates  : PCB_With_Fuse BOM  (Instance_Reference_1..N for Fuse slot).
+        Updates  : Bottom_Cover-PCB-Fuse BOM (fuse references).
         Transition: step1_done → step2_done.
 
         Parameters
@@ -523,10 +688,12 @@ class AssemblyManagerV4:
         n_fuses       = order_config.get("number_of_fuses", 1)
         now           = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        pwf_id = shells.get("PCB_With_Fuse")
+        pwf_id = self._shell_instance_id(shells, "Bottom_Cover-PCB-Fuse")
         if not pwf_id:
             conn.close()
-            raise Exception(f"shell_instances missing PCB_With_Fuse for order {order_id}")
+            raise Exception(
+                f"shell_instances missing Bottom_Cover-PCB-Fuse for order {order_id}"
+            )
         pwf_num = self._inst_num_from_id(pwf_id)
 
         if fuse_instance_ids and len(fuse_instance_ids) != n_fuses:
@@ -536,7 +703,7 @@ class AssemblyManagerV4:
                 "instance ID(s) were provided."
             )
 
-        print(f"\n── V4 STEP 2 (Station 2): PCB_With_Fuse — order {order_id} ──")
+        print(f"\n-- V4 STEP 2 (Station 2): Bottom_Cover-PCB-Fuse - order {order_id} --")
 
         fuse_model = model_numbers["Fuse"]
         already_picked: set = set()
@@ -550,12 +717,12 @@ class AssemblyManagerV4:
             _fulfill_reservation(conn, order_id, f"Fuse_{i}")
             consumed_fuses.append(fuse)
             print(f"  Fuse_{i:<3}      : {fuse['model_number']}  instance {fuse['instance_number']}")
-            print(f"  ✓ Consumed Fuse_{i} instance {fuse['instance_number']}")
+            print(f"  [OK] Consumed Fuse_{i} instance {fuse['instance_number']}")
 
-        # In step 2 the HWP shell was already created — read its instance number for file access
-        hwp_id  = shells.get("Housing_With_PCB", "")
+        # In step 2 the Bottom_Cover-PCB shell was already created.
+        hwp_id  = self._shell_instance_id(shells, "Bottom_Cover-PCB")
         hwp_num = self._inst_num_from_id(hwp_id) if hwp_id else ""
-        hwp_cfg = ASSET_REGISTRY["Housing_With_PCB"]
+        hwp_cfg = ASSET_REGISTRY["Bottom_Cover-PCB"]
         hwp_shell_path = (
             self.base_path
             / hwp_cfg["instance_shell_dir"]
@@ -566,18 +733,51 @@ class AssemblyManagerV4:
             with open(hwp_shell_path, encoding="utf-8") as _f:
                 housing_instance_id = json.load(_f)["id"]
 
-        bom_path = self._bom_path("PCB_With_Fuse", pwf_num)
+        bom_path = self._bom_path("Bottom_Cover-PCB-Fuse", pwf_num)
         if bom_path.exists():
             self._patch_bom(bom_path, {
                 "Fuse": [f["instance_id"] for f in consumed_fuses],
-                "Housing_With_PCB": housing_instance_id,
+                "Bottom_Cover-PCB": housing_instance_id,
             })
-            print(f"  ✓ Patched PCB_With_Fuse BOM ({bom_path.name})")
+            print(f"  [OK] Patched Bottom_Cover-PCB-Fuse BOM ({bom_path.name})")
             self._update_submodel_on_server(bom_path)
+
+        telefon_id = shells.get("Telefon", "")
+        if telefon_id:
+            telefon_num = self._inst_num_from_id(telefon_id)
+            step1 = progress.get("step1", {})
+            self._update_telefon_traceability(
+                order_id=order_id,
+                telefon_num=telefon_num,
+                assembly_date=now[:10],
+                used_updates={
+                    "Bottom_Cover": {
+                        "instance_id": step1.get("bottom_cover", {}).get("instance_id", ""),
+                        "instance_number": step1.get("bottom_cover", {}).get("instance_number", ""),
+                        "model_number": model_numbers.get("Bottom_Cover", ""),
+                    },
+                    "PCB": {
+                        "instance_id": step1.get("pcb", {}).get("instance_id", ""),
+                        "instance_number": step1.get("pcb", {}).get("instance_number", ""),
+                        "model_number": model_numbers.get("PCB", ""),
+                    },
+                    "Housing_With_PCB": {
+                        "instance_id": hwp_id,
+                        "instance_number": hwp_num,
+                        "model_number": self._model_number_from_doc("Bottom_Cover-PCB", hwp_num),
+                    },
+                    "PCB_With_Fuse": {
+                        "instance_id": pwf_id,
+                        "instance_number": pwf_num,
+                        "model_number": self._model_number_from_doc("Bottom_Cover-PCB-Fuse", pwf_num),
+                    },
+                },
+            )
 
         progress["step2"] = {f"fuse_{i}": {"instance_id": consumed_fuses[i-1]["instance_id"],
                                             "instance_number": consumed_fuses[i-1]["instance_number"]}
                              for i in range(1, n_fuses + 1)}
+        progress["bottom_cover-PCB-Fuse_id"] = pwf_id
         conn.execute(
             "UPDATE configuration_orders SET status = 'step2_done', "
             "assembly_progress = ? WHERE order_id = ?",
@@ -587,8 +787,8 @@ class AssemblyManagerV4:
         _rebuild_stock(conn)
         conn.close()
 
-        print(f"\n✓ Step 2 complete — order {order_id} ready for Step 3.\n")
-        return {"pcb_with_fuse_instance": pwf_num, "consumed_fuses": consumed_fuses}
+        print(f"\n[OK] Step 2 complete - order {order_id} ready for Step 3.\n")
+        return {"bottom_cover-PCB-Fuse_instance": pwf_num, "consumed_fuses": consumed_fuses}
 
     # -------------------------------------------------------------------------
     # Step 3 — Station 3: Top_Cover + sub-assemblies → Final Telefon
@@ -603,7 +803,7 @@ class AssemblyManagerV4:
         Assembly Step 3 — Station 3.
 
         Consumes : Top_Cover physical instance.
-                   Marks Housing_With_PCB and PCB_With_Fuse sub-assemblies consumed.
+                   Marks Bottom_Cover-PCB and Bottom_Cover-PCB-Fuse sub-assemblies consumed.
         Updates  : Telefon BOM with all component and sub-assembly references.
         Registers: Telefon as 'available' in inventory (ready to ship).
         Transition: step2_done → assembled.
@@ -630,8 +830,8 @@ class AssemblyManagerV4:
         now          = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         telefon_id  = shells.get("Telefon", "")
-        hwp_id      = shells.get("Housing_With_PCB", "")
-        pwf_id      = shells.get("PCB_With_Fuse", "")
+        hwp_id      = self._shell_instance_id(shells, "Bottom_Cover-PCB")
+        pwf_id      = self._shell_instance_id(shells, "Bottom_Cover-PCB-Fuse")
         telefon_num = self._inst_num_from_id(telefon_id) if telefon_id else None
         hwp_num     = self._inst_num_from_id(hwp_id)     if hwp_id     else None
         pwf_num     = self._inst_num_from_id(pwf_id)     if pwf_id     else None
@@ -640,9 +840,9 @@ class AssemblyManagerV4:
             conn.close()
             raise Exception(f"shell_instances incomplete for order {order_id}")
 
-        print(f"\n── V4 STEP 3 (Station 3): Final Telefon — order {order_id} ──")
-        print(f"  Housing_With_PCB : instance {hwp_num}")
-        print(f"  PCB_With_Fuse    : instance {pwf_num}")
+        print(f"\n-- V4 STEP 3 (Station 3): Final Telefon - order {order_id} --")
+        print(f"  Bottom_Cover-PCB      : instance {hwp_num}")
+        print(f"  Bottom_Cover-PCB-Fuse : instance {pwf_num}")
 
         # Pick Top_Cover
         tc = self._pick_instance(
@@ -653,13 +853,13 @@ class AssemblyManagerV4:
         # Consume Top_Cover + fulfil reservation
         self._consume_instance(tc["instance_id"], conn, now)
         _fulfill_reservation(conn, order_id, "Top_Cover")
-        print(f"  ✓ Consumed Top_Cover instance {tc['instance_number']}")
+        print(f"  [OK] Consumed Top_Cover instance {tc['instance_number']}")
 
         # Mark sub-assemblies as consumed
-        self._register_subassembly_as_consumed("Housing_With_PCB", hwp_num, conn)
-        self._register_subassembly_as_consumed("PCB_With_Fuse",    pwf_num, conn)
-        print(f"  ✓ Registered Housing_With_PCB instance {hwp_num} as consumed")
-        print(f"  ✓ Registered PCB_With_Fuse    instance {pwf_num} as consumed")
+        self._register_subassembly_as_consumed("Bottom_Cover-PCB", hwp_num, conn)
+        self._register_subassembly_as_consumed("Bottom_Cover-PCB-Fuse", pwf_num, conn)
+        print(f"  [OK] Registered Bottom_Cover-PCB      instance {hwp_num} as consumed")
+        print(f"  [OK] Registered Bottom_Cover-PCB-Fuse instance {pwf_num} as consumed")
 
         # hwp_id and pwf_id already hold the full AAS IDs (stored at order time)
 
@@ -674,20 +874,48 @@ class AssemblyManagerV4:
         telefon_bom_path = self._bom_path("Telefon", telefon_num)
         if telefon_bom_path.exists():
             self._patch_bom(telefon_bom_path, {
-                "Bottom_Cover":    bc_id,
                 "Top_Cover":       tc["instance_id"],
-                "PCB":             pcb_id,
-                "Fuse":            fuse_ids,
-                # Sub-assembly shells reference (non-standard additional refs)
-                "Housing_With_PCB": hwp_id,
-                "PCB_With_Fuse":    pwf_id,
+                "Bottom_Cover-PCB-Fuse": pwf_id,
             })
-            print(f"  ✓ Patched Telefon BOM ({telefon_bom_path.name})")
+            print(f"  [OK] Patched Telefon BOM ({telefon_bom_path.name})")
             self._update_submodel_on_server(telefon_bom_path)
+
+        self._update_telefon_traceability(
+            order_id=order_id,
+            telefon_num=telefon_num,
+            assembly_date=now[:10],
+            used_updates={
+                "Bottom_Cover": {
+                    "instance_id": bc_id,
+                    "instance_number": step1.get("bottom_cover", {}).get("instance_number", ""),
+                    "model_number": model_numbers.get("Bottom_Cover", ""),
+                },
+                "Top_Cover": {
+                    "instance_id": tc["instance_id"],
+                    "instance_number": tc["instance_number"],
+                    "model_number": tc["model_number"],
+                },
+                "PCB": {
+                    "instance_id": pcb_id,
+                    "instance_number": step1.get("pcb", {}).get("instance_number", ""),
+                    "model_number": model_numbers.get("PCB", ""),
+                },
+                "Housing_With_PCB": {
+                    "instance_id": hwp_id,
+                    "instance_number": hwp_num,
+                    "model_number": self._model_number_from_doc("Bottom_Cover-PCB", hwp_num),
+                },
+                "PCB_With_Fuse": {
+                    "instance_id": pwf_id,
+                    "instance_number": pwf_num,
+                    "model_number": self._model_number_from_doc("Bottom_Cover-PCB-Fuse", pwf_num),
+                },
+            },
+        )
 
         # Register the finished Telefon as available in inventory
         self._register_telefon_as_available(telefon_num, conn, order_config)
-        print(f"  ✓ Registered Telefon instance {telefon_num} as available in inventory")
+        print(f"  [OK] Registered Telefon instance {telefon_num} as available in inventory")
 
         # telefon_id is already the full AAS ID from shell_instances (stored at order time)
 
@@ -706,7 +934,7 @@ class AssemblyManagerV4:
         _rebuild_stock(conn)
         conn.close()
 
-        print(f"\n✓ Step 3 complete — order {order_id} fully assembled.")
+        print(f"\n[OK] Step 3 complete - order {order_id} fully assembled.")
         print(f"  Telefon instance : {telefon_num}  ({telefon_id})\n")
         return {"telefon_instance": telefon_num, "telefon_instance_id": telefon_id, "consumed_top_cover": tc}
 
@@ -755,7 +983,7 @@ class AssemblyManagerV4:
         conn.commit()
         _rebuild_stock(conn)
         conn.close()
-        print(f"✓ Order {order_id} cancelled ({cancelled} pending reservation(s) released).")
+        print(f"[OK] Order {order_id} cancelled ({cancelled} pending reservation(s) released).")
 
     # -------------------------------------------------------------------------
     # Release (ship) an assembled Telefon
@@ -792,7 +1020,7 @@ class AssemblyManagerV4:
         conn.commit()
         _rebuild_stock(conn)
         conn.close()
-        print(f"✓ Order {order_id} released (Telefon shipped).")
+        print(f"[OK] Order {order_id} released (Telefon shipped).")
 
     # -------------------------------------------------------------------------
     # Internal helpers

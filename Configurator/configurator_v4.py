@@ -2,7 +2,7 @@
 Telefon Product Configurator v4 — Phase 1: Order Placement
 
 Key differences from v3:
-  - ALL sub-assembly and final product shells are created when the order is placed.
+    - ALL sub-assembly and final product shells are created when the order is placed.
   - Component shells already exist in physical inventory; we reserve them by
     model-type quantity (no specific instance is locked at order time).
   - BOM submodels are created with empty Instance_Reference fields; these are
@@ -35,6 +35,7 @@ from asset_registry import ASSET_REGISTRY, ORDER_TIME_SHELL_KEYS
 # =============================================================================
 
 DEFAULT_SERVER_BASE = "http://localhost:8081"
+CONFIG_TEMPLATE_ID = "https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max/Configuration_Template"
 
 
 def _b64url(s: str) -> str:
@@ -50,10 +51,10 @@ class TelefonConfiguratorV4:
     """
     Phase 1 configurator.
 
-    create_order(config) → (order_id, details):
+    create_order(config) -> (order_id, details):
       1. Validate configuration
       2. Check model-type stock
-      3. Create Housing_With_PCB, PCB_With_Fuse, and Telefon shells upfront
+    3. Create Bottom_Cover_PCB, Bottom_Cover_PCB_Fuse, and Telefon shells upfront
          - BOMs have empty Instance_Reference fields (filled during assembly)
          - Telefon Documentation has Order_Reference
       4. Reserve model-type quantities (Bottom_Cover, Top_Cover, PCB, Fuse×N)
@@ -71,6 +72,7 @@ class TelefonConfiguratorV4:
         self.db_path = db_path or DEFAULT_DB_FILE
         self.upload = upload
         self.server_base = server_base
+        self._ensure_config_template_on_server()
         self._config_template = self._load_config_template()
 
     # -------------------------------------------------------------------------
@@ -146,14 +148,59 @@ class TelefonConfiguratorV4:
     # Configuration template
     # -------------------------------------------------------------------------
 
-    def _load_config_template(self) -> Dict[str, Any]:
-        path = (
+    def _config_template_local_path(self) -> Path:
+        return (
             self.base_path
             / "JSON_Submodels"
             / "Product_Submodels_JSON"
             / "Final_Product_Submodels"
             / "Product-Final_Product-Telefon-Telefon_Pro_Max-Configuration_Template.json"
         )
+
+    def _load_config_template_from_server(self) -> Dict[str, Any]:
+        """Fetch shared configuration template from AAS server by its stable template ID."""
+        url = f"{self.server_base}/submodels/{_b64url(CONFIG_TEMPLATE_ID)}"
+        try:
+            r = requests.get(url, timeout=5)
+            if not r.ok:
+                return {}
+            data = r.json()
+            return data if isinstance(data, dict) else {}
+        except (requests.RequestException, ValueError):
+            return {}
+
+    def _ensure_config_template_on_server(self) -> None:
+        """Ensure shared Configuration_Template exists on server (single shared resource)."""
+        if not self.upload:
+            return
+
+        # If template already exists remotely, do nothing.
+        if self._load_config_template_from_server():
+            return
+
+        path = self._config_template_local_path()
+        if not path.exists():
+            return
+
+        try:
+            with open(path, encoding="utf-8") as f:
+                template = json.load(f)
+            r = self._post_or_put(f"{self.server_base}/submodels", CONFIG_TEMPLATE_ID, template)
+            if r.ok:
+                print("  OK -> server shared submodel: Configuration_Template")
+            else:
+                print(f"  FAIL ({r.status_code}) -> server shared submodel: Configuration_Template")
+        except (OSError, ValueError, requests.RequestException):
+            # Non-fatal: local fallback in _load_config_template will still work.
+            return
+
+    def _load_config_template(self) -> Dict[str, Any]:
+        # Prefer the server-hosted shared template; fall back to local file for offline/dev use.
+        server_template = self._load_config_template_from_server()
+        if server_template:
+            return server_template
+
+        path = self._config_template_local_path()
         if not path.exists():
             return {}
         with open(path, encoding="utf-8") as f:
@@ -212,7 +259,7 @@ class TelefonConfiguratorV4:
         flat = self._flatten_config(config)
 
         # Collect required config fields from all properties_config_maps in ASSET_REGISTRY.
-        # Sub-assembly maps (e.g. Housing_With_PCB) share the same config keys as components,
+        # Sub-assembly maps (e.g. Bottom_Cover_PCB) share the same config keys as components,
         # so the union of all values covers the full required set.
         required: set = {
             config_key
@@ -257,6 +304,14 @@ class TelefonConfiguratorV4:
         Returns (all_available, {component_type: status_dict}).
         """
         model_numbers = self._get_model_numbers_for_config(config)
+        required_components = self._resolve_required_components_from_bom("Telefon", config)
+        if not required_components:
+            # Fallback to legacy behavior if BOM traversal cannot resolve.
+            required_components = {
+                comp_type: (config.get(ASSET_REGISTRY.get(comp_type, {}).get("quantity_config_key"), 1)
+                            if ASSET_REGISTRY.get(comp_type, {}).get("quantity_config_key") else 1)
+                for comp_type in model_numbers.keys()
+            }
         conn = _get_connection(self.db_path)
         _create_tables(conn)
         _rebuild_stock(conn)   # ensures model_type_reservations are factored in
@@ -264,9 +319,10 @@ class TelefonConfiguratorV4:
         inventory_status = {}
         all_available = True
 
-        for comp_type, model_num in model_numbers.items():
-            qty_cfg_key = ASSET_REGISTRY.get(comp_type, {}).get("quantity_config_key")
-            qty_needed = config.get(qty_cfg_key, 1) if qty_cfg_key else 1
+        for comp_type, qty_needed in required_components.items():
+            model_num = model_numbers.get(comp_type)
+            if not model_num:
+                continue
             row = conn.execute(
                 "SELECT qty_available FROM inventory_stock WHERE model_number = ?",
                 (model_num,),
@@ -286,21 +342,13 @@ class TelefonConfiguratorV4:
 
     def _get_available_options(self) -> Dict[str, Any]:
         """
-        Return available configuration options, driven entirely by ASSET_REGISTRY.
-
-        For each is_component entry:
-          - If it has a quantity_config_key + options_count_key, emit a count dict
-            (e.g. fuse_counts: {1: total, 2: total, ...}).
-          - If it has Material/Color/Finish in properties_config_map, emit a combos
-            list (e.g. bottom_cover_combos: [{material, color, finish, qty}, ...]).
-            These are read directly from inventory_stock.component_type, avoiding
-            any model-number string parsing.
+        Return available configuration options, combining template structure with inventory availability.
+        Only options allowed by the template and in stock are returned.
         """
         conn = _get_connection(self.db_path)
         _create_tables(conn)
         _rebuild_stock(conn)
 
-        # Maps AAS property idShort to inventory_stock column name.
         PROP_TO_DB_COL: Dict[str, str] = {
             "Material": "material",
             "Color": "color",
@@ -308,6 +356,34 @@ class TelefonConfiguratorV4:
         }
 
         available: Dict[str, Any] = {}
+
+        # --- Parse template for allowed options ---
+        template = self._config_template
+        allowed_options: Dict[str, Dict[str, set]] = {}  # e.g. {"Bottom_Cover": {"material": {"PLA-31212", ...}, ...}}
+        for elem in template.get("submodelElements", []):
+            if elem.get("idShort") == "Configurable_Components":
+                for comp in elem.get("value", []):
+                    comp_ref = None
+                    comp_type = None
+                    allowed: Dict[str, set] = {}
+                    for prop in comp.get("value", []):
+                        if prop.get("idShort") == "Component_Reference":
+                            comp_ref = prop.get("value")
+                            # Map AAS id to asset_key
+                            for k, v in ASSET_REGISTRY.items():
+                                if v.get("type_submodel_prefix") in comp_ref:
+                                    comp_type = k
+                                    break
+                        elif prop.get("idShort", "").startswith("Available_"):
+                            field = prop.get("idShort").replace("Available_", "").lower()  # e.g. material
+                            allowed[field] = set()
+                            for opt in prop.get("value", []):
+                                # Try to get the value for this field
+                                for opt_prop in opt.get("value", []):
+                                    if opt_prop.get("idShort") == f"{field.capitalize()}_ID":
+                                        allowed[field].add(opt_prop.get("value"))
+                    if comp_type and allowed:
+                        allowed_options[comp_type] = allowed
 
         for asset_key, asset_cfg in ASSET_REGISTRY.items():
             if not asset_cfg.get("is_component"):
@@ -336,17 +412,25 @@ class TelefonConfiguratorV4:
             combos_key = f"{asset_key.lower()}_combos"
             combos: List[Dict[str, Any]] = []
 
+            # Get allowed values from template for this component
+            allowed = allowed_options.get(asset_key, {})
+
             for row in conn.execute(
                 "SELECT material, color, finish, qty_available FROM inventory_stock "
                 "WHERE component_type = ? AND qty_available > 0",
                 (asset_key,),
             ).fetchall():
                 combo: Dict[str, Any] = {"qty": row["qty_available"]}
-                for db_col in attr_props.values():
+                valid = True
+                for aas_prop, db_col in attr_props.items():
                     val = row[db_col]
-                    if val is not None:
-                        combo[db_col] = val
-                combos.append(combo)
+                    combo[db_col] = val
+                    # If template restricts allowed values, filter
+                    allowed_set = allowed.get(db_col)
+                    if allowed_set is not None and val not in allowed_set:
+                        valid = False
+                if valid:
+                    combos.append(combo)
 
             available[combos_key] = combos
 
@@ -366,8 +450,154 @@ class TelefonConfiguratorV4:
         cfg = ASSET_REGISTRY[asset_key]
         filename = f"{cfg['type_submodel_prefix']}-Type-{submodel_name}.json"
         path = self.base_path / cfg["type_submodels_dir"] / filename
-        with open(path, encoding="utf-8") as f:
+        if path.exists():
+            with open(path, encoding="utf-8") as f:
+                return json.load(f)
+
+        # Fallback for renamed/migrated submodel filenames.
+        type_dir = self.base_path / cfg["type_submodels_dir"]
+        candidates = list(type_dir.glob(f"*-Type-{submodel_name}.json"))
+        if not candidates:
+            raise FileNotFoundError(path)
+
+        def _norm(s: str) -> str:
+            return re.sub(r"[^a-z0-9]", "", s.lower())
+
+        def _common_suffix_len(a: str, b: str) -> int:
+            i = 0
+            while i < min(len(a), len(b)) and a[-(i + 1)] == b[-(i + 1)]:
+                i += 1
+            return i
+
+        expected_stem = f"{cfg.get('type_submodel_prefix', '')}-Type-{submodel_name}"
+        expected_norm = _norm(expected_stem)
+        identifiers = [_norm(cfg.get("type_submodel_prefix", ""))]
+        identifiers = [x for x in identifiers if x]
+
+        # Exact normalized stem match is preferred for typo-safe recovery.
+        for cand in candidates:
+            if _norm(cand.stem) == expected_norm:
+                with open(cand, encoding="utf-8") as f:
+                    return json.load(f)
+
+        best_path = candidates[0]
+        best_score = -1
+        for cand in candidates:
+            cand_norm = _norm(cand.stem)
+            score = 0
+            for ident in identifiers:
+                if ident in cand_norm or cand_norm in ident:
+                    score = max(score, len(ident))
+                else:
+                    score = max(score, _common_suffix_len(ident, cand_norm))
+            if score > best_score:
+                best_score = score
+                best_path = cand
+
+        # Guardrail: do not silently use a mismatched template from another asset.
+        if best_score <= 0:
+            raise FileNotFoundError(path)
+
+        with open(best_path, encoding="utf-8") as f:
             return json.load(f)
+
+    @staticmethod
+    def _normalize_token(value: str) -> str:
+        return re.sub(r"[^a-z0-9]", "", (value or "").lower())
+
+    def _component_type_to_asset_key(self, component_type: str) -> Optional[str]:
+        norm = self._normalize_token(component_type)
+        if not norm:
+            return None
+        for asset_key, cfg in ASSET_REGISTRY.items():
+            c_norm = self._normalize_token(cfg.get("type_submodel_prefix", ""))
+            if c_norm and (norm == c_norm or norm.endswith(c_norm) or c_norm.endswith(norm)):
+                return asset_key
+        return None
+
+    @staticmethod
+    def _slot_property_value(slot: Dict[str, Any], prop_id: str) -> Optional[str]:
+        for prop in slot.get("value", []):
+            if prop.get("idShort") == prop_id:
+                return prop.get("value")
+        return None
+
+    def _slot_component_type(self, slot: Dict[str, Any]) -> str:
+        return self._slot_property_value(slot, "Component_Type") or ""
+
+    def _slot_quantity(self, slot: Dict[str, Any], child_key: Optional[str], config: Dict[str, Any]) -> int:
+        for key in ("Selected_Quantity", "Quantity", "Quantity_Min"):
+            raw = self._slot_property_value(slot, key)
+            if raw not in (None, ""):
+                try:
+                    return max(0, int(raw))
+                except (TypeError, ValueError):
+                    pass
+
+        if child_key:
+            qty_cfg = ASSET_REGISTRY.get(child_key, {}).get("quantity_config_key")
+            if qty_cfg:
+                flat = self._flatten_config(config)
+                try:
+                    return max(0, int(flat.get(qty_cfg, 1)))
+                except (TypeError, ValueError):
+                    return 1
+
+        return 1
+
+    def _resolve_required_components_from_bom(
+        self,
+        asset_key: str,
+        config: Dict[str, Any],
+        multiplier: int = 1,
+        stack: Optional[List[str]] = None,
+    ) -> Dict[str, int]:
+        """
+        Recursively expand BOM tree from a product/sub-assembly and return
+        leaf component requirements as {component_asset_key: quantity}.
+        """
+        stack = stack or []
+        if asset_key in stack:
+            return {}
+
+        cfg = ASSET_REGISTRY.get(asset_key, {})
+        if cfg.get("is_component"):
+            return {asset_key: multiplier}
+
+        try:
+            bom = self._load_type_submodel(asset_key, "Bill_Of_Materials")
+        except FileNotFoundError:
+            return {}
+
+        totals: Dict[str, int] = {}
+        for elem in bom.get("submodelElements", []):
+            if elem.get("idShort") != "Components":
+                continue
+            for slot in elem.get("value", []):
+                comp_type = self._slot_component_type(slot)
+                child_key = self._component_type_to_asset_key(comp_type)
+                if not child_key:
+                    continue
+
+                qty = self._slot_quantity(slot, child_key, config)
+                eff_qty = multiplier * qty
+                if eff_qty <= 0:
+                    continue
+
+                child_cfg = ASSET_REGISTRY.get(child_key, {})
+                if child_cfg.get("is_component"):
+                    totals[child_key] = totals.get(child_key, 0) + eff_qty
+                else:
+                    nested = self._resolve_required_components_from_bom(
+                        child_key,
+                        config,
+                        multiplier=eff_qty,
+                        stack=[*stack, asset_key],
+                    )
+                    for k, v in nested.items():
+                        totals[k] = totals.get(k, 0) + v
+
+        return totals
 
     def _save_json(self, rel_dir: str, filename: str, data: Dict[str, Any]) -> Path:
         out_path = self.base_path / rel_dir / filename
@@ -479,8 +709,10 @@ class TelefonConfiguratorV4:
             for slot in elem.get("value", []):
                 slot_props = slot.setdefault("value", [])
                 slot_id = slot.get("idShort", "")
+                comp_type = self._slot_component_type(slot)
+                child_key = self._component_type_to_asset_key(comp_type)
 
-                if slot_id == "Fuse":
+                if slot_id == "Fuse" or child_key == "Fuse" or comp_type == "Product-Component-AAU-Fuse":
                     # Replace Quantity_Min/Max with the concrete Quantity for this instance
                     slot_props[:] = [
                         p for p in slot_props
@@ -504,18 +736,46 @@ class TelefonConfiguratorV4:
                         for p in slot_props:
                             if p.get("idShort") == "Quantity":
                                 p["value"] = str(n_fuses)
-                    # Add exactly n_fuses Instance_Reference slots, remove any extras
-                    slot_props[:] = [p for p in slot_props if not p.get("idShort", "").startswith("Instance_Reference_")]
-                    for i in range(1, n_fuses + 1):
+
+                    selected_qty = next((p for p in slot_props if p.get("idShort") == "Selected_Quantity"), None)
+                    if selected_qty:
+                        selected_qty["value"] = str(n_fuses)
+                    else:
                         slot_props.append({
                             "modelType": "Property",
-                            "idShort": f"Instance_Reference_{i}",
-                            "valueType": "xs:string",
-                            "value": "",
-                            "description": [{"language": "en", "text": f"AAS ID of fuse instance #{i} used during assembly. Filled during production."}],
+                            "idShort": "Selected_Quantity",
+                            "valueType": "xs:integer",
+                            "value": str(n_fuses),
                         })
+
+                    refs_list = next((p for p in slot_props if p.get("idShort") == "Instance_References"), None)
+                    if refs_list and refs_list.get("modelType") == "SubmodelElementList":
+                        refs_list["typeValueListElement"] = "Property"
+                        refs_list["valueTypeListElement"] = "xs:string"
+                        refs_list["orderRelevant"] = False
+                        refs_list["value"] = [
+                            {
+                                "modelType": "Property",
+                                "idShort": "Fuse_Ref",
+                                "valueType": "xs:string",
+                                "value": "",
+                            }
+                            for _ in range(n_fuses)
+                        ]
+                    else:
+                        # Legacy fallback: Instance_Reference_1..N
+                        slot_props[:] = [p for p in slot_props if not p.get("idShort", "").startswith("Instance_Reference_")]
+                        for i in range(1, n_fuses + 1):
+                            slot_props.append({
+                                "modelType": "Property",
+                                "idShort": f"Instance_Reference_{i}",
+                                "valueType": "xs:string",
+                                "value": "",
+                                "description": [{"language": "en", "text": f"AAS ID of fuse instance #{i} used during assembly. Filled during production."}],
+                            })
                 else:
-                    if not any(p.get("idShort") == "Instance_Reference" for p in slot_props):
+                    has_ref = any(p.get("idShort") in ("Instance_Reference", "Instance_Refference") for p in slot_props)
+                    if not has_ref:
                         slot_props.append({
                             "modelType": "Property",
                             "idShort": "Instance_Reference",
@@ -699,6 +959,19 @@ class TelefonConfiguratorV4:
             else:
                 print("  ⓘ No resources deleted from AAS server (server not reachable or nothing to delete)")
 
+            # Ensure shared configuration template is deleted as part of full instance/server reset.
+            try:
+                r = requests.delete(
+                    f"{submodel_endpoint}/{_b64url(CONFIG_TEMPLATE_ID)}",
+                    timeout=5,
+                )
+                if r.ok:
+                    print("  ✓ Deleted shared Configuration_Template from AAS server")
+                else:
+                    print("  ⓘ Shared Configuration_Template was not deleted (not found or server rejected delete)")
+            except requests.ConnectionError:
+                print(f"  ⓘ Could not connect to AAS server at {self.server_base} to delete shared Configuration_Template")
+
             # ── Delete local instance JSON files ──
             deleted_count = 0
             for rel_dir in set(instance_shell_dirs) | set(instance_submodel_dirs):
@@ -729,7 +1002,7 @@ class TelefonConfiguratorV4:
         Create a production order:
           1. Validate configuration & check stock
           2. Allocate an order ID
-          3. Create Housing_With_PCB, PCB_With_Fuse, and Telefon shells upfront
+          3. Create Bottom_Cover_PCB, Bottom_Cover_PCB_Fuse, and Telefon shells upfront
           4. Reserve model-type quantities for all required components
           5. Persist order to DB
 
@@ -748,6 +1021,13 @@ class TelefonConfiguratorV4:
             raise ValueError(f"Insufficient stock for: {', '.join(unavailable)}")
 
         model_numbers = self._get_model_numbers_for_config(config)
+        required_components = self._resolve_required_components_from_bom("Telefon", config)
+        if not required_components:
+            required_components = {
+                comp_type: (config.get(ASSET_REGISTRY.get(comp_type, {}).get("quantity_config_key"), 1)
+                            if ASSET_REGISTRY.get(comp_type, {}).get("quantity_config_key") else 1)
+                for comp_type in model_numbers.keys()
+            }
 
         # --- Allocate order ID ---
         conn = _get_connection(self.db_path)
@@ -780,14 +1060,18 @@ class TelefonConfiguratorV4:
         # Components with a quantity_config_key (e.g. Fuse) get one reservation slot
         # per unit required, so each physical instance maps to exactly one slot.
         reservation_slots: Dict[str, str] = {}
-        for comp_type, model_num in model_numbers.items():
-            qty_cfg_key = ASSET_REGISTRY.get(comp_type, {}).get("quantity_config_key")
-            if qty_cfg_key:
-                qty = flat_config.get(qty_cfg_key, 1)
+        for comp_type, qty in required_components.items():
+            model_num = model_numbers.get(comp_type)
+            if not model_num:
+                continue
+            qty = max(0, int(qty))
+            if qty <= 0:
+                continue
+            if qty == 1:
+                reservation_slots[comp_type] = model_num
+            else:
                 for i in range(1, qty + 1):
                     reservation_slots[f"{comp_type}_{i}"] = model_num
-            else:
-                reservation_slots[comp_type] = model_num
 
         _reserve_model_types(conn, order_id, reservation_slots)
         print(f"  ✓ Reserved model-type quantities: {list(reservation_slots.keys())}")

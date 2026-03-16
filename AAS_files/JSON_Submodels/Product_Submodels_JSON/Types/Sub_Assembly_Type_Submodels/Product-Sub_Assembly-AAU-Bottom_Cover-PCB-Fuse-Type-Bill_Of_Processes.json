@@ -9,7 +9,7 @@
       }
     ]
   },
-  "id": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Housing_With_PCB/Type/Bill_Of_Processes",
+  "id": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB-Fuse/Type/Bill_Of_Processes",
   "description": [
     {
       "language": "en",
@@ -22,7 +22,7 @@
       "idShort": "List_Of_Processes",
       "semanticId": {
         "type": "ExternalReference",
-        "keys": [
+        "keys": [ 
           {
             "type": "GlobalReference",
             "value": "https://aausmartlab.com/Submodel/Bill/List_Of_Processes"
@@ -72,13 +72,13 @@
                   "modelType": "Property",
                   "idShort": "Constraint_Id",
                   "valueType": "xs:string",
-                  "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover"
+                  "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Fuse"
                 },
                 {
                   "modelType": "Property",
                   "idShort": "Constraint_Id",
                   "valueType": "xs:string",
-                  "value": "https://aausmartlab.com/Assets/Product/Component/AAU/PCB"
+                  "value": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB"
                 }
               ]
             },
@@ -90,7 +90,7 @@
                   "modelType": "Property",
                   "idShort": "Selected_Operation",
                   "valueType": "xs:string",
-                  "value": "Assemble_Housing_With_PCB"
+                  "value": "Assemble_Bottom_Cover_PCB_With_Fuse"
                 }
               ]
             }

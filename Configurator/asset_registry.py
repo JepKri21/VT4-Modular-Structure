@@ -86,27 +86,27 @@ ASSET_REGISTRY: Dict[str, Dict[str, Any]] = {
         # Output key name in _get_available_options() for the count options.
         "options_count_key": "fuse_counts",
     },
-    "PCB_With_Fuse": {
+    "Bottom_Cover-PCB-Fuse": {
         "is_component": False,
-        "type_shell": "JSON_Shells/Product_Shells_JSON/Types/Sub_Assembly_Types/Product-Sub_Assembly-AAU-PCB_With_Fuse-Type.json",
+        "type_shell": "JSON_Shells/Product_Shells_JSON/Types/Sub_Assembly_Types/Product-Sub_Assembly-AAU-Bottom_Cover-PCB-Fuse-Type.json",
         "type_submodels_dir": "JSON_Submodels/Product_Submodels_JSON/Types/Sub_Assembly_Type_Submodels",
-        "type_submodel_prefix": "Product-Sub_Assembly-AAU-PCB_With_Fuse",
+        "type_submodel_prefix": "Product-Sub_Assembly-AAU-Bottom_Cover-PCB-Fuse",
         "instance_shell_dir": "JSON_Shells/Product_Shells_JSON/Instances/Sub_Assembly_Instances",
         "instance_submodels_dir": "JSON_Submodels/Product_Submodels_JSON/Instances/Sub_Assembly_Instance_Submodels",
-        "instance_file_prefix": "Product-Sub_Assembly-AAU-PCB_With_Fuse",
-        "registry_key": "PCB_With_Fuse",
+        "instance_file_prefix": "Product-Sub_Assembly-AAU-Bottom_Cover-PCB-Fuse",
+        "registry_key": "Bottom_Cover-PCB-Fuse",
         "submodels": ["Properties", "Documentation", "Bill_Of_Materials", "Bill_Of_Processes"],
         "properties_config_map": {"Nr_Fuses": "number_of_fuses"},
     },
-    "Housing_With_PCB": {
+    "Bottom_Cover-PCB": {
         "is_component": False,
-        "type_shell": "JSON_Shells/Product_Shells_JSON/Types/Sub_Assembly_Types/Product-Sub_Assembly-AAU-Housing_With_PCB-Type.json",
+        "type_shell": "JSON_Shells/Product_Shells_JSON/Types/Sub_Assembly_Types/Product-Sub_Assembly-AAU-Bottom_Cover-PCB-Type.json",
         "type_submodels_dir": "JSON_Submodels/Product_Submodels_JSON/Types/Sub_Assembly_Type_Submodels",
-        "type_submodel_prefix": "Product-Sub_Assembly-AAU-Housing_With_PCB",
+        "type_submodel_prefix": "Product-Sub_Assembly-AAU-Bottom_Cover-PCB",
         "instance_shell_dir": "JSON_Shells/Product_Shells_JSON/Instances/Sub_Assembly_Instances",
         "instance_submodels_dir": "JSON_Submodels/Product_Submodels_JSON/Instances/Sub_Assembly_Instance_Submodels",
-        "instance_file_prefix": "Product-Sub_Assembly-AAU-Housing_With_PCB",
-        "registry_key": "Housing_With_PCB",
+        "instance_file_prefix": "Product-Sub_Assembly-AAU-Bottom_Cover-PCB",
+        "registry_key": "Bottom_Cover-PCB",
         "submodels": ["Properties", "Documentation", "Bill_Of_Materials", "Bill_Of_Processes"],
         "properties_config_map": {
             "Material": "bottom_cover_material",
@@ -140,4 +140,4 @@ ASSET_REGISTRY: Dict[str, Dict[str, Any]] = {
 
 # Which asset keys get shells created at order time (sub-assemblies + final product).
 # Components are pre-existing inventory; only model-type reservations are created.
-ORDER_TIME_SHELL_KEYS: List[str] = ["Housing_With_PCB", "PCB_With_Fuse", "Telefon"]
+ORDER_TIME_SHELL_KEYS: List[str] = ["Bottom_Cover-PCB", "Bottom_Cover-PCB-Fuse", "Telefon"]

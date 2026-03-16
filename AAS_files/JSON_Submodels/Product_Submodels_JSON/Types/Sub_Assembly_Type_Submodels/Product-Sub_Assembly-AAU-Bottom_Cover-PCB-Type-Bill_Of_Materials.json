@@ -1,8 +1,8 @@
 {
   "idShort": "Bill_Of_Materials",
   "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/BOM"}]},
-  "id": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Housing_With_PCB/Type/Bill_Of_Materials",
-  "description": [{"language": "en", "text": "Bill of Materials structure for Housing_With_PCB sub-assembly"}],
+  "id": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB/Type/Bill_Of_Materials",
+  "description": [{"language": "en", "text": "Bill of Materials structure for Bottom_Cover-PCB sub-assembly"}],
 
   "submodelElements": [
     {
@@ -37,20 +37,27 @@
               "idShort": "Is_Configurable",
               "valueType": "xs:boolean",
               "value": "true"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Instance_Refference",
+              "description": [{"language": "en", "text": "AAS ID of the physical instance used during assembly. Filled during production."}],              
+              "valueType": "xs:string",
+              "value": ""
             }
           ]
         },
         {
           "modelType": "SubmodelElementCollection",
-          "idShort": "PCB_With_Fuse",
-          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/SubAssembly/PCB_With_Fuse"}]},
-          "description": [{"language": "en", "text": "PCB with fuse sub-assembly"}],
+          "idShort": "PCB",
+          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/SubAssembly/PCB"}]},
+          "description": [{"language": "en", "text": "PCB"}],
           "value": [
             {
               "modelType": "Property",
-              "idShort": "Sub_Assembly_Type",
+              "idShort": "Component_Type",
               "valueType": "xs:string",
-              "value": "Product-Sub_Assembly-AAU-PCB_With_Fuse"
+              "value": "Product-Component-AAU-PCB"
             },
             {
               "modelType": "Property",
@@ -60,10 +67,17 @@
             },
             {
               "modelType": "Property",
-              "idShort": "Is_Configurable",
+              "idShort": "Not_Configurable",
               "valueType": "xs:boolean",
-              "value": "true",
-              "description": [{"language": "en", "text": "Fuse quantity is configurable"}]
+              "value": "False",
+              "description": [{"language": "en", "text": "This component is not configurable since it is a specific PCB design for the bottom cover sub-assembly"}]
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Instance_Refference",
+              "description": [{"language": "en", "text": "AAS ID of the physical instance used during assembly. Filled during production."}],              
+              "valueType": "xs:string",
+              "value": ""
             }
           ]
         }

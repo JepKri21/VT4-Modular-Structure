@@ -205,15 +205,7 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
-/Telefon-Produktion/JSON_Shells/Product_Shells_JSON/Instances
-/Telefon-Produktion/JSON_Submodels/Product_Submodels_JSON/Instances
-Telefon-Produktion/instance_registry.json
-Telefon-Produktion/instance_registry.json
-/Configurator/JSON_Shells/Product_Shells_JSON/Instances
-/Configurator/JSON_Submodels/Product_Submodels_JSON/Instances
-Configurator/instance_registry.json
-/Configurator/JSON_Shells copy/Product_Shells_JSON/Instances
-/Configurator/JSON_Submodels/Product_Submodels_JSON/Instances
+
 
 
 # For made-react-app
@@ -258,5 +250,40 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-/AAS_files/JSON_Submodels/Product_Submodels_JSON/Instances
-/AAS_files/JSON_Shells/Product_Shells_JSON/Instances
+
+
+# -------------------------------------------------
+# Ignore generated AAS instance JSON files
+# -------------------------------------------------
+
+# Ignore everything inside any Instances folder
+**/Instances/*
+
+# Keep directory structure
+!**/Instances/**/
+
+# Keep placeholder files
+!**/Instances/.gitkeep
+
+# Explicitly ignore generated instance JSON payloads
+**/Product_Shells_JSON/Instances/**/*.json
+**/Product_Submodels_JSON/Instances/**/*.json
+
+
+# -------------------------------------------------
+# Always keep schemas and type definitions
+# -------------------------------------------------
+
+!**/Types/**
+!**/Resource_Shells_JSON/**
+!**/Product_Shells_JSON/Types/**
+!**/Product_Submodels_JSON/Types/**
+
+
+# -------------------------------------------------
+# Optional: ignore temporary or generated JSON files
+# -------------------------------------------------
+
+*.tmp
+*.log
+*.cache

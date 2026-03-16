@@ -40,6 +40,14 @@ PORT = "8081"
 SERVER_BASE = f"http://localhost:{PORT}"
 SUBMODEL_ENDPOINT = f"{SERVER_BASE}/submodels"
 SHELL_ENDPOINT = f"{SERVER_BASE}/shells"
+CONFIG_TEMPLATE_ID = "https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max/Configuration_Template"
+CONFIG_TEMPLATE_PATH = (
+    AAS_FILES_BASE
+    / "JSON_Submodels"
+    / "Product_Submodels_JSON"
+    / "Final_Product_Submodels"
+    / "Product-Final_Product-Telefon-Telefon_Pro_Max-Configuration_Template.json"
+)
 
 
 # =============================================================================
@@ -378,6 +386,28 @@ def upload_instance_to_server(instance_data: Dict[str, Any]) -> None:
         print(f"  ERROR → could not connect to AAS server at {SERVER_BASE}")
 
 
+def ensure_shared_config_template_on_server(upload: bool = True) -> None:
+    """Ensure shared Telefon Configuration_Template exists on the AAS server."""
+    if not upload:
+        return
+    if not CONFIG_TEMPLATE_PATH.exists():
+        print("  INFO -> shared Configuration_Template not found locally; skipping upload")
+        return
+
+    try:
+        with open(CONFIG_TEMPLATE_PATH, 'r', encoding='utf-8') as f:
+            template = json.load(f)
+        response = _post_or_put(SUBMODEL_ENDPOINT, CONFIG_TEMPLATE_ID, template)
+        if response.ok:
+            print("  OK -> shared submodel: Configuration_Template")
+        else:
+            print(f"  FAIL ({response.status_code}) -> shared submodel: Configuration_Template")
+    except requests.ConnectionError:
+        print(f"  ERROR -> could not connect to AAS server at {SERVER_BASE}")
+    except (OSError, json.JSONDecodeError) as e:
+        print(f"  ERROR -> could not load Configuration_Template: {e}")
+
+
 def save_instance_files(
     instance_data: Dict[str, Any],
     component_type: str,
@@ -595,6 +625,10 @@ def run_shopping_list(shopping_list: List[Tuple[str, int, Dict[str, str]]] = Non
         print(f"  {i:<4} {comp_type:<16} {qty:>4}  {cfg_str}")
     print("=" * 70)
     print()
+
+    if upload:
+        print("Ensuring shared Configuration_Template is uploaded...")
+        ensure_shared_config_template_on_server(upload=True)
 
     response = input("Proceed with creation? (yes/no): ").strip().lower()
     if response not in ("yes", "y"):

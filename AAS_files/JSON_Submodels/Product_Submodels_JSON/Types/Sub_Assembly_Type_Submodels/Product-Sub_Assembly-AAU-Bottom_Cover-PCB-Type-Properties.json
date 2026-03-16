@@ -1,8 +1,8 @@
 {
   "idShort": "Properties",
   "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/Parts/Variants"}]},
-  "id": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Housing_With_PCB/Type/Properties",
-  "description":[{"language": "en", "text": "Property structure definition for Housing_With_PCB type"}],
+  "id": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover_PCB/Type/Properties",
+  "description":[{"language": "en", "text": "Property structure definition for Bottom_Cover_PCB type"}],
 
   "submodelElements" : [
     {
@@ -31,12 +31,6 @@
           "idShort": "Finish",
           "valueType": "xs:string",
           "description": [{"language": "en", "text": "Finish of the bottom cover"}]
-        },
-        {
-          "modelType": "Property",
-          "idShort": "Nr_Fuses",
-          "valueType": "xs:integer",
-          "description": [{"language": "en", "text": "Number of fuses in the PCB assembly"}]
         }
       ]
     }
