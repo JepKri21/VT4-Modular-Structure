@@ -1,7 +1,7 @@
 {
     "modelType": "Submodel",
     "kind": "Instance",
-    "id": "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover_Storage/4830e725-8134-407a-ade3-8d1b4e2ea0ff/Location",
+    "id": "https://aausmartlab.com/Assets/Resource/MADE/Drill_Station/03fa4e62-d70f-4803-92ce-f8456370ac98/Location",
     "idShort": "Location",
     "submodelElements": [
         {
@@ -32,7 +32,7 @@
                     "value": [
                         {
                             "modelType": "Property",
-                            "value": "Bottom_Cover_Storage_Connection_Point_1",
+                            "value": "Drill_Station_Connection_Point_1",
                             "valueType": "xs:string",
                             "idShort": "Connection_Point_Id"
                         },
@@ -56,7 +56,7 @@
                     "value": [
                         {
                             "modelType": "Property",
-                            "value": "Bottom_Cover_Storage_Connection_Point_1",
+                            "value": "Drill_Station_Connection_Point_1",
                             "valueType": "xs:string",
                             "idShort": "Own_Connection_Point_Id"
                         },
@@ -68,7 +68,7 @@
                         },
                         {
                             "modelType": "Property",
-                            "value": "ACOPOS6D_Connection_Point_3",
+                            "value": "ACOPOS6D_Connection_Point_7",
                             "valueType": "xs:string",
                             "idShort": "Other_Resource_Connection_Point_Id"
                         },
@@ -78,7 +78,7 @@
                             "value": [
                                 {
                                     "modelType": "Property",
-                                    "value": "120",
+                                    "value": "480",
                                     "valueType": "xs:integer",
                                     "idShort": "X_Value"
                                 },

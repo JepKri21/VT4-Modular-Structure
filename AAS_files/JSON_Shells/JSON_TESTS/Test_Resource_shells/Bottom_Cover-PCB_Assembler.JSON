@@ -15,6 +15,24 @@
           "value": "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover-PCB_Assembler/d2d5d977-4f76-471c-bfd1-0e90c72d7902/Item_Capacity"
         }           
       ]
+    },
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover-PCB_Assembler/d2d5d977-4f76-471c-bfd1-0e90c72d7902/Skills"
+        }           
+      ]
+    },
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover-PCB_Assembler/d2d5d977-4f76-471c-bfd1-0e90c72d7902/Location"
+        }           
+      ]
     }
   ]
 }

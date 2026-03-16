@@ -15,6 +15,24 @@
           "value": "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover_Storage/6cac8616-a8ee-4877-b82a-3e677c6f18ac/Item_Capacity"
         }           
       ]
+    },
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover_Storage/6cac8616-a8ee-4877-b82a-3e677c6f18ac/Location"
+        }           
+      ]
+    },
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover_Storage/6cac8616-a8ee-4877-b82a-3e677c6f18ac/Skills"
+        }           
+      ]
     }
   ]
 }

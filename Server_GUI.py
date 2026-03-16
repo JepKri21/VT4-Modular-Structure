@@ -10,8 +10,8 @@ import base64
 from pathlib import Path
 
 
-shell_folder = ".\AAS_files\JSON_Shells"
-submodel_folder = ".\AAS_files\JSON_Submodels"
+shell_folder = ".\AAS_files\JSON_Shells/JSON_TESTS"
+submodel_folder = ".\AAS_files\JSON_Submodels/JSON_TESTS"
 
 PORT = "8081"
 SERVER_BASE = f"http://192.168.38.200:{PORT}"  # your server base URL
