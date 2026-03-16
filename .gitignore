@@ -1,4 +1,3 @@
-@ -1,207 +0,0 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -15,6 +14,7 @@ dist/
 downloads/
 eggs/
 .eggs/
+lib/
 lib64/
 parts/
 sdist/
@@ -135,6 +135,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
+.env
 .envrc
 .venv
 env/
@@ -249,7 +250,39 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-AAS_files/JSON_Shells/Product_Shells_JSON/Instances/Component_Instances/Product-Component-AAU-Bottom_Cover-001.json
-AAS_files/JSON_Shells/Product_Shells_JSON/Instances/Component_Instances/Product-Component-AAU-Bottom_Cover-002.json
-/AAS_files/JSON_Shells/Product_Shells_JSON/Instances
-/AAS_files/JSON_Submodels/Product_Submodels_JSON/Instances
+
+# -------------------------------------------------
+# Ignore generated AAS instance JSON files
+# -------------------------------------------------
+
+# Ignore everything inside any Instances folder
+**/Instances/*
+
+# Keep directory structure
+!**/Instances/**/
+
+# Keep placeholder files
+!**/Instances/.gitkeep
+
+# Explicitly ignore generated instance JSON payloads
+**/Product_Shells_JSON/Instances/**/*.json
+**/Product_Submodels_JSON/Instances/**/*.json
+
+
+# -------------------------------------------------
+# Always keep schemas and type definitions
+# -------------------------------------------------
+
+!**/Types/**
+!**/Resource_Shells_JSON/**
+!**/Product_Shells_JSON/Types/**
+!**/Product_Submodels_JSON/Types/**
+
+
+# -------------------------------------------------
+# Optional: ignore temporary or generated JSON files
+# -------------------------------------------------
+
+*.tmp
+*.log
+*.cache

@@ -225,7 +225,7 @@ def place_order():
         "order_id":           "ORD-001",
         "product_type":       "Telefon_Pro_Max",
         "configuration":      { ... },
-        "shell_instances":    {"Housing_With_PCB": "001", "PCB_With_Fuse": "001", "Telefon": "001"},
+        "shell_instances":    {"Bottom_Cover_PCB": "001", "Bottom_Cover_PCB_Fuse": "001", "Telefon": "001"},
         "reservation_slots":  {"Bottom_Cover": "BC-...", "Fuse_1": "FUSE-AAU"},
         "inventory_status":   { ... },
         "created_date":       "...",
@@ -293,7 +293,7 @@ def get_order(order_id: str):
 @app.route("/api/v4/orders/<order_id>/step1", methods=["POST"])
 def assembly_step1(order_id: str):
     """
-    Assembly Step 1 — Station 1: Bottom_Cover + PCB → Housing_With_PCB.
+    Assembly Step 1 — Station 1: Bottom_Cover + PCB -> Bottom_Cover_PCB.
 
     Optional body:
       { "bottom_cover_instance_id": "urn:...", "pcb_instance_id": "urn:..." }
@@ -314,7 +314,7 @@ def assembly_step1(order_id: str):
 @app.route("/api/v4/orders/<order_id>/step2", methods=["POST"])
 def assembly_step2(order_id: str):
     """
-    Assembly Step 2 — Station 2: Fuse(s) → PCB_With_Fuse.
+    Assembly Step 2 — Station 2: Fuse(s) -> Bottom_Cover_PCB_Fuse.
 
     Optional body:
       { "fuse_instance_ids": ["urn:...", "urn:..."] }

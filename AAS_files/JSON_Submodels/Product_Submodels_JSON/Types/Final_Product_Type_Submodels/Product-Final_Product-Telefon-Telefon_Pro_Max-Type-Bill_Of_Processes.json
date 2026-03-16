@@ -72,7 +72,7 @@
                   "modelType": "Property",
                   "idShort": "Constraint_Id",
                   "valueType": "xs:string",
-                  "value": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/PCB_With_Fuse"
+                  "value": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover_PCB_Fuse"
                 },
                 {
                   "modelType": "Property",

@@ -42,15 +42,6 @@
           "value": "https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max/Type/Properties"
         }           
       ]
-    },
-    {
-      "type": "ModelReference",
-      "keys": [
-        {
-          "type": "Submodel",
-          "value": "https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max/Configuration_Template"
-        }           
-      ]
     }
   ]
 }

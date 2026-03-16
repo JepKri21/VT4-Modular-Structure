@@ -1,10 +1,10 @@
 {
   "idShort": "Housing_With_PCB_Type",
-  "id": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Housing_With_PCB/Type",
+  "id": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB/Type",
   "modelType": "AssetAdministrationShell",
   "assetInformation": {
     "assetKind": "Type",
-    "globalAssetId": "https://aausmartlab.com/Assets/Product/AAU/Housing_With_PCB/Type"
+    "globalAssetId": "https://aausmartlab.com/Assets/Product/AAU/Bottom_Cover-PCB/Type"
   },
   "submodels": [
     {
@@ -12,7 +12,7 @@
       "keys": [
         {
           "type": "Submodel",
-          "value": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Housing_With_PCB/Type/Documentation"
+          "value": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB/Type/Documentation"
         }
       ]
     },
@@ -21,7 +21,7 @@
       "keys": [
         {
           "type": "Submodel",
-          "value": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Housing_With_PCB/Type/Bill_Of_Processes"
+          "value": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB/Type/Bill_Of_Processes"
         }
       ]
     },
@@ -30,7 +30,7 @@
       "keys": [
         {
           "type": "Submodel",
-          "value": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Housing_With_PCB/Type/Bill_Of_Materials"
+          "value": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB/Type/Bill_Of_Materials"
         }
       ]
     },
@@ -39,7 +39,7 @@
       "keys": [
         {
           "type": "Submodel",
-          "value": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Housing_With_PCB/Type/Properties"
+          "value": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB/Type/Properties"
         }           
       ]
     }

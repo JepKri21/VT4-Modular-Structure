@@ -1,15 +1,15 @@
 {
   "idShort": "Documentation",
   "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/Documentation"}]},
-  "id": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/PCB_With_Fuse/Type/Documentation",
-  "description": [{"language": "en", "text": "Documentation for PCB_With_Fuse sub-assembly type"}],
+  "id": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB/Type/Documentation",
+  "description": [{"language": "en", "text": "Documentation for Bottom_Cover-PCB sub-assembly type"}],
 
   "submodelElements": [
     {
       "modelType": "Property",
       "idShort": "Product_Name",
       "valueType": "xs:string",
-      "value": "PCB With Fuse Assembly"
+      "value": "Housing With PCB Assembly"
     },
     {
       "modelType": "Property",
@@ -23,7 +23,7 @@
       "value": [
         {
           "language": "en",
-          "text": "Sub-assembly consisting of PCB with 1-3 fuses mounted"
+          "text": "Sub-assembly consisting of bottom cover housing with PCB and fuse assembly mounted inside"
         }
       ]
     },
@@ -36,7 +36,7 @@
           "modelType": "Property",
           "idShort": "Template",
           "valueType": "xs:string",
-          "value": "PWF-F{number_of_fuses}",
+          "value": "HWP-{bottom_cover_material}-{bottom_cover_color}-{bottom_cover_finish}-F{number_of_fuses}",
           "description": [{"language": "en", "text": "{key} placeholders are replaced with values from the order configuration"}]
         }
       ]
@@ -46,14 +46,7 @@
       "idShort": "Model_Number",
       "valueType": "xs:string",
       "value": "",
-      "description": [{"language": "en", "text": "Filled in at instance creation — same for all assemblies with the same fuse count"}]
-    },
-    {
-      "modelType": "Property",
-      "idShort": "Instance_Number",
-      "valueType": "xs:string",
-      "value": "",
-      "description": [{"language": "en", "text": "Filled in at instance creation"}]
+      "description": [{"language": "en", "text": "Filled in at instance creation — same model number for every Housing with identical bottom cover material, color, surface finish, and fuse count."}]
     },
     {
       "modelType": "Property",

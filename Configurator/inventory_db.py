@@ -180,11 +180,11 @@ def _get_list_prop(elements: List[Dict], list_id_short: str, prop_id_short: str)
 
 def _parse_model_number_properties(model_number: str, component_type: str) -> Dict[str, Any]:
     result: Dict[str, Any] = {}
-    if component_type == "PCB_With_Fuse":
+    if component_type == "Bottom_Cover_PCB_Fuse":
         fuse_match = re.search(r'-F(\d+)$', model_number)
         if fuse_match:
             result["nr_fuses"] = int(fuse_match.group(1))
-    if component_type == "Housing_With_PCB":
+    if component_type == "Bottom_Cover_PCB":
         hwp_match = re.match(r'^HWP-([^-]+)-[^-]+-([^-]+)-F\d+$', model_number)
         if hwp_match:
             result["material"] = hwp_match.group(1)
@@ -408,7 +408,7 @@ def _backfill_consumed_subassemblies(conn: sqlite3.Connection) -> int:
         except (TypeError, json.JSONDecodeError):
             continue
 
-        hwp_id = progress.get("housing_with_pcb_id")
+        hwp_id = progress.get("bottom_cover_pcb_id")
         if hwp_id:
             cur = conn.execute(
                 "UPDATE inventory_items SET status = 'consumed', last_updated = ? "
@@ -418,7 +418,7 @@ def _backfill_consumed_subassemblies(conn: sqlite3.Connection) -> int:
             updated += cur.rowcount
 
         if order["status"] == "assembled":
-            pwf_id = progress.get("pcb_with_fuse_id")
+            pwf_id = progress.get("bottom_cover_pcb_fuse_id")
             if pwf_id:
                 cur = conn.execute(
                     "UPDATE inventory_items SET status = 'consumed', last_updated = ? "

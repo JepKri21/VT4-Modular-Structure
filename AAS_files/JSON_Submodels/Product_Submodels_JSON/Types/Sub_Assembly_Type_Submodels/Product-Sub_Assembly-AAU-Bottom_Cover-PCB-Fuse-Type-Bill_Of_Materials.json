@@ -1,8 +1,8 @@
 {
   "idShort": "Bill_Of_Materials",
   "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/BOM"}]},
-  "id": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/PCB_With_Fuse/Type/Bill_Of_Materials",
-  "description": [{"language": "en", "text": "Bill of Materials structure for PCB_With_Fuse sub-assembly"}],
+  "id": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB-Fuse/Type/Bill_Of_Materials",
+  "description": [{"language": "en", "text": "Bill of Materials structure for Bottom_Cover_PCB_With_Fuse sub-assembly"}],
 
   "submodelElements": [
     {
@@ -16,15 +16,15 @@
       "value": [
         {
           "modelType": "SubmodelElementCollection",
-          "idShort": "Housing_With_PCB",
-          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Components/Housing_With_PCB"}]},
+          "idShort": "Bottom_Cover-PCB",
+          "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Components/Bottom_Cover-PCB"}]},
           "description": [{"language": "en", "text": "Housing with PCB sub-assembly (from Station 1)"}],
           "value": [
             {
               "modelType": "Property",
               "idShort": "Component_Type",
               "valueType": "xs:string",
-              "value": "Product-Sub_Assembly-AAU-Housing_With_PCB"
+              "value": "Product-Sub_Assembly-AAU-Bottom_Cover-PCB"
             },
             {
               "modelType": "Property",
@@ -37,7 +37,14 @@
               "idShort": "Is_Configurable",
               "valueType": "xs:boolean",
               "value": "false"
-            }
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Instance_Refference",
+              "description": [{"language": "en", "text": "AAS ID of the physical instance used during assembly. Filled during production."}],              
+              "valueType": "xs:string",
+              "value": ""
+             }
           ]
         },
         {
@@ -70,7 +77,27 @@
               "valueType": "xs:boolean",
               "value": "true",
               "description": [{"language": "en", "text": "Quantity is configurable"}]
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Selected_Quantity",
+              "valueType": "xs:integer",
+              "value": "2"
+            },
+            {
+              "modelType": "SubmodelElementList",
+              "idShort": "Instance_References",
+              "description": [{"language": "en", "text": "List of AAS IDs of the physical fuse instances used during assembly. Filled during production."}],
+              "typeValueListElement": "Property",
+              "valueTypeListElement": "xs:string",
+              "orderRelevant": false,
+              "value": [
+                { "modelType": "Property", "idShort": "Fuse_Ref", "valueType": "xs:string", "value": "AAS_ID_FUSE_001" },
+                { "modelType": "Property", "idShort": "Fuse_Ref", "valueType": "xs:string", "value": "AAS_ID_FUSE_002" }
+              ]
             }
+          
+
           ]
         }
       ]

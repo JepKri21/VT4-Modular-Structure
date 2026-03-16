@@ -1,8 +1,8 @@
 {
   "idShort": "Properties",
   "semanticId": {"type": "ExternalReference", "keys": [{"type": "GlobalReference", "value": "https://aausmartlab.com/Data/Parts/Variants"}]},
-  "id": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/PCB_With_Fuse/Type/Properties",
-  "description":[{"language": "en", "text": "Property structure definition for PCB_With_Fuse type"}],
+  "id": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB-Fuse/Type/Properties",
+  "description":[{"language": "en", "text": "Property structure definition for Bottom_Cover_PCB_Fuse type"}],
 
   "submodelElements" : [
     {
