@@ -1,0 +1,48 @@
+{
+  "idShort": "Bill_Of_Materials",
+  "id": "https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max/e739eb46-b993-4bed-a46d-6ac6793db1cb/Bill_Of_Materials",
+  "submodelElements": [
+    {
+      "modelType": "SubmodelElementCollection",
+      "idShort": "Components",
+      "value": [
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Top_Cover_1",
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Component_Type",
+              "valueType": "xs:string",
+              "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Top_Cover"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Instance_Refference",
+              "valueType": "xs:string",
+              "value": ""
+            }
+          ]
+        },
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Bottom_Cover-PCB-Fuse_1",
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Component_Type",
+              "valueType": "xs:string",
+              "value": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB-Fuse"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Instance_Refference",
+              "valueType": "xs:string",
+              "value": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

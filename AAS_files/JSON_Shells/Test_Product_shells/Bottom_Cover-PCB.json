@@ -1,0 +1,20 @@
+{
+  "idShort": "Bottom_Cover-PCB",
+  "id": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB/f0ab9bcf-e7e7-4418-9fb0-cdf25d290d22",
+  "modelType": "AssetAdministrationShell",
+  "assetInformation": {
+    "assetKind": "Type",
+    "globalAssetId": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB/f0ab9bcf-e7e7-4418-9fb0-cdf25d290d22"
+  },
+  "submodels": [
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB/f0ab9bcf-e7e7-4418-9fb0-cdf25d290d22/Bill_Of_Processes"
+        }
+      ]
+    }
+  ]
+}

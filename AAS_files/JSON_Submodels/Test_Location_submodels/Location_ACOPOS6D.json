@@ -1,0 +1,326 @@
+{
+    "modelType": "Submodel",
+    "kind": "Instance",
+    "id": "https://aausmartlab.com/Assets/Resource/MADE/ACOPOS6D/bf30b0a7-d2ba-41ab-989f-503e0b553ada/Location",
+    "idShort": "Location",
+    "submodelElements": [
+        {
+            "modelType": "SubmodelElementCollection",
+            "idShort": "General_Information",
+            "value": [
+                {
+                    "modelType": "Property",
+                    "value": "FIB_14",
+                    "valueType": "xs:string",
+                    "idShort": "Building"
+                },
+                {
+                    "modelType": "Property",
+                    "value": "Production_Line_1",
+                    "valueType": "xs:string",
+                    "idShort": "Production_Line"
+                }
+            ]
+        },
+        {
+            "modelType": "SubmodelElementCollection",
+            "idShort": "Connection_Points",
+            "value": [
+                {
+                    "modelType": "SubmodelElementCollection",
+                    "idShort": "ACOPOS6D_Connection_Point_1",
+                    "value": [
+                        {
+                            "modelType": "Property",
+                            "value": "ACOPOS6D_Connection_Point_1",
+                            "valueType": "xs:string",
+                            "idShort": "Connection_Point_Id"
+                        },
+                        {
+                            "modelType": "Property",
+                            "value": "In-Outfeed",
+                            "valueType": "xs:string",
+                            "idShort": "Connection_Type"
+                        }
+                    ]
+                },
+                {
+                    "modelType": "SubmodelElementCollection",
+                    "idShort": "ACOPOS6D_Connection_Point_2",
+                    "value": [
+                        {
+                            "modelType": "Property",
+                            "value": "ACOPOS6D_Connection_Point_2",
+                            "valueType": "xs:string",
+                            "idShort": "Connection_Point_Id"
+                        },
+                        {
+                            "modelType": "Property",
+                            "value": "In-Outfeed",
+                            "valueType": "xs:string",
+                            "idShort": "Connection_Type"
+                        }
+                    ]
+                },
+                {
+                    "modelType": "SubmodelElementCollection",
+                    "idShort": "ACOPOS6D_Connection_Point_3",
+                    "value": [
+                        {
+                            "modelType": "Property",
+                            "value": "ACOPOS6D_Connection_Point_3",
+                            "valueType": "xs:string",
+                            "idShort": "Connection_Point_Id"
+                        },
+                        {
+                            "modelType": "Property",
+                            "value": "In-Outfeed",
+                            "valueType": "xs:string",
+                            "idShort": "Connection_Type"
+                        }
+                    ]
+                },
+                {
+                    "modelType": "SubmodelElementCollection",
+                    "idShort": "ACOPOS6D_Connection_Point_4",
+                    "value": [
+                        {
+                            "modelType": "Property",
+                            "value": "ACOPOS6D_Connection_Point_4",
+                            "valueType": "xs:string",
+                            "idShort": "Connection_Point_Id"
+                        },
+                        {
+                            "modelType": "Property",
+                            "value": "In-Outfeed",
+                            "valueType": "xs:string",
+                            "idShort": "Connection_Type"
+                        }
+                    ]
+                },
+                {
+                    "modelType": "SubmodelElementCollection",
+                    "idShort": "ACOPOS6D_Connection_Point_5",
+                    "value": [
+                        {
+                            "modelType": "Property",
+                            "value": "ACOPOS6D_Connection_Point_5",
+                            "valueType": "xs:string",
+                            "idShort": "Connection_Point_Id"
+                        },
+                        {
+                            "modelType": "Property",
+                            "value": "In-Outfeed",
+                            "valueType": "xs:string",
+                            "idShort": "Connection_Type"
+                        }
+                    ]
+                },
+                {
+                    "modelType": "SubmodelElementCollection",
+                    "idShort": "ACOPOS6D_Connection_Point_6",
+                    "value": [
+                        {
+                            "modelType": "Property",
+                            "value": "ACOPOS6D_Connection_Point_6",
+                            "valueType": "xs:string",
+                            "idShort": "Connection_Point_Id"
+                        },
+                        {
+                            "modelType": "Property",
+                            "value": "In-Outfeed",
+                            "valueType": "xs:string",
+                            "idShort": "Connection_Type"
+                        }
+                    ]
+                },
+                {
+                    "modelType": "SubmodelElementCollection",
+                    "idShort": "ACOPOS6D_Connection_Point_7",
+                    "value": [
+                        {
+                            "modelType": "Property",
+                            "value": "ACOPOS6D_Connection_Point_7",
+                            "valueType": "xs:string",
+                            "idShort": "Connection_Point_Id"
+                        },
+                        {
+                            "modelType": "Property",
+                            "value": "In-Outfeed",
+                            "valueType": "xs:string",
+                            "idShort": "Connection_Type"
+                        }
+                    ]
+                },
+                {
+                    "modelType": "SubmodelElementCollection",
+                    "idShort": "ACOPOS6D_Connection_Point_8",
+                    "value": [
+                        {
+                            "modelType": "Property",
+                            "value": "ACOPOS6D_Connection_Point_8",
+                            "valueType": "xs:string",
+                            "idShort": "Connection_Point_Id"
+                        },
+                        {
+                            "modelType": "Property",
+                            "value": "In-Outfeed",
+                            "valueType": "xs:string",
+                            "idShort": "Connection_Type"
+                        }
+                    ]
+                },
+                {
+                    "modelType": "SubmodelElementCollection",
+                    "idShort": "ACOPOS6D_Connection_Point_9",
+                    "value": [
+                        {
+                            "modelType": "Property",
+                            "value": "ACOPOS6D_Connection_Point_9",
+                            "valueType": "xs:string",
+                            "idShort": "Connection_Point_Id"
+                        },
+                        {
+                            "modelType": "Property",
+                            "value": "In-Outfeed",
+                            "valueType": "xs:string",
+                            "idShort": "Connection_Type"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "modelType": "SubmodelElementCollection",
+            "idShort": "Resource_Connections",
+            "value": [
+                {
+                    "modelType": "SubmodelElementCollection",
+                    "idShort": "Resource_Connection_1",
+                    "value": [
+                        {
+                            "modelType": "Property",
+                            "value": "ACOPOS6D_Connection_Point_7",
+                            "valueType": "xs:string",
+                            "idShort": "Own_Connection_Point_Id"
+                        },
+                        {
+                            "modelType": "Property",
+                            "value": "https://aausmartlab.com/Assets/Resource/MADE/Drill_Station/1e1d4a58-e403-4d5e-81fa-19c544835561",
+                            "valueType": "xs:string",
+                            "idShort": "Connection_Resource_Id"
+                        },
+                        {
+                            "modelType": "Property",
+                            "value": "Drill_Station_Connection_Point_1",
+                            "valueType": "xs:string",
+                            "idShort": "Other_Resource_Connection_Point_Id"
+                        },
+                        {
+                            "modelType": "SubmodelElementCollection",
+                            "idShort": "Position",
+                            "value": [
+                                {
+                                    "modelType": "Property",
+                                    "value": "480",
+                                    "valueType": "xs:integer",
+                                    "idShort": "X_Value"
+                                },
+                                {
+                                    "modelType": "Property",
+                                    "value": "120",
+                                    "valueType": "xs:integer",
+                                    "idShort": "Y_Value"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "modelType": "SubmodelElementCollection",
+                    "idShort": "Resource_Connection_2",
+                    "value": [
+                        {
+                            "modelType": "Property",
+                            "value": "ACOPOS6D_Connection_Point_9",
+                            "valueType": "xs:string",
+                            "idShort": "Own_Connection_Point_Id"
+                        },
+                        {
+                            "modelType": "Property",
+                            "value": "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover_Storage/4830e725-8134-407a-ade3-8d1b4e2ea0ff",
+                            "valueType": "xs:string",
+                            "idShort": "Connection_Resource_Id"
+                        },
+                        {
+                            "modelType": "Property",
+                            "value": "Bottom_Cover_Storage_Connection_Point_1",
+                            "valueType": "xs:string",
+                            "idShort": "Other_Resource_Connection_Point_Id"
+                        },
+                        {
+                            "modelType": "SubmodelElementCollection",
+                            "idShort": "Position",
+                            "value": [
+                                {
+                                    "modelType": "Property",
+                                    "value": "120",
+                                    "valueType": "xs:integer",
+                                    "idShort": "X_Value"
+                                },
+                                {
+                                    "modelType": "Property",
+                                    "value": "120",
+                                    "valueType": "xs:integer",
+                                    "idShort": "Y_Value"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "modelType": "SubmodelElementCollection",
+                    "idShort": "Resource_Connection_3",
+                    "value": [
+                        {
+                            "modelType": "Property",
+                            "value": "ACOPOS6D_Connection_Point_5",
+                            "valueType": "xs:string",
+                            "idShort": "Own_Connection_Point_Id"
+                        },
+                        {
+                            "modelType": "Property",
+                            "value": "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover-PCB_Assembler/d2d5d977-4f76-471c-bfd1-0e90c72d7902",
+                            "valueType": "xs:string",
+                            "idShort": "Connection_Resource_Id"
+                        },
+                        {
+                            "modelType": "Property",
+                            "value": "Bottom_Cover-PCB_Assembler_Connection_Point_1",
+                            "valueType": "xs:string",
+                            "idShort": "Other_Resource_Connection_Point_Id"
+                        },
+                        {
+                            "modelType": "SubmodelElementCollection",
+                            "idShort": "Position",
+                            "value": [
+                                {
+                                    "modelType": "Property",
+                                    "value": "360",
+                                    "valueType": "xs:integer",
+                                    "idShort": "X_Value"
+                                },
+                                {
+                                    "modelType": "Property",
+                                    "value": "360",
+                                    "valueType": "xs:integer",
+                                    "idShort": "Y_Value"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

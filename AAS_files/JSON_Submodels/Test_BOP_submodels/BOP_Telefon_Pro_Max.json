@@ -1,0 +1,47 @@
+{
+  "idShort": "Bill_Of_Processes",
+  "id": "https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max/e739eb46-b993-4bed-a46d-6ac6793db1cb/Bill_Of_Processes",
+  "submodelElements": [
+    {
+      "modelType": "SubmodelElementCollection",
+      "idShort": "Assemble_1",
+      "value": [
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Process_Constraints",
+          "value": []
+        },
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Required_Components",
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Component_Id_1",
+              "valueType": "xs:string",
+              "value": "Bottom_Cover-PCB-Fuse_1"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Component_Id_2",
+              "valueType": "xs:string",
+              "value": "Top_Cover_1"
+            }
+          ]
+        },
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Parameters",
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Selected_Operation",
+              "valueType": "xs:string",
+              "value": "Assemble"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

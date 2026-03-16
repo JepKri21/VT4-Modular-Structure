@@ -1,0 +1,597 @@
+{
+    "modelType": "Submodel",
+    "kind": "Instance",
+    "id": "https://aausmartlab.com/Assets/Resource/MADE/ACOPOS6D/bf30b0a7-d2ba-41ab-989f-503e0b553ada/Skills",
+    "idShort": "Skills",
+    "submodelElements": [
+        {
+            "modelType": "SubmodelElementCollection",
+            "idShort": "Agents",
+            "value": [
+                {
+                    "modelType": "SubmodelElementCollection",
+                    "idShort": "Shuttle_1",
+                    "value": [
+                        {
+                            "modelType": "SubmodelElementCollection",
+                            "idShort": "Capabilities",
+                            "value": [
+                                {
+                                    "modelType": "SubmodelElementCollection",
+                                    "idShort": "Transport",
+                                    "value": [
+                                        {
+                                            "modelType": "Property",
+                                            "value": "5",
+                                            "valueType": "xs:integer",
+                                            "idShort": "Estimated_Duration"
+                                        },
+                                        {
+                                            "modelType": "SubmodelElementCollection",
+                                            "idShort": "Parameters",
+                                            "value": [
+                                                {
+                                                    "modelType": "Range",
+                                                    "max": "1",
+                                                    "min": "0",
+                                                    "valueType": "xs:integer",
+                                                    "idShort": "Speed"
+                                                },
+                                                {
+                                                    "modelType": "Range",
+                                                    "max": "5",
+                                                    "min": "0",
+                                                    "valueType": "xs:integer",
+                                                    "idShort": "Acceleration"
+                                                },
+                                                {
+                                                    "modelType": "Range",
+                                                    "max": "3",
+                                                    "min": "1",
+                                                    "valueType": "xs:integer",
+                                                    "idShort": "Hover_Height"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "modelType": "SubmodelElementCollection",
+                                            "idShort": "Supported_Connection_Points",
+                                            "value": [
+                                                {
+                                                    "modelType": "SubmodelElementCollection",
+                                                    "idShort": "ACOPOS6D_Connection_Point_1",
+                                                    "value": [
+                                                        {
+                                                            "modelType": "Property",
+                                                            "value": "ACOPOS6D_Connection_Point_1",
+                                                            "valueType": "xs:string",
+                                                            "idShort": "Connection_Point_Id"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "modelType": "SubmodelElementCollection",
+                                                    "idShort": "ACOPOS6D_Connection_Point_2",
+                                                    "value": [
+                                                        {
+                                                            "modelType": "Property",
+                                                            "value": "ACOPOS6D_Connection_Point_2",
+                                                            "valueType": "xs:string",
+                                                            "idShort": "Connection_Point_Id"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "modelType": "SubmodelElementCollection",
+                                                    "idShort": "ACOPOS6D_Connection_Point_3",
+                                                    "value": [
+                                                        {
+                                                            "modelType": "Property",
+                                                            "value": "ACOPOS6D_Connection_Point_3",
+                                                            "valueType": "xs:string",
+                                                            "idShort": "Connection_Point_Id"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "modelType": "SubmodelElementCollection",
+                                                    "idShort": "ACOPOS6D_Connection_Point_4",
+                                                    "value": [
+                                                        {
+                                                            "modelType": "Property",
+                                                            "value": "ACOPOS6D_Connection_Point_4",
+                                                            "valueType": "xs:string",
+                                                            "idShort": "Connection_Point_Id"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "modelType": "SubmodelElementCollection",
+                                                    "idShort": "ACOPOS6D_Connection_Point_5",
+                                                    "value": [
+                                                        {
+                                                            "modelType": "Property",
+                                                            "value": "ACOPOS6D_Connection_Point_5",
+                                                            "valueType": "xs:string",
+                                                            "idShort": "Connection_Point_Id"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "modelType": "SubmodelElementCollection",
+                                                    "idShort": "ACOPOS6D_Connection_Point_6",
+                                                    "value": [
+                                                        {
+                                                            "modelType": "Property",
+                                                            "value": "ACOPOS6D_Connection_Point_6",
+                                                            "valueType": "xs:string",
+                                                            "idShort": "Connection_Point_Id"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "modelType": "SubmodelElementCollection",
+                                                    "idShort": "ACOPOS6D_Connection_Point_7",
+                                                    "value": [
+                                                        {
+                                                            "modelType": "Property",
+                                                            "value": "ACOPOS6D_Connection_Point_7",
+                                                            "valueType": "xs:string",
+                                                            "idShort": "Connection_Point_Id"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "modelType": "SubmodelElementCollection",
+                                                    "idShort": "ACOPOS6D_Connection_Point_8",
+                                                    "value": [
+                                                        {
+                                                            "modelType": "Property",
+                                                            "value": "ACOPOS6D_Connection_Point_8",
+                                                            "valueType": "xs:string",
+                                                            "idShort": "Connection_Point_Id"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "modelType": "SubmodelElementCollection",
+                                                    "idShort": "ACOPOS6D_Connection_Point_9",
+                                                    "value": [
+                                                        {
+                                                            "modelType": "Property",
+                                                            "value": "ACOPOS6D_Connection_Point_9",
+                                                            "valueType": "xs:string",
+                                                            "idShort": "Connection_Point_Id"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "modelType": "SubmodelElementCollection",
+                                            "idShort": "Input/Output_Mappings",
+                                            "value" : [
+                                                {
+                                                    "modelType": "SubmodelElementCollection",
+                                                    "idShort": "Input/Output_Mapping_1",
+                                                    "value" :[
+                                                        {
+                                                            "modelType": "SubmodelElementCollection",
+                                                            "idShort": "Inputs",
+                                                            "value": [
+                                                                {
+                                                                    "modelType": "Property",
+                                                                    "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover",
+                                                                    "valueType": "xs:string",
+                                                                    "idShort": "Bottom_Cover" 
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "modelType": "SubmodelElementCollection",
+                                                            "idShort": "Outputs",
+                                                            "value": [
+                                                                {
+                                                                    "modelType": "Property",
+                                                                    "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover",
+                                                                    "valueType": "xs:string",
+                                                                    "idShort": "Bottom_Cover" 
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "modelType": "SubmodelElementCollection",
+                                                    "idShort": "Input/Output_Mapping_2",
+                                                    "value" :[
+                                                        {
+                                                            "modelType": "SubmodelElementCollection",
+                                                            "idShort": "Inputs",
+                                                            "value": [
+                                                                {
+                                                                    "modelType": "Property",
+                                                                    "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover-PCB",
+                                                                    "valueType": "xs:string",
+                                                                    "idShort": "Bottom_Cover-PCB" 
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "modelType": "SubmodelElementCollection",
+                                                            "idShort": "Outputs",
+                                                            "value": [
+                                                                {
+                                                                    "modelType": "Property",
+                                                                    "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover-PCB",
+                                                                    "valueType": "xs:string",
+                                                                    "idShort": "Bottom_Cover-PCB" 
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "modelType": "SubmodelElementCollection",
+                                                    "idShort": "Input/Output_Mapping_3",
+                                                    "value" :[
+                                                        {
+                                                            "modelType": "SubmodelElementCollection",
+                                                            "idShort": "Inputs",
+                                                            "value": [
+                                                                {
+                                                                    "modelType": "Property",
+                                                                    "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover-PCB-Fuse",
+                                                                    "valueType": "xs:string",
+                                                                    "idShort": "Bottom_Cover-PCB-Fuse" 
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "modelType": "SubmodelElementCollection",
+                                                            "idShort": "Outputs",
+                                                            "value": [
+                                                                {
+                                                                    "modelType": "Property",
+                                                                    "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover-PCB-Fuse",
+                                                                    "valueType": "xs:string",
+                                                                    "idShort": "Bottom_Cover-PCB-Fuse" 
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "modelType": "SubmodelElementCollection",
+                                                    "idShort": "Input/Output_Mapping_4",
+                                                    "value" :[
+                                                        {
+                                                            "modelType": "SubmodelElementCollection",
+                                                            "idShort": "Inputs",
+                                                            "value": [
+                                                                {
+                                                                    "modelType": "Property",
+                                                                    "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Telefon_Pro_Max",
+                                                                    "valueType": "xs:string",
+                                                                    "idShort": "Telefon_Pro_Max" 
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "modelType": "SubmodelElementCollection",
+                                                            "idShort": "Outputs",
+                                                            "value": [
+                                                                {
+                                                                    "modelType": "Property",
+                                                                    "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Telefon_Pro_Max",
+                                                                    "valueType": "xs:string",
+                                                                    "idShort": "Telefon_Pro_Max" 
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "modelType": "SubmodelElementCollection",
+                    "idShort": "Shuttle_2",
+                    "value": [
+                        {
+                            "modelType": "SubmodelElementCollection",
+                            "idShort": "Capabilities",
+                            "value": [
+                                {
+                                    "modelType": "SubmodelElementCollection",
+                                    "idShort": "Transport",
+                                    "value": [
+                                        {
+                                            "modelType": "Property",
+                                            "value": "5",
+                                            "valueType": "xs:integer",
+                                            "idShort": "Estimated_Duration"
+                                        },
+                                        {
+                                            "modelType": "SubmodelElementCollection",
+                                            "idShort": "Parameters",
+                                            "value": [
+                                                {
+                                                    "modelType": "Range",
+                                                    "max": "1",
+                                                    "min": "0",
+                                                    "valueType": "xs:integer",
+                                                    "idShort": "Speed"
+                                                },
+                                                {
+                                                    "modelType": "Range",
+                                                    "max": "5",
+                                                    "min": "0",
+                                                    "valueType": "xs:integer",
+                                                    "idShort": "Acceleration"
+                                                },
+                                                {
+                                                    "modelType": "Range",
+                                                    "max": "3",
+                                                    "min": "1",
+                                                    "valueType": "xs:integer",
+                                                    "idShort": "Hover_Height"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "modelType": "SubmodelElementCollection",
+                                            "idShort": "Supported_Connection_Points",
+                                            "value": [
+                                                {
+                                                    "modelType": "SubmodelElementCollection",
+                                                    "idShort": "ACOPOS6D_Connection_Point_1",
+                                                    "value": [
+                                                        {
+                                                            "modelType": "Property",
+                                                            "value": "ACOPOS6D_Connection_Point_1",
+                                                            "valueType": "xs:string",
+                                                            "idShort": "Connection_Point_Id"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "modelType": "SubmodelElementCollection",
+                                                    "idShort": "ACOPOS6D_Connection_Point_2",
+                                                    "value": [
+                                                        {
+                                                            "modelType": "Property",
+                                                            "value": "ACOPOS6D_Connection_Point_2",
+                                                            "valueType": "xs:string",
+                                                            "idShort": "Connection_Point_Id"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "modelType": "SubmodelElementCollection",
+                                                    "idShort": "ACOPOS6D_Connection_Point_3",
+                                                    "value": [
+                                                        {
+                                                            "modelType": "Property",
+                                                            "value": "ACOPOS6D_Connection_Point_3",
+                                                            "valueType": "xs:string",
+                                                            "idShort": "Connection_Point_Id"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "modelType": "SubmodelElementCollection",
+                                                    "idShort": "ACOPOS6D_Connection_Point_4",
+                                                    "value": [
+                                                        {
+                                                            "modelType": "Property",
+                                                            "value": "ACOPOS6D_Connection_Point_4",
+                                                            "valueType": "xs:string",
+                                                            "idShort": "Connection_Point_Id"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "modelType": "SubmodelElementCollection",
+                                                    "idShort": "ACOPOS6D_Connection_Point_5",
+                                                    "value": [
+                                                        {
+                                                            "modelType": "Property",
+                                                            "value": "ACOPOS6D_Connection_Point_5",
+                                                            "valueType": "xs:string",
+                                                            "idShort": "Connection_Point_Id"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "modelType": "SubmodelElementCollection",
+                                                    "idShort": "ACOPOS6D_Connection_Point_6",
+                                                    "value": [
+                                                        {
+                                                            "modelType": "Property",
+                                                            "value": "ACOPOS6D_Connection_Point_6",
+                                                            "valueType": "xs:string",
+                                                            "idShort": "Connection_Point_Id"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "modelType": "SubmodelElementCollection",
+                                                    "idShort": "ACOPOS6D_Connection_Point_7",
+                                                    "value": [
+                                                        {
+                                                            "modelType": "Property",
+                                                            "value": "ACOPOS6D_Connection_Point_7",
+                                                            "valueType": "xs:string",
+                                                            "idShort": "Connection_Point_Id"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "modelType": "SubmodelElementCollection",
+                                                    "idShort": "ACOPOS6D_Connection_Point_8",
+                                                    "value": [
+                                                        {
+                                                            "modelType": "Property",
+                                                            "value": "ACOPOS6D_Connection_Point_8",
+                                                            "valueType": "xs:string",
+                                                            "idShort": "Connection_Point_Id"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "modelType": "SubmodelElementCollection",
+                                                    "idShort": "ACOPOS6D_Connection_Point_9",
+                                                    "value": [
+                                                        {
+                                                            "modelType": "Property",
+                                                            "value": "ACOPOS6D_Connection_Point_9",
+                                                            "valueType": "xs:string",
+                                                            "idShort": "Connection_Point_Id"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "modelType": "SubmodelElementCollection",
+                                            "idShort": "Input/Output_Mappings",
+                                            "value" : [
+                                                {
+                                                    "modelType": "SubmodelElementCollection",
+                                                    "idShort": "Input/Output_Mapping_1",
+                                                    "value" :[
+                                                        {
+                                                            "modelType": "SubmodelElementCollection",
+                                                            "idShort": "Inputs",
+                                                            "value": [
+                                                                {
+                                                                    "modelType": "Property",
+                                                                    "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover",
+                                                                    "valueType": "xs:string",
+                                                                    "idShort": "Bottom_Cover" 
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "modelType": "SubmodelElementCollection",
+                                                            "idShort": "Outputs",
+                                                            "value": [
+                                                                {
+                                                                    "modelType": "Property",
+                                                                    "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover",
+                                                                    "valueType": "xs:string",
+                                                                    "idShort": "Bottom_Cover" 
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "modelType": "SubmodelElementCollection",
+                                                    "idShort": "Input/Output_Mapping_2",
+                                                    "value" :[
+                                                        {
+                                                            "modelType": "SubmodelElementCollection",
+                                                            "idShort": "Inputs",
+                                                            "value": [
+                                                                {
+                                                                    "modelType": "Property",
+                                                                    "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover-PCB",
+                                                                    "valueType": "xs:string",
+                                                                    "idShort": "Bottom_Cover-PCB" 
+                                                                }]
+                                                            
+                                                        },
+                                                        {
+                                                            "modelType": "SubmodelElementCollection",
+                                                            "idShort": "Outputs",
+                                                            "value": [
+                                                                {
+                                                                    "modelType": "Property",
+                                                                    "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover-PCB",
+                                                                    "valueType": "xs:string",
+                                                                    "idShort": "Bottom_Cover-PCB" 
+                                                            }
+                                                        ]
+                                                            
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "modelType": "SubmodelElementCollection",
+                                                    "idShort": "Input/Output_Mapping_3",
+                                                    "value" :[
+                                                        {
+                                                            "modelType": "SubmodelElementCollection",
+                                                            "idShort": "Inputs",
+                                                            "value": [
+                                                                {
+                                                                    "modelType": "Property",
+                                                                    "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover-PCB-Fuse",
+                                                                    "valueType": "xs:string",
+                                                                    "idShort": "Bottom_Cover-PCB-Fuse" 
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "modelType": "SubmodelElementCollection",
+                                                            "idShort": "Outputs",
+                                                            "value": [
+                                                                {
+                                                                    "modelType": "Property",
+                                                                    "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover-PCB-Fuse",
+                                                                    "valueType": "xs:string",
+                                                                    "idShort": "Bottom_Cover-PCB-Fuse" 
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "modelType": "SubmodelElementCollection",
+                                                    "idShort": "Input/Output_Mapping_4",
+                                                    "value" :[
+                                                        {
+                                                            "modelType": "SubmodelElementCollection",
+                                                            "idShort": "Inputs",
+                                                            "value": [
+                                                                {
+                                                                    "modelType": "Property",
+                                                                    "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Telefon_Pro_Max",
+                                                                    "valueType": "xs:string",
+                                                                    "idShort": "Telefon_Pro_Max" 
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "modelType": "SubmodelElementCollection",
+                                                            "idShort": "Outputs",
+                                                            "value": [
+                                                                {
+                                                                    "modelType": "Property",
+                                                                    "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Telefon_Pro_Max",
+                                                                    "valueType": "xs:string",
+                                                                    "idShort": "Telefon_Pro_Max" 
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

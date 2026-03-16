@@ -1,0 +1,100 @@
+{
+  "modelType": "Submodel", 
+  "kind": "Instance", 
+  "id": "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover_Storage/6cac8616-a8ee-4877-b82a-3e677c6f18ac/Item_Capacity", 
+  "idShort": "Item_Capacity", 
+  "submodelElements": [
+    {
+      "modelType": "SubmodelElementCollection", 
+      "idShort": "Internal_Part_Storages", 
+      "value": [
+        {
+          "modelType": "SubmodelElementCollection", 
+          "idShort": "Internal_Part_Storage_1", 
+          "value": [
+            {
+              "modelType": "Property", 
+              "value": "20", 
+              "valueType": "xs:integer", 
+              "idShort": "Storage_Size"
+            },
+            {
+              "modelType": "Property", 
+              "value": "First_In_Last_Out", 
+              "valueType": "xs:string", 
+              "idShort": "Storing_Method"
+            },
+            {
+              "modelType": "Property", 
+              "value": "Output", 
+              "valueType": "xs:string", 
+              "idShort": "Storage_Type"
+            },
+            {
+              "modelType": "SubmodelElementCollection", 
+              "idShort": "Agent_Accessibility", 
+              "value" : [
+                {
+                  "modelType": "Property", 
+                  "value": "KUKA_Manipulator", 
+                  "valueType": "xs:string", 
+                  "idShort": "Agent_Name"
+                }
+              ]
+            },
+            {
+              "modelType": "SubmodelElementCollection", 
+              "idShort": "Part_Types", 
+              "value": [
+              {
+                "modelType": "SubmodelElementCollection", "idShort": "Part_Type_1", "value": [
+                    {
+                        "modelType": "Property", 
+                        "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover", 
+                        "valueType": "xs:string", 
+                        "idShort": "Part_Type_Id"
+                    }, 
+                    {
+                        "modelType": "Property", 
+                        "value": "5", 
+                        "valueType": "xs:integer", 
+                        "idShort": "Quantity"
+                    },
+                    {
+                        "modelType": "Property", 
+                        "value": "Blue", 
+                        "valueType": "xs:string", 
+                        "idShort": "Model_Number"
+                    }
+                  ]
+                },
+                {
+                "modelType": "SubmodelElementCollection", "idShort": "Part_Type_2", "value": [
+                    {
+                        "modelType": "Property", 
+                        "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover", 
+                        "valueType": "xs:string", 
+                        "idShort": "Part_Type_Id"
+                    }, 
+                    {
+                        "modelType": "Property", 
+                        "value": "5", 
+                        "valueType": "xs:integer", 
+                        "idShort": "Quantity"
+                    },
+                    {
+                        "modelType": "Property", 
+                        "value": "Red", 
+                        "valueType": "xs:string", 
+                        "idShort": "Model_Number"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

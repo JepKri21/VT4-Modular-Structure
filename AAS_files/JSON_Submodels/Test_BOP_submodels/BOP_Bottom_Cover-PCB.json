@@ -1,0 +1,89 @@
+{
+  "idShort": "Bill_Of_Processes",
+  "id": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB/f0ab9bcf-e7e7-4418-9fb0-cdf25d290d22/Bill_Of_Processes",
+  "submodelElements": [
+    {
+      "modelType": "SubmodelElementCollection",
+      "idShort": "Assemble_1",
+      "value": [
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Process_Constraints",
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Constraint_Id_1",
+              "valueType": "xs:string",
+              "value": "Drilling_1"
+            }
+          ]
+        },
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Required_Components",
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Component_Id_1",
+              "valueType": "xs:string",
+              "value": "PCB_1"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Component_Id_2",
+              "valueType": "xs:string",
+              "value": "Bottom_Cover_1"
+            }
+          ]
+        },
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Parameters",
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Selected_Operation",
+              "valueType": "xs:string",
+              "value": "Assemble"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "modelType": "SubmodelElementCollection",
+      "idShort": "Drilling_1",
+      "value": [
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Process_Constraints",
+          "value": []
+        },
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Required_Components",
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Component_Id_2",
+              "valueType": "xs:string",
+              "value": "Bottom_Cover_1"
+            }
+          ]
+        },
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Parameters",
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Selected_Operation",
+              "valueType": "xs:string",
+              "value": "Drilling"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

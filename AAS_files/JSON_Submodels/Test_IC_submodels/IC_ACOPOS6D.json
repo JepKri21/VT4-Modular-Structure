@@ -1,0 +1,13 @@
+{
+  "modelType": "Submodel", 
+  "kind": "Instance", 
+  "id": "https://aausmartlab.com/Assets/Resource/B&R/ACOPOS6D/ede7ea0b-5d4a-4702-bb42-432b08c1865f/Item_Capacity", 
+  "idShort": "Item_Capacity", 
+  "submodelElements": [
+    {
+      "modelType": "SubmodelElementCollection", 
+      "idShort": "Internal_Part_Storages", 
+      "value": []
+    }
+  ]
+}

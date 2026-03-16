@@ -1,7 +1,16 @@
 import json 
 from pathlib import Path
 from typing import List
+import sys
 
+import pprint
+
+pp = pprint.PrettyPrinter(indent=4, compact=False)
+
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
+
+from AAS_Reader.aas_reader import AASShellReader
 
 class Orders:
     def __init__(self, order_messages: List):
@@ -14,7 +23,67 @@ class Orders:
             self.orders[order_name] = order
 
 
+    def _parse_process(self, process_node):
+        result = []
 
+        for element_name, element_node in process_node.children.items():
+
+            if element_name == "Process_Constraints":
+                result.append({
+                    "Process_Constraints": [child.value for child in element_node.children.values()]
+                })
+
+            elif element_name == "Required_Components":
+                result.append({
+                    "Required_Components": [child.value for child in element_node.children.values()]
+                })
+
+            elif element_name == "Parameters":
+                params = []
+                for child in element_node.children.values():
+                    params.append({child.id_short: child.value})
+                result.append({"Parameters": params})
+
+        return result
+
+    def _extract_bill_of_processes(self, bill_of_processes):
+        processes = {}
+
+        processes = {}
+
+        for proc_name, proc_node in bill_of_processes.children.items():
+
+            processes[proc_name] = self._parse_process(proc_node)
+
+        return processes
+
+
+    def build_order_dict(self, order, Products):
+
+        order_id = order["order_id"]
+        shell_instances = order["shell_instances"]
+
+        result = {order_id: []}
+
+        for name, shell_url in shell_instances.items():
+
+            #uuid = shell_url.split("/")[-1]
+
+            product = Products[shell_url]
+
+            submodel = product["Bill_Of_Processes"]
+
+            processes = self._extract_bill_of_processes(submodel)
+
+            process_list = []
+            for p_name, p_data in processes.items():
+                process_list.append({p_name: p_data})
+
+            result[order_id].append({
+                shell_url: process_list
+            })
+
+        return result
     
     # Funktion får: Dictionary af alle products, en specific order_id
         # Den skal finde shell instances fra order_id
@@ -28,7 +97,11 @@ class Orders:
 # 1: Hent alle shells og fordel dem i Resources og Products?
 
 # 2: Hent Ordre:
-    #Ordre indeholder Final product og subassemblies, dem skal vi holde styr på
+    #Ordre indeholder shells for Final product og subassemblies, dem skal vi holde styr på
+    #Indeholder configuration for final product.
+
+
+
 
 
 # 3: Hent BoP
@@ -38,14 +111,6 @@ class Orders:
     # {"Segment1: [Process1, Process2, .....]", "Segment2: [Process3, Process4,....], Segment3: [Segment1, Segment2, Process5, .....] "}
         # Der vil altid være en endelig process hvor man så siger at final product er færdig. 
         # Men det betyder at parallele sekvenser skal mødes på et tidspunkt.
-
-# 3: Sammenlign Product BoP og Resource Skills
-    # Hvis BoP og Skill matcher: 
-        # ✅ Du kan komme i sving ka' du
-
-        #🤖
-
-
 
 BASE_DIR = Path(__file__).resolve().parent
 example_order1 = BASE_DIR / "example_order1.json"
@@ -69,7 +134,21 @@ current_orders = Orders(all_orders)
 
 #print(f"Current order: {current_orders.orders}")
 
-print(f"Example Order 1 {current_orders.orders['ORD-001']}")
+#print(f"Example Order 1 {current_orders.orders['ORD-001']}")
+
+
+if __name__ == "__main__":
+    AAS_SERVER = "http://192.168.38.200:8081"
+    Reader = AASShellReader(AAS_SERVER)
+
+    All_Assets, Resources, Products = Reader.return_correlated_assets()
+
+    #print(Products["https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB/f0ab9bcf-e7e7-4418-9fb0-cdf25d290d22"])
+
+    order_001_BOP = current_orders.build_order_dict(current_orders.orders['ORD-001'],Products=Products)
+
+    pp.pprint(order_001_BOP)
+
 
 #final_product_type = order["final_product_type"]
 #final_product_shell = order["shell_instances"][final_product_type]

@@ -1,0 +1,105 @@
+{
+    "modelType": "Submodel",
+    "kind": "Instance",
+    "id": "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover_Storage/4830e725-8134-407a-ade3-8d1b4e2ea0ff/Skills",
+    "idShort": "Skills",
+    "submodelElements": [
+        {
+            "modelType": "SubmodelElementCollection",
+            "idShort": "Agents",
+            "value": [
+                {
+                    "modelType": "SubmodelElementCollection",
+                    "idShort": "KUKA_Manipulator",
+                    "value": [
+                        {
+                            "modelType": "SubmodelElementCollection",
+                            "idShort": "Capabilities",
+                            "value": [
+                                {
+                                    "modelType": "SubmodelElementCollection",
+                                    "idShort": "Retrieve",
+                                    "value": [
+                                        {
+                                            "modelType": "Property",
+                                            "value": "5",
+                                            "valueType": "xs:integer",
+                                            "idShort": "Estimated_Duration"
+                                        },
+                                        {
+                                            "modelType": "SubmodelElementCollection",
+                                            "idShort": "Parameters",
+                                            "value": [
+                                                {
+                                                    "modelType": "Range",
+                                                    "max": "2",
+                                                    "min": "0",
+                                                    "valueType": "xs:integer",
+                                                    "idShort": "Speed"
+                                                },
+                                                {
+                                                    "modelType": "Range",
+                                                    "max": "4",
+                                                    "min": "0",
+                                                    "valueType": "xs:integer",
+                                                    "idShort": "Acceleration"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "modelType": "SubmodelElementCollection",
+                                            "idShort": "Supported_Connection_Points",
+                                            "value": [
+                                                {
+                                                    "modelType": "SubmodelElementCollection",
+                                                    "idShort": "Bottom_Cover_Storage_Connection_Point_1",
+                                                    "value": [
+                                                        {
+                                                            "modelType": "Property",
+                                                            "value": "Bottom_Cover_Storage_Connection_Point_1",
+                                                            "valueType": "xs:string",
+                                                            "idShort": "Connection_Point_Id"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "modelType": "SubmodelElementCollection",
+                                            "idShort": "Input/Output_Mappings",
+                                            "value": [
+                                                {
+                                                    "modelType": "SubmodelElementCollection",
+                                                    "idShort": "Input/Output_Mapping_1",
+                                                    "value": [
+                                                        {
+                                                            "modelType": "SubmodelElementCollection",
+                                                            "idShort": "Inputs",
+                                                            "value": []
+                                                        },
+                                                        {
+                                                            "modelType": "SubmodelElementCollection",
+                                                            "idShort": "Outputs",
+                                                            "value": [
+                                                                {
+                                                                    "modelType": "Property",
+                                                                    "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover",
+                                                                    "valueType": "xs:string",
+                                                                    "idShort": "Bottom_Cover" 
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
