@@ -20,6 +20,7 @@ import base64
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+from uuid import uuid4
 
 import requests
 
@@ -940,18 +941,10 @@ class TelefonConfiguratorV4:
         return bom_submodel
 
     def _get_next_instance_num(self, asset_key: str) -> str:
-        """Scan the instance shell directory and return the next 3-digit instance number."""
-        cfg = ASSET_REGISTRY[asset_key]
-        instance_dir = self.base_path / cfg["instance_shell_dir"]
-        prefix = cfg["instance_file_prefix"]
-        max_num = 0
-        if instance_dir.exists():
-            for f in instance_dir.glob(f"{prefix}-???.json"):
-                try:
-                    max_num = max(max_num, int(f.stem.split("-")[-1]))
-                except ValueError:
-                    pass
-        return f"{max_num + 1:03d}"
+        """Return a UUID-based instance token (32 hex chars, no dashes)."""
+        # Keep filenames/path parsing robust by using uuid4().hex (no '-' chars).
+        # This remains compatible with existing numeric instance tokens.
+        return uuid4().hex
 
     def _create_sa_or_product_shell(
         self,

@@ -19,6 +19,7 @@ import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+from uuid import uuid4
 
 import base64
 
@@ -95,30 +96,17 @@ SHOPPING_LIST: List[Tuple[str, int, Dict[str, str]]] = [
 # Utility Functions
 # =============================================================================
 
-def get_next_instance_number(component_type: str, registry: Dict) -> int:
-    """
-    Scan the instance directory to find the highest existing instance number
-    for a component type and return the next available number.
-    """
+def get_next_instance_number(component_type: str, registry: Dict) -> str:
+    """Generate a UUID-based instance token (32 hex chars, no dashes)."""
     instance_dir = AAS_FILES_BASE / registry[component_type]["instance_shell_dir"]
-    if not instance_dir.exists():
-        return 1
-    
     prefix = registry[component_type]["instance_file_prefix"]
-    max_num = 0
-    
-    for file in instance_dir.glob(f"{prefix}-*.json"):
-        try:
-            # Extract number from filename like "Product-Component-AAU-Bottom_Cover-001.json"
-            filename = file.name
-            num_part = filename.replace(prefix + "-", "").replace(".json", "")
-            if num_part.isdigit():
-                num = int(num_part)
-                max_num = max(max_num, num)
-        except:
-            pass
-    
-    return max_num + 1
+
+    # Extremely unlikely to loop; protects against accidental filename clashes.
+    while True:
+        token = uuid4().hex
+        candidate = instance_dir / f"{prefix}-{token}.json"
+        if not candidate.exists():
+            return token
 
 
 def load_type_files(component_type: str, registry: Dict) -> Dict[str, Any]:
@@ -151,15 +139,15 @@ def load_type_files(component_type: str, registry: Dict) -> Dict[str, Any]:
 def update_instance_ids(
     instance_data: Dict[str, Any],
     component_type: str,
-    instance_num: int,
+    instance_num: str,
     base_url: str = "https://aausmartlab.com/Assets/Product/Component/AAU"
 ) -> None:
     """
     Update IDs in the instance data (shell + submodels) to reflect the
-    instance number. Modifies instance_data in place.
+    instance token. Modifies instance_data in place.
     """
     type_url = component_type
-    instance_str = f"{instance_num:03d}"
+    instance_str = str(instance_num)
     
     # Update shell
     # Change assetKind from "Type" to "Instance"
@@ -189,13 +177,13 @@ def update_instance_ids(
 
 def update_documentation_submodel(
     doc_submodel: Dict[str, Any],
-    instance_num: int,
+    instance_num: str,
     created_date: str,
     config_values: Dict[str, str] = None,
     properties_config_map: Dict[str, str] = None,
 ) -> None:
     """
-    Update Documentation submodel with instance number, creation date, and
+    Update Documentation submodel with instance token, creation date, and
     auto-generated model number.
 
     If the Type defines a Model_Number_Configuration collection, this method
@@ -214,7 +202,7 @@ def update_documentation_submodel(
                 config_by_key[config_key] = config_values[prop_name]
 
     patch = {
-        "Instance_Number": f"{instance_num:03d}",
+        "Instance_Number": str(instance_num),
         "Created_Date": created_date,
     }
 
@@ -360,14 +348,14 @@ def ensure_shared_config_template_on_server(upload: bool = True) -> None:
 def save_instance_files(
     instance_data: Dict[str, Any],
     component_type: str,
-    instance_num: int,
+    instance_num: str,
     registry: Dict
 ) -> None:
     """
     Save the instance shell and submodel files to disk.
     """
     config = registry[component_type]
-    instance_str = f"{instance_num:03d}"
+    instance_str = str(instance_num)
     
     base_path = AAS_FILES_BASE
     
@@ -495,7 +483,7 @@ def create_inventory_items(component_type: str, quantity: int, config_values: Di
     
     # Create each instance
     for i in range(quantity):
-        # Get next instance number
+        # Get next instance token
         instance_num = get_next_instance_number(component_type, COMPONENT_REGISTRY)
         
         # Deep copy type files to create instance
@@ -524,7 +512,7 @@ def create_inventory_items(component_type: str, quantity: int, config_values: Di
             )
         
         # Save files
-        print(f"Instance #{instance_num:03d}:")
+        print(f"Instance token #{instance_num}:")
         save_instance_files(instance_data, component_type, instance_num, COMPONENT_REGISTRY)
 
         # Upload to AAS server

@@ -51,8 +51,11 @@ import json
 import re
 import sqlite3
 from pathlib import Path
+from datetime import datetime
+import threading
 
 from flask import Flask, jsonify, request
+import paho.mqtt.client as mqtt
 
 from configurator_v4 import TelefonConfiguratorV4
 from assembly_manager_v4 import AssemblyManagerV4
@@ -72,6 +75,74 @@ configurator = TelefonConfiguratorV4()
 assembly_mgr = AssemblyManagerV4()
 
 DB_PATH = DEFAULT_DB_FILE
+
+# =============================================================================
+# MQTT Configuration
+# =============================================================================
+
+MQTT_BROKER = "localhost"
+MQTT_PORT = 1883
+MQTT_BASE_TOPIC = "AAU/Smartlab/PL1"
+MQTT_CLIENT_ID = "Configurator_Backend"
+
+mqtt_client = None
+mqtt_lock = threading.Lock()
+
+
+def _init_mqtt():
+    """Initialize MQTT client."""
+    global mqtt_client
+    try:
+        mqtt_client = mqtt.Client(client_id=MQTT_CLIENT_ID, callback_api_version=mqtt.CallbackAPIVersion.VERSION1)
+        mqtt_client.connect(MQTT_BROKER, MQTT_PORT, keepalive=60)
+        mqtt_client.loop_start()
+        print(f"MQTT client initialized and connected to {MQTT_BROKER}:{MQTT_PORT}")
+    except Exception as e:
+        print(f"Warning: Could not initialize MQTT client: {e}")
+        mqtt_client = None
+
+
+def _publish_assembly_order(order_data: dict):
+    """
+    Publish assembly order over MQTT as a precise assembly command.
+    
+    Message format:
+    {
+        "order_id": "ORD-001",
+        "seq_no": 1,
+        "command": "assemble",
+        "issue_date": "2026-03-18 12:34:56",
+        "priority": "3",
+        "final_product_type": "Telefon_Pro_Max",
+        "configuration": {...},
+        "shell_instances": {...}
+    }
+    """
+    global mqtt_client
+    if mqtt_client is None:
+        print("MQTT client not initialized, skipping publish")
+        return
+    
+    try:
+        topic = f"{MQTT_BASE_TOPIC}/Orders/assembly_order"
+        
+        message = {
+            "order_id": order_data.get("order_id"),
+            "seq_no": 1,
+            "command": "assemble",
+            "issue_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "priority": order_data.get("priority", "3"),
+            "final_product_type": order_data.get("product_type"),
+            "configuration": order_data.get("configuration"),
+            "shell_instances": order_data.get("shell_instances"),
+        }
+        
+        with mqtt_lock:
+            mqtt_client.publish(topic, json.dumps(message), qos=1)
+        
+        print(f"Published assembly order {order_data.get('order_id')} to {topic}")
+    except Exception as e:
+        print(f"Error publishing MQTT message: {e}")
 
 
 # =============================================================================
@@ -354,6 +425,7 @@ def assembly_step3(order_id: str):
 def assemble_all(order_id: str):
     """
     Run all 3 assembly steps in sequence.
+    Also publishes the assembly order over MQTT to all resources.
 
     Optional body (same as combining step1/2/3 bodies):
       {
@@ -372,6 +444,12 @@ def assemble_all(order_id: str):
             fuse_instance_ids=body.get("fuse_instance_ids"),
             top_cover_instance_id=body.get("top_cover_instance_id"),
         )
+        
+        # Publish assembly order over MQTT
+        order_data = _get_order_row(order_id)
+        if order_data:
+            _publish_assembly_order(order_data)
+        
         return jsonify({"order_id": order_id, "status": "assembled", **result}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 422
@@ -432,5 +510,8 @@ if __name__ == "__main__":
     print(f"  Inventory DB : {DB_PATH}")
     print(f"  JSON base    : {AAS_FILES_BASE}")
     print(f"  Listening on : http://127.0.0.1:{args.port}\n")
+
+    # Initialize MQTT client
+    _init_mqtt()
 
     app.run(port=args.port, debug=args.debug)

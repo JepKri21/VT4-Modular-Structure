@@ -87,7 +87,7 @@
       "idShort": "Instance_Number",
       "valueType": "xs:string",
       "value": "",
-      "description": [{"language": "en", "text": "Filled in at instance creation"}]
+      "description": [{"language": "en", "text": "Filled in at instance creation (instance token)"}]
     },
     {
       "modelType": "Property",
