@@ -21,15 +21,6 @@
       "keys": [
         {
           "type": "Submodel",
-          "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover/Type/Bill_Of_Processes"
-        }
-      ]
-    },
-    {
-      "type": "ModelReference",
-      "keys": [
-        {
-          "type": "Submodel",
           "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover/Type/Properties"
         }           
       ]

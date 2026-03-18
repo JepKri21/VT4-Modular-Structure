@@ -35,7 +35,7 @@ ASSET_REGISTRY: Dict[str, Dict[str, Any]] = {
         "instance_submodels_dir": "JSON_Submodels/Product_Submodels_JSON/Instances/Component_Instance_Submodels",
         "instance_file_prefix": "Product-Component-AAU-Bottom_Cover",
         "registry_key": "Bottom_Cover",
-        "submodels": ["Properties", "Documentation", "Bill_Of_Processes"],
+        "submodels": ["Properties", "Documentation"],
         "properties_config_map": {
             "Material": "bottom_cover_material",
             "Color": "bottom_cover_color",
@@ -51,7 +51,7 @@ ASSET_REGISTRY: Dict[str, Dict[str, Any]] = {
         "instance_submodels_dir": "JSON_Submodels/Product_Submodels_JSON/Instances/Component_Instance_Submodels",
         "instance_file_prefix": "Product-Component-AAU-Top_Cover",
         "registry_key": "Top_Cover",
-        "submodels": ["Properties", "Documentation", "Bill_Of_Processes"],
+        "submodels": ["Properties", "Documentation"],
         "properties_config_map": {
             "Material": "top_cover_material",
             "Color": "top_cover_color",
@@ -67,7 +67,7 @@ ASSET_REGISTRY: Dict[str, Dict[str, Any]] = {
         "instance_submodels_dir": "JSON_Submodels/Product_Submodels_JSON/Instances/Component_Instance_Submodels",
         "instance_file_prefix": "Product-Component-AAU-PCB",
         "registry_key": "PCB",
-        "submodels": ["Properties", "Documentation", "Bill_Of_Processes"],
+        "submodels": ["Properties", "Documentation"],
         "properties_config_map": {},
     },
     "Fuse": {
@@ -79,12 +79,14 @@ ASSET_REGISTRY: Dict[str, Dict[str, Any]] = {
         "instance_submodels_dir": "JSON_Submodels/Product_Submodels_JSON/Instances/Component_Instance_Submodels",
         "instance_file_prefix": "Product-Component-AAU-Fuse",
         "registry_key": "Fuse",
-        "submodels": ["Properties", "Documentation", "Bill_Of_Processes"],
+        "submodels": ["Properties", "Documentation"],
         "properties_config_map": {},
         # How many of this component to reserve per order (driven by a config field).
         "quantity_config_key": "number_of_fuses",
         # Output key name in _get_available_options() for the count options.
         "options_count_key": "fuse_counts",
+        # Asset key of the parent BOM that contains this component's slot (used to read Quantity_Max).
+        "parent_bom_key": "Bottom_Cover-PCB-Fuse",
     },
     "Bottom_Cover-PCB-Fuse": {
         "is_component": False,

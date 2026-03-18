@@ -211,6 +211,35 @@ def _parse_instance_number(filename: str) -> str:
     return parts[1] if len(parts) >= 3 else "000"
 
 
+def _shell_id_from_doc_file(base_path: Path, rel_dir: str, filename: str) -> str:
+    """
+    Resolve shell ID for an instance documentation file.
+
+    Inventory sync scans Documentation submodels; this helper maps each
+    documentation file back to its shell JSON and returns shell['id'].
+    """
+    instance_num = _parse_instance_number(filename)
+    for cfg in ASSET_REGISTRY.values():
+        if cfg.get("instance_submodels_dir") != rel_dir:
+            continue
+        prefix = cfg.get("instance_file_prefix", "")
+        if not prefix or not filename.startswith(f"{prefix}-"):
+            continue
+
+        shell_path = (
+            base_path
+            / cfg["instance_shell_dir"]
+            / f"{prefix}-{instance_num}.json"
+        )
+        if not shell_path.exists():
+            return ""
+        with open(shell_path, encoding="utf-8") as sf:
+            shell = json.load(sf)
+        return str(shell.get("id", "") or "")
+
+    return ""
+
+
 # =============================================================================
 # V4 Reservation helpers
 # =============================================================================
@@ -296,7 +325,7 @@ def _collect_instances(base_path: Path) -> List[Dict[str, Any]]:
             instance_num   = _get_prop(elements, "Instance_Number")
             product_name   = _get_prop(elements, "Product_Name")
             created_date   = _get_prop(elements, "Created_Date")
-            instance_id    = doc.get("id", "")
+            instance_id    = _shell_id_from_doc_file(base_path, rel_dir, filename) or doc.get("id", "")
             component_type = _parse_component_type(filename)
 
             if not model_number:

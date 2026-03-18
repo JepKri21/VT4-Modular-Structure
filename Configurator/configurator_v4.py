@@ -355,7 +355,7 @@ class TelefonConfiguratorV4:
             "Finish": "finish",
         }
 
-        available: Dict[str, Any] = {}
+        available: Dict[str, Any] = {"quantity_fields": []}
 
         # --- Parse template for allowed options ---
         template = self._config_template
@@ -378,10 +378,23 @@ class TelefonConfiguratorV4:
                             field = prop.get("idShort").replace("Available_", "").lower()  # e.g. material
                             allowed[field] = set()
                             for opt in prop.get("value", []):
-                                # Try to get the value for this field
-                                for opt_prop in opt.get("value", []):
-                                    if opt_prop.get("idShort") == f"{field.capitalize()}_ID":
-                                        allowed[field].add(opt_prop.get("value"))
+                                # Support both old structured option entries and
+                                # newer plain string entries.
+                                if isinstance(opt, str):
+                                    allowed[field].add(opt)
+                                    continue
+
+                                if isinstance(opt, dict):
+                                    # Case A: direct property-like object
+                                    if opt.get("idShort") == f"{field.capitalize()}_ID" and opt.get("value") not in (None, ""):
+                                        allowed[field].add(opt.get("value"))
+
+                                    # Case B: collection wrapper with nested properties
+                                    for opt_prop in opt.get("value", []):
+                                        if isinstance(opt_prop, dict) and opt_prop.get("idShort") == f"{field.capitalize()}_ID":
+                                            val = opt_prop.get("value")
+                                            if val not in (None, ""):
+                                                allowed[field].add(val)
                     if comp_type and allowed:
                         allowed_options[comp_type] = allowed
 
@@ -400,7 +413,35 @@ class TelefonConfiguratorV4:
                     (asset_key,),
                 ).fetchone()
                 total = int(row["total"]) if row and row["total"] else 0
-                available[options_count_key] = {n: total for n in range(1, min(total + 1, 6))}
+                # Read Quantity_Max from the type BOM slot so the cap stays in sync with the AAS data.
+                max_qty = total  # fallback: no cap beyond stock
+                parent_bom_key = asset_cfg.get("parent_bom_key")
+                if parent_bom_key:
+                    try:
+                        parent_bom = self._load_type_submodel(parent_bom_key, "Bill_Of_Materials")
+                        for _elem in parent_bom.get("submodelElements", []):
+                            if _elem.get("idShort") != "Components":
+                                continue
+                            for _slot in _elem.get("value", []):
+                                _slot_key = self._component_type_to_asset_key(
+                                    self._slot_component_type(_slot)
+                                )
+                                if _slot_key == asset_key:
+                                    raw = self._slot_property_value(_slot, "Quantity_Max")
+                                    if raw not in (None, ""):
+                                        max_qty = int(raw)
+                                    break
+                    except Exception:
+                        pass  # keep fallback
+                count_options = {n: total for n in range(1, min(total, max_qty) + 1)}
+                available[options_count_key] = count_options
+                available["quantity_fields"].append({
+                    "asset_key": asset_key,
+                    "label": asset_key.replace("_", " ").replace("-", " "),
+                    "config_key": qty_cfg_key,
+                    "options_key": options_count_key,
+                    "options": count_options,
+                })
                 continue
 
             # --- Attribute-option component (e.g. Bottom_Cover, Top_Cover) ---
@@ -526,7 +567,8 @@ class TelefonConfiguratorV4:
         return self._slot_property_value(slot, "Component_Type") or ""
 
     def _slot_quantity(self, slot: Dict[str, Any], child_key: Optional[str], config: Dict[str, Any]) -> int:
-        for key in ("Selected_Quantity", "Quantity", "Quantity_Min"):
+        # Instance-level explicit quantities win.
+        for key in ("Selected_Quantity", "Quantity"):
             raw = self._slot_property_value(slot, key)
             if raw not in (None, ""):
                 try:
@@ -534,14 +576,37 @@ class TelefonConfiguratorV4:
                 except (TypeError, ValueError):
                     pass
 
+        qty_min = None
+        qty_max = None
+        raw_min = self._slot_property_value(slot, "Quantity_Min")
+        raw_max = self._slot_property_value(slot, "Quantity_Max")
+        try:
+            if raw_min not in (None, ""):
+                qty_min = max(0, int(raw_min))
+        except (TypeError, ValueError):
+            qty_min = None
+        try:
+            if raw_max not in (None, ""):
+                qty_max = max(0, int(raw_max))
+        except (TypeError, ValueError):
+            qty_max = None
+
         if child_key:
             qty_cfg = ASSET_REGISTRY.get(child_key, {}).get("quantity_config_key")
             if qty_cfg:
                 flat = self._flatten_config(config)
                 try:
-                    return max(0, int(flat.get(qty_cfg, 1)))
+                    qty = max(0, int(flat.get(qty_cfg, qty_min if qty_min is not None else 1)))
+                    if qty_min is not None:
+                        qty = max(qty_min, qty)
+                    if qty_max is not None:
+                        qty = min(qty_max, qty)
+                    return qty
                 except (TypeError, ValueError):
-                    return 1
+                    pass
+
+        if qty_min is not None:
+            return qty_min
 
         return 1
 
@@ -697,92 +762,181 @@ class TelefonConfiguratorV4:
                     prop["value"] = static_map[id_short]
         return submodel
 
-    def _add_empty_instance_refs_to_bom(self, bom_submodel: Dict, n_fuses: int = 1) -> Dict:
+    def _expand_assembly_processes_in_bop(self, bop_submodel: Dict, config: Dict[str, Any]) -> Dict:
         """
-        Walk the BOM Components list and add Instance_Reference: '' to each slot.
-        For the Fuse slot, Instance_Reference_1..N are added based on n_fuses.
-        These are the placeholders that get filled during the assembly phase.
+        Expand assembly processes in Bill_Of_Processes based on component quantities.
+        
+        Reads the 'Repeatable_Component' metadata from the type template to determine
+        which component drives process repetition. Creates additional assembly processes
+        for each indexed instance beyond the first (e.g., Fuse_2, Fuse_3, etc.).
+        
+        Pattern:
+        - Assemble_1: base assembly (includes first instance: Fuse_1)
+        - Assemble_2, Assemble_3, ...: additional processes for extra instances
+        """
+        expanded_processes = []
+        process_counter = 1
+
+        for elem in bop_submodel.get("submodelElements", []):
+            if elem.get("modelType") != "SubmodelElementCollection":
+                expanded_processes.append(elem)
+                continue
+
+            # This is an assembly process (e.g., Assemble_1)
+            base_process = copy.deepcopy(elem)
+
+            # Extract Repeatable_Component metadata if present
+            repeatable_component = None
+            for sub in base_process.get("value", []):
+                if sub.get("idShort") == "Repeatable_Component":
+                    repeatable_component = sub.get("value", "")
+                    break
+
+            # Extract required components from the base process
+            base_components = []
+            for sub in base_process.get("value", []):
+                if sub.get("idShort") == "Required_Components":
+                    base_components = [
+                        prop.get("value", "")
+                        for prop in sub.get("value", [])
+                        if prop.get("idShort", "").startswith("Component_Id_")
+                    ]
+                    break
+
+            # If Repeatable_Component is specified, use it; otherwise auto-detect
+            quantifiable_components = {}
+            if repeatable_component:
+                # Explicit mode: only expand for the specified component
+                try:
+                    child_key = self._component_type_to_asset_key(repeatable_component)
+                    qty = self._slot_quantity(
+                        {"idShort": repeatable_component, "value": [{"idShort": "Component_Type", "value": repeatable_component}]},
+                        child_key,
+                        config,
+                    )
+                    if qty > 1:
+                        quantifiable_components[repeatable_component] = qty
+                except (KeyError, TypeError):
+                    pass
+            else:
+                # Auto-detect mode: find all components with qty > 1
+                for comp_ref in base_components:
+                    comp_type_match = re.match(r"^([A-Za-z_-]+?)(?:_\d+)?$", comp_ref)
+                    if comp_type_match:
+                        comp_type = comp_type_match.group(1)
+                        try:
+                            child_key = self._component_type_to_asset_key(comp_type)
+                            qty = self._slot_quantity(
+                                {"idShort": comp_type, "value": [{"idShort": "Component_Type", "value": comp_type}]},
+                                child_key,
+                                config,
+                            )
+                            if qty > 1:
+                                quantifiable_components[comp_type] = qty
+                        except (KeyError, TypeError):
+                            pass
+
+            # Add the base process
+            base_process_id = base_process.get("idShort", f"Assemble_{process_counter}")
+            base_process["idShort"] = base_process_id
+            expanded_processes.append(base_process)
+            process_counter += 1
+
+            # For each quantifiable component, create additional processes (starting from 2nd instance)
+            for comp_type, qty in quantifiable_components.items():
+                for idx in range(2, qty + 1):
+                    # Create new assembly process for this specific instance (Fuse_2, Fuse_3, etc.)
+                    new_process = copy.deepcopy(elem)
+                    new_process["idShort"] = f"Assemble_{process_counter}"
+
+                    # Update Required_Components to reference the indexed instance
+                    for sub in new_process.get("value", []):
+                        if sub.get("idShort") == "Required_Components":
+                            component_props = sub.get("value", [])
+                            for i, prop in enumerate(component_props):
+                                if prop.get("idShort", "").startswith("Component_Id_"):
+                                    current_value = prop.get("value", "")
+                                    # Replace component reference with indexed version
+                                    if current_value.startswith(comp_type):
+                                        prop["value"] = f"{comp_type}_{idx}"
+                            break
+
+                    expanded_processes.append(new_process)
+                    process_counter += 1
+
+        # Clean up: remove Repeatable_Component metadata from instances (it's only needed in type templates)
+        for elem in expanded_processes:
+            if elem.get("modelType") == "SubmodelElementCollection":
+                # Remove Repeatable_Component property from the process
+                elem["value"] = [
+                    sub for sub in elem.get("value", [])
+                    if sub.get("idShort") != "Repeatable_Component"
+                ]
+
+        bop_submodel["submodelElements"] = expanded_processes
+        return bop_submodel
+
+    def _add_empty_instance_refs_to_bom(self, bom_submodel: Dict, config: Dict[str, Any]) -> Dict:
+        """
+        Build a production-ready instance BOM:
+        - Components container as SubmodelElementCollection
+        - component slots expanded to indexed entries (<idShort>_1..<idShort>_N)
+        - each slot keeps only Component_Type + Instance_Refference
         """
         for elem in bom_submodel.get("submodelElements", []):
             if elem.get("idShort") != "Components":
                 continue
+
+            # Instance BOM should be a plain collection, not a typed template list.
+            elem["modelType"] = "SubmodelElementCollection"
+            for key in ("typeValueListElement", "valueTypeListElement", "orderRelevant"):
+                if key in elem:
+                    del elem[key]
+
+            expanded_slots = []
             for slot in elem.get("value", []):
-                slot_props = slot.setdefault("value", [])
                 slot_id = slot.get("idShort", "")
                 comp_type = self._slot_component_type(slot)
                 child_key = self._component_type_to_asset_key(comp_type)
+                qty = self._slot_quantity(slot, child_key, config)
 
-                if slot_id == "Fuse" or child_key == "Fuse" or comp_type == "Product-Component-AAU-Fuse":
-                    # Replace Quantity_Min/Max with the concrete Quantity for this instance
-                    slot_props[:] = [
-                        p for p in slot_props
-                        if p.get("idShort") not in ("Quantity_Min", "Quantity_Max")
-                    ]
-                    if not any(p.get("idShort") == "Quantity" for p in slot_props):
-                        # Insert Quantity right after Component_Type
-                        insert_at = next(
-                            (i + 1 for i, p in enumerate(slot_props) if p.get("idShort") == "Component_Type"),
-                            len(slot_props),
-                        )
-                        slot_props.insert(insert_at, {
-                            "modelType": "Property",
-                            "idShort": "Quantity",
-                            "valueType": "xs:integer",
-                            "value": str(n_fuses),
-                            "description": [{"language": "en", "text": "Number of fuses required for this specific instance."}],
-                        })
-                    else:
-                        # Update existing Quantity if already present
-                        for p in slot_props:
-                            if p.get("idShort") == "Quantity":
-                                p["value"] = str(n_fuses)
+                # If already explicitly split in template (e.g. Screw_1), keep as-is.
+                is_already_split = bool(re.match(r"^.+_\d+$", slot_id))
+                split_count = max(1, qty)
 
-                    selected_qty = next((p for p in slot_props if p.get("idShort") == "Selected_Quantity"), None)
-                    if selected_qty:
-                        selected_qty["value"] = str(n_fuses)
-                    else:
-                        slot_props.append({
-                            "modelType": "Property",
-                            "idShort": "Selected_Quantity",
-                            "valueType": "xs:integer",
-                            "value": str(n_fuses),
-                        })
-
-                    refs_list = next((p for p in slot_props if p.get("idShort") == "Instance_References"), None)
-                    if refs_list and refs_list.get("modelType") == "SubmodelElementList":
-                        refs_list["typeValueListElement"] = "Property"
-                        refs_list["valueTypeListElement"] = "xs:string"
-                        refs_list["orderRelevant"] = False
-                        refs_list["value"] = [
+                for i in range(1, split_count + 1):
+                    expanded_slot = {
+                        "modelType": "SubmodelElementCollection",
+                        "idShort": slot_id if is_already_split else f"{slot_id}_{i}",
+                        "value": [
                             {
                                 "modelType": "Property",
-                                "idShort": "Fuse_Ref",
+                                "idShort": "Component_Type",
                                 "valueType": "xs:string",
-                                "value": "",
-                            }
-                            for _ in range(n_fuses)
-                        ]
-                    else:
-                        # Legacy fallback: Instance_Reference_1..N
-                        slot_props[:] = [p for p in slot_props if not p.get("idShort", "").startswith("Instance_Reference_")]
-                        for i in range(1, n_fuses + 1):
-                            slot_props.append({
+                                "value": comp_type,
+                            },
+                            {
                                 "modelType": "Property",
-                                "idShort": f"Instance_Reference_{i}",
+                                "idShort": "Instance_Refference",
                                 "valueType": "xs:string",
                                 "value": "",
-                                "description": [{"language": "en", "text": f"AAS ID of fuse instance #{i} used during assembly. Filled during production."}],
-                            })
-                else:
-                    has_ref = any(p.get("idShort") in ("Instance_Reference", "Instance_Refference") for p in slot_props)
-                    if not has_ref:
-                        slot_props.append({
-                            "modelType": "Property",
-                            "idShort": "Instance_Reference",
-                            "valueType": "xs:string",
-                            "value": "",
-                            "description": [{"language": "en", "text": "AAS ID of the physical instance used during assembly. Filled during production."}],
-                        })
+                            },
+                        ],
+                    }
+
+                    # Preserve non-configurator metadata at slot level when present.
+                    if slot.get("semanticId"):
+                        expanded_slot["semanticId"] = copy.deepcopy(slot.get("semanticId"))
+                    if slot.get("description"):
+                        expanded_slot["description"] = copy.deepcopy(slot.get("description"))
+
+                    expanded_slots.append(expanded_slot)
+
+                    # Already-split template slots represent one concrete unit.
+                    if is_already_split:
+                        break
+
+            elem["value"] = expanded_slots
         return bom_submodel
 
     def _get_next_instance_num(self, asset_key: str) -> str:
@@ -815,8 +969,6 @@ class TelefonConfiguratorV4:
         Returns the instance AAS ID.
         """
         cfg = ASSET_REGISTRY[asset_key]
-        n_fuses = config.get("number_of_fuses", 1)
-
         # Shell
         shell = self._type_to_instance(
             copy.deepcopy(self._load_type_shell(asset_key)), instance_num
@@ -844,7 +996,10 @@ class TelefonConfiguratorV4:
                     sm = self._add_order_reference(sm, order_id)
 
             elif sm_name == "Bill_Of_Materials":
-                sm = self._add_empty_instance_refs_to_bom(sm, n_fuses=n_fuses)
+                sm = self._add_empty_instance_refs_to_bom(sm, config=config)
+
+            elif sm_name == "Bill_Of_Processes":
+                sm = self._expand_assembly_processes_in_bop(sm, config=config)
 
             elif sm_name == "Properties":
                 sm = self._patch_properties(sm, asset_key, config)

@@ -152,8 +152,8 @@
             },
             {
               "modelType": "SubmodelElementCollection",
-              "idShort": "PCB_With_Fuse",
-              "description": [{"language": "en", "text": "PCB with fuses sub-assembly instance used"}],
+              "idShort": "Bottom_Cover_PCB_Fuse",
+              "description": [{"language": "en", "text": "Bottom_Cover-PCB-Fuse sub-assembly instance used"}],
               "value": [
                 {"modelType": "Property", "idShort": "instance_id", "valueType": "xs:string", "value": ""},
                 {"modelType": "Property", "idShort": "instance_number", "valueType": "xs:string", "value": ""},
@@ -162,8 +162,8 @@
             },
             {
               "modelType": "SubmodelElementCollection",
-              "idShort": "Housing_With_PCB",
-              "description": [{"language": "en", "text": "Housing with PCB sub-assembly instance used"}],
+              "idShort": "Bottom_Cover_PCB",
+              "description": [{"language": "en", "text": "Bottom_Cover-PCB sub-assembly instance used"}],
               "value": [
                 {"modelType": "Property", "idShort": "instance_id", "valueType": "xs:string", "value": ""},
                 {"modelType": "Property", "idShort": "instance_number", "valueType": "xs:string", "value": ""},

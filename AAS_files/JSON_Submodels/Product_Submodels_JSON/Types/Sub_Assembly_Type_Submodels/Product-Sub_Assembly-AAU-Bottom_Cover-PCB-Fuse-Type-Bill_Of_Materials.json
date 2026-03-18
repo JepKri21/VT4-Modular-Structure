@@ -24,11 +24,17 @@
               "modelType": "Property",
               "idShort": "Component_Type",
               "valueType": "xs:string",
-              "value": "Product-Sub_Assembly-AAU-Bottom_Cover-PCB"
+              "value": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB"
             },
             {
               "modelType": "Property",
-              "idShort": "Quantity",
+              "idShort": "Quantity_Min",
+              "valueType": "xs:integer",
+              "value": "1"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Quantity_Max",
               "valueType": "xs:integer",
               "value": "1"
             },
@@ -44,7 +50,7 @@
               "description": [{"language": "en", "text": "AAS ID of the physical instance used during assembly. Filled during production."}],              
               "valueType": "xs:string",
               "value": ""
-             }
+            }
           ]
         },
         {
@@ -57,7 +63,7 @@
               "modelType": "Property",
               "idShort": "Component_Type",
               "valueType": "xs:string",
-              "value": "Product-Component-AAU-Fuse"
+              "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Fuse"
             },
             {
               "modelType": "Property",
@@ -80,24 +86,11 @@
             },
             {
               "modelType": "Property",
-              "idShort": "Selected_Quantity",
-              "valueType": "xs:integer",
-              "value": "2"
-            },
-            {
-              "modelType": "SubmodelElementList",
-              "idShort": "Instance_References",
-              "description": [{"language": "en", "text": "List of AAS IDs of the physical fuse instances used during assembly. Filled during production."}],
-              "typeValueListElement": "Property",
-              "valueTypeListElement": "xs:string",
-              "orderRelevant": false,
-              "value": [
-                { "modelType": "Property", "idShort": "Fuse_Ref", "valueType": "xs:string", "value": "AAS_ID_FUSE_001" },
-                { "modelType": "Property", "idShort": "Fuse_Ref", "valueType": "xs:string", "value": "AAS_ID_FUSE_002" }
-              ]
-            }
-          
-
+              "idShort": "Instance_Refference",
+              "description": [{"language": "en", "text": "AAS ID of the physical instance used during assembly. Filled during production."}],              
+              "valueType": "xs:string",
+              "value": ""
+            }        
           ]
         }
       ]

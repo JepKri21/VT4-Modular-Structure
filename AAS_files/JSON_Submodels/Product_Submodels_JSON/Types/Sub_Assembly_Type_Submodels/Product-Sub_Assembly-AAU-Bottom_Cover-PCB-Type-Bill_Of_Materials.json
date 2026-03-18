@@ -24,11 +24,17 @@
               "modelType": "Property",
               "idShort": "Component_Type",
               "valueType": "xs:string",
-              "value": "Product-Component-AAU-Bottom_Cover"
+              "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover"
             },
             {
               "modelType": "Property",
-              "idShort": "Quantity",
+              "idShort": "Quantity_Min",
+              "valueType": "xs:integer",
+              "value": "1"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Quantity_Max",
               "valueType": "xs:integer",
               "value": "1"
             },
@@ -57,17 +63,23 @@
               "modelType": "Property",
               "idShort": "Component_Type",
               "valueType": "xs:string",
-              "value": "Product-Component-AAU-PCB"
+              "value": "https://aausmartlab.com/Assets/Product/Component/AAU/PCB"
             },
             {
               "modelType": "Property",
-              "idShort": "Quantity",
+              "idShort": "Quantity_Min",
               "valueType": "xs:integer",
               "value": "1"
             },
             {
               "modelType": "Property",
-              "idShort": "Not_Configurable",
+              "idShort": "Quantity_Max",
+              "valueType": "xs:integer",
+              "value": "1"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Is_Configurable",
               "valueType": "xs:boolean",
               "value": "False",
               "description": [{"language": "en", "text": "This component is not configurable since it is a specific PCB design for the bottom cover sub-assembly"}]

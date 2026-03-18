@@ -22,6 +22,7 @@ assemble_all().
 import json
 import sqlite3
 import base64
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -200,6 +201,22 @@ class AssemblyManagerV4:
             / f"{cfg['instance_file_prefix']}-{instance_num}-Documentation.json"
         )
 
+    def _shell_path(self, asset_key: str, instance_num: str) -> Path:
+        cfg = ASSET_REGISTRY[asset_key]
+        return (
+            self.base_path
+            / cfg["instance_shell_dir"]
+            / f"{cfg['instance_file_prefix']}-{instance_num}.json"
+        )
+
+    def _instance_id_from_shell(self, asset_key: str, instance_num: str) -> str:
+        shell_path = self._shell_path(asset_key, instance_num)
+        if not shell_path.exists():
+            return ""
+        with open(shell_path, encoding="utf-8") as f:
+            shell = json.load(f)
+        return str(shell.get("id", "") or "")
+
     @staticmethod
     def _child_collection(parent: Dict[str, Any], id_short: str) -> Optional[Dict[str, Any]]:
         for child in parent.get("value", []):
@@ -215,6 +232,22 @@ class AssemblyManagerV4:
                 return True
         return False
 
+    @staticmethod
+    def _normalize_instance_ref_id(ref_id: str) -> str:
+        """Convert submodel IDs to shell IDs when needed."""
+        value = (ref_id or "").strip()
+        if not value:
+            return ""
+        parts = value.rstrip("/").split("/")
+        if parts and parts[-1] in {
+            "Documentation",
+            "Properties",
+            "Bill_Of_Materials",
+            "Bill_Of_Processes",
+        }:
+            return "/".join(parts[:-1])
+        return value
+
     def _model_number_from_doc(self, asset_key: str, instance_num: str) -> str:
         doc_path = self._documentation_path(asset_key, instance_num)
         if not doc_path.exists():
@@ -226,15 +259,19 @@ class AssemblyManagerV4:
                 return str(elem.get("value", "") or "")
         return ""
 
-    def _update_telefon_traceability(
+    def _update_asset_traceability(
         self,
+        asset_key: str,
+        instance_num: str,
         order_id: str,
-        telefon_num: str,
         used_updates: Dict[str, Dict[str, str]],
         assembly_date: str,
     ) -> None:
-        """Patch Telefon Documentation Assembly_Traceability and upload it to server."""
-        doc_path = self._documentation_path("Telefon", telefon_num)
+        """
+        Generalized traceability update for any asset (Telefon, Bottom_Cover-PCB, Bottom_Cover-PCB-Fuse).
+        Patches Documentation Assembly_Traceability and uploads to server.
+        """
+        doc_path = self._documentation_path(asset_key, instance_num)
         if not doc_path.exists():
             return
 
@@ -257,15 +294,35 @@ class AssemblyManagerV4:
                 slot = self._child_collection(used, slot_id)
                 if not slot:
                     continue
-                self._set_prop_value(slot, "instance_id", payload.get("instance_id", ""))
+                self._set_prop_value(
+                    slot,
+                    "instance_id",
+                    self._normalize_instance_ref_id(payload.get("instance_id", "")),
+                )
                 self._set_prop_value(slot, "instance_number", payload.get("instance_number", ""))
                 self._set_prop_value(slot, "model_number", payload.get("model_number", ""))
 
         with open(doc_path, "w", encoding="utf-8") as f:
             json.dump(doc, f, indent=2, ensure_ascii=False)
 
-        print(f"  [OK] Patched Telefon Documentation traceability ({doc_path.name})")
+        print(f"  [OK] Patched {asset_key} Documentation traceability ({doc_path.name})")
         self._update_submodel_on_server(doc_path)
+
+    def _update_telefon_traceability(
+        self,
+        order_id: str,
+        telefon_num: str,
+        used_updates: Dict[str, Dict[str, str]],
+        assembly_date: str,
+    ) -> None:
+        """Backward-compatible wrapper for Telefon traceability updates."""
+        self._update_asset_traceability(
+            asset_key="Telefon",
+            instance_num=telefon_num,
+            order_id=order_id,
+            used_updates=used_updates,
+            assembly_date=assembly_date,
+        )
 
     @staticmethod
     def _normalize_token(value: str) -> str:
@@ -297,13 +354,36 @@ class AssemblyManagerV4:
         comp_type = self._slot_component_type(slot)
         asset_key = self._component_type_to_asset_key(comp_type)
 
-        candidates = [slot_id, comp_type]
+        # 1) Exact slot id wins (e.g. Fuse_2)
+        if slot_id in slot_updates:
+            return slot_updates[slot_id]
+
+        # 2) For split slots like Fuse_1..N, map base list update to one entry.
+        m = re.match(r"^(.*)_(\d+)$", slot_id)
+        if m:
+            base_key = m.group(1)
+            idx = int(m.group(2)) - 1
+            base_update = slot_updates.get(base_key)
+            if isinstance(base_update, list):
+                if 0 <= idx < len(base_update):
+                    return base_update[idx]
+                return None
+
+        # 3) Fall back to Component_Type / resolved asset key aliases.
+        candidates = [comp_type]
         if asset_key:
             candidates.append(asset_key)
 
         for key in candidates:
-            if key in slot_updates:
-                return slot_updates[key]
+            if key not in slot_updates:
+                continue
+            value = slot_updates[key]
+            if m and isinstance(value, list):
+                idx = int(m.group(2)) - 1
+                if 0 <= idx < len(value):
+                    return value[idx]
+                return None
+            return value
         return None
 
     def _patch_bom(
@@ -335,10 +415,25 @@ class AssemblyManagerV4:
                 slot_props = slot.setdefault("value", [])
 
                 if isinstance(update, list):
-                    # Preferred format: Instance_References list with Fuse_Ref entries.
+                    normalized_refs = [self._normalize_instance_ref_id(ref_id) for ref_id in update]
+
+                    # Preferred format: concrete Components list with Fuse_1..N entries.
+                    components_list = self._slot_property(slot, "Components")
+                    if components_list and components_list.get("modelType") == "SubmodelElementList":
+                        components_list["value"] = [
+                            {
+                                "modelType": "Property",
+                                "idShort": f"Fuse_{i}",
+                                "valueType": "xs:string",
+                                "value": ref_id,
+                            }
+                            for i, ref_id in enumerate(normalized_refs, 1)
+                        ]
+
+                    # Compatibility format: Instance_References list with Fuse_Ref entries.
                     selected_qty = self._slot_property(slot, "Selected_Quantity")
                     if selected_qty:
-                        selected_qty["value"] = str(len(update))
+                        selected_qty["value"] = str(len(normalized_refs))
 
                     refs_list = self._slot_property(slot, "Instance_References")
                     if refs_list and refs_list.get("modelType") == "SubmodelElementList":
@@ -349,12 +444,12 @@ class AssemblyManagerV4:
                                 "valueType": "xs:string",
                                 "value": ref_id,
                             }
-                            for ref_id in update
+                            for ref_id in normalized_refs
                         ]
                     else:
                         # Legacy fallback: Instance_Reference_1..N
                         slot_props[:] = [p for p in slot_props if not p.get("idShort", "").startswith("Instance_Reference_")]
-                        for i, ref_id in enumerate(update, 1):
+                        for i, ref_id in enumerate(normalized_refs, 1):
                             slot_props.append({
                                 "modelType": "Property",
                                 "idShort": f"Instance_Reference_{i}",
@@ -363,18 +458,19 @@ class AssemblyManagerV4:
                                 "description": [{"language": "en", "text": f"AAS ID of fuse instance #{i} used"}],
                             })
                 else:
+                    normalized_ref = self._normalize_instance_ref_id(update)
                     existing = next(
                         (p for p in slot_props if p.get("idShort") in ("Instance_Reference", "Instance_Refference")),
                         None,
                     )
                     if existing:
-                        existing["value"] = update
+                        existing["value"] = normalized_ref
                     else:
                         slot_props.append({
                             "modelType": "Property",
                             "idShort": "Instance_Reference",
                             "valueType": "xs:string",
-                            "value": update,
+                            "value": normalized_ref,
                             "description": [{"language": "en", "text": "AAS ID of the physical instance used"}],
                         })
 
@@ -405,7 +501,10 @@ class AssemblyManagerV4:
         elements = doc.get("submodelElements", [])
         model_number = next((e.get("value") for e in elements if e.get("idShort") == "Model_Number"), "")
         product_name = next((e.get("value") for e in elements if e.get("idShort") == "Product_Name"), None)
-        instance_id  = doc.get("id", "")
+        instance_id = self._instance_id_from_shell(asset_key, instance_num)
+        if not instance_id:
+            # Backward-compatible fallback when shell file is missing.
+            instance_id = doc.get("id", "")
 
         conn.execute("""
             INSERT INTO inventory_items (
@@ -436,7 +535,10 @@ class AssemblyManagerV4:
         elements = doc.get("submodelElements", [])
         model_number = next((e.get("value") for e in elements if e.get("idShort") == "Model_Number"), "")
         product_name = next((e.get("value") for e in elements if e.get("idShort") == "Product_Name"), None)
-        instance_id  = doc.get("id", "")
+        instance_id = self._instance_id_from_shell("Telefon", instance_num)
+        if not instance_id:
+            # Backward-compatible fallback when shell file is missing.
+            instance_id = doc.get("id", "")
 
         material = color = finish = None
         nr_fuses = None
@@ -606,6 +708,26 @@ class AssemblyManagerV4:
             print(f"  [OK] Patched Bottom_Cover-PCB BOM ({bom_path.name})")
             self._update_submodel_on_server(bom_path)
 
+        # Update Bottom_Cover-PCB traceability
+        self._update_asset_traceability(
+            asset_key="Bottom_Cover-PCB",
+            instance_num=hwp_num,
+            order_id=order_id,
+            assembly_date=now[:10],
+            used_updates={
+                "Bottom_Cover": {
+                    "instance_id": bc["instance_id"],
+                    "instance_number": bc["instance_number"],
+                    "model_number": bc["model_number"],
+                },
+                "PCB": {
+                    "instance_id": pcb["instance_id"],
+                    "instance_number": pcb["instance_number"],
+                    "model_number": pcb["model_number"],
+                },
+            },
+        )
+
         telefon_id = shells.get("Telefon", "")
         if telefon_id:
             telefon_num = self._inst_num_from_id(telefon_id)
@@ -625,6 +747,11 @@ class AssemblyManagerV4:
                         "model_number": pcb["model_number"],
                     },
                     "Housing_With_PCB": {
+                        "instance_id": hwp_id,
+                        "instance_number": hwp_num,
+                        "model_number": self._model_number_from_doc("Bottom_Cover-PCB", hwp_num),
+                    },
+                    "Bottom_Cover_PCB": {
                         "instance_id": hwp_id,
                         "instance_number": hwp_num,
                         "model_number": self._model_number_from_doc("Bottom_Cover-PCB", hwp_num),
@@ -742,10 +869,34 @@ class AssemblyManagerV4:
             print(f"  [OK] Patched Bottom_Cover-PCB-Fuse BOM ({bom_path.name})")
             self._update_submodel_on_server(bom_path)
 
+        # Extract step1 progress data (needed for both traceability updates)
+        step1 = progress.get("step1", {})
+
+        # Update Bottom_Cover-PCB-Fuse traceability
+        fuse_updates = {
+            "PCB": {
+                "instance_id": step1.get("pcb", {}).get("instance_id", ""),
+                "instance_number": step1.get("pcb", {}).get("instance_number", ""),
+                "model_number": model_numbers.get("PCB", ""),
+            }
+        }
+        for i, fuse in enumerate(consumed_fuses, 1):
+            fuse_updates[f"Fuse_{i}"] = {
+                "instance_id": fuse["instance_id"],
+                "instance_number": fuse["instance_number"],
+                "model_number": fuse["model_number"],
+            }
+        self._update_asset_traceability(
+            asset_key="Bottom_Cover-PCB-Fuse",
+            instance_num=pwf_num,
+            order_id=order_id,
+            assembly_date=now[:10],
+            used_updates=fuse_updates,
+        )
+
         telefon_id = shells.get("Telefon", "")
         if telefon_id:
             telefon_num = self._inst_num_from_id(telefon_id)
-            step1 = progress.get("step1", {})
             self._update_telefon_traceability(
                 order_id=order_id,
                 telefon_num=telefon_num,
@@ -767,6 +918,16 @@ class AssemblyManagerV4:
                         "model_number": self._model_number_from_doc("Bottom_Cover-PCB", hwp_num),
                     },
                     "PCB_With_Fuse": {
+                        "instance_id": pwf_id,
+                        "instance_number": pwf_num,
+                        "model_number": self._model_number_from_doc("Bottom_Cover-PCB-Fuse", pwf_num),
+                    },
+                    "Bottom_Cover_PCB": {
+                        "instance_id": hwp_id,
+                        "instance_number": hwp_num,
+                        "model_number": self._model_number_from_doc("Bottom_Cover-PCB", hwp_num),
+                    },
+                    "Bottom_Cover_PCB_Fuse": {
                         "instance_id": pwf_id,
                         "instance_number": pwf_num,
                         "model_number": self._model_number_from_doc("Bottom_Cover-PCB-Fuse", pwf_num),
@@ -906,6 +1067,16 @@ class AssemblyManagerV4:
                     "model_number": self._model_number_from_doc("Bottom_Cover-PCB", hwp_num),
                 },
                 "PCB_With_Fuse": {
+                    "instance_id": pwf_id,
+                    "instance_number": pwf_num,
+                    "model_number": self._model_number_from_doc("Bottom_Cover-PCB-Fuse", pwf_num),
+                },
+                "Bottom_Cover_PCB": {
+                    "instance_id": hwp_id,
+                    "instance_number": hwp_num,
+                    "model_number": self._model_number_from_doc("Bottom_Cover-PCB", hwp_num),
+                },
+                "Bottom_Cover_PCB_Fuse": {
                     "instance_id": pwf_id,
                     "instance_number": pwf_num,
                     "model_number": self._model_number_from_doc("Bottom_Cover-PCB-Fuse", pwf_num),

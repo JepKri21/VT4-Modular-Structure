@@ -9,7 +9,7 @@
       "modelType": "Property",
       "idShort": "Product_Name",
       "valueType": "xs:string",
-      "value": "Housing With PCB Assembly"
+      "value": "Bottom_Cover-PCB Assembly"
     },
     {
       "modelType": "Property",
@@ -54,6 +54,54 @@
       "valueType": "xs:string",
       "value": "",
       "description": [{"language": "en", "text": "Date the instance was created (YYYY-MM-DD)"}]
+    },
+    {
+      "modelType": "SubmodelElementCollection",
+      "idShort": "Assembly_Traceability",
+      "description": [{"language": "en", "text": "References to actual component instances assembled into this sub-assembly. Populated during assembly phase."}],
+      "value": [
+        {
+          "modelType": "Property",
+          "idShort": "Assembly_Date",
+          "valueType": "xs:string",
+          "value": "",
+          "description": [{"language": "en", "text": "Date assembly was completed (YYYY-MM-DD)"}]
+        },
+        {
+          "modelType": "Property",
+          "idShort": "Configuration_Order_ID",
+          "valueType": "xs:string",
+          "value": "",
+          "description": [{"language": "en", "text": "Reference to the configuration order that was assembled"}]
+        },
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Used_Components",
+          "description": [{"language": "en", "text": "References to the actual component instances used"}],
+          "value": [
+            {
+              "modelType": "SubmodelElementCollection",
+              "idShort": "Bottom_Cover",
+              "description": [{"language": "en", "text": "Bottom cover instance used"}],
+              "value": [
+                {"modelType": "Property", "idShort": "instance_id", "valueType": "xs:string", "value": ""},
+                {"modelType": "Property", "idShort": "instance_number", "valueType": "xs:string", "value": ""},
+                {"modelType": "Property", "idShort": "model_number", "valueType": "xs:string", "value": ""}
+              ]
+            },
+            {
+              "modelType": "SubmodelElementCollection",
+              "idShort": "PCB",
+              "description": [{"language": "en", "text": "PCB instance used"}],
+              "value": [
+                {"modelType": "Property", "idShort": "instance_id", "valueType": "xs:string", "value": ""},
+                {"modelType": "Property", "idShort": "instance_number", "valueType": "xs:string", "value": ""},
+                {"modelType": "Property", "idShort": "model_number", "valueType": "xs:string", "value": ""}
+              ]
+            }
+          ]
+        }
+      ]
     }
   ]
 }

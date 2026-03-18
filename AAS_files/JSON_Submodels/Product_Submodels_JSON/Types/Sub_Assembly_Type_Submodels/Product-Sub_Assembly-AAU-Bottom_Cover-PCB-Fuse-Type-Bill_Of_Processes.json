@@ -18,81 +18,60 @@
   ],
   "submodelElements": [
     {
-      "modelType": "SubmodelElementList",
-      "idShort": "List_Of_Processes",
-      "semanticId": {
-        "type": "ExternalReference",
-        "keys": [ 
-          {
-            "type": "GlobalReference",
-            "value": "https://aausmartlab.com/Submodel/Bill/List_Of_Processes"
-          }
-        ]
-      },
-      "typeValueListElement": "SubmodelElementCollection",
-      "valueTypeListElement": null,
-      "orderRelevant": true,
-      "description": [
-        {
-          "language": "en",
-          "text": "Ordered list of operations required to manufacture and assemble the product."
-        }
-      ],
+      "modelType": "SubmodelElementCollection",
+      "idShort": "Assemble_1",
       "value": [
         {
-          "modelType": "SubmodelElementCollection",
-          "idShort": "Assemble",
-          "semanticId": {
-            "type": "ExternalReference",
-            "keys": [
-              {
-                "type": "GlobalReference",
-                "value": "https://aausmartlab.com/Operations/Assemble"
-              }
-            ]
-          },
+          "modelType": "Property",
+          "idShort": "Repeatable_Component",
+          "valueType": "xs:string",
+          "value": "Fuse",
           "description": [
             {
               "language": "en",
-              "text": "List of parameters to perform Assemble process."
+              "text": "Component type that drives process repetition during instance creation"
             }
-          ],
+          ]
+        },
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Process_Constraints",
           "value": [
             {
               "modelType": "Property",
-              "idShort": "Process_Id",
+              "idShort": "Constraint_Id_1",
               "valueType": "xs:string",
-              "value": "Assemble_1"
+              "value": ""
+            }            
+          ]
+        },
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Required_Components",
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Component_Id_1",
+              "valueType": "xs:string",
+              "value": "Bottom_Cover-PCB_1"
             },
             {
-              "modelType": "SubmodelElementCollection",
-              "idShort": "Execution_Constraints",
-              "value": [
-                {
-                  "modelType": "Property",
-                  "idShort": "Constraint_Id",
-                  "valueType": "xs:string",
-                  "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Fuse"
-                },
-                {
-                  "modelType": "Property",
-                  "idShort": "Constraint_Id",
-                  "valueType": "xs:string",
-                  "value": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB"
-                }
-              ]
-            },
+              "modelType": "Property",
+              "idShort": "Component_Id_2",
+              "valueType": "xs:string",
+              "value": "Fuse_1"
+            }
+          ]
+        },
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Parameters",
+          "value": [
             {
-              "modelType": "SubmodelElementCollection",
-              "idShort": "Parameters",
-              "value": [
-                {
-                  "modelType": "Property",
-                  "idShort": "Selected_Operation",
-                  "valueType": "xs:string",
-                  "value": "Assemble_Bottom_Cover_PCB_With_Fuse"
-                }
-              ]
+              "modelType": "Property",
+              "idShort": "Selected_Operation",
+              "valueType": "xs:string",
+              "value": "Assemble"
             }
           ]
         }

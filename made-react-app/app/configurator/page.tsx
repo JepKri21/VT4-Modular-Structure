@@ -9,12 +9,25 @@ const selectClass =
   "border border-border rounded px-2 py-1 w-full bg-muted text-foreground hover:bg-accent focus:bg-accent disabled:opacity-40 disabled:cursor-not-allowed";
 
 type Combo = { material: string; color: string; finish: string; qty: number };
+type QuantityField = {
+  asset_key: string;
+  label: string;
+  config_key: string;
+  options_key: string;
+  options: Record<string, number>;
+};
+
+type ConfigState = {
+  Bottom_Cover: { material: string; color: string; finish: string };
+  Top_Cover: { material: string; color: string; finish: string };
+  [key: string]: any;
+};
 
 export default function ConfiguratorPage() {
   const router = useRouter();
   const [options, setOptions] = useState<any>(null);
 
-  const [config, setConfig] = useState({
+  const [config, setConfig] = useState<ConfigState>({
     Bottom_Cover: { material: "", color: "", finish: "" },
     Top_Cover:    { material: "", color: "", finish: "" },
     number_of_fuses: 1,
@@ -32,6 +45,34 @@ export default function ConfiguratorPage() {
   const configComplete =
     !!config.Bottom_Cover.material && !!config.Bottom_Cover.color && !!config.Bottom_Cover.finish &&
     !!config.Top_Cover.material   && !!config.Top_Cover.color   && !!config.Top_Cover.finish;
+
+  const quantityFields: QuantityField[] = useMemo(() => {
+    if (!options) return [];
+    if (Array.isArray(options.quantity_fields)) return options.quantity_fields as QuantityField[];
+    // Backward-compatible fallback.
+    if (options.fuse_counts) {
+      return [{
+        asset_key: "Fuse",
+        label: "Fuse",
+        config_key: "number_of_fuses",
+        options_key: "fuse_counts",
+        options: options.fuse_counts,
+      }];
+    }
+    return [];
+  }, [options]);
+
+  const quantityDefaults = useMemo(() => {
+    const defaults: Record<string, number> = {};
+    for (const field of quantityFields) {
+      const sorted = Object.keys(field.options || {})
+        .map(Number)
+        .filter(Number.isFinite)
+        .sort((a, b) => a - b);
+      defaults[field.config_key] = sorted[0] ?? 1;
+    }
+    return defaults;
+  }, [quantityFields]);
 
   const placeOrder = async () => {
     setSubmitting(true);
@@ -52,7 +93,7 @@ export default function ConfiguratorPage() {
         setConfig({
           Bottom_Cover: { material: "", color: "", finish: "" },
           Top_Cover:    { material: "", color: "", finish: "" },
-          number_of_fuses: 1,
+          ...quantityDefaults,
         });
       }
     } catch {
@@ -67,7 +108,34 @@ export default function ConfiguratorPage() {
   useEffect(() => {
     fetch("/api/configurator/options")
       .then((res) => res.json())
-      .then(setOptions);
+      .then((data) => {
+        setOptions(data);
+
+        const qFields: QuantityField[] = Array.isArray(data?.quantity_fields)
+          ? data.quantity_fields
+          : data?.fuse_counts
+            ? [{
+                asset_key: "Fuse",
+                label: "Fuse",
+                config_key: "number_of_fuses",
+                options_key: "fuse_counts",
+                options: data.fuse_counts,
+              }]
+            : [];
+
+        setConfig((prev) => {
+          const next = { ...prev };
+          for (const field of qFields) {
+            if (next[field.config_key] !== undefined) continue;
+            const sorted = Object.keys(field.options || {})
+              .map(Number)
+              .filter(Number.isFinite)
+              .sort((a, b) => a - b);
+            next[field.config_key] = sorted[0] ?? 1;
+          }
+          return next;
+        });
+      });
   }, []);
 
   // ── Bottom Cover cascading options (any-order filtering) ─────────────────
@@ -292,25 +360,34 @@ export default function ConfiguratorPage() {
         </select>
       </Card>
 
-      {/* Fuse */}
-      <Card className="border border-border bg-background p-4">
-        <h2 className="font-semibold text-primary">Fuse</h2>
-        <select
-          className={selectClass}
-          value={config.number_of_fuses}
-          onChange={(e) =>
-            setConfig({ ...config, number_of_fuses: Number(e.target.value) })
-          }
-        >
-          {options.fuse_counts && Object.keys(options.fuse_counts)
-            .filter((n) => Number(n) <= 3)
-            .map((n) => (
-              <option key={n} value={n}>
-                {n} {Number(n) === 1 ? "Fuse" : "Fuses"}
-              </option>
-            ))}
-        </select>
-      </Card>
+      {quantityFields.map((field) => {
+        const optionValues = Object.keys(field.options || {})
+          .map(Number)
+          .filter(Number.isFinite)
+          .sort((a, b) => a - b);
+        const selectedValue = config[field.config_key] ?? optionValues[0] ?? 1;
+        const singular = field.label;
+        const plural = `${field.label}s`;
+
+        return (
+          <Card key={field.config_key} className="border border-border bg-background p-4">
+            <h2 className="font-semibold text-primary">{field.label}</h2>
+            <select
+              className={selectClass}
+              value={selectedValue}
+              onChange={(e) =>
+                setConfig({ ...config, [field.config_key]: Number(e.target.value) })
+              }
+            >
+              {optionValues.map((n) => (
+                <option key={n} value={n}>
+                  {n} {n === 1 ? singular : plural}
+                </option>
+              ))}
+            </select>
+          </Card>
+        );
+      })}
 
       {/* Order result banner */}
       {orderResult && (

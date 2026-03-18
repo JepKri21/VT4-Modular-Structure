@@ -24,6 +24,7 @@ import base64
 
 import requests
 import inventory_db
+from asset_registry import ASSET_REGISTRY
 from inventory_db import AAS_FILES_BASE
 
 
@@ -55,54 +56,9 @@ CONFIG_TEMPLATE_PATH = (
 # =============================================================================
 
 COMPONENT_REGISTRY: Dict[str, Dict[str, Any]] = {
-    "Bottom_Cover": {
-        "type_shell": "JSON_Shells/Product_Shells_JSON/Types/Component_Types/Product-Component-AAU-Bottom_Cover-Type.json",
-        "type_submodels_dir": "JSON_Submodels/Product_Submodels_JSON/Types/Component_Type_Submodels",
-        "type_submodel_prefix": "Product-Component-AAU-Bottom_Cover",
-        "instance_shell_dir": "JSON_Shells/Product_Shells_JSON/Instances/Component_Instances",
-        "instance_submodels_dir": "JSON_Submodels/Product_Submodels_JSON/Instances/Component_Instance_Submodels",
-        "instance_file_prefix": "Product-Component-AAU-Bottom_Cover",
-        "submodels": ["Properties", "Documentation", "Bill_Of_Processes"],
-        "properties_config_map": {
-            "Material": "bottom_cover_material",
-            "Color": "bottom_cover_color",
-            "Finish": "bottom_cover_finish",
-        },
-    },
-    "Top_Cover": {
-        "type_shell": "JSON_Shells/Product_Shells_JSON/Types/Component_Types/Product-Component-AAU-Top_Cover-Type.json",
-        "type_submodels_dir": "JSON_Submodels/Product_Submodels_JSON/Types/Component_Type_Submodels",
-        "type_submodel_prefix": "Product-Component-AAU-Top_Cover",
-        "instance_shell_dir": "JSON_Shells/Product_Shells_JSON/Instances/Component_Instances",
-        "instance_submodels_dir": "JSON_Submodels/Product_Submodels_JSON/Instances/Component_Instance_Submodels",
-        "instance_file_prefix": "Product-Component-AAU-Top_Cover",
-        "submodels": ["Properties", "Documentation", "Bill_Of_Processes"],
-        "properties_config_map": {
-            "Material": "top_cover_material",
-            "Color": "top_cover_color",
-            "Finish": "top_cover_finish",
-        },
-    },
-    "PCB": {
-        "type_shell": "JSON_Shells/Product_Shells_JSON/Types/Component_Types/Product-Component-AAU-PCB-Type.json",
-        "type_submodels_dir": "JSON_Submodels/Product_Submodels_JSON/Types/Component_Type_Submodels",
-        "type_submodel_prefix": "Product-Component-AAU-PCB",
-        "instance_shell_dir": "JSON_Shells/Product_Shells_JSON/Instances/Component_Instances",
-        "instance_submodels_dir": "JSON_Submodels/Product_Submodels_JSON/Instances/Component_Instance_Submodels",
-        "instance_file_prefix": "Product-Component-AAU-PCB",
-        "submodels": ["Properties", "Documentation", "Bill_Of_Processes"],
-        "properties_config_map": {},
-    },
-    "Fuse": {
-        "type_shell": "JSON_Shells/Product_Shells_JSON/Types/Component_Types/Product-Component-AAU-Fuse-Type.json",
-        "type_submodels_dir": "JSON_Submodels/Product_Submodels_JSON/Types/Component_Type_Submodels",
-        "type_submodel_prefix": "Product-Component-AAU-Fuse",
-        "instance_shell_dir": "JSON_Shells/Product_Shells_JSON/Instances/Component_Instances",
-        "instance_submodels_dir": "JSON_Submodels/Product_Submodels_JSON/Instances/Component_Instance_Submodels",
-        "instance_file_prefix": "Product-Component-AAU-Fuse",
-        "submodels": ["Properties", "Documentation", "Bill_Of_Processes"],
-        "properties_config_map": {},
-    },
+    key: cfg
+    for key, cfg in ASSET_REGISTRY.items()
+    if cfg.get("is_component", False)
 }
 
 
@@ -202,14 +158,7 @@ def update_instance_ids(
     Update IDs in the instance data (shell + submodels) to reflect the
     instance number. Modifies instance_data in place.
     """
-    # Map component type to URL-friendly name
-    type_map = {
-        "Bottom_Cover": "Bottom_Cover",
-        "Top_Cover": "Top_Cover",
-        "PCB": "PCB",
-        "Fuse": "Fuse",
-    }
-    type_url = type_map[component_type]
+    type_url = component_type
     instance_str = f"{instance_num:03d}"
     
     # Update shell
@@ -471,7 +420,7 @@ def display_menu() -> Tuple[str, int, Dict[str, str]]:
     
     while True:
         try:
-            choice = int(input("\nSelect component type (1-4): "))
+            choice = int(input(f"\nSelect component type (1-{len(component_list)}): "))
             if 1 <= choice <= len(component_list):
                 selected_type = component_list[choice - 1]
                 break
