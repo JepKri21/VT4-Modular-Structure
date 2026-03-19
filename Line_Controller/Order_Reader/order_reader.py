@@ -1,16 +1,5 @@
 import json 
-from pathlib import Path
 from typing import List
-import sys
-
-import pprint
-
-pp = pprint.PrettyPrinter(indent=4, compact=False)
-
-sys.path.append(str(Path(__file__).resolve().parent.parent))
-
-
-from AAS_Reader.aas_reader import AASShellReader
 
 class Orders:
     def __init__(self, order_messages: List):
@@ -112,42 +101,10 @@ class Orders:
         # Der vil altid være en endelig process hvor man så siger at final product er færdig. 
         # Men det betyder at parallele sekvenser skal mødes på et tidspunkt.
 
-BASE_DIR = Path(__file__).resolve().parent
-example_order1 = BASE_DIR / "example_order1.json"
-example_order2 = BASE_DIR / "example_order2.json"
-example_order3 = BASE_DIR / "example_order3.json"
-
-
-
-with open(example_order1) as f:
-    example_order1 = json.load(f)
-
-with open(example_order2) as f:
-    example_order2 = json.load(f)
-
-with open(example_order3) as f:
-    example_order3 = json.load(f)
-
-all_orders = [example_order1, example_order2,example_order3]
-
-current_orders = Orders(all_orders)
 
 #print(f"Current order: {current_orders.orders}")
 
 #print(f"Example Order 1 {current_orders.orders['ORD-001']}")
-
-
-if __name__ == "__main__":
-    AAS_SERVER = "http://192.168.38.200:8081"
-    Reader = AASShellReader(AAS_SERVER)
-
-    All_Assets, Resources, Products = Reader.return_correlated_assets()
-
-    #print(Products["https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB/f0ab9bcf-e7e7-4418-9fb0-cdf25d290d22"])
-
-    order_001_BOP = current_orders.build_order_dict(current_orders.orders['ORD-001'],Products=Products)
-
-    pp.pprint(order_001_BOP)
 
 
 #final_product_type = order["final_product_type"]

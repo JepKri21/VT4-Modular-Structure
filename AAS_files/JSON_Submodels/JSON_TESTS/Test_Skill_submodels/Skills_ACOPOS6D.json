@@ -169,11 +169,11 @@
                                         },
                                         {
                                             "modelType": "SubmodelElementCollection",
-                                            "idShort": "Input/Output_Mappings",
+                                            "idShort": "Input_Output_Mappings",
                                             "value" : [
                                                 {
                                                     "modelType": "SubmodelElementCollection",
-                                                    "idShort": "Input/Output_Mapping_1",
+                                                    "idShort": "Input_Output_Mapping_1",
                                                     "value" :[
                                                         {
                                                             "modelType": "SubmodelElementCollection",
@@ -203,7 +203,7 @@
                                                 },
                                                 {
                                                     "modelType": "SubmodelElementCollection",
-                                                    "idShort": "Input/Output_Mapping_2",
+                                                    "idShort": "Input_Output_Mapping_2",
                                                     "value" :[
                                                         {
                                                             "modelType": "SubmodelElementCollection",
@@ -233,7 +233,7 @@
                                                 },
                                                 {
                                                     "modelType": "SubmodelElementCollection",
-                                                    "idShort": "Input/Output_Mapping_3",
+                                                    "idShort": "Input_Output_Mapping_3",
                                                     "value" :[
                                                         {
                                                             "modelType": "SubmodelElementCollection",
@@ -263,7 +263,7 @@
                                                 },
                                                 {
                                                     "modelType": "SubmodelElementCollection",
-                                                    "idShort": "Input/Output_Mapping_4",
+                                                    "idShort": "Input_Output_Mapping_4",
                                                     "value" :[
                                                         {
                                                             "modelType": "SubmodelElementCollection",
@@ -460,11 +460,11 @@
                                         },
                                         {
                                             "modelType": "SubmodelElementCollection",
-                                            "idShort": "Input/Output_Mappings",
+                                            "idShort": "Input_Output_Mappings",
                                             "value" : [
                                                 {
                                                     "modelType": "SubmodelElementCollection",
-                                                    "idShort": "Input/Output_Mapping_1",
+                                                    "idShort": "Input_Output_Mapping_1",
                                                     "value" :[
                                                         {
                                                             "modelType": "SubmodelElementCollection",
@@ -494,7 +494,7 @@
                                                 },
                                                 {
                                                     "modelType": "SubmodelElementCollection",
-                                                    "idShort": "Input/Output_Mapping_2",
+                                                    "idShort": "Input_Output_Mapping_2",
                                                     "value" :[
                                                         {
                                                             "modelType": "SubmodelElementCollection",
@@ -525,7 +525,7 @@
                                                 },
                                                 {
                                                     "modelType": "SubmodelElementCollection",
-                                                    "idShort": "Input/Output_Mapping_3",
+                                                    "idShort": "Input_Output_Mapping_3",
                                                     "value" :[
                                                         {
                                                             "modelType": "SubmodelElementCollection",
@@ -555,7 +555,7 @@
                                                 },
                                                 {
                                                     "modelType": "SubmodelElementCollection",
-                                                    "idShort": "Input/Output_Mapping_4",
+                                                    "idShort": "Input_Output_Mapping_4",
                                                     "value" :[
                                                         {
                                                             "modelType": "SubmodelElementCollection",

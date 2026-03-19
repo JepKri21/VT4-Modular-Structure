@@ -80,6 +80,18 @@
               "idShort": "Selected_Operation",
               "valueType": "xs:string",
               "value": "Drilling"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Drill_Size",
+              "valueType": "xs:string",
+              "value": "3"
+            },
+            {
+              "modelType": "Property",
+              "idShort": "Drill_Depth",
+              "valueType": "xs:string",
+              "value": "20"
             }
           ]
         }
