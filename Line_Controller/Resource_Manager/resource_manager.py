@@ -322,31 +322,73 @@ class ResourceManager:
 
         # Hvordan sikrer vi os at den rigtige sub-assembly bliver samlet i korrekt rækkefølge? Skulle man komme til at se  på sub-assembly for https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB-Fuse/edff53e0-8150-430a-90b0-1553d888591b
         pass
+    def _extract_type(self, url):
+        return "/".join(url.split("/")[:-1])
+
+
+    def _collect_produced_types(self, order):
+        produced = set()
+        for _, subassemblies in order.items():
+            for sub in subassemblies:
+                for full_url in sub.keys():
+                    produced.add(self._extract_type(full_url))
+        return produced
+
+
+    def _get_section(self, process_data, section_name):
+        for section in process_data:
+            if section_name in section:
+                return section[section_name]
+        return []
+
+
+    def _iter_order_processes(self, order):
+        for _, subassemblies in order.items():
+            for sub in subassemblies:
+                for product_url, process_list in sub.items():
+                    for process in process_list:
+                        for process_name, process_data in process.items():
+                            yield product_url, process_name, process_data
+
+
+    def find_lowest_starting_processes(self, order):
+        produced_types = self._collect_produced_types(order)
+        starting_processes = []
+
+        for product_url, process_name, process_data in self._iter_order_processes(order):
+            constraints = self._get_section(process_data, "Process_Constraints")
+            required_components = self._get_section(process_data, "Required_Components")
+
+            # Lowest executable points have no process constraints.
+            if constraints:
+                continue
+
+            required_types = []
+            for comp in required_components:
+                for _, comp_type in comp.items():
+                    required_types.append(comp_type)
+
+            # Keep only processes that do not require internally produced parts.
+            has_internal_dependency = any(
+                comp_type in produced_types for comp_type in required_types
+            )
+            if has_internal_dependency:
+                continue
+
+            starting_processes.append(
+                {
+                    "product": product_url,
+                    "process": process_name,
+                    "required_external_components": required_types,
+                }
+            )
+
+        return starting_processes
         
-        
+    
+    
 
-
-
-
-
-# {'ORD-001': [
-#         {'https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB/f0ab9bcf-e7e7-4418-9fb0-cdf25d290d22': [
-#             {'Assemble_1': [
-#                 {'Process_Constraints': ['Drilling_1']}, 
-#                 {'Required_Components': ['PCB_1', 'Bottom_Cover_1']}, 
-#                 {'Parameters': [{'Selected_Operation': 'Assemble'}]}]}, 
-#             {'Drilling_1': [{'Process_Constraints': []}, 
-#                 {'Required_Components': ['Bottom_Cover_1']}, 
-#                 {'Parameters': [{'Selected_Operation': 'Drilling'}, {'Drill_Size': '3'}, {'Drill_Depth': '20'}]}]}]}, 
-#         {'https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB-Fuse/edff53e0-8150-430a-90b0-1553d888591b': [
-#             {'Assemble_1': [{'Process_Constraints': []}, 
-#                 {'Required_Components': ['Bottom_Cover-PCB_1', 'Fuse_1']}, 
-#                 {'Parameters': [{'Selected_Operation': 'Assemble'}]}]}]}, 
-#         {'https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max/e739eb46-b993-4bed-a46d-6ac6793db1cb': [
-#             {'Assemble_1': [{'Process_Constraints': []}, 
-#                 {'Required_Components': ['Bottom_Cover-PCB-Fuse_1', 'Top_Cover_1']}, 
-#                 {'Parameters': [{'Selected_Operation': 'Assemble'}]}]}]}]}
-                              
+                
 
 #This function (or functions) should be able to read the order and establish a sequence.
 # FIRST: It should read the process constraints to see if it needs to process something first
@@ -366,10 +408,11 @@ order_example ={'ORD-001': [
             {'Process_Constraints': ['Drilling_1']}, 
             {'Required_Components': [{'PCB_1' : "https://aausmartlab.com/Assets/Product/Component/AAU/PCB"}, {'Bottom_Cover_1' : "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover"}]}, 
             {'Parameters': [{'Selected_Operation': 'Assemble'}, {"inputs" : ["PCB_1", "Bottom_Cover_1"]}, {"outputs" : ["https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB"]}]}]}, 
-        {'Drilling_1': [
-            {'Process_Constraints': []}, 
+         {'Drilling_1': [
+             {'Process_Constraints': []}, 
             {'Required_Components': [{'Bottom_Cover_1': "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover"}]}, 
-            {'Parameters': [{'Selected_Operation': 'Drilling'}, {"inputs" : ["Bottom_Cover_1"]}, {"outputs" : ["Bottom_Cover_1"]} ,{'Drill_Size': '3'}, {'Drill_Depth': '20'}]}]}]}, 
+             {'Parameters': [{'Selected_Operation': 'Drilling'}, {"inputs" : ["Bottom_Cover_1"]}, {"outputs" : ["Bottom_Cover_1"]} ,{'Drill_Size': '3'}, {'Drill_Depth': '20'}]}]}
+            ]}, 
     {'https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB-Fuse/edff53e0-8150-430a-90b0-1553d888591b': [
         {'Assemble_1': [
             {'Process_Constraints': []}, 
@@ -382,10 +425,6 @@ order_example ={'ORD-001': [
             {'Parameters': [{'Selected_Operation': 'Assemble'}, {"inputs" : ["Bottom_Cover-PCB-Fuse_1", "Top_Cover_1"]}, {"outputs" : ["https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max"]}]}]}]}]} 
 
 
-final_product = "https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max/e739eb46-b993-4bed-a46d-6ac6793db1cb"
-
-execution_list = []
-
 #This should contain a class that we can construct with all the resources we have.
 #This it should have a function that:
 # allows us to insert a component and returns a list of resources that have the specific component in their internal storage
@@ -396,110 +435,3 @@ execution_list = []
 # Lastly, it should be able to generate a command that can later be sent over MQTT
 
 
-
-def _find_process(order, product_url, process_name):
-
-    order_id, items = list(order.items())[0]
-
-    for item in items:
-        if product_url in item:
-
-            for proc in item[product_url]:
-                if process_name in proc:
-                    return proc[process_name]
-
-    return None
-
-def _find_process_producing(order, component_url):
-
-    order_id, items = list(order.items())[0]
-
-    for item in items:
-        for product_url, processes in item.items():
-
-            for proc in processes:
-                for proc_name, proc_data in proc.items():
-
-                    for section in proc_data:
-                        if "Parameters" in section:
-
-                            for p in section["Parameters"]:
-                                if "outputs" in p:
-                                    if component_url in p["outputs"]:
-                                        return product_url, proc_name, proc_data
-
-    return None, None, None
-
-def _get_section(process_data, section_name):
-
-    for section in process_data:
-        if section_name in section:
-            return section[section_name]
-
-    return []
-
-
-def resolve_process(order, product_url, process_name, execution_list):
-
-    process_data = _find_process(order, product_url, process_name)
-
-    if not process_data:
-        return
-
-    constraints = _get_section(process_data, "Process_Constraints")
-    required = _get_section(process_data, "Required_Components")
-    parameters = _get_section(process_data, "Parameters")
-
-    # STEP 1: resolve constraints
-    for constraint in constraints:
-        resolve_process(order, product_url, constraint, execution_list)
-
-    # STEP 2: resolve required components
-    for comp_dict in required:
-        for comp_alias, comp_url in comp_dict.items():
-
-            prod_url, proc_name, proc_data = _find_process_producing(order, comp_url)
-
-            if proc_name:
-                resolve_process(order, prod_url, proc_name, execution_list)
-            else:
-                execution_list.append({
-                    "action": "fetch_from_storage",
-                    "component": comp_url
-                })
-
-    # STEP 3: add this process
-    execution_list.append({
-        "action": "execute",
-        "product": product_url,
-        "process": process_name,
-        "parameters": parameters
-    })
-
-
-resolve_process(
-    order_example,
-    final_product,
-    "Assemble_1",
-    execution_list
-)
-
-print(execution_list)
-
-
-"""
-[
-{'action': 'fetch_from_storage', 'component': 'https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover'}, 
-{'action': 'execute', 'product': 'https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB/f0ab9bcf-e7e7-4418-9fb0-cdf25d290d22', 'process': 'Drilling_1', 
-    'parameters': [{'Selected_Operation': 'Drilling'}, {'inputs': ['Bottom_Cover_1']}, {'outputs': ['Bottom_Cover_1']}, {'Drill_Size': '3'}, {'Drill_Depth': '20'}]}, 
-{'action': 'fetch_from_storage', 'component': 'https://aausmartlab.com/Assets/Product/Component/AAU/PCB'}, 
-{'action': 'fetch_from_storage', 'component': 'https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover'}, 
-{'action': 'execute', 'product': 'https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB/f0ab9bcf-e7e7-4418-9fb0-cdf25d290d22', 'process': 'Assemble_1', 
-    'parameters': [{'Selected_Operation': 'Assemble'}, {'inputs': ['PCB_1', 'Bottom_Cover_1']}, {'outputs': ['https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB']}]}, 
-{'action': 'fetch_from_storage', 'component': 'https://aausmartlab.com/Assets/Product/Component/AAU/Fuse'}, 
-{'action': 'execute', 'product': 'https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB-Fuse/edff53e0-8150-430a-90b0-1553d888591b', 'process': 'Assemble_1', 
-    'parameters': [{'Selected_Operation': 'Assemble'}, {'inputs': ['Bottom_Cover-PCB_1', 'Fuse_1']}, {'outputs': ['https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB-Fuse']}]}, 
-    {'action': 'fetch_from_storage', 'component': 'https://aausmartlab.com/Assets/Product/Component/AAU/Top_Cover'}, 
-    {'action': 'execute', 'product': 'https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max/e739eb46-b993-4bed-a46d-6ac6793db1cb', 'process': 'Assemble_1', 
-        'parameters': [{'Selected_Operation': 'Assemble'}, {'inputs': ['Bottom_Cover-PCB-Fuse_1', 'Top_Cover_1']}, {'outputs': ['https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max']}]}]
-"""
