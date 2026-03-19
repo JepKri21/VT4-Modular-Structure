@@ -1,6 +1,5 @@
 from typing import List
 import requests
-import urllib.parse
 from collections import defaultdict
 
 
@@ -152,7 +151,7 @@ class AASShellReader:
         print("Submodels error:", response)
         return []
 
-    def return_correlated_assets(self):
+    def return_assets(self):
         asset_list = []
         
         self.get_shells()
@@ -194,21 +193,3 @@ class AASShellReader:
         return asset_list, resource_assets, product_assets
 
 
-
-if __name__ == "__main__":
-    AAS_SERVER = "http://localhost:8081"
-    Reader = AASShellReader(AAS_SERVER)
-
-    All_Assets, Resources, Products = Reader.return_correlated_assets()
-
-    # Products[""]
-
-    print(f"===============================================================================================================\n")
-    print(Resources)
-    print(f"===============================================================================================================\n")
-    print(Products)
-    print(f"===============================================================================================================\n")
-
-    #These has to be the actual ids, can no longer just be the idShort (as many products have the same idShort)
-    print(Resources["Drill_Station_Asset"].Communication.UNS_Communication.Broker_Address())
-    print(Resources["Drill_Station_Asset"].Skills.Agents.KUKA_Manipulator.Drilling.Parameters.DrillDepth.range)
