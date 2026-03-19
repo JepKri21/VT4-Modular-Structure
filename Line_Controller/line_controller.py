@@ -1,6 +1,6 @@
 from AAS_Reader.aas_reader import AASShellReader 
 from Order_Reader.order_reader import Orders
-from Resource_Manager.resource_manager import ResourceManager
+# from Resource_Manager.resource_manager import ResourceManager
 import json 
 import os
 
@@ -25,11 +25,9 @@ all_orders = [example_order1, example_order2,example_order3]
 
 
 
-
-
-
 if __name__ == "__main__":
-    AAS_SERVER = "http://192.168.38.200:8081"
+    # AAS_SERVER = "http://192.168.38.200:8081"
+    AAS_SERVER = "http://100.117.139.24:8081"
     Reader = AASShellReader(AAS_SERVER)
     current_orders = Orders(all_orders)
 
@@ -51,31 +49,60 @@ if __name__ == "__main__":
 
     order_001_BOP = current_orders.build_order_dict(current_orders.orders['ORD-001'],Products=Products)
 
-    rm = ResourceManager(Resources)
+    print(f"Printing Order 001: {order_001_BOP}")
+
+    #rm = ResourceManager(Resources)# SKAL IKKE UDKOMMENTERES
 
     # Check if a resource has the given skill, and can perform it on a specific component ✅
-    matches = rm.check_skill_and_component("Assemble", "Bottom_Cover")
+    
     #Now we know which resource can perform that skill, now we need to find which resoruce has that component in storage to see if we need to move it
     
-    resource_inventories = rm.return_component_inventory()
     
-    print("=======================================================================================")
-    print("Matches:\n")
+    #print("======================================================================================")
+    # matches = rm.check_skill_and_component("Assemble", "Bottom_Cover")# SKAL IKKE UDKOMMENTERES
+    # if not matches:
+    #     print("No resources found")
 
-    if not matches:
-        print("No resources found")
+    # for resource in matches:
+    #     print(matches)
 
-    for resource in matches:
-        print(matches)
-
-    print("======================================================================================")
-    print(f"Resource Inventories: {resource_inventories}")
-
-    print("======================================================================================")
-
-    path = rm.est_resource_connection_points("https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover_Storage/6cac8616-a8ee-4877-b82a-3e677c6f18ac", "https://aausmartlab.com/Assets/Resource/MADE/Drill_Station/03fa4e62-d70f-4803-92ce-f8456370ac98", "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover")
+    # print("======================================================================================")
+    #resource_inventories = rm.return_component_inventory() # SKAL IKKE UDKOMMENTERES
+    # print(f"Resource Inventories: {resource_inventories}")
     
-    print("======================================================================================")
-    print(path)
-    print("======================================================================================")
+    # print("======================================================================================")
+    #path = rm.find_resource_connection_points("https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover_Storage/6cac8616-a8ee-4877-b82a-3e677c6f18ac", "https://aausmartlab.com/Assets/Resource/MADE/Drill_Station/03fa4e62-d70f-4803-92ce-f8456370ac98", "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover") # SKAL IKKE UDKOMMENTERES
+    # print(path)
+    # print("======================================================================================")
 
+"""
+{
+    'ORD-001': 
+    [{'https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB/f0ab9bcf-e7e7-4418-9fb0-cdf25d290d22': [
+    {
+        'Assemble_1': [{'Process_Constraints': ['Drilling_1']},
+          {'Required_Components': [{'PCB_1': 'https://aausmartlab.com/Assets/Product/Component/AAU/PCB'},
+          {'Bottom_Cover_1': 'https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover'}]}, 
+          {'Parameters': [
+          {
+            'Selected_Operation': 'Assemble'}]}]}, {'Drilling_1': [
+            {
+                'Process_Constraints': []}, 
+                {'Required_Components': [
+                {'Bottom_Cover_1': 'https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover'}]}, 
+                {'Parameters': [{'Selected_Operation': 'Drilling'}, {'Drill_Size': '3'}, {'Drill_Depth': '20'}]}]}]}, 
+        {'https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB-Fuse/edff53e0-8150-430a-90b0-1553d888591b': [{'Assemble_1': [{'Process_Constraints': []}, 
+        {'Required_Components': [
+        {'Bottom_Cover-PCB_1': 'https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB'}, 
+        {'Fuse_1': 'https://aausmartlab.com/Assets/Product/Component/AAU/Fuse'}]}, 
+        {'Parameters': [{'Selected_Operation': 'Assemble'}]}]}]}, {'https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max/e739eb46-b993-4bed-a46d-6ac6793db1cb': [{'Assemble_1': [{'Process_Constraints': []}, 
+        {'Required_Components': [
+        {'Bottom_Cover-PCB-Fuse_1': 'https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB-Fuse'}, 
+        {'Top_Cover_1': 'https://aausmartlab.com/Assets/Product/Component/AAU/Top_Cover'}]}, 
+        {'Parameters': [{'Selected_Operation': 'Assemble'}]}]}]}]}
+"""
+
+
+"""
+    {'ORD-001': [{'https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB/f0ab9bcf-e7e7-4418-9fb0-cdf25d290d22': [{'Assemble_1': [{'Process_Constraints': ['Drilling_1']}, {'Required_Components': [{'PCB_1': 'https://aausmartlab.com/Assets/Product/Component/AAU/PCB'}, {'Bottom_Cover_1': 'https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover'}]}, {'Parameters': [{'Selected_Operation': 'Assemble'}, {'inputs': ['PCB_1', 'Bottom_Cover_1']}, {'outputs': ['https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB']}]}]}, {'Drilling_1': [{'Process_Constraints': []}, {'Required_Components': [{'Bottom_Cover_1': 'https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover'}]}, {'Parameters': [{'Selected_Operation': 'Drilling'}, {'Drill_Size': '3'}, {'Drill_Depth': '20'}, {'inputs': ['Bottom_Cover_1']}, {'outputs': ['Bottom_Cover_1']}]}]}]}, {'https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB-Fuse/edff53e0-8150-430a-90b0-1553d888591b': [{'Assemble_1': [{'Process_Constraints': []}, {'Required_Components': [{'Bottom_Cover-PCB_1': 'https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB'}, {'Fuse_1': 'https://aausmartlab.com/Assets/Product/Component/AAU/Fuse'}]}, {'Parameters': [{'Selected_Operation': 'Assemble'}, {'inputs': ['Bottom_Cover-PCB_1', 'Fuse_1']}, {'outputs': ['https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB-Fuse']}]}]}]}, {'https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max/e739eb46-b993-4bed-a46d-6ac6793db1cb': [{'Assemble_1': [{'Process_Constraints': []}, {'Required_Components': [{'Bottom_Cover-PCB-Fuse_1': 'https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB-Fuse'}, {'Top_Cover_1': 'https://aausmartlab.com/Assets/Product/Component/AAU/Top_Cover'}]}, {'Parameters': [{'Selected_Operation': 'Assemble'}, {'inputs': ['Bottom_Cover-PCB-Fuse_1', 'Top_Cover_1']}, {'outputs': ['https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max']}]}]}]}]}
+"""

@@ -11,8 +11,28 @@ class Orders:
             order_name = order["order_id"]
             self.orders[order_name] = order
 
+    def _get_component_map(self, product):
+        component_map = {}
 
-    def _parse_process(self, process_node):
+        if 'Bill_Of_Materials' not in product.keys():
+            return component_map
+        
+        bom = product['Bill_Of_Materials']
+
+        if 'Components' not in bom.children:
+            return component_map
+        
+        for comp in bom.Components.children.values():
+            comp_name = comp.id_short
+
+            if "Component_Type" in comp.children:
+                comp_type_url = comp["Component_Type"].value
+                component_map[comp_name] = comp_type_url
+
+        return component_map
+        
+
+    def _parse_process(self, process_node, component_map, current_shell_url):
         result = []
 
         for element_name, element_node in process_node.children.items():
@@ -22,27 +42,61 @@ class Orders:
                     "Process_Constraints": [child.value for child in element_node.children.values()]
                 })
 
+            # elif element_name == "Required_Components":
+            #     result.append({
+            #         "Required_Components": [child.value for child in element_node.children.values()]
+            #     })
+
             elif element_name == "Required_Components":
-                result.append({
-                    "Required_Components": [child.value for child in element_node.children.values()]
-                })
+                components = []
+                for child in element_node.children.values():
+                    comp_name = child.value
+                    comp_url = component_map.get(comp_name)
+                    components.append({comp_name: comp_url})
+                result.append({"Required_Components": components })
+
+            # elif element_name == "Parameters":
+            #     params = []
+            #     for child in element_node.children.values():
+            #         params.append({child.id_short: child.value})
+            #     result.append({"Parameters": params})
+                # return result
+
 
             elif element_name == "Parameters":
                 params = []
+                inputs = []
+
+                if "Required_Components" in process_node.children:
+                    for child in process_node["Required_Components"].children.values():
+                        inputs.append(child.value)
+                
+                selected_operation = None
+
                 for child in element_node.children.values():
                     params.append({child.id_short: child.value})
-                result.append({"Parameters": params})
 
+                    if child.id_short == "Selected_Operation":
+                        selected_operation = child.value
+
+                params.append({"inputs": inputs})
+
+                if selected_operation == "Assemble":
+                    output = current_shell_url.rsplit("/", 1)[0]
+                    params.append({"outputs": [output]})
+                else:
+                    params.append({"outputs": inputs})
+
+                result.append({"Parameters": params})
         return result
 
-    def _extract_bill_of_processes(self, bill_of_processes):
-        processes = {}
 
+    def _extract_bill_of_processes(self, bill_of_processes, component_map, shell_url):
         processes = {}
 
         for proc_name, proc_node in bill_of_processes.children.items():
 
-            processes[proc_name] = self._parse_process(proc_node)
+            processes[proc_name] = self._parse_process(proc_node, component_map, shell_url)
 
         return processes
 
@@ -51,6 +105,7 @@ class Orders:
 
         order_id = order["order_id"]
         shell_instances = order["shell_instances"]
+        
 
         result = {order_id: []}
 
@@ -60,9 +115,11 @@ class Orders:
 
             product = Products[shell_url]
 
+            component_map = self._get_component_map(product)
+
             submodel = product["Bill_Of_Processes"]
 
-            processes = self._extract_bill_of_processes(submodel)
+            processes = self._extract_bill_of_processes(submodel, component_map, shell_url)
 
             process_list = []
             for p_name, p_data in processes.items():

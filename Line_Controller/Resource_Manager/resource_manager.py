@@ -205,7 +205,7 @@ class ResourceManager:
         return valid_agents if valid_agents else None
 
 
-    def est_resource_connection_points(self, start_resource: str, destination_resource: str, component: str):
+    def find_resource_connection_points(self, start_resource: str, destination_resource: str, component: str):
 
         queue = deque()
 
@@ -226,12 +226,6 @@ class ResourceManager:
                 own_cp = conn["own_cp"]
 
                 print(f"Trying connection {conn_name} -> {next_res} (cp={own_cp})")
-
-                if own_cp == "ACOPOS6D_Connection_Point_7":
-                    print("TRYING TO RUN A MATCH FOR TRANSPORT WHEN IT FINDS ACOPOS6D_Connection_Point_7")
-                    print(f"VALID AGENTS FOR ACOPOS6D_Connection_Point_7 : {self._get_matching_skill(resource_obj,'Transport',component,own_cp)}")
-
-
                 # =========================
                 # FIRST STEP → RETRIEVE
                 # =========================
@@ -312,45 +306,200 @@ class ResourceManager:
                 # =========================
                 new_path = path + [step]
 
-                print(f"New path: {new_path}")
+                #print(f"New path: {new_path}")
 
                 queue.append((next_res, new_path))
 
         return []
-
-    #def est_resource_connection_points(self, start_resource, destination_resource, component):
-        # Return the connection points between two resources as a dictionary?, to be used for routing components through the production line.
-
-        #We have Bottom_Cover at Bottom_Cover_Storage
-        # Need component Bottom_Cover at Drill_Station
-        # How do we get from where Bottom_Cover is located to Drill_Station?
-
-        #If every station has a Retrieve function, then we can enforce that when trying to move a product from one station to another, through connection points, then it has to start with a Retrieve, and then only follow that with Transport skills
-
-        # 1 Look for connection between resources:
-
-        # 2 Check resources for correct skills:
-            # - First resource in the chain must have a retrive skill with the component supported as output (important that it has no input required)
-            # - All other resources must have the transport skill, supporting the component as input & output.
-        
-        # 3 Generate route from stored component to the desired resource, with a list of available agents to perform transportation from A -> B at each step
-
-        #print("Hello")
-
-
-
-
-                              
-                                    
     
+    def build_full_order_execution(self, order_dict, component_inventory):
+        # Use the output from order_reader.py to get BoP, but add the Retrieve and Transport commands from find_resource_connection_points (Might have to adjust so that it fits into what we need.)
+        
+        # build_order_dict: Giver en BoP for hele produktet
+        # find_resource_connection_points: Giver steps fra start_resource -> target_resource.
+        
+        # Vi Skal med build_full_order_execution have en fuld step by step liste som line_controller.py kan holde styr på, så når hvert step er udført kan det enten krydses af på en checkliste, eller poppes fra listen. For hvert step bliver find_resource_connection_points nok kaldt, da den fortæller hvordan du kommer fra dit nuværende resource til din næste resource (måske er der noget med constraints i sub-assembly, hvordan finder den ud af at drilling skal laves inden den kommer til sub-assembly ved PCB_Assembler?).
 
+        # Hvordan sikrer vi os at den rigtige sub-assembly bliver samlet i korrekt rækkefølge? Skulle man komme til at se  på sub-assembly for https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB-Fuse/edff53e0-8150-430a-90b0-1553d888591b
+        pass
+        
+        
+
+
+
+
+
+# {'ORD-001': [
+#         {'https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB/f0ab9bcf-e7e7-4418-9fb0-cdf25d290d22': [
+#             {'Assemble_1': [
+#                 {'Process_Constraints': ['Drilling_1']}, 
+#                 {'Required_Components': ['PCB_1', 'Bottom_Cover_1']}, 
+#                 {'Parameters': [{'Selected_Operation': 'Assemble'}]}]}, 
+#             {'Drilling_1': [{'Process_Constraints': []}, 
+#                 {'Required_Components': ['Bottom_Cover_1']}, 
+#                 {'Parameters': [{'Selected_Operation': 'Drilling'}, {'Drill_Size': '3'}, {'Drill_Depth': '20'}]}]}]}, 
+#         {'https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB-Fuse/edff53e0-8150-430a-90b0-1553d888591b': [
+#             {'Assemble_1': [{'Process_Constraints': []}, 
+#                 {'Required_Components': ['Bottom_Cover-PCB_1', 'Fuse_1']}, 
+#                 {'Parameters': [{'Selected_Operation': 'Assemble'}]}]}]}, 
+#         {'https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max/e739eb46-b993-4bed-a46d-6ac6793db1cb': [
+#             {'Assemble_1': [{'Process_Constraints': []}, 
+#                 {'Required_Components': ['Bottom_Cover-PCB-Fuse_1', 'Top_Cover_1']}, 
+#                 {'Parameters': [{'Selected_Operation': 'Assemble'}]}]}]}]}
+                              
+
+#This function (or functions) should be able to read the order and establish a sequence.
+# FIRST: It should read the process constraints to see if it needs to process something first
+# IF there is a constraint, then it should look at that process
+# IF there is NO constraint, then it should look at the required components
+# SECOND: It should look at the parameters and find a resource with that skill and parameters available.
+# WHEN it finds that resourse it should look at the required components and 
+#   FIRST see if that part is being produced as part of the order and if not, then SECOND, check if that resource has any of those parts in storage 
+# IF it DOES have those parts in storage, then you can just add this skill to the beginning of the execution list
+# IF it DOES NOT have those parts, it should find a resource with those components and then run find_resource_connection_points to establish a route
+# that route should then be added to the execution list before the skill is
+
+
+order_example ={'ORD-001': [
+    {'https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB/f0ab9bcf-e7e7-4418-9fb0-cdf25d290d22': [
+        {'Assemble_1': [
+            {'Process_Constraints': ['Drilling_1']}, 
+            {'Required_Components': [{'PCB_1' : "https://aausmartlab.com/Assets/Product/Component/AAU/PCB"}, {'Bottom_Cover_1' : "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover"}]}, 
+            {'Parameters': [{'Selected_Operation': 'Assemble'}, {"inputs" : ["PCB_1", "Bottom_Cover_1"]}, {"outputs" : ["https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB"]}]}]}, 
+        {'Drilling_1': [
+            {'Process_Constraints': []}, 
+            {'Required_Components': [{'Bottom_Cover_1': "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover"}]}, 
+            {'Parameters': [{'Selected_Operation': 'Drilling'}, {"inputs" : ["Bottom_Cover_1"]}, {"outputs" : ["Bottom_Cover_1"]} ,{'Drill_Size': '3'}, {'Drill_Depth': '20'}]}]}]}, 
+    {'https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB-Fuse/edff53e0-8150-430a-90b0-1553d888591b': [
+        {'Assemble_1': [
+            {'Process_Constraints': []}, 
+            {'Required_Components': [{'Bottom_Cover-PCB_1' : "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB"}, {'Fuse_1' : "https://aausmartlab.com/Assets/Product/Component/AAU/Fuse"}]}, 
+            {'Parameters': [{'Selected_Operation': 'Assemble'}, {"inputs" : ["Bottom_Cover-PCB_1", "Fuse_1"]}, {"outputs" : ["https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB-Fuse"]} ]}]}]}, 
+    {'https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max/e739eb46-b993-4bed-a46d-6ac6793db1cb': [
+        {'Assemble_1': [
+            {'Process_Constraints': []}, 
+            {'Required_Components': [{'Bottom_Cover-PCB-Fuse_1' : "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB-Fuse"}, {'Top_Cover_1' : "https://aausmartlab.com/Assets/Product/Component/AAU/Top_Cover"}]}, 
+            {'Parameters': [{'Selected_Operation': 'Assemble'}, {"inputs" : ["Bottom_Cover-PCB-Fuse_1", "Top_Cover_1"]}, {"outputs" : ["https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max"]}]}]}]}]} 
+
+
+final_product = "https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max/e739eb46-b993-4bed-a46d-6ac6793db1cb"
+
+execution_list = []
 
 #This should contain a class that we can construct with all the resources we have.
 #This it should have a function that:
-# allows us to insert a requried skill and component and recieve a list of resoruces that have that skill and is compatible with that component
 # allows us to insert a component and returns a list of resources that have the specific component in their internal storage
 # allows us to check for at specific input and output match
 # Maybe we should also have a function that just returns ALL storage for every resource which the line-controller can keep track of itself, maybe checking-in with the stations every 10 minutes to see if they agree
 # Insert component into function that returns a resource and an amount
 # allows us to insert two different resources and return a list, showing if and how they are connected through connection points
 # Lastly, it should be able to generate a command that can later be sent over MQTT
+
+
+
+def _find_process(order, product_url, process_name):
+
+    order_id, items = list(order.items())[0]
+
+    for item in items:
+        if product_url in item:
+
+            for proc in item[product_url]:
+                if process_name in proc:
+                    return proc[process_name]
+
+    return None
+
+def _find_process_producing(order, component_url):
+
+    order_id, items = list(order.items())[0]
+
+    for item in items:
+        for product_url, processes in item.items():
+
+            for proc in processes:
+                for proc_name, proc_data in proc.items():
+
+                    for section in proc_data:
+                        if "Parameters" in section:
+
+                            for p in section["Parameters"]:
+                                if "outputs" in p:
+                                    if component_url in p["outputs"]:
+                                        return product_url, proc_name, proc_data
+
+    return None, None, None
+
+def _get_section(process_data, section_name):
+
+    for section in process_data:
+        if section_name in section:
+            return section[section_name]
+
+    return []
+
+
+def resolve_process(order, product_url, process_name, execution_list):
+
+    process_data = _find_process(order, product_url, process_name)
+
+    if not process_data:
+        return
+
+    constraints = _get_section(process_data, "Process_Constraints")
+    required = _get_section(process_data, "Required_Components")
+    parameters = _get_section(process_data, "Parameters")
+
+    # STEP 1: resolve constraints
+    for constraint in constraints:
+        resolve_process(order, product_url, constraint, execution_list)
+
+    # STEP 2: resolve required components
+    for comp_dict in required:
+        for comp_alias, comp_url in comp_dict.items():
+
+            prod_url, proc_name, proc_data = _find_process_producing(order, comp_url)
+
+            if proc_name:
+                resolve_process(order, prod_url, proc_name, execution_list)
+            else:
+                execution_list.append({
+                    "action": "fetch_from_storage",
+                    "component": comp_url
+                })
+
+    # STEP 3: add this process
+    execution_list.append({
+        "action": "execute",
+        "product": product_url,
+        "process": process_name,
+        "parameters": parameters
+    })
+
+
+resolve_process(
+    order_example,
+    final_product,
+    "Assemble_1",
+    execution_list
+)
+
+print(execution_list)
+
+
+"""
+[
+{'action': 'fetch_from_storage', 'component': 'https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover'}, 
+{'action': 'execute', 'product': 'https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB/f0ab9bcf-e7e7-4418-9fb0-cdf25d290d22', 'process': 'Drilling_1', 
+    'parameters': [{'Selected_Operation': 'Drilling'}, {'inputs': ['Bottom_Cover_1']}, {'outputs': ['Bottom_Cover_1']}, {'Drill_Size': '3'}, {'Drill_Depth': '20'}]}, 
+{'action': 'fetch_from_storage', 'component': 'https://aausmartlab.com/Assets/Product/Component/AAU/PCB'}, 
+{'action': 'fetch_from_storage', 'component': 'https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover'}, 
+{'action': 'execute', 'product': 'https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB/f0ab9bcf-e7e7-4418-9fb0-cdf25d290d22', 'process': 'Assemble_1', 
+    'parameters': [{'Selected_Operation': 'Assemble'}, {'inputs': ['PCB_1', 'Bottom_Cover_1']}, {'outputs': ['https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB']}]}, 
+{'action': 'fetch_from_storage', 'component': 'https://aausmartlab.com/Assets/Product/Component/AAU/Fuse'}, 
+{'action': 'execute', 'product': 'https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB-Fuse/edff53e0-8150-430a-90b0-1553d888591b', 'process': 'Assemble_1', 
+    'parameters': [{'Selected_Operation': 'Assemble'}, {'inputs': ['Bottom_Cover-PCB_1', 'Fuse_1']}, {'outputs': ['https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB-Fuse']}]}, 
+    {'action': 'fetch_from_storage', 'component': 'https://aausmartlab.com/Assets/Product/Component/AAU/Top_Cover'}, 
+    {'action': 'execute', 'product': 'https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max/e739eb46-b993-4bed-a46d-6ac6793db1cb', 'process': 'Assemble_1', 
+        'parameters': [{'Selected_Operation': 'Assemble'}, {'inputs': ['Bottom_Cover-PCB-Fuse_1', 'Top_Cover_1']}, {'outputs': ['https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max']}]}]
+"""
