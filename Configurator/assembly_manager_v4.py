@@ -233,6 +233,35 @@ class AssemblyManagerV4:
         return False
 
     @staticmethod
+    def _build_used_component_slot(slot_id: str, payload: Dict[str, str]) -> Dict[str, Any]:
+        """Create a traceability slot when the template does not provide one."""
+        return {
+            "modelType": "SubmodelElementCollection",
+            "idShort": slot_id,
+            "description": [{"language": "en", "text": f"{slot_id} instance used"}],
+            "value": [
+                {
+                    "modelType": "Property",
+                    "idShort": "instance_id",
+                    "valueType": "xs:string",
+                    "value": "" if payload.get("instance_id") is None else str(payload.get("instance_id", "")),
+                },
+                {
+                    "modelType": "Property",
+                    "idShort": "instance_number",
+                    "valueType": "xs:string",
+                    "value": "" if payload.get("instance_number") is None else str(payload.get("instance_number", "")),
+                },
+                {
+                    "modelType": "Property",
+                    "idShort": "model_number",
+                    "valueType": "xs:string",
+                    "value": "" if payload.get("model_number") is None else str(payload.get("model_number", "")),
+                },
+            ],
+        }
+
+    @staticmethod
     def _normalize_instance_ref_id(ref_id: str) -> str:
         """Convert submodel IDs to shell IDs when needed."""
         value = (ref_id or "").strip()
@@ -293,6 +322,12 @@ class AssemblyManagerV4:
             for slot_id, payload in used_updates.items():
                 slot = self._child_collection(used, slot_id)
                 if not slot:
+                    slot = self._build_used_component_slot(slot_id, {
+                        "instance_id": self._normalize_instance_ref_id(payload.get("instance_id", "")),
+                        "instance_number": payload.get("instance_number", ""),
+                        "model_number": payload.get("model_number", ""),
+                    })
+                    used.setdefault("value", []).append(slot)
                     continue
                 self._set_prop_value(
                     slot,
@@ -874,6 +909,11 @@ class AssemblyManagerV4:
 
         # Update Bottom_Cover-PCB-Fuse traceability
         fuse_updates = {
+            "Bottom_Cover": {
+                "instance_id": step1.get("bottom_cover", {}).get("instance_id", ""),
+                "instance_number": step1.get("bottom_cover", {}).get("instance_number", ""),
+                "model_number": model_numbers.get("Bottom_Cover", ""),
+            },
             "PCB": {
                 "instance_id": step1.get("pcb", {}).get("instance_id", ""),
                 "instance_number": step1.get("pcb", {}).get("instance_number", ""),

@@ -72,7 +72,14 @@
         {
           "modelType": "SubmodelElementCollection",
           "idShort": "Process_Constraints",
-          "value": []
+          "value": [
+            {
+              "modelType": "Property",
+              "idShort": "Constraint_Id_1",
+              "valueType": "xs:string",
+              "value": ""
+            }
+          ]
         },
         {
           "modelType": "SubmodelElementCollection",

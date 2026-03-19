@@ -88,6 +88,16 @@
           "value": [
             {
               "modelType": "SubmodelElementCollection",
+              "idShort": "Bottom_Cover",
+              "description": [{"language": "en", "text": "Bottom cover instance used"}],
+              "value": [
+                {"modelType": "Property", "idShort": "instance_id", "valueType": "xs:string", "value": ""},
+                {"modelType": "Property", "idShort": "instance_number", "valueType": "xs:string", "value": ""},
+                {"modelType": "Property", "idShort": "model_number", "valueType": "xs:string", "value": ""}
+              ]
+            },
+            {
+              "modelType": "SubmodelElementCollection",
               "idShort": "PCB",
               "description": [{"language": "en", "text": "PCB instance used"}],
               "value": [
