@@ -1,10 +1,4 @@
-import sys
-from pathlib import Path
 from collections import deque
-
-
-sys.path.append(str(Path(__file__).resolve().parent.parent))
-from AAS_Reader.aas_reader import AASShellReader
 
 class ResourceManager:
     def __init__(self, Resources):
@@ -209,8 +203,6 @@ class ResourceManager:
                             valid_agents.append(agent_name)
 
         return valid_agents if valid_agents else None
-
-
 
 
     def est_resource_connection_points(self, start_resource: str, destination_resource: str, component: str):

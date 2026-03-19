@@ -76,8 +76,6 @@ if __name__ == "__main__":
     path = rm.est_resource_connection_points("https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover_Storage/6cac8616-a8ee-4877-b82a-3e677c6f18ac", "https://aausmartlab.com/Assets/Resource/MADE/Drill_Station/03fa4e62-d70f-4803-92ce-f8456370ac98", "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover")
     
     print("======================================================================================")
-    print("======================================================================================")
-    print("======================================================================================")
     print(path)
     print("======================================================================================")
 
