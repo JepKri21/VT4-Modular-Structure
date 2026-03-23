@@ -1,145 +1,163 @@
-{
-  "ORD-001": [
-    {
-      "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB/f0ab9bcf-e7e7-4418-9fb0-cdf25d290d22": [
+[
+  {
+    "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover_Storage/6cac8616-a8ee-4877-b82a-3e677c6f18ac": {
+      "Skill": "Retrieve",
+      "Agents": ["KUKA_Manipulator"],
+      "Resource_Connection_Points": ["Resource_Connection_1"]
+    }
+  },
+  {
+    "https://aausmartlab.com/Assets/Resource/B&R/ACOPOS6D/ede7ea0b-5d4a-4702-bb42-432b08c1865f": {
+      "Skill": "Transport",
+      "Agents": ["Shuttle_1", "Shuttle_2"],
+      "Resource_Connection_Points": ["Resource_Connection_1"]
+    }
+  },
+  {
+    "https://aausmartlab.com/Assets/Resource/MADE/Drill_Station/03fa4e62-d70f-4803-92ce-f8456370ac98": {
+      "Skill": "Drilling",
+      "Process": "Drilling_1",
+      "Product": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB/f0ab9bcf-e7e7-4418-9fb0-cdf25d290d22",
+      "Parameters": [
+        { "Selected_Operation": "Drilling" },
+        { "Drill_Size": "3" },
+        { "Drill_Depth": "20" },
+        { "inputs": ["Bottom_Cover_1"] },
+        { "outputs": ["Bottom_Cover_1"] }
+      ],
+      "Required_Components": [
         {
-          "Assemble_1": [
-            {
-              "Process_Constraints": ["Drilling_1"]
-            },
-            {
-              "Required_Components": [
-                {
-                  "PCB_1": "https://aausmartlab.com/Assets/Product/Component/AAU/PCB"
-                },
-                {
-                  "Bottom_Cover_1": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover"
-                }
-              ]
-            },
-            {
-              "Parameters": [
-                {
-                  "Selected_Operation": "Assemble"
-                },
-                {
-                  "inputs": ["PCB_1", "Bottom_Cover_1"]
-                },
-                {
-                  "outputs": [
-                    "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB"
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "Drilling_1": [
-            {
-              "Process_Constraints": []
-            },
-            {
-              "Required_Components": [
-                {
-                  "Bottom_Cover_1": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover"
-                }
-              ]
-            },
-            {
-              "Parameters": [
-                {
-                  "Selected_Operation": "Drilling"
-                },
-                {
-                  "Drill_Size": "3"
-                },
-                {
-                  "Drill_Depth": "20"
-                },
-                {
-                  "inputs": ["Bottom_Cover_1"]
-                },
-                {
-                  "outputs": ["Bottom_Cover_1"]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB-Fuse/edff53e0-8150-430a-90b0-1553d888591b": [
-        {
-          "Assemble_1": [
-            {
-              "Process_Constraints": []
-            },
-            {
-              "Required_Components": [
-                {
-                  "Bottom_Cover-PCB_1": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB"
-                },
-                {
-                  "Fuse_1": "https://aausmartlab.com/Assets/Product/Component/AAU/Fuse"
-                }
-              ]
-            },
-            {
-              "Parameters": [
-                {
-                  "Selected_Operation": "Assemble"
-                },
-                {
-                  "inputs": ["Bottom_Cover-PCB_1", "Fuse_1"]
-                },
-                {
-                  "outputs": [
-                    "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB-Fuse"
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max/e739eb46-b993-4bed-a46d-6ac6793db1cb": [
-        {
-          "Assemble_1": [
-            {
-              "Process_Constraints": []
-            },
-            {
-              "Required_Components": [
-                {
-                  "Bottom_Cover-PCB-Fuse_1": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB-Fuse"
-                },
-                {
-                  "Top_Cover_1": "https://aausmartlab.com/Assets/Product/Component/AAU/Top_Cover"
-                }
-              ]
-            },
-            {
-              "Parameters": [
-                {
-                  "Selected_Operation": "Assemble"
-                },
-                {
-                  "inputs": ["Bottom_Cover-PCB-Fuse_1", "Top_Cover_1"]
-                },
-                {
-                  "outputs": [
-                    "https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max"
-                  ]
-                }
-              ]
-            }
-          ]
+          "Bottom_Cover_1": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover"
         }
       ]
     }
-  ]
-}
+  },
+  {
+    "https://aausmartlab.com/Assets/Resource/MADE/Drill_Station/03fa4e62-d70f-4803-92ce-f8456370ac98": {
+      "Skill": "Retrieve",
+      "Agents": ["KUKA_Manipulator"],
+      "Resource_Connection_Points": ["Resource_Connection_1"]
+    }
+  },
+  {
+    "https://aausmartlab.com/Assets/Resource/B&R/ACOPOS6D/ede7ea0b-5d4a-4702-bb42-432b08c1865f": {
+      "Skill": "Transport",
+      "Agents": ["Shuttle_1", "Shuttle_2"],
+      "Resource_Connection_Points": ["Resource_Connection_3"]
+    }
+  },
+  {
+    "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover-PCB_Assembler/d2d5d977-4f76-471c-bfd1-0e90c72d7902": {
+      "Skill": "Assemble",
+      "Process": "Assemble_1",
+      "Product": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB/f0ab9bcf-e7e7-4418-9fb0-cdf25d290d22",
+      "Parameters": [
+        { "Selected_Operation": "Assemble" },
+        { "inputs": ["PCB_1", "Bottom_Cover_1"] },
+        {
+          "outputs": [
+            "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB"
+          ]
+        }
+      ],
+      "Required_Components": [
+        { "PCB_1": "https://aausmartlab.com/Assets/Product/Component/AAU/PCB" },
+        {
+          "Bottom_Cover_1": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover"
+        }
+      ]
+    }
+  },
+  {
+    "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover-PCB-Fuse_Assembler/bbab5455-fcdb-409f-96fe-81f1fc5ccce5": {
+      "Skill": "Assemble",
+      "Process": "Assemble_1",
+      "Product": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB-Fuse/edff53e0-8150-430a-90b0-1553d888591b",
+      "Parameters": [
+        { "Selected_Operation": "Assemble" },
+        { "inputs": ["Bottom_Cover-PCB_1", "Fuse_1"] },
+        {
+          "outputs": [
+            "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB-Fuse"
+          ]
+        }
+      ],
+      "Required_Components": [
+        {
+          "Bottom_Cover-PCB_1": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB"
+        },
+        {
+          "Fuse_1": "https://aausmartlab.com/Assets/Product/Component/AAU/Fuse"
+        }
+      ]
+    }
+  },
+  {
+    "https://aausmartlab.com/Assets/Resource/MADE/Telefon_Pro_Max_Assembler/50af5cf7-960f-4332-843d-a638cd3a4543": {
+      "Skill": "Assemble",
+      "Process": "Assemble_1",
+      "Product": "https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max/e739eb46-b993-4bed-a46d-6ac6793db1cb",
+      "Parameters": [
+        { "Selected_Operation": "Assemble" },
+        { "inputs": ["Bottom_Cover-PCB-Fuse_1", "Top_Cover_1"] },
+        {
+          "outputs": [
+            "https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max"
+          ]
+        }
+      ],
+      "Required_Components": [
+        {
+          "Bottom_Cover-PCB-Fuse_1": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB-Fuse"
+        },
+        {
+          "Top_Cover_1": "https://aausmartlab.com/Assets/Product/Component/AAU/Top_Cover"
+        }
+      ]
+    }
+  },
+  {
+    "https://aausmartlab.com/Assets/Resource/MADE/Drill_Station/03fa4e62-d70f-4803-92ce-f8456370ac98": {
+      "Skill": "Retrieve",
+      "Agents": ["KUKA_Manipulator"],
+      "Resource_Connection_Points": ["Drill_Station_Connection_Point_1"],
+      "Retrieved_Components": ["Bottom_Cover_1"]
+    }
+  },
+  {
+    "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover-PCB_Assembler/d2d5d977-4f76-471c-bfd1-0e90c72d7902": {
+      "Skill": "Retrieve",
+      "Agents": ["KUKA_Manipulator"],
+      "Resource_Connection_Points": [
+        "Bottom_Cover-PCB_Assembler_Connection_Point_1"
+      ],
+      "Retrieved_Components": [
+        "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB"
+      ]
+    }
+  },
+  {
+    "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover-PCB-Fuse_Assembler/bbab5455-fcdb-409f-96fe-81f1fc5ccce5": {
+      "Skill": "Retrieve",
+      "Agents": ["KUKA_Manipulator"],
+      "Resource_Connection_Points": [
+        "Bottom_Cover-PCB_Assembler_Connection_Point_1"
+      ],
+      "Retrieved_Components": [
+        "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB-Fuse"
+      ]
+    }
+  },
+  {
+    "https://aausmartlab.com/Assets/Resource/MADE/Telefon_Pro_Max_Assembler/50af5cf7-960f-4332-843d-a638cd3a4543": {
+      "Skill": "Retrieve",
+      "Agents": ["KUKA_Manipulator"],
+      "Resource_Connection_Points": [
+        "Telefon_Pro_Max_Assembler_Connection_Point_1"
+      ],
+      "Retrieved_Components": [
+        "https://aausmartlab.com/Assets/Product/Final_Product/Telefon/Telefon_Pro_Max"
+      ]
+    }
+  }
+]

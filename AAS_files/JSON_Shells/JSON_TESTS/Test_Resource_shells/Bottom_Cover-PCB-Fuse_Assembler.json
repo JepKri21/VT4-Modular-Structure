@@ -1,0 +1,38 @@
+{
+  "idShort": "Bottom_Cover-PCB-Fuse-Assembler",
+  "id": "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover-PCB-Fuse_Assembler/bbab5455-fcdb-409f-96fe-81f1fc5ccce5",
+  "modelType": "AssetAdministrationShell",
+  "assetInformation": {
+    "assetKind": "Instance",
+    "globalAssetId": "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover-PCB-Fuse_Assembler/bbab5455-fcdb-409f-96fe-81f1fc5ccce5"
+  },
+  "submodels": [
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover-PCB-Fuse_Assembler/bbab5455-fcdb-409f-96fe-81f1fc5ccce5/Item_Capacity"
+        }
+      ]
+    },
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover-PCB-Fuse_Assembler/bbab5455-fcdb-409f-96fe-81f1fc5ccce5/Skills"
+        }
+      ]
+    },
+    {
+      "type": "ModelReference",
+      "keys": [
+        {
+          "type": "Submodel",
+          "value": "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover-PCB-Fuse_Assembler/bbab5455-fcdb-409f-96fe-81f1fc5ccce5/Location"
+        }
+      ]
+    }
+  ]
+}
