@@ -319,6 +319,90 @@
               ]
             }
           ]
+        },
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Resource_Connection_4",
+          "value": [
+            {
+              "modelType": "Property",
+              "value": "ACOPOS6D_Connection_Point_2",
+              "valueType": "xs:string",
+              "idShort": "Own_Connection_Point_Id"
+            },
+            {
+              "modelType": "Property",
+              "value": "https://aausmartlab.com/Assets/Resource/MADE/Bottom_Cover-PCB-Fuse_Assembler/bbab5455-fcdb-409f-96fe-81f1fc5ccce5",
+              "valueType": "xs:string",
+              "idShort": "Connection_Resource_Id"
+            },
+            {
+              "modelType": "Property",
+              "value": "Bottom_Cover-PCB-Fuse_Assembler_Connection_Point_1",
+              "valueType": "xs:string",
+              "idShort": "Other_Resource_Connection_Point_Id"
+            },
+            {
+              "modelType": "SubmodelElementCollection",
+              "idShort": "Position",
+              "value": [
+                {
+                  "modelType": "Property",
+                  "value": "360",
+                  "valueType": "xs:integer",
+                  "idShort": "X_Value"
+                },
+                {
+                  "modelType": "Property",
+                  "value": "360",
+                  "valueType": "xs:integer",
+                  "idShort": "Y_Value"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "modelType": "SubmodelElementCollection",
+          "idShort": "Resource_Connection_5",
+          "value": [
+            {
+              "modelType": "Property",
+              "value": "ACOPOS6D_Connection_Point_1",
+              "valueType": "xs:string",
+              "idShort": "Own_Connection_Point_Id"
+            },
+            {
+              "modelType": "Property",
+              "value": "https://aausmartlab.com/Assets/Resource/MADE/Telefon_Pro_Max_Assembler/50af5cf7-960f-4332-843d-a638cd3a4543",
+              "valueType": "xs:string",
+              "idShort": "Connection_Resource_Id"
+            },
+            {
+              "modelType": "Property",
+              "value": "Telefon_Pro_Max_Assembler_Connection_Point_1",
+              "valueType": "xs:string",
+              "idShort": "Other_Resource_Connection_Point_Id"
+            },
+            {
+              "modelType": "SubmodelElementCollection",
+              "idShort": "Position",
+              "value": [
+                {
+                  "modelType": "Property",
+                  "value": "360",
+                  "valueType": "xs:integer",
+                  "idShort": "X_Value"
+                },
+                {
+                  "modelType": "Property",
+                  "value": "360",
+                  "valueType": "xs:integer",
+                  "idShort": "Y_Value"
+                }
+              ]
+            }
+          ]
         }
       ]
     }

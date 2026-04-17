@@ -1,18 +1,20 @@
 """
-Inventory Database Manager — V4 Edition
+Inventory Database Manager — V4
 
-Extended copy of Configurator/inventory_db.py with:
-  - model_type_reservations table  (V4: reserve by model-type quantity, not specific instance)
-  - shell_instances column on configuration_orders  (V4: tracks which shells were created at order time)
-  - _rebuild_stock accounts for pending model-type reservations
-  - Helpers: _reserve_model_types, _fulfill_reservation, _cancel_order_reservations
+Manages inventory of components, sub-assemblies, and orders using model-type (quantity)
+reservations rather than instance-specific locks. Supports dynamic fuse counts and
+multi-station assembly workflows.
 
-Both v3 and v4 share the same inventory.db file.  V4 tables are additive and do not
-break v3 operations.
+Core features:
+  - inventory_items table: Physical component instances in stock
+  - inventory_stock table: Aggregate stock levels (available, reserved, consumed)
+  - model_type_reservations table: Quantity-based reservations by order and slot
+  - configuration_orders table: Orders with assembly progress and shell instance tracking
+  - model_catalog table: Historical record of model numbers seen
 
-Usage (CLI — scans the shared v3 JSON instance directories):
-  python inventory_db.py --sync
-  python inventory_db.py --status
+Usage (CLI):
+  python inventory_db.py --sync    (scan AAS JSON directories and update DB)
+  python inventory_db.py --status   (show current stock levels)
 """
 
 import json
@@ -54,10 +56,23 @@ DEFAULT_DB_FILE = str(CONFIGURATOR_BASE / "inventory.db")
 
 
 # =============================================================================
-# Database setup
+# Database Connection & Initialization
 # =============================================================================
 
 def _get_connection(db_path: str) -> sqlite3.Connection:
+    """
+    Open a connection to the inventory database with Row factory and WAL mode enabled.
+    
+    Args:
+        db_path: Path to the SQLite database file.
+    
+    Returns:
+        A sqlite3.Connection with row_factory set to sqlite3.Row so rows can be accessed
+        as dictionaries (e.g., row["model_number"]) and WAL mode enabled for concurrency.
+    
+    WAL (Write-Ahead Logging) allows readers and writers to operate concurrently without
+    blocking each other, which is important when multiple processes access the inventory.
+    """
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
@@ -65,7 +80,20 @@ def _get_connection(db_path: str) -> sqlite3.Connection:
 
 
 def _create_tables(conn: sqlite3.Connection) -> None:
-    """Create all inventory tables (v3 schema + v4 extensions) if they do not exist."""
+    """
+    Create all inventory tables if they do not exist.
+    
+    Tables:
+      - inventory_items      : Individual component instances (e.g., Bottom_Cover_08ca61d64...)
+      - inventory_stock      : Aggregate stock levels (qty_available, qty_reserved, qty_consumed)
+      - model_catalog        : First/last-seen timestamps for each model_number
+      - configuration_orders : Orders with status, shell instances, assembly progress
+      - assembly_log         : Historical record of component → product assembly events
+      - model_type_reservations (V4) : model-type (quantity) reservations by order
+    
+    Safe to call repeatedly; existing tables are preserved.
+    Migrations are auto-applied for schema compatibility.
+    """
     conn.executescript("""
         CREATE TABLE IF NOT EXISTS inventory_items (
             instance_id         TEXT PRIMARY KEY,
@@ -110,21 +138,12 @@ def _create_tables(conn: sqlite3.Connection) -> None:
             product_type        TEXT NOT NULL,
             configuration       TEXT NOT NULL,
             model_numbers_needed TEXT NOT NULL,
-            reserved_instances  TEXT,
             status              TEXT NOT NULL DEFAULT 'pending',
             assembly_progress   TEXT,
+            shell_instances     TEXT,
             created_date        TEXT NOT NULL,
             assembled_date      TEXT,
             notes               TEXT
-        );
-
-        CREATE TABLE IF NOT EXISTS assembly_log (
-            assembly_id         TEXT PRIMARY KEY,
-            product_instance_id TEXT NOT NULL,
-            component_type      TEXT NOT NULL,
-            component_instance_id TEXT NOT NULL,
-            model_number        TEXT NOT NULL,
-            assembly_date       TEXT NOT NULL
         );
 
         -- V4: model-type (quantity) reservations — no specific instance locked.
@@ -141,11 +160,9 @@ def _create_tables(conn: sqlite3.Connection) -> None:
         );
     """)
 
-    # Migrations — safe to run on existing DBs
+    # V4 schema migrations — safe to run on existing DBs
     for migration in [
-        # v3 migrations
         "ALTER TABLE configuration_orders ADD COLUMN assembly_progress TEXT",
-        # v4 migrations
         "ALTER TABLE configuration_orders ADD COLUMN shell_instances TEXT",
         "ALTER TABLE inventory_items ADD COLUMN nr_fuses INTEGER",
         "ALTER TABLE inventory_stock ADD COLUMN nr_fuses INTEGER",
@@ -159,7 +176,7 @@ def _create_tables(conn: sqlite3.Connection) -> None:
 
 
 # =============================================================================
-# JSON parsing helpers (unchanged from v3)
+# JSON parsing helpers
 # =============================================================================
 
 def _get_prop(elements: List[Dict], id_short: str) -> Optional[str]:
@@ -250,9 +267,22 @@ def _reserve_model_types(
     slots: Dict[str, str],           # {slot_key: model_number}
 ) -> None:
     """
-    Insert a pending model-type reservation row for each required slot.
-    Does NOT lock any specific inventory_items row — reservation is at
-    the model/quantity level only.
+    Create model-type (quantity) reservations for each required component.
+    Called by configurator_v4 when an order is created.
+    
+    Args:
+        conn: Database connection
+        order_id: Order ID (e.g., "ORD-001")
+        slots: {slot_key → model_number}
+               e.g., {"Bottom_Cover": "BC-PLA-31212-Blue-Glossy",
+                      "PCB": "PCB-AAU",
+                      "Fuse_1": "FUSE-AAU",
+                      "Fuse_2": "FUSE-AAU"}
+    
+    These are NOT specific instance reservations — they reserve quantity of a model-type
+    (e.g., "reserve 2 FUSE-AAU instances"). During assembly, _pick_instance() finds 
+    actual available instances that match the model_number, and _fulfill_reservation()
+    marks each one as consumed.
     """
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     for slot_key, model_number in slots.items():
@@ -269,7 +299,18 @@ def _fulfill_reservation(
     order_id: str,
     slot_key: str,
 ) -> None:
-    """Mark a model-type reservation as fulfilled (physical instance consumed)."""
+    """
+    Mark a model-type reservation as fulfilled (actual physical instance consumed).
+    Called by assembly_manager_v4 after a component instance is picked and consumed.
+    
+    Args:
+        conn: Database connection
+        order_id: Order ID
+        slot_key: Slot identifier (e.g., "Bottom_Cover", "Fuse_1", "Top_Cover")
+    
+    After fulfillment, the reservation status moves from 'pending' to 'fulfilled',
+    and _rebuild_stock() accounts for the consumed instance.
+    """
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     conn.execute("""
         UPDATE model_type_reservations
@@ -289,7 +330,7 @@ def _cancel_order_reservations(conn: sqlite3.Connection, order_id: str) -> int:
 
 
 # =============================================================================
-# Core sync logic (unchanged from v3)
+# Core sync logic
 # =============================================================================
 
 def _update_catalog(conn: sqlite3.Connection, records: List[Dict[str, Any]]) -> None:

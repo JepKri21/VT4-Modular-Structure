@@ -54,7 +54,22 @@ def _b64url(s: str) -> str:
 # =============================================================================
 
 class AssemblyManagerV4:
-    """Phase 2: bind physical component instances to pre-created order shells."""
+    """
+    Phase 2 of the configurator: bind physical component instances to pre-created order shells.
+    
+    An order goes through 3 assembly steps (stations):
+      1. Station 1: Bottom_Cover + PCB → Bottom_Cover-PCB sub-assembly
+      2. Station 2: Fuse(s) added to Bottom_Cover-PCB → Bottom_Cover-PCB-Fuse sub-assembly
+      3. Station 3: Top_Cover + sub-assemblies → Final Telefon product
+    
+    Each step:
+      - Picks available physical component instances (auto or barcode/RFID override)
+      - Marks them consumed in inventory
+      - Fulfills model-type reservations
+      - Patches the BOM JSON with actual instance references
+      - Updates traceability (Assembly_Traceability submodel) with component origins
+      - Uploads updated BOM to AAS server (if enabled)
+    """
 
     def __init__(
         self,
@@ -113,13 +128,23 @@ class AssemblyManagerV4:
         conn: sqlite3.Connection,
     ) -> Dict[str, str]:
         """
-        Return an available inventory_items row for the given model_number.
-
-        If override_instance_id is provided (e.g. from a barcode or RFID scan)
-        it is validated against the model_number and must have status 'available'.
-        Otherwise the first available instance is auto-selected.
-
-        Raises an exception if no suitable instance is found.
+        Select an available component instance from inventory by model-number.
+        
+        Args:
+            model_number: The model to match (e.g., "BC-PLA-31212-Blue-Glossy")
+            override_instance_id: If provided (from barcode/RFID scan), use this exact instance
+                                   (must exist, match model, and be 'available').
+            already_picked: Set of instance_ids already picked in this assembly step
+                           (prevents double-picking).
+            conn: Database connection
+        
+        Returns:
+            Dict with keys: instance_id, instance_number, model_number, status.
+        
+        Raises:
+            Exception if no suitable instance found or override_instance_id is invalid.
+        
+        If override_instance_id is None, auto-selects the first available instance not in already_picked.
         """
         if override_instance_id:
             row = conn.execute(
@@ -343,22 +368,6 @@ class AssemblyManagerV4:
         print(f"  [OK] Patched {asset_key} Documentation traceability ({doc_path.name})")
         self._update_submodel_on_server(doc_path)
 
-    def _update_telefon_traceability(
-        self,
-        order_id: str,
-        telefon_num: str,
-        used_updates: Dict[str, Dict[str, str]],
-        assembly_date: str,
-    ) -> None:
-        """Backward-compatible wrapper for Telefon traceability updates."""
-        self._update_asset_traceability(
-            asset_key="Telefon",
-            instance_num=telefon_num,
-            order_id=order_id,
-            used_updates=used_updates,
-            assembly_date=assembly_date,
-        )
-
     @staticmethod
     def _normalize_token(value: str) -> str:
         return "".join(ch for ch in (value or "").lower() if ch.isalnum())
@@ -427,15 +436,28 @@ class AssemblyManagerV4:
         slot_updates: Dict[str, Any],
     ) -> None:
         """
-                Open a BOM JSON, find slots under 'Components', and fill
-                Instance_Reference values.
-
-        slot_updates format:
-          {
-                        "Bottom_Cover": "urn:aas-instance-id",        # by slot id / asset key / Component_Type
-                        "Product-Component-AAU-PCB": "urn:aas-id",    # by Component_Type value
-            "Fuse": ["urn:fuse-1", "urn:fuse-2"],         # list for multiple fuses
-          }
+        Fill Instance_Reference values in a BOM JSON file with actual instance IDs.
+        
+        A BOM defines slots (e.g., Bottom_Cover, PCB, Fuse_1, Fuse_2) that will be
+        filled with real component instances. This method locates each slot and updates
+        its Instance_Reference value(s) with the actual AAS IDs.
+        
+        Args:
+            bom_path: Path to the BOM JSON file
+            slot_updates: {slot_id_or_component_type → instance_id_or_list_of_ids}
+                         Examples:
+                           {"Bottom_Cover": "https://aausmartlab.com/Assets/.../Bottom_cover/..."}
+                           {"Fuse": ["https://.../Fuse/id1", "https://.../Fuse/id2"]}
+        
+        Logic:
+        1. For single-value slots (e.g., PCB, Bottom_Cover):
+           - Update the Instance_Reference property with the provided ID.
+        
+        2. For multi-value slots (e.g., Fuse_1, Fuse_2, Fuse_3):
+           - If slot_updates contains a list, fill each Fuse_i entry.
+           - If slot_updates contains a base key ("Fuse"), map to indexed slots.
+        
+        The BOM file is saved after patching and uploaded to the AAS server if enabled.
         """
         with open(bom_path, encoding="utf-8") as f:
             bom = json.load(f)
@@ -481,17 +503,6 @@ class AssemblyManagerV4:
                             }
                             for ref_id in normalized_refs
                         ]
-                    else:
-                        # Legacy fallback: Instance_Reference_1..N
-                        slot_props[:] = [p for p in slot_props if not p.get("idShort", "").startswith("Instance_Reference_")]
-                        for i, ref_id in enumerate(normalized_refs, 1):
-                            slot_props.append({
-                                "modelType": "Property",
-                                "idShort": f"Instance_Reference_{i}",
-                                "valueType": "xs:string",
-                                "value": ref_id,
-                                "description": [{"language": "en", "text": f"AAS ID of fuse instance #{i} used"}],
-                            })
                 else:
                     normalized_ref = self._normalize_instance_ref_id(update)
                     existing = next(
@@ -513,7 +524,7 @@ class AssemblyManagerV4:
             json.dump(bom, f, indent=2, ensure_ascii=False)
 
     # -------------------------------------------------------------------------
-    # Sub-assembly registration helpers (same pattern as v3)
+    # Sub-assembly registration helpers
     # -------------------------------------------------------------------------
 
     def _register_subassembly_as_consumed(
@@ -538,7 +549,7 @@ class AssemblyManagerV4:
         product_name = next((e.get("value") for e in elements if e.get("idShort") == "Product_Name"), None)
         instance_id = self._instance_id_from_shell(asset_key, instance_num)
         if not instance_id:
-            # Backward-compatible fallback when shell file is missing.
+            # Fallback: if shell file is missing, extract ID from documentation submodel.
             instance_id = doc.get("id", "")
 
         conn.execute("""
@@ -572,7 +583,7 @@ class AssemblyManagerV4:
         product_name = next((e.get("value") for e in elements if e.get("idShort") == "Product_Name"), None)
         instance_id = self._instance_id_from_shell("Telefon", instance_num)
         if not instance_id:
-            # Backward-compatible fallback when shell file is missing.
+            # Fallback: if shell file is missing, extract ID from documentation submodel.
             instance_id = doc.get("id", "")
 
         material = color = finish = None
@@ -671,16 +682,31 @@ class AssemblyManagerV4:
         pcb_instance_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
-        Assembly Step 1 — Station 1.
-
-        Consumes : Bottom_Cover + PCB physical instances.
-        Updates  : Bottom_Cover-PCB BOM (Instance_Reference for both slots).
-        Transition: pending → step1_done.
-
-        Parameters
-        ----------
-        bottom_cover_instance_id : AAS instance ID from a barcode/RFID scan (optional).
-        pcb_instance_id          : AAS instance ID from a barcode/RFID scan (optional).
+        Assembly Step 1 — Station 1: Combine Bottom_Cover + PCB → Bottom_Cover-PCB.
+        
+        This is the first assembly step for any order. It creates a housing sub-assembly
+        by taking a physical bottom cover and PCB unit from inventory.
+        
+        Args:
+            order_id: Order ID (must have status='pending')
+            bottom_cover_instance_id: Optional barcode/RFID scan override. If None, auto-selects first available.
+            pcb_instance_id: Optional barcode/RFID scan override. If None, auto-selects first available.
+        
+        Workflow:
+            1. Load order (must be in 'pending' status)
+            2. Pick 2 component instances (auto or scanned)
+            3. Mark both as consumed in inventory
+            4. Fulfill related model-type reservations
+            5. Patch Bottom_Cover-PCB BOM with both instance refs
+            6. Update Assembly_Traceability with component origins
+            7. Update parent Telefon traceability with intermediate results
+            8. Transition order to 'step1_done'
+        
+        Returns:
+            Dict with keys: bottom_cover-PCB_instance, consumed (list of components)
+        
+        Raises:
+            Exception if order status is not 'pending' or required instances not available.
         """
         conn = _get_connection(self.db_path)
         _create_tables(conn)
@@ -766,9 +792,10 @@ class AssemblyManagerV4:
         telefon_id = shells.get("Telefon", "")
         if telefon_id:
             telefon_num = self._inst_num_from_id(telefon_id)
-            self._update_telefon_traceability(
+            self._update_asset_traceability(
+                asset_key="Telefon",
+                instance_num=telefon_num,
                 order_id=order_id,
-                telefon_num=telefon_num,
                 assembly_date=now[:10],
                 used_updates={
                     "Bottom_Cover": {
@@ -822,16 +849,39 @@ class AssemblyManagerV4:
         fuse_instance_ids: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """
-        Assembly Step 2 — Station 2.
-
-        Consumes : All required Fuse physical instances.
-        Updates  : Bottom_Cover-PCB-Fuse BOM (fuse references).
-        Transition: step1_done → step2_done.
-
-        Parameters
-        ----------
-        fuse_instance_ids : List of AAS instance IDs from barcode/RFID (optional).
-                            Must have exactly the right count if provided.
+        Assembly Step 2 — Station 2: Add Fuse(s) to Bottom_Cover-PCB → Bottom_Cover-PCB-Fuse.
+        
+        This step adds the variable-quantity fuse component(s) to the housing sub-assembly,
+        creating the final PCB-with-fuses sub-assembly.
+        
+        Args:
+            order_id: Order ID (must have status='step1_done')
+            fuse_instance_ids: Optional list of barcode/RFID scanned fuse IDs.
+                              If None, auto-selects required number of available instances.
+                              Must match the number of fuses specified in order config.
+        
+        Workflow:
+            1. Load order (must be in 'step1_done' status)
+            2. Pick N fuse instances (N = order_config["number_of_fuses"])
+            3. Mark all fuses as consumed
+            4. Fulfill N fuse model-type reservations (Fuse_1, Fuse_2, ...)
+            5. Patch Bottom_Cover-PCB-Fuse BOM:
+               - Sets Fuse_1, Fuse_2, ... references
+               - Sets Bottom_Cover-PCB reference (from step 1)
+            6. Update Assembly_Traceability with:
+               - Bottom_Cover (from step 1)
+               - PCB (from step 1)
+               - Fuse_1, Fuse_2, ... (from this step) — DYNAMIC SLOT CREATION
+            7. Update parent Telefon traceability
+            8. Transition order to 'step2_done'
+        
+        Returns:
+            Dict with keys: bottom_cover-PCB-Fuse_instance, consumed_fuses
+        
+        Raises:
+            Exception if order status is not 'step1_done' or wrong fuse count provided.
+        
+        Note: Step 2 NOW INCLUDES Bottom_Cover in traceability (fixed from earlier bug).
         """
         conn = _get_connection(self.db_path)
         _create_tables(conn)
@@ -937,9 +987,10 @@ class AssemblyManagerV4:
         telefon_id = shells.get("Telefon", "")
         if telefon_id:
             telefon_num = self._inst_num_from_id(telefon_id)
-            self._update_telefon_traceability(
+            self._update_asset_traceability(
+                asset_key="Telefon",
+                instance_num=telefon_num,
                 order_id=order_id,
-                telefon_num=telefon_num,
                 assembly_date=now[:10],
                 used_updates={
                     "Bottom_Cover": {
@@ -1001,17 +1052,36 @@ class AssemblyManagerV4:
         top_cover_instance_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
-        Assembly Step 3 — Station 3.
-
-        Consumes : Top_Cover physical instance.
-                   Marks Bottom_Cover-PCB and Bottom_Cover-PCB-Fuse sub-assemblies consumed.
-        Updates  : Telefon BOM with all component and sub-assembly references.
-        Registers: Telefon as 'available' in inventory (ready to ship).
-        Transition: step2_done → assembled.
-
-        Parameters
-        ----------
-        top_cover_instance_id : AAS instance ID from barcode/RFID (optional).
+        Assembly Step 3 — Station 3: Complete the Telefon product.
+        
+        This is the final assembly step. It adds the top cover to the combidne sub-assemblies
+        (Bottom_Cover-PCB-Fuse), creating the finished Telefon product.
+        
+        Args:
+            order_id: Order ID (must have status='step2_done')
+            top_cover_instance_id: Optional barcode/RFID scan override. If None, auto-selects first available.
+        
+        Workflow:
+            1. Load order (must be in 'step2_done' status)
+            2. Pick top cover instance (auto or scanned)
+            3. Mark top cover, Bottom_Cover-PCB, and Bottom_Cover-PCB-Fuse sub-assemblies as consumed
+            4. Fulfill Top_Cover model-type reservation
+            5. Patch Telefon BOM with all final references:
+               - Top_Cover
+               - Bottom_Cover-PCB-Fuse sub-assembly
+               - All nested components (Bottom_Cover, PCB, Fuse_1, Fuse_2, ...)
+            6. Update Telefon Assembly_Traceability with complete component chain
+            7. Register Telefon as 'available' in inventory (ready to ship)
+            8. Transition order to 'assembled'
+        
+        Returns:
+            Dict with keys: telefon_instance, top_cover, status
+        
+        Raises:
+            Exception if order status is not 'step2_done' or top cover not available.
+        
+        The final Telefon includes full traceability to all component origins throughout
+        the assembly process.
         """
         conn = _get_connection(self.db_path)
         _create_tables(conn)
@@ -1081,9 +1151,10 @@ class AssemblyManagerV4:
             print(f"  [OK] Patched Telefon BOM ({telefon_bom_path.name})")
             self._update_submodel_on_server(telefon_bom_path)
 
-        self._update_telefon_traceability(
+        self._update_asset_traceability(
+            asset_key="Telefon",
+            instance_num=telefon_num,
             order_id=order_id,
-            telefon_num=telefon_num,
             assembly_date=now[:10],
             used_updates={
                 "Bottom_Cover": {

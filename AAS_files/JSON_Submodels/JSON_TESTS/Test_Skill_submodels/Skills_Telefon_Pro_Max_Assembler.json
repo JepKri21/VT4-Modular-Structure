@@ -1,7 +1,7 @@
 {
   "modelType": "Submodel",
   "kind": "Instance",
-  "id": "https://aausmartlab.com/Assets/Resource/MADE/Drill_Station/03fa4e62-d70f-4803-92ce-f8456370ac98/Skills",
+  "id": "https://aausmartlab.com/Assets/Resource/MADE/Telefon_Pro_Max_Assembler/50af5cf7-960f-4332-843d-a638cd3a4543/Skills",
   "idShort": "Skills",
   "submodelElements": [
     {
@@ -18,7 +18,7 @@
               "value": [
                 {
                   "modelType": "SubmodelElementCollection",
-                  "idShort": "Drilling",
+                  "idShort": "Assemble",
                   "value": [
                     {
                       "modelType": "Property",
@@ -32,30 +32,17 @@
                       "value": [
                         {
                           "modelType": "Range",
-                          "max": "20",
-                          "min": "1",
+                          "max": "2",
+                          "min": "0",
                           "valueType": "xs:integer",
-                          "idShort": "Drill_Depth"
+                          "idShort": "Speed"
                         },
                         {
                           "modelType": "Range",
-                          "max": "2000",
-                          "min": "1500",
+                          "max": "5",
+                          "min": "0",
                           "valueType": "xs:integer",
-                          "idShort": "Rotational_Speed"
-                        },
-                        {
-                          "modelType": "Range",
-                          "max": "200",
-                          "min": "100",
-                          "valueType": "xs:integer",
-                          "idShort": "Feed"
-                        },
-                        {
-                          "modelType": "Property",
-                          "value": "5",
-                          "valueType": "xs:integer",
-                          "idShort": "Drill_Size"
+                          "idShort": "Acceleration"
                         }
                       ]
                     },
@@ -65,11 +52,11 @@
                       "value": [
                         {
                           "modelType": "SubmodelElementCollection",
-                          "idShort": "Drill_Station_Connection_Point_1",
+                          "idShort": "Telefon_Pro_Max_Assembler_Connection_Point_1",
                           "value": [
                             {
                               "modelType": "Property",
-                              "value": "Drill_Station_Connection_Point_1",
+                              "value": "Telefon_Pro_Max_Assembler_Connection_Point_1",
                               "valueType": "xs:string",
                               "idShort": "Connection_Point_Id"
                             }
@@ -91,9 +78,15 @@
                               "value": [
                                 {
                                   "modelType": "Property",
-                                  "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover",
+                                  "value": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Bottom_Cover-PCB_Fuse",
                                   "valueType": "xs:string",
-                                  "idShort": "Bottom_Cover"
+                                  "idShort": "Bottom_Cover-PCB_Fuse"
+                                },
+                                {
+                                  "modelType": "Property",
+                                  "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Top_Cover",
+                                  "valueType": "xs:string",
+                                  "idShort": "Top_Cover"
                                 }
                               ]
                             },
@@ -103,9 +96,9 @@
                               "value": [
                                 {
                                   "modelType": "Property",
-                                  "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover",
+                                  "value": "https://aausmartlab.com/Assets/Product/Final_Product/AAU/Telefon_Pro_Max",
                                   "valueType": "xs:string",
-                                  "idShort": "Bottom_Cover"
+                                  "idShort": "Telefon_Pro_Max"
                                 }
                               ]
                             }
@@ -151,11 +144,11 @@
                       "value": [
                         {
                           "modelType": "SubmodelElementCollection",
-                          "idShort": "Drill_Station_Connection_Point_1",
+                          "idShort": "Telefon_Pro_Max_Assembler_Connection_Point_1",
                           "value": [
                             {
                               "modelType": "Property",
-                              "value": "Drill_Station_Connection_Point_1",
+                              "value": "Telefon_Pro_Max_Assembler_Connection_Point_1",
                               "valueType": "xs:string",
                               "idShort": "Connection_Point_Id"
                             }
@@ -182,9 +175,9 @@
                               "value": [
                                 {
                                   "modelType": "Property",
-                                  "value": "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover",
+                                  "value": "https://aausmartlab.com/Assets/Product/Sub_Assembly/AAU/Telefon_Pro_Max",
                                   "valueType": "xs:string",
-                                  "idShort": "Bottom_Cover"
+                                  "idShort": "Telefon_Pro_Max"
                                 }
                               ]
                             }
