@@ -372,6 +372,7 @@ def build_bop_submodel(type_url: str, cfg: dict) -> model.Submodel:
             )
         )
 
+    
     return model.Submodel(
         id_=f"{type_url}/Bill_Of_Processes",
         id_short="Bill_Of_Processes",
