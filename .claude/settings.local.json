@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs cat *)",
+      "Bash(python -c \"import basyx.aas.model as m; import inspect; print\\(inspect.signature\\(m.Property.__init__\\)\\)\")",
+      "Bash(python -c ' *)",
+      "Bash(python generate_types.py --output-dir /tmp/aas_test_output)",
+      "Bash(python generate_types.py --output-dir /tmp/aas_test_types)",
+      "Bash(python generate_instances.py --output-dir /tmp/aas_test_instances)"
+    ]
+  }
+}
