@@ -28,15 +28,25 @@ BASE_NS = "https://aausmartlab.com"
 TMPL = model.ModellingKind.TEMPLATE
 
 # Map xs: type strings → basyx datatype classes.
-# xs:integer (arbitrary precision) is the type used across the project.
 XS_TYPE_MAP: dict[str, Any] = {
-    "xs:string":  model.datatypes.String,
-    "xs:integer": model.datatypes.Integer,   # xs:integer – arbitrary precision
-    "xs:int":     model.datatypes.Int,        # xs:int    – 32-bit
-    "xs:double":  model.datatypes.Double,
-    "xs:float":   model.datatypes.Float,
-    "xs:boolean": model.datatypes.Boolean,
-    "xs:date":    model.datatypes.Date,
+    # Text
+    "xs:string":             model.datatypes.String,
+    # Integers — use xs:int for 32-bit, xs:integer for arbitrary precision
+    "xs:integer":            model.datatypes.Integer,
+    "xs:int":                model.datatypes.Int,
+    "xs:long":               model.datatypes.Long,
+    "xs:short":              model.datatypes.Short,
+    "xs:byte":               model.datatypes.Byte,
+    "xs:nonNegativeInteger": model.datatypes.NonNegativeInteger,
+    "xs:positiveInteger":    model.datatypes.PositiveInteger,
+    # Floats
+    "xs:double":             model.datatypes.Double,
+    "xs:float":              model.datatypes.Float,
+    # Boolean
+    "xs:boolean":            model.datatypes.Boolean,
+    # Date / time — values must be ISO 8601 strings, e.g. "2024-01-15"
+    "xs:date":               model.datatypes.Date,
+    "xs:dateTime":           model.datatypes.DateTime,
 }
 
 # ──────────────────────────── helpers ─────────────────────────────────
@@ -63,22 +73,57 @@ def _lang(text: str, language: str = "en") -> model.MultiLanguageTextType:
 
 def _convert_value(raw: Any, value_type: Any) -> Any:
     """
-    Convert a raw config value (often a Python literal or None) to the
+    Convert a raw config value (Python literal, YAML scalar, or None) to the
     exact datatype expected by the BaSyx SDK so that JSON serialisation
     produces the correct xs: representation.
+
+    Covers all types in XS_TYPE_MAP:
+        String, Integer, Int, Long, Short, Byte, NonNegativeInteger, PositiveInteger,
+        Double, Float, Boolean, Date, DateTime
     """
+    import datetime
+
     if raw is None or raw == "":
         return None
+
+    # ── Text ──────────────────────────────────────────────────────────────
     if value_type == model.datatypes.String:
         return model.datatypes.String(raw)
-    if value_type in (model.datatypes.Integer, model.datatypes.Int):
+
+    # ── Integers ──────────────────────────────────────────────────────────
+    if value_type in (
+        model.datatypes.Integer,
+        model.datatypes.Int,
+        model.datatypes.Long,
+        model.datatypes.Short,
+        model.datatypes.Byte,
+        model.datatypes.NonNegativeInteger,
+        model.datatypes.PositiveInteger,
+    ):
         return value_type(int(raw))
+
+    # ── Floats ────────────────────────────────────────────────────────────
     if value_type in (model.datatypes.Double, model.datatypes.Float):
         return value_type(float(raw))
+
+    # ── Boolean ───────────────────────────────────────────────────────────
     if value_type == model.datatypes.Boolean:
         if isinstance(raw, bool):
             return raw
         return str(raw).strip().lower() in ("true", "1", "yes")
+
+    # ── Date / DateTime — expect ISO 8601 strings ("2024-01-15") ──────────
+    if value_type == model.datatypes.Date:
+        if isinstance(raw, datetime.date):
+            return raw
+        return datetime.date.fromisoformat(str(raw))
+
+    if value_type == model.datatypes.DateTime:
+        if isinstance(raw, datetime.datetime):
+            return raw
+        return datetime.datetime.fromisoformat(str(raw))
+
+    # ── Fallback ──────────────────────────────────────────────────────────
     return value_type(raw)
 
 
