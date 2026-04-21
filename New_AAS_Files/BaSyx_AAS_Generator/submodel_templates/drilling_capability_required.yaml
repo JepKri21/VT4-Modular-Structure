@@ -1,63 +1,54 @@
-id_short: "DrillingCapability"
-id: "https://aausmartlab.org/SubmodelTemplate/Capability/BasicDrillingCapability/1/0"
-description: "Capability template for a basic drilling operation"
+id_short: "DrillingCapabilityRequired"
+id: "https://aausmartlab.org/SubmodelTemplate/Capability/BasicDrillingCapability/Required/1/0"
+description: "Required capability template for a product process step — parameters expressed as exact property values to be matched against an offered capability"
 
 elements:
   - type: collection
     id_short: "DrillingParameters"
     semantic_id: "https://aausmartlab.org/Semantics/DrillingParameters"
-    description: "Drilling parameters defining the capability envelope"
+    description: "Exact drilling parameters required to process this product"
     cardinality: "One"
     elements:
       - type: property
         id_short: "BitDiameter_mm"
         value_type: "xs:float"
         semantic_id: "https://aausmartlab.org/Semantics/BitDiameter_mm"
-        description: "Drill bit diameter in mm"
+        description: "Required drill bit diameter in mm"
         cardinality: "One"
-        qualifiers:
-          - type: "range_min"
-            value_type: "xs:float"
-            value: 1.0
-            kind: "TEMPLATE_QUALIFIER"
-          - type: "range_max"
-            value_type: "xs:float"
-            value: 20.0
-            kind: "TEMPLATE_QUALIFIER"
 
-      - type: range
+      - type: property
         id_short: "DrillDepth_mm"
         value_type: "xs:float"
         semantic_id: "https://aausmartlab.org/Semantics/DrillDepth_mm"
-        description: "Minimum and maximum drill depth in mm"
+        description: "Required drill depth in mm"
         cardinality: "One"
 
-      - type: range
+      - type: property
         id_short: "SpindleSpeed_RPM"
         value_type: "xs:float"
         semantic_id: "https://aausmartlab.org/Semantics/SpindleSpeed_RPM"
-        description: "Spindle speed range in RPM"
+        description: "Required spindle speed in RPM"
         cardinality: "One"
 
-      - type: range
+      - type: property
         id_short: "SpindleFeed_mm_per_s"
         value_type: "xs:float"
         semantic_id: "https://aausmartlab.org/Semantics/SpindleFeed_mm_per_s"
-        description: "Spindle feed rate range in mm/s"
+        description: "Required spindle feed rate in mm/s"
         cardinality: "One"
 
-      - type: range
+      - type: property
         id_short: "HolePlacement_x_mm"
         value_type: "xs:float"
         semantic_id: "https://aausmartlab.org/Semantics/HolePlacement_x_mm"
-        description: "Possible range of X-coordinate position of hole relative to product placement point"
+        description: "X-coordinate of hole position relative to product placement point"
         cardinality: "ZeroToOne"
 
-      - type: range
+      - type: property
         id_short: "HolePlacement_y_mm"
         value_type: "xs:float"
         semantic_id: "https://aausmartlab.org/Semantics/HolePlacement_y_mm"
-        description: "Possible range of Y-coordinate position of hole relative to product placement point"
+        description: "Y-coordinate of hole position relative to product placement point"
         cardinality: "ZeroToOne"
 
       - type: multi_language_property
@@ -69,7 +60,7 @@ elements:
   - type: list
     id_short: "SupportedComponents"
     semantic_id: "https://aausmartlab.org/Semantics/SupportedComponents"
-    description: "Components this drilling station can process"
+    description: "Component types this step applies to"
     element_type: "property"
     value_type: "xs:string"
     cardinality: "ZeroToMany"
@@ -77,13 +68,7 @@ elements:
   - type: list
     id_short: "AllowedMaterials"
     semantic_id: "https://aausmartlab.org/Semantics/AllowedMaterials"
-    description: "Materials that can be drilled by this capability"
+    description: "Materials the product component is made of"
     element_type: "property"
     value_type: "xs:string"
     cardinality: "ZeroToMany"
-
-  - type: reference_element
-    id_short: "ResourceReference"
-    semantic_id: "https://aausmartlab.org/Semantics/ResourceReference"
-    description: "Reference to the physical resource realizing this capability"
-    cardinality: "ZeroToOne"

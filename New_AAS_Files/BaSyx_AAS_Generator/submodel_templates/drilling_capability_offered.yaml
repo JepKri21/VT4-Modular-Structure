@@ -1,6 +1,6 @@
-id_short: "DrillingCapability"
-id: "https://aausmartlab.org/SubmodelTemplate/Capability/BasicDrillingCapability/1/0"
-description: "Capability template for a basic drilling operation"
+id_short: "DrillingCapabilityOffered"
+id: "https://aausmartlab.org/SubmodelTemplate/Capability/BasicDrillingCapability/Offered/1/0"
+description: "Offered capability template for a drilling resource — parameters expressed as ranges defining the operational envelope"
 
 elements:
   - type: collection

@@ -1,0 +1,110 @@
+id_short: "ComponentProperties"
+id: "https://aausmartlab.com/SubmodelTemplate/SubAssembly/Properties/1/0"
+description: "Production-relevant properties submodel template for sub-assemblies"
+
+elements:
+  - type: collection
+    id_short: "ProductionIdentification"
+    semantic_id: "https://aausmartlab.com/Semantics/ProductionIdentification"
+    description: "Identifiers needed to route and track the sub-assembly through production"
+    cardinality: "One"
+    elements:
+      - type: property
+        id_short: "ModelNumber"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.com/Semantics/ModelNumber"
+        description: "Sub-assembly model number — drives BOM and BOP selection"
+        cardinality: "One"
+
+      - type: property
+        id_short: "SerialNumber"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.com/Semantics/SerialNumber"
+        description: "Unique serial number for this physical instance"
+        cardinality: "ZeroToOne"
+
+      - type: property
+        id_short: "BatchNumber"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.com/Semantics/BatchNumber"
+        description: "Production batch identifier for traceability"
+        cardinality: "ZeroToOne"
+
+      - type: property
+        id_short: "HardwareRevision"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.com/Semantics/HardwareRevision"
+        description: "Design revision — a revision change may imply a different BOM or BOP"
+        cardinality: "ZeroToOne"
+
+  - type: collection
+    id_short: "AssemblyTracking"
+    semantic_id: "https://aausmartlab.com/Semantics/AssemblyTracking"
+    description: "Runtime production data recorded during assembly"
+    cardinality: "One"
+    elements:
+      - type: property
+        id_short: "AssemblyStatus"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.com/Semantics/AssemblyStatus"
+        description: "Current assembly status (e.g. Pending, InProgress, Completed)"
+        cardinality: "One"
+
+      - type: property
+        id_short: "AssemblyDate"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.com/Semantics/AssemblyDate"
+        description: "Date the sub-assembly was completed (ISO 8601)"
+        cardinality: "ZeroToOne"
+
+      - type: property
+        id_short: "AssemblyStation"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.com/Semantics/AssemblyStation"
+        description: "id_short of the station that produced this sub-assembly"
+        cardinality: "ZeroToOne"
+
+      - type: property
+        id_short: "AssemblyOperator"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.com/Semantics/AssemblyOperator"
+        description: "Operator or robot ID that performed the assembly"
+        cardinality: "ZeroToOne"
+
+  - type: collection
+    id_short: "QualityTracking"
+    semantic_id: "https://aausmartlab.com/Semantics/QualityTracking"
+    description: "Inspection results recorded after assembly — links to RequiresInspection in BOP"
+    cardinality: "ZeroToOne"
+    elements:
+      - type: property
+        id_short: "InspectionResult"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.com/Semantics/InspectionResult"
+        description: "Outcome of post-assembly inspection (e.g. Pass, Fail, Pending)"
+        cardinality: "One"
+
+      - type: property
+        id_short: "InspectionDate"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.com/Semantics/InspectionDate"
+        description: "Date of inspection (ISO 8601)"
+        cardinality: "ZeroToOne"
+
+  - type: collection
+    id_short: "PhysicalProperties"
+    semantic_id: "https://aausmartlab.com/Semantics/PhysicalProperties"
+    description: "Physical properties relevant to handling and downstream assembly"
+    cardinality: "ZeroToOne"
+    elements:
+      - type: property
+        id_short: "Weight_g"
+        value_type: "xs:double"
+        semantic_id: "https://aausmartlab.com/Semantics/Weight_g"
+        description: "Total weight of the sub-assembly in grams"
+        cardinality: "ZeroToOne"
+        qualifiers:
+          - type: "unit"
+            value_type: "xs:string"
+            value: "g"
+            kind: "TEMPLATE_QUALIFIER"

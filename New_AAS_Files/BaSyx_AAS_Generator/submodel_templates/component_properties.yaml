@@ -1,0 +1,156 @@
+id_short: "ComponentProperties"
+id: "https://aausmartlab.com/SubmodelTemplate/Component/Properties/1/0"
+description: "Production-relevant properties submodel template for manufactured components"
+
+elements:
+  - type: collection
+    id_short: "ProductionIdentification"
+    semantic_id: "https://aausmartlab.com/Semantics/ProductionIdentification"
+    description: "Identifiers needed to route and track the component through production"
+    cardinality: "One"
+    elements:
+      - type: property
+        id_short: "ModelNumber"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.com/Semantics/ModelNumber"
+        description: "Component model number — drives process and BOM selection"
+        cardinality: "One"
+
+      - type: property
+        id_short: "SerialNumber"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.com/Semantics/SerialNumber"
+        description: "Unique serial number for this physical instance"
+        cardinality: "ZeroToOne"
+
+      - type: property
+        id_short: "BatchNumber"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.com/Semantics/BatchNumber"
+        description: "Production batch identifier for traceability"
+        cardinality: "ZeroToOne"
+
+  - type: collection
+    id_short: "PhysicalDimensions"
+    semantic_id: "https://aausmartlab.com/Semantics/PhysicalDimensions"
+    description: "Dimensions required for fixturing, handling, and process planning"
+    cardinality: "ZeroToOne"
+    elements:
+      - type: property
+        id_short: "Length"
+        value_type: "xs:integer"
+        semantic_id: "https://aausmartlab.com/Semantics/Length_mm"
+        description: "Length in millimeters"
+        cardinality: "ZeroToOne"
+        qualifiers:
+          - type: "unit"
+            value_type: "xs:string"
+            value: "mm"
+            kind: "TEMPLATE_QUALIFIER"
+
+      - type: property
+        id_short: "Width"
+        value_type: "xs:integer"
+        semantic_id: "https://aausmartlab.com/Semantics/Width_mm"
+        description: "Width in millimeters"
+        cardinality: "ZeroToOne"
+        qualifiers:
+          - type: "unit"
+            value_type: "xs:string"
+            value: "mm"
+            kind: "TEMPLATE_QUALIFIER"
+
+      - type: property
+        id_short: "Height"
+        value_type: "xs:integer"
+        semantic_id: "https://aausmartlab.com/Semantics/Height_mm"
+        description: "Height in millimeters"
+        cardinality: "ZeroToOne"
+        qualifiers:
+          - type: "unit"
+            value_type: "xs:string"
+            value: "mm"
+            kind: "TEMPLATE_QUALIFIER"
+
+      - type: property
+        id_short: "Weight_g"
+        value_type: "xs:double"
+        semantic_id: "https://aausmartlab.com/Semantics/Weight_g"
+        description: "Weight in grams — used for handling and logistics"
+        cardinality: "ZeroToOne"
+        qualifiers:
+          - type: "unit"
+            value_type: "xs:string"
+            value: "g"
+            kind: "TEMPLATE_QUALIFIER"
+
+  - type: collection
+    id_short: "MaterialProperties"
+    semantic_id: "https://aausmartlab.com/Semantics/MaterialProperties"
+    description: "Material properties used for capability matching and process selection"
+    cardinality: "ZeroToOne"
+    elements:
+      - type: property
+        id_short: "Material"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.com/Semantics/Material"
+        description: "Material type — matched against AllowedMaterials in capability"
+        cardinality: "ZeroToOne"
+
+      - type: property
+        id_short: "Color"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.com/Semantics/Color"
+        description: "Color designation"
+        cardinality: "ZeroToOne"
+
+      - type: property
+        id_short: "Finish"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.com/Semantics/SurfaceFinish"
+        description: "Surface finish (e.g. Anodized, Painted, Raw)"
+        cardinality: "ZeroToOne"
+
+  - type: collection
+    id_short: "ElectricalProperties"
+    semantic_id: "https://aausmartlab.com/Semantics/ElectricalProperties"
+    description: "Electrical ratings required for production safety and process selection"
+    cardinality: "ZeroToOne"
+    elements:
+      - type: property
+        id_short: "Voltage_Rating"
+        value_type: "xs:integer"
+        semantic_id: "https://aausmartlab.com/Semantics/VoltageRating"
+        description: "Maximum voltage rating in volts"
+        cardinality: "ZeroToOne"
+        qualifiers:
+          - type: "unit"
+            value_type: "xs:string"
+            value: "V"
+            kind: "TEMPLATE_QUALIFIER"
+
+      - type: property
+        id_short: "Current_Rating"
+        value_type: "xs:double"
+        semantic_id: "https://aausmartlab.com/Semantics/CurrentRating"
+        description: "Current rating in amperes"
+        cardinality: "ZeroToOne"
+        qualifiers:
+          - type: "unit"
+            value_type: "xs:string"
+            value: "A"
+            kind: "TEMPLATE_QUALIFIER"
+
+      - type: property
+        id_short: "Type"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.com/Semantics/ElectricalType"
+        description: "Component type descriptor (e.g. fast-acting, slow-blow)"
+        cardinality: "ZeroToOne"
+
+      - type: property
+        id_short: "Layers"
+        value_type: "xs:integer"
+        semantic_id: "https://aausmartlab.com/Semantics/Layers"
+        description: "Number of structural layers — affects soldering and drilling process"
+        cardinality: "ZeroToOne"

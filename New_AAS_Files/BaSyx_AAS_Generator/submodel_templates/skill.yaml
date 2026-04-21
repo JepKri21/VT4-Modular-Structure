@@ -1,0 +1,75 @@
+id_short: "SkillTemplate"
+id: "https://aausmartlab.org/SubmodelTemplate/Skill/BasicSkill/1/0"
+description: "Generic skill template following Plattform I4.0 CSS model"
+
+elements:
+
+  # --- isRealizedBy link (points to the Capability this skill realizes) ---
+  - type: reference_element
+    id_short: "CapabilityReference"
+    semantic_id: "https://aausmartlab.org/Semantics/CapabilityReference"
+    description: "Reference to the Capability submodel instance this skill realizes"
+    cardinality: "One"
+
+  # --- SkillParameters ---
+  - type: collection
+    id_short: "SkillParameters"
+    semantic_id: "https://aausmartlab.org/Semantics/SkillParameters"
+    description: "Input and output parameters for this skill"
+    cardinality: "One"
+    elements:
+      - type: list
+        id_short: "InputParameters"
+        semantic_id: "https://aausmartlab.org/Semantics/InputParameters"
+        description: "Parameters passed into the skill at invocation"
+        element_type: "collection"
+        cardinality: "ZeroToMany"
+
+      - type: list
+        id_short: "OutputParameters"
+        semantic_id: "https://aausmartlab.org/Semantics/OutputParameters"
+        description: "Parameters returned by the skill after execution"
+        element_type: "collection"
+        cardinality: "ZeroToMany"
+
+  # --- StateMachine ---
+  - type: collection
+    id_short: "StateMachine"
+    semantic_id: "https://aausmartlab.org/Semantics/StateMachine"
+    description: "State machine defining execution lifecycle"
+    cardinality: "One"
+    elements:
+      - type: list
+        id_short: "States"
+        semantic_id: "https://aausmartlab.org/Semantics/States"
+        description: "Named states: Idle, Execute, Completed, Paused, Stopped, Aborted"
+        element_type: "collection"
+        cardinality: "OneToMany"
+
+      - type: list
+        id_short: "Transitions"
+        semantic_id: "https://aausmartlab.org/Semantics/Transitions"
+        description: "State transitions (FromState → ToState via trigger)"
+        element_type: "collection"
+        cardinality: "OneToMany"
+
+  # --- SkillInterface ---
+  - type: collection
+    id_short: "SkillInterface"
+    semantic_id: "https://aausmartlab.org/Semantics/SkillInterface"
+    description: "External interface exposing triggers to callers"
+    cardinality: "One"
+    elements:
+      - type: list
+        id_short: "SkillTriggers"
+        semantic_id: "https://aausmartlab.org/Semantics/SkillTriggers"
+        description: "Available triggers: Start, Stop, Reset, Pause, Resume, Abort"
+        element_type: "collection"
+        cardinality: "OneToMany"
+
+  # --- Resource ---
+  - type: reference_element
+    id_short: "ResourceReference"
+    semantic_id: "https://aausmartlab.org/Semantics/ResourceReference"
+    description: "Physical resource (robot, shuttle…) that executes this skill"
+    cardinality: "ZeroToOne"

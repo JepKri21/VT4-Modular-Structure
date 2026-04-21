@@ -1,0 +1,52 @@
+id_short: "DrillingCapability"
+id: "https://aausmartlab.com/SubmodelInstance/SubAssembly/BottomCoverPCB/SA-001/RequiredCapability/Drilling"
+description: "Required drilling capability parameters for the Bottom Cover PCB drilling step"
+
+elements:
+  - type: collection
+    id_short: "DrillingParameters"
+    semantic_id: "https://aausmartlab.org/Semantics/DrillingParameters"
+    elements:
+      - type: property
+        id_short: "BitDiameter_mm"
+        value_type: "xs:float"
+        value: 3.0
+        semantic_id: "https://aausmartlab.org/Semantics/BitDiameter_mm"
+
+      - type: property
+        id_short: "DrillDepth_mm"
+        value_type: "xs:float"
+        value: 5.0
+        semantic_id: "https://aausmartlab.org/Semantics/DrillDepth_mm"
+
+      - type: property
+        id_short: "SpindleSpeed_RPM"
+        value_type: "xs:float"
+        value: 800.0
+        semantic_id: "https://aausmartlab.org/Semantics/SpindleSpeed_RPM"
+
+      - type: property
+        id_short: "SpindleFeed_mm_per_s"
+        value_type: "xs:float"
+        value: 10.0
+        semantic_id: "https://aausmartlab.org/Semantics/SpindleFeed_mm_per_s"
+
+  - type: collection
+    id_short: "SupportedComponents"
+    semantic_id: "https://aausmartlab.org/Semantics/SupportedComponents"
+    elements:
+      - type: property
+        id_short: "Component1"
+        value_type: "xs:string"
+        value: "Bottom_Cover"
+        semantic_id: "https://aausmartlab.org/Semantics/SupportedComponent"
+
+  - type: collection
+    id_short: "AllowedMaterials"
+    semantic_id: "https://aausmartlab.org/Semantics/AllowedMaterials"
+    elements:
+      - type: property
+        id_short: "Material1"
+        value_type: "xs:string"
+        value: "PLA"
+        semantic_id: "https://aausmartlab.org/Semantics/AllowedMaterial"

@@ -1,0 +1,382 @@
+{
+  "idShort": "DrillingCapability",
+  "description": [
+    {
+      "language": "en",
+      "text": "Capability template for a basic drilling operation"
+    }
+  ],
+  "modelType": "Submodel",
+  "id": "https://aausmartlab.org/SubmodelTemplate/Capability/BasicDrillingCapability/1/0",
+  "kind": "Template",
+  "submodelElements": [
+    {
+      "idShort": "DrillingParameters",
+      "modelType": "SubmodelElementCollection",
+      "semanticId": {
+        "type": "ExternalReference",
+        "keys": [
+          {
+            "type": "GlobalReference",
+            "value": "https://aausmartlab.org/Semantics/DrillingParameters"
+          }
+        ]
+      },
+      "qualifiers": [
+        {
+          "semanticId": {
+            "type": "ExternalReference",
+            "keys": [
+              {
+                "type": "GlobalReference",
+                "value": "https://admin-shell.io/SubmodelTemplates/Cardinality/1/0"
+              }
+            ]
+          },
+          "value": "One",
+          "kind": "TemplateQualifier",
+          "valueType": "xs:string",
+          "type": "SMT/Cardinality"
+        }
+      ],
+      "value": [
+        {
+          "idShort": "BitDiameter_mm",
+          "modelType": "Property",
+          "semanticId": {
+            "type": "ExternalReference",
+            "keys": [
+              {
+                "type": "GlobalReference",
+                "value": "https://aausmartlab.org/Semantics/BitDiameter_mm"
+              }
+            ]
+          },
+          "qualifiers": [
+            {
+              "semanticId": {
+                "type": "ExternalReference",
+                "keys": [
+                  {
+                    "type": "GlobalReference",
+                    "value": "https://admin-shell.io/SubmodelTemplates/Cardinality/1/0"
+                  }
+                ]
+              },
+              "value": "One",
+              "kind": "TemplateQualifier",
+              "valueType": "xs:string",
+              "type": "SMT/Cardinality"
+            },
+            {
+              "value": "1.0",
+              "kind": "TemplateQualifier",
+              "valueType": "xs:float",
+              "type": "range_min"
+            },
+            {
+              "value": "20.0",
+              "kind": "TemplateQualifier",
+              "valueType": "xs:float",
+              "type": "range_max"
+            }
+          ],
+          "valueType": "xs:float"
+        },
+        {
+          "idShort": "DrillDepth_mm",
+          "modelType": "Range",
+          "semanticId": {
+            "type": "ExternalReference",
+            "keys": [
+              {
+                "type": "GlobalReference",
+                "value": "https://aausmartlab.org/Semantics/DrillDepth_mm"
+              }
+            ]
+          },
+          "qualifiers": [
+            {
+              "semanticId": {
+                "type": "ExternalReference",
+                "keys": [
+                  {
+                    "type": "GlobalReference",
+                    "value": "https://admin-shell.io/SubmodelTemplates/Cardinality/1/0"
+                  }
+                ]
+              },
+              "value": "One",
+              "kind": "TemplateQualifier",
+              "valueType": "xs:string",
+              "type": "SMT/Cardinality"
+            }
+          ],
+          "valueType": "xs:float"
+        },
+        {
+          "idShort": "SpindleSpeed_RPM",
+          "modelType": "Range",
+          "semanticId": {
+            "type": "ExternalReference",
+            "keys": [
+              {
+                "type": "GlobalReference",
+                "value": "https://aausmartlab.org/Semantics/SpindleSpeed_RPM"
+              }
+            ]
+          },
+          "qualifiers": [
+            {
+              "semanticId": {
+                "type": "ExternalReference",
+                "keys": [
+                  {
+                    "type": "GlobalReference",
+                    "value": "https://admin-shell.io/SubmodelTemplates/Cardinality/1/0"
+                  }
+                ]
+              },
+              "value": "One",
+              "kind": "TemplateQualifier",
+              "valueType": "xs:string",
+              "type": "SMT/Cardinality"
+            }
+          ],
+          "valueType": "xs:float"
+        },
+        {
+          "idShort": "SpindleFeed_mm_per_s",
+          "modelType": "Range",
+          "semanticId": {
+            "type": "ExternalReference",
+            "keys": [
+              {
+                "type": "GlobalReference",
+                "value": "https://aausmartlab.org/Semantics/SpindleFeed_mm_per_s"
+              }
+            ]
+          },
+          "qualifiers": [
+            {
+              "semanticId": {
+                "type": "ExternalReference",
+                "keys": [
+                  {
+                    "type": "GlobalReference",
+                    "value": "https://admin-shell.io/SubmodelTemplates/Cardinality/1/0"
+                  }
+                ]
+              },
+              "value": "One",
+              "kind": "TemplateQualifier",
+              "valueType": "xs:string",
+              "type": "SMT/Cardinality"
+            }
+          ],
+          "valueType": "xs:float"
+        },
+        {
+          "idShort": "HolePlacement_x_mm",
+          "modelType": "Range",
+          "semanticId": {
+            "type": "ExternalReference",
+            "keys": [
+              {
+                "type": "GlobalReference",
+                "value": "https://aausmartlab.org/Semantics/HolePlacement_x_mm"
+              }
+            ]
+          },
+          "qualifiers": [
+            {
+              "semanticId": {
+                "type": "ExternalReference",
+                "keys": [
+                  {
+                    "type": "GlobalReference",
+                    "value": "https://admin-shell.io/SubmodelTemplates/Cardinality/1/0"
+                  }
+                ]
+              },
+              "value": "ZeroToOne",
+              "kind": "TemplateQualifier",
+              "valueType": "xs:string",
+              "type": "SMT/Cardinality"
+            }
+          ],
+          "valueType": "xs:float"
+        },
+        {
+          "idShort": "HolePlacement_y_mm",
+          "modelType": "Range",
+          "semanticId": {
+            "type": "ExternalReference",
+            "keys": [
+              {
+                "type": "GlobalReference",
+                "value": "https://aausmartlab.org/Semantics/HolePlacement_y_mm"
+              }
+            ]
+          },
+          "qualifiers": [
+            {
+              "semanticId": {
+                "type": "ExternalReference",
+                "keys": [
+                  {
+                    "type": "GlobalReference",
+                    "value": "https://admin-shell.io/SubmodelTemplates/Cardinality/1/0"
+                  }
+                ]
+              },
+              "value": "ZeroToOne",
+              "kind": "TemplateQualifier",
+              "valueType": "xs:string",
+              "type": "SMT/Cardinality"
+            }
+          ],
+          "valueType": "xs:float"
+        },
+        {
+          "idShort": "OperationLabel",
+          "description": [
+            {
+              "language": "en",
+              "text": "Human-readable operation label in multiple languages"
+            }
+          ],
+          "modelType": "MultiLanguageProperty",
+          "semanticId": {
+            "type": "ExternalReference",
+            "keys": [
+              {
+                "type": "GlobalReference",
+                "value": "https://aausmartlab.org/Semantics/OperationLabel"
+              }
+            ]
+          },
+          "qualifiers": [
+            {
+              "semanticId": {
+                "type": "ExternalReference",
+                "keys": [
+                  {
+                    "type": "GlobalReference",
+                    "value": "https://admin-shell.io/SubmodelTemplates/Cardinality/1/0"
+                  }
+                ]
+              },
+              "value": "ZeroToOne",
+              "kind": "TemplateQualifier",
+              "valueType": "xs:string",
+              "type": "SMT/Cardinality"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "idShort": "SupportedComponents",
+      "modelType": "SubmodelElementList",
+      "semanticId": {
+        "type": "ExternalReference",
+        "keys": [
+          {
+            "type": "GlobalReference",
+            "value": "https://aausmartlab.org/Semantics/SupportedComponents"
+          }
+        ]
+      },
+      "qualifiers": [
+        {
+          "semanticId": {
+            "type": "ExternalReference",
+            "keys": [
+              {
+                "type": "GlobalReference",
+                "value": "https://admin-shell.io/SubmodelTemplates/Cardinality/1/0"
+              }
+            ]
+          },
+          "value": "ZeroToMany",
+          "kind": "TemplateQualifier",
+          "valueType": "xs:string",
+          "type": "SMT/Cardinality"
+        }
+      ],
+      "orderRelevant": true,
+      "typeValueListElement": "Property",
+      "valueTypeListElement": "xs:string"
+    },
+    {
+      "idShort": "AllowedMaterials",
+      "modelType": "SubmodelElementList",
+      "semanticId": {
+        "type": "ExternalReference",
+        "keys": [
+          {
+            "type": "GlobalReference",
+            "value": "https://aausmartlab.org/Semantics/AllowedMaterials"
+          }
+        ]
+      },
+      "qualifiers": [
+        {
+          "semanticId": {
+            "type": "ExternalReference",
+            "keys": [
+              {
+                "type": "GlobalReference",
+                "value": "https://admin-shell.io/SubmodelTemplates/Cardinality/1/0"
+              }
+            ]
+          },
+          "value": "ZeroToMany",
+          "kind": "TemplateQualifier",
+          "valueType": "xs:string",
+          "type": "SMT/Cardinality"
+        }
+      ],
+      "orderRelevant": true,
+      "typeValueListElement": "Property",
+      "valueTypeListElement": "xs:string"
+    },
+    {
+      "idShort": "ResourceReference",
+      "description": [
+        {
+          "language": "en",
+          "text": "Reference to the physical resource realizing this capability"
+        }
+      ],
+      "modelType": "ReferenceElement",
+      "semanticId": {
+        "type": "ExternalReference",
+        "keys": [
+          {
+            "type": "GlobalReference",
+            "value": "https://aausmartlab.org/Semantics/ResourceReference"
+          }
+        ]
+      },
+      "qualifiers": [
+        {
+          "semanticId": {
+            "type": "ExternalReference",
+            "keys": [
+              {
+                "type": "GlobalReference",
+                "value": "https://admin-shell.io/SubmodelTemplates/Cardinality/1/0"
+              }
+            ]
+          },
+          "value": "ZeroToOne",
+          "kind": "TemplateQualifier",
+          "valueType": "xs:string",
+          "type": "SMT/Cardinality"
+        }
+      ]
+    }
+  ]
+}

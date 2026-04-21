@@ -1,64 +1,60 @@
 """
-Load an AAS submodel template from a YAML file and save/upload it.
+Load an AAS submodel instance from a YAML file and save/upload it.
 
 Usage:
-    python yaml_to_template.py <input.yaml>
-    python yaml_to_template.py <input.yaml> --output out.json
-    python yaml_to_template.py <input.yaml> --upload http://localhost:8081
-    python yaml_to_template.py <input.yaml> --output out.json --upload http://localhost:8081
+    python yaml_to_instance.py <input.yaml>
+    python yaml_to_instance.py <input.yaml> --output out.json
+    python yaml_to_instance.py <input.yaml> --upload http://localhost:8081
+    python yaml_to_instance.py <input.yaml> --output out.json --upload http://localhost:8081
 
 YAML format reference:
-    id_short: "MySubmodel"
-    id: "https://example.com/SubmodelTemplate/MySubmodel/1/0"
-    description: "Optional description"          # optional
+    id_short: "DrillingCapability"
+    id: "https://aausmartlab.org/SubmodelInstance/Capability/Drilling/DrillingStation1"
+    description: "Optional description"
 
     elements:
       - type: property
-        id_short: "MyProp"
-        value_type: "xs:string"                  # required for property / range
+        id_short: "BitDiameter_mm"
+        value_type: "xs:float"
+        value: 5.0
         semantic_id: "https://..."               # optional on all elements
-        description: "..."                       # optional on all elements
-        cardinality: "One"                       # One | ZeroToOne | ZeroToMany | OneToMany
         qualifiers:                              # optional on all elements
           - type: "range_min"
             value_type: "xs:float"
             value: 1.0
-            kind: "TEMPLATE_QUALIFIER"           # TEMPLATE_QUALIFIER (default) | CONCEPT_QUALIFIER | VALUE_QUALIFIER
-            semantic_id: "https://..."           # optional
+            kind: "VALUE_QUALIFIER"              # VALUE_QUALIFIER (default) | CONCEPT_QUALIFIER | INSTANCE_QUALIFIER
 
       - type: range
-        id_short: "MyRange"
+        id_short: "DrillDepth_mm"
         value_type: "xs:float"
-        cardinality: "ZeroToOne"
+        min: 0.0
+        max: 200.0
 
       - type: multi_language_property
-        id_short: "MyMLP"
-        cardinality: "ZeroToOne"
+        id_short: "OperationLabel"
+        value:
+          en: "Drilling Operation"
+          de: "Bohrvorgang"
 
       - type: reference_element
-        id_short: "MyRef"
-        cardinality: "ZeroToOne"
+        id_short: "ResourceReference"
+        value: "https://some-resource-url"        # ExternalReference string
 
       - type: collection
-        id_short: "MyCollection"
-        cardinality: "One"
-        extensible: true                       # optional — marks collection as extensible;
-        entry_template: "Entry{N}Parameters"  # optional name hint for additional entries
-        elements:                               # nested elements — same schema
+        id_short: "DrillingParameters"
+        elements:                                 # nested elements — same schema
           - type: property
-            id_short: "Nested"
+            id_short: "BitSize"
             value_type: "xs:int"
+            value: 5
 
       - type: list
-        id_short: "MyList"
-        element_type: "property"               # property | range | collection |
-                                               # multi_language_property | reference_element
-        value_type: "xs:string"                # required when element_type is property or range (AASd-109)
-        cardinality: "ZeroToMany"
-
-Cardinality defaults: property→One, collection→One, range→ZeroToOne,
-                      multi_language_property→ZeroToOne, reference_element→ZeroToOne,
-                      list→ZeroToMany
+        id_short: "SupportedComponents"
+        element_type: "property"                 # property | collection
+        value_type: "xs:string"                  # required when element_type is property
+        items:                                   # list of scalar values
+          - "Bottom Cover"
+          - "Top Cover"
 """
 
 import argparse
@@ -70,10 +66,9 @@ import yaml
 from basyx.aas import model
 
 sys.path.insert(0, str(Path(__file__).parent))
-sys.path.insert(0, str(Path(__file__).parent / "type_configs"))
 
 from builders import XS_TYPE_MAP, _convert_value
-from template_generator_class import AASTemplateBuilder
+from instance_generator_class import AASInstanceBuilder
 
 import basyx.aas.adapter.json
 
@@ -85,17 +80,8 @@ ELEMENT_TYPE_MAP: dict = {
     "reference_element":       model.ReferenceElement,
 }
 
-CARDINALITY_DEFAULTS: dict = {
-    "property":                "One",
-    "collection":              "One",
-    "range":                   "ZeroToOne",
-    "multi_language_property": "ZeroToOne",
-    "reference_element":       "ZeroToOne",
-    "list":                    "ZeroToMany",
-}
 
-
-def _apply_qualifiers(builder: AASTemplateBuilder, element, qualifiers: list) -> None:
+def _apply_qualifiers(builder: AASInstanceBuilder, element, qualifiers: list) -> None:
     for q in qualifiers:
         q_type = q.get("type")
         if not q_type:
@@ -110,44 +96,74 @@ def _apply_qualifiers(builder: AASTemplateBuilder, element, qualifiers: list) ->
             element,
             type_=q_type,
             value_type=vt,
-            value=_convert_value(q.get("value"), vt),  # cast to correct BaSyx type
-            kind=q.get("kind", "TEMPLATE_QUALIFIER"),
+            value=_convert_value(q.get("value"), vt),
+            kind=q.get("kind", "VALUE_QUALIFIER"),
             semantic_id=q.get("semantic_id"),
         )
 
 
-def _build_elements(builder: AASTemplateBuilder, parent, elements: list) -> None:
+def _make_ref(value):
+    """Build an ExternalReference or ModelReference from a YAML value field."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return model.ExternalReference(
+            key=(model.Key(type_=model.KeyTypes.GLOBAL_REFERENCE, value=value),)
+        )
+    if isinstance(value, dict):
+        keys = tuple(
+            model.Key(type_=model.KeyTypes[k["type"].upper()], value=k["value"])
+            for k in value.get("keys", [])
+        )
+        return model.ModelReference(keys=keys, type_=model.Submodel)
+    raise ValueError(f"Unsupported reference_element value format: {value!r}")
+
+
+def _build_elements(builder: AASInstanceBuilder, parent, elements: list) -> None:
     for elem in elements:
         etype       = elem["type"]
         id_short    = elem["id_short"]
         semantic_id = elem.get("semantic_id")
-        description = elem.get("description")
-        cardinality = elem.get("cardinality", CARDINALITY_DEFAULTS[etype])
 
         if etype == "property":
             vt = XS_TYPE_MAP.get(elem["value_type"])
             if vt is None:
                 raise ValueError(f"Unknown value_type '{elem['value_type']}' for element '{id_short}'")
-            el = builder.add_property(parent, id_short, vt, semantic_id, cardinality)
+            el = builder.add_property(
+                parent, id_short, vt,
+                value=_convert_value(elem.get("value"), vt),
+                semantic_id=semantic_id,
+            )
 
         elif etype == "range":
             vt = XS_TYPE_MAP.get(elem["value_type"])
             if vt is None:
                 raise ValueError(f"Unknown value_type '{elem['value_type']}' for element '{id_short}'")
-            el = builder.add_range(parent, id_short, vt, semantic_id, cardinality)
+            el = builder.add_range(
+                parent, id_short, vt,
+                min_value=_convert_value(elem.get("min"), vt),
+                max_value=_convert_value(elem.get("max"), vt),
+                semantic_id=semantic_id,
+            )
 
         elif etype == "multi_language_property":
-            el = builder.add_multi_language_property(parent, id_short, semantic_id, description, cardinality)
+            el = builder.add_multi_language_property(
+                parent, id_short,
+                value=elem.get("value"),
+                semantic_id=semantic_id,
+                description=elem.get("description"),
+            )
 
         elif etype == "reference_element":
-            el = builder.add_reference_element(parent, id_short, semantic_id, description, cardinality)
+            el = builder.add_reference_element(
+                parent, id_short,
+                value=_make_ref(elem.get("value")),
+                semantic_id=semantic_id,
+                description=elem.get("description"),
+            )
 
         elif etype == "collection":
-            el = builder.add_collection(parent, id_short, semantic_id, cardinality)
-            if elem.get("extensible"):
-                entry_template = elem.get("entry_template", "")
-                builder.add_qualifier(el, type_="Extensible", value_type=model.datatypes.String,
-                                      value=entry_template or "true", kind="TEMPLATE_QUALIFIER")
+            el = builder.add_collection(parent, id_short, semantic_id=semantic_id)
             _build_elements(builder, el, elem.get("elements", []))
 
         elif etype == "list":
@@ -162,11 +178,12 @@ def _build_elements(builder: AASTemplateBuilder, parent, elements: list) -> None
                 vt = XS_TYPE_MAP.get(raw_vt)
                 if vt is None:
                     raise ValueError(f"Unknown value_type '{raw_vt}' for list '{id_short}'")
-            elif raw_et in ("property", "range"):
-                raise ValueError(
-                    f"'value_type' is required for list '{id_short}' when element_type is '{raw_et}' (AASd-109)"
-                )
-            el = builder.add_list(parent, id_short, semantic_id, element_cls, cardinality, vt)
+            elif raw_et == "property":
+                raise ValueError(f"'value_type' is required for list '{id_short}' when element_type is 'property'")
+            el = builder.add_list(parent, id_short, semantic_id=semantic_id, element_type=element_cls)
+            for item in elem.get("items", []):
+                prop = model.Property(id_short=None, value_type=vt, value=_convert_value(item, vt))
+                el.value.append(prop)
 
         else:
             raise ValueError(f"Unknown element type '{etype}' for element '{id_short}'")
@@ -175,7 +192,7 @@ def _build_elements(builder: AASTemplateBuilder, parent, elements: list) -> None
             _apply_qualifiers(builder, el, qualifiers)
 
 
-def load_template_from_yaml(path: str) -> AASTemplateBuilder:
+def load_instance_from_yaml(path: str) -> AASInstanceBuilder:
     with open(path, encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
 
@@ -184,7 +201,7 @@ def load_template_from_yaml(path: str) -> AASTemplateBuilder:
     if not id_short or not id_:
         raise KeyError("YAML must have both 'id_short' and 'id' at the top level")
 
-    builder = AASTemplateBuilder(id_short, id_)
+    builder = AASInstanceBuilder(id_short, id_)
 
     if desc := cfg.get("description"):
         builder.submodel.description = model.MultiLanguageTextType({"en": desc})
@@ -194,14 +211,14 @@ def load_template_from_yaml(path: str) -> AASTemplateBuilder:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Build an AAS submodel template from a YAML file.")
-    parser.add_argument("yaml_file", help="Path to the YAML template definition")
+    parser = argparse.ArgumentParser(description="Build an AAS submodel instance from a YAML file.")
+    parser.add_argument("yaml_file", help="Path to the YAML instance definition")
     parser.add_argument("--output", "-o", help="Write JSON to this file (default: stdout)")
     parser.add_argument("--upload", "-u", metavar="URL", help="POST JSON to <URL>/submodels")
     args = parser.parse_args()
 
     try:
-        builder = load_template_from_yaml(args.yaml_file)
+        builder = load_instance_from_yaml(args.yaml_file)
     except (KeyError, ValueError, FileNotFoundError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
@@ -231,6 +248,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-
-

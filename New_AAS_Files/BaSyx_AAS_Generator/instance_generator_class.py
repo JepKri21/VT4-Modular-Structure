@@ -33,6 +33,11 @@ Qualifier kinds:
 """
 
 import json
+import sys
+from pathlib import Path
+
+
+sys.path.insert(0, str(Path(__file__).parent))
 
 import basyx.aas.adapter.json
 from basyx.aas import model
@@ -50,9 +55,22 @@ from basyx.aas.model import (
     KeyTypes,
     ExternalReference,
 )
+from builders import XS_TYPE_MAP
+import requests
 
 
-class AASTemplateBuilder:
+def _resolve_value_type(value_type):
+    """Accept either an xs: string (e.g. 'xs:float') or a BaSyx datatype class."""
+    if isinstance(value_type, str):
+        vt = XS_TYPE_MAP.get(value_type)
+        if vt is None:
+            raise ValueError(f"Unknown value_type string '{value_type}'. "
+                             f"Valid keys: {list(XS_TYPE_MAP)}")
+        return vt
+    return value_type
+
+
+class AASInstanceBuilder:
     """Builds a single AAS submodel template incrementally.
 
     Instantiate once per submodel, then call add_* methods to attach elements.
@@ -62,9 +80,6 @@ class AASTemplateBuilder:
     All add_* methods return the created element so it can be passed back as
     'parent' to nest further elements inside it.
     """
-
-    # Semantic ID for the SMT cardinality qualifier — defined by the AAS standard.
-    CARDINALITY_IRI = "https://admin-shell.io/SubmodelTemplates/Cardinality/1/0"
 
     def __init__(self, id_short: str, identification: str):
         """Create a new template submodel.
@@ -77,7 +92,7 @@ class AASTemplateBuilder:
         self.submodel = Submodel(
             id_short=id_short,
             id_=identification,
-            kind=model.ModellingKind.TEMPLATE  # always TEMPLATE — never INSTANCE
+            kind=model.ModellingKind.INSTANCE
         )
 
     # ------------------------------------------------------------------
@@ -90,22 +105,7 @@ class AASTemplateBuilder:
             return parent.submodel_element
         return parent.value  # SubmodelElementCollection / SubmodelElementList
 
-    def _cardinality(self, value: str) -> Qualifier:
-        """Build the standard SMT/Cardinality TEMPLATE_QUALIFIER."""
-        return Qualifier(
-            type_="SMT/Cardinality",
-            value_type=model.datatypes.String,
-            value=value,
-            kind=model.QualifierKind.TEMPLATE_QUALIFIER,
-            semantic_id=ExternalReference(
-                key=(
-                    Key(
-                        type_=KeyTypes.GLOBAL_REFERENCE,
-                        value=self.CARDINALITY_IRI
-                    ),
-                )
-            )
-        )
+    
 
     # ------------------------------------------------------------------
     # Element builders
@@ -116,8 +116,8 @@ class AASTemplateBuilder:
         parent,
         id_short: str,
         value_type,
-        semantic_id: str | None = None,
-        cardinality: str = "One",
+        value,
+        semantic_id: str | None = None
     ):
         """Add a typed Property to parent.
 
@@ -138,15 +138,18 @@ class AASTemplateBuilder:
             builder.add_property(root, "SerialNumber", model.datatypes.String,
                                   semantic_id="https://example.com/Sem/SerialNumber")
         """
+
+        value_type = _resolve_value_type(value_type)
         prop = Property(
             id_short=id_short,
-            value_type=value_type
+            value_type=value_type,
+            value=value_type(value) if value is not None else None,
         )
         if semantic_id:
             prop.semantic_id = ExternalReference(
                 key=(Key(type_=KeyTypes.GLOBAL_REFERENCE, value=semantic_id),)
             )
-        prop.qualifier.add(self._cardinality(cardinality))
+
         self._get_container(parent).add(prop)
         return prop
 
@@ -155,8 +158,9 @@ class AASTemplateBuilder:
         parent,
         id_short: str,
         value_type,
-        semantic_id: str | None = None,
-        cardinality: str = "ZeroToOne",
+        min_value,
+        max_value,
+        semantic_id: str | None = None
     ):
         """Add a Range element (min/max pair) to parent.
 
@@ -174,15 +178,19 @@ class AASTemplateBuilder:
             builder.add_range(params, "DrillDepth_mm", model.datatypes.Float,
                                semantic_id="https://example.com/Sem/DrillDepth")
         """
+
+        value_type = _resolve_value_type(value_type)
         rng = Range(
             id_short=id_short,
-            value_type=value_type
+            value_type=value_type,
+            min=value_type(min_value) if min_value is not None else None,
+            max=value_type(max_value) if max_value is not None else None,
         )
         if semantic_id:
             rng.semantic_id = ExternalReference(
                 key=(Key(type_=KeyTypes.GLOBAL_REFERENCE, value=semantic_id),)
             )
-        rng.qualifier.add(self._cardinality(cardinality))
+
         self._get_container(parent).add(rng)
         return rng
 
@@ -190,8 +198,7 @@ class AASTemplateBuilder:
         self,
         parent,
         id_short: str,
-        semantic_id: str | None = None,
-        cardinality: str = "One",
+        semantic_id: str | None = None
     ):
         """Add a SubmodelElementCollection to parent and return it.
 
@@ -214,7 +221,6 @@ class AASTemplateBuilder:
             col.semantic_id = ExternalReference(
                 key=(Key(type_=KeyTypes.GLOBAL_REFERENCE, value=semantic_id),)
             )
-        col.qualifier.add(self._cardinality(cardinality))
         self._get_container(parent).add(col)
         return col
 
@@ -223,9 +229,7 @@ class AASTemplateBuilder:
         parent,
         id_short: str,
         semantic_id: str | None = None,
-        element_type: type = model.Property,
-        cardinality: str = "ZeroToMany",
-        value_type=None,
+        element_type: type = model.Property
     ):
         """Add a SubmodelElementList to parent.
 
@@ -237,7 +241,6 @@ class AASTemplateBuilder:
             element_type: The BaSyx class of items in the list, e.g.
                           model.Property, model.SubmodelElementCollection.
             cardinality:  Default "ZeroToMany" (optional, any number of items).
-            value_type:   Required by AASd-109 when element_type is Property or Range.
 
         Returns:
             The created SubmodelElementList.
@@ -245,18 +248,17 @@ class AASTemplateBuilder:
         Example:
             builder.add_list(root, "SupportedComponents",
                               element_type=model.Property,
-                              value_type=model.datatypes.String,
                               cardinality="ZeroToMany")
         """
-        kwargs = {"id_short": id_short, "type_value_list_element": element_type}
-        if value_type is not None:
-            kwargs["value_type_list_element"] = value_type
-        lst = SubmodelElementList(**kwargs)
+        lst = SubmodelElementList(
+            id_short=id_short,
+            type_value_list_element=element_type
+        )
         if semantic_id:
             lst.semantic_id = ExternalReference(
                 key=(Key(type_=KeyTypes.GLOBAL_REFERENCE, value=semantic_id),)
             )
-        lst.qualifier.add(self._cardinality(cardinality))
+
         self._get_container(parent).add(lst)
         return lst
 
@@ -264,9 +266,9 @@ class AASTemplateBuilder:
         self,
         parent,
         id_short: str,
+        value: dict | None = None,
         semantic_id: str | None = None,
-        description: str | None = None,
-        cardinality: str = "ZeroToOne",
+        description: str | None = None
     ):
         """Add a MultiLanguageProperty to parent.
 
@@ -287,13 +289,14 @@ class AASTemplateBuilder:
         """
         mlp = MultiLanguageProperty(
             id_short=id_short,
+            value=model.MultiLanguageTextType(value) if value else None,
             description=model.MultiLanguageTextType({"en": description}) if description else None,
         )
         if semantic_id:
             mlp.semantic_id = ExternalReference(
                 key=(Key(type_=KeyTypes.GLOBAL_REFERENCE, value=semantic_id),)
             )
-        mlp.qualifier.add(self._cardinality(cardinality))
+            
         self._get_container(parent).add(mlp)
         return mlp
 
@@ -301,9 +304,9 @@ class AASTemplateBuilder:
         self,
         parent,
         id_short: str,
+        value,
         semantic_id: str | None = None,
-        description: str | None = None,
-        cardinality: str = "ZeroToOne",
+        description: str | None = None
     ):
         """Add a ReferenceElement to parent.
 
@@ -325,14 +328,13 @@ class AASTemplateBuilder:
         """
         ref = ReferenceElement(
             id_short=id_short,
-            value=None,  # filled at instance creation
+            value=value,  # filled at instance creation
             description=model.MultiLanguageTextType({"en": description}) if description else None,
         )
         if semantic_id:
             ref.semantic_id = ExternalReference(
                 key=(Key(type_=KeyTypes.GLOBAL_REFERENCE, value=semantic_id),)
             )
-        ref.qualifier.add(self._cardinality(cardinality))
         self._get_container(parent).add(ref)
         return ref
 
@@ -342,7 +344,7 @@ class AASTemplateBuilder:
         type_: str,
         value_type,
         value=None,
-        kind: str = "TEMPLATE_QUALIFIER",
+        kind: str = "INSTANCE_QUALIFIER",
         semantic_id: str | None = None,
     ) -> Qualifier:
         """Attach an additional qualifier to any element.
@@ -374,13 +376,14 @@ class AASTemplateBuilder:
         qualifier_kind_map = {
             "VALUE_QUALIFIER":    model.QualifierKind.VALUE_QUALIFIER,
             "CONCEPT_QUALIFIER":  model.QualifierKind.CONCEPT_QUALIFIER,
-            "TEMPLATE_QUALIFIER": model.QualifierKind.TEMPLATE_QUALIFIER,
+            "INSTANCE_QUALIFIER": model.QualifierKind.INSTANCE_QUALIFIER,
         }
+
         q = Qualifier(
             type_=type_,
             value_type=value_type,
             value=value,
-            kind=qualifier_kind_map.get(kind, model.QualifierKind.TEMPLATE_QUALIFIER),
+            kind=qualifier_kind_map.get(kind, model.QualifierKind.INSTANCE_QUALIFIER),
         )
         if semantic_id:
             q.semantic_id = ExternalReference(
@@ -412,6 +415,25 @@ class AASTemplateBuilder:
         """
         return self.submodel
 
+    def send_submodel(self, SEVER_URL):
+        submodel = self.get()
+
+        submodel_json_string = json.dumps(submodel, cls=basyx.aas.adapter.json.AASToJsonEncoder)
+        aas_dict = json.loads(submodel_json_string)
+
+        AAS_SERVER_URL = "http://localhost:8081"
+
+        response = requests.post(
+            f"{AAS_SERVER_URL}/submodels",
+            headers={"Content-Type": "application/json"},
+            json=aas_dict
+        )
+
+        if response.status_code in (200, 201):
+            print("Submodel uploaded successfully!")
+        else:
+            print(f"Upload failed: {response.status_code} - {response.text}")
+
 
 # ----------------------------------------------------------------------
 # Direct execution demo — runs only when called as a script, not on import
@@ -422,7 +444,7 @@ if __name__ == "__main__":
     # Build a small drilling capability template as a demonstration.
     # For YAML-driven creation use: python yaml_to_template.py <file.yaml>
 
-    DrillingCapability = AASTemplateBuilder(
+    DrillingCapability = AASInstanceBuilder(
         "DrillingCapability",
         "https://aausmartlab.org/SubmodelTemplate/Capability/BasicDrillingCapability/1/0"
     )
@@ -433,8 +455,7 @@ if __name__ == "__main__":
     Drilling_params = DrillingCapability.add_collection(
         root,
         "drillingParameters",
-        "semantic_id_drillingParameters",
-        cardinality="One"
+        "semantic_id_drillingParameters"
     )
 
     # Optional top-level property
@@ -442,8 +463,8 @@ if __name__ == "__main__":
         root,
         "singelProperty",
         model.datatypes.String,
-        "random_semantic_id",
-        cardinality="ZeroToOne"
+        "Single_property",
+        "random_semantic_id"
     )
 
     # Required property inside the collection
@@ -451,8 +472,8 @@ if __name__ == "__main__":
         Drilling_params,
         "bitSize",
         model.datatypes.Int,
-        "semantic_id_bitSize",
-        cardinality="One"
+        5,
+        "semantic_id_bitSize"
     )
 
     # Optional range inside the collection
@@ -460,13 +481,15 @@ if __name__ == "__main__":
         Drilling_params,
         "drillDepth",
         model.datatypes.Int,
-        "semantic_id_drillDepth",
-        cardinality="ZeroToOne"
+        0,
+        200,
+        "semantic_id_drillDepth"
     )
 
-    drill_capability_template = DrillingCapability.get()
+    drill_capability_instance = DrillingCapability.get()
+    print(drill_capability_instance)
 
-    submodel_json_string = json.dumps(drill_capability_template, cls=basyx.aas.adapter.json.AASToJsonEncoder)
+    submodel_json_string = json.dumps(drill_capability_instance, cls=basyx.aas.adapter.json.AASToJsonEncoder)
     aas_dict = json.loads(submodel_json_string)
 
     AAS_SERVER_URL = "http://localhost:8081"

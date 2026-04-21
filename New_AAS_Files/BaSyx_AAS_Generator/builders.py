@@ -47,6 +47,8 @@ XS_TYPE_MAP: dict[str, Any] = {
     # Date / time — values must be ISO 8601 strings, e.g. "2024-01-15"
     "xs:date":               model.datatypes.Date,
     "xs:dateTime":           model.datatypes.DateTime,
+    "xs:time":               model.datatypes.Time,
+    "xs:duration":           model.datatypes.Duration,
 }
 
 # ──────────────────────────── helpers ─────────────────────────────────
@@ -122,6 +124,16 @@ def _convert_value(raw: Any, value_type: Any) -> Any:
         if isinstance(raw, datetime.datetime):
             return raw
         return datetime.datetime.fromisoformat(str(raw))
+
+    # ── Duration — expect ISO 8601 duration string ("PT30S", "PT5M") ──────
+    if value_type == model.datatypes.Duration:
+        return model.datatypes._parse_xsd_duration(str(raw))
+
+    # ── Time — expect ISO 8601 time string ("14:30:00") ───────────────────
+    if value_type == model.datatypes.Time:
+        if isinstance(raw, datetime.time):
+            return raw
+        return datetime.time.fromisoformat(str(raw))
 
     # ── Fallback ──────────────────────────────────────────────────────────
     return value_type(raw)
