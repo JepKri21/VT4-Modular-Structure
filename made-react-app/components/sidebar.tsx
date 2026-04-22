@@ -15,6 +15,7 @@ import {
   ShoppingCart,
   Store,
   TriangleAlert,
+  MonitorCog,
   Wrench,
   Bot,
 } from "lucide-react";
@@ -195,6 +196,12 @@ const Sidebar = () => {
           href="/configurator"
           icon={Cog}
           label="Configurator"
+          isCollapsed={isSidebarCollapsed}
+        />
+        <SidebarLink
+          href="/line-configuration"
+          icon={MonitorCog}
+          label="Line Configurator"
           isCollapsed={isSidebarCollapsed}
         />
         <SidebarLink
