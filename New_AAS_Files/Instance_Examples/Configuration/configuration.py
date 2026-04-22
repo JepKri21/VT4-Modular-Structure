@@ -1,5 +1,7 @@
 import sys
 from pathlib import Path
+import json
+import basyx.aas.adapter.json as aas_json
 
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 
@@ -58,7 +60,7 @@ Configuration.add_property(
 
 location_drill_station = Configuration.add_collection(
     drill_station,
-    "Location"
+    "GlobalLocation"
 )
 
 Configuration.add_property(
@@ -102,7 +104,7 @@ Configuration.add_property(
 
 location_transport_station = Configuration.add_collection(
     transport_station,
-    "Location"
+    "GlobalLocation"
 )
 
 Configuration.add_property(
@@ -145,7 +147,7 @@ Configuration.add_property(
 
 location_storage_station = Configuration.add_collection(
     storage_station,
-    "Location"
+    "GlobalLocation"
 )
 
 Configuration.add_property(
@@ -170,10 +172,10 @@ Configuration.add_property(
 )
 
 #============================================================================================================
-#================================== Connection Poitns =======================================================
+#================================== Connection Points =======================================================
 #============================================================================================================
 
-#============================ Drill To Transport ==========================================
+#============================ Drill To Transport - Global ==========================================
 
 conncetion_point_1 = Configuration.add_collection(
     connection_points,
@@ -182,7 +184,7 @@ conncetion_point_1 = Configuration.add_collection(
 
 conncetion_point_1_location = Configuration.add_collection(
     conncetion_point_1,
-    "Location"
+    "GlobalLocation"
 )
 
 Configuration.add_property(
@@ -212,22 +214,90 @@ conncetion_point_1_connceted_resources = Configuration.add_collection(
     "ConnectedResources"
 )
 
+#============================ Drill To Transport - Drill Local ==========================================
+
+conncetion_point_1_connceted_resource1 = Configuration.add_collection(
+    conncetion_point_1_connceted_resources,
+    "Resource1"
+)
 
 Configuration.add_property(
-    conncetion_point_1_connceted_resources,
-    "Resource1",
+    conncetion_point_1_connceted_resource1,
+    "ResourceReference",
     "xs:string",
     "https://aausmartlab.org/Shells/Resources/Drilling-12345678"
 )
 
 Configuration.add_property(
+    conncetion_point_1_connceted_resource1,
+    "WorkAreaType",
+    "xs:string",
+    "in_outfeed"
+)
+
+conncetion_point_1_connceted_resource1_local_coords = Configuration.add_collection(
+    conncetion_point_1_connceted_resource1,
+    "LocalLocation"
+)
+
+Configuration.add_property(
+    conncetion_point_1_connceted_resource1_local_coords,
+    "XPos",
+    "xs:float",
+    100
+)
+
+Configuration.add_property(
+    conncetion_point_1_connceted_resource1_local_coords,
+    "YPos",
+    "xs:float",
+    150
+)
+
+#============================ Drill To Transport - Transport Local ==========================================
+
+conncetion_point_1_connceted_resource2 = Configuration.add_collection(
     conncetion_point_1_connceted_resources,
     "Resource2",
+)
+
+Configuration.add_property(
+    conncetion_point_1_connceted_resource2,
+    "ResourceReference",
     "xs:string",
     "https://aausmartlab.org/Shells/Resources/Transport-12345678"
 )
 
-#====================================== Storage To Transport =========================
+Configuration.add_property(
+    conncetion_point_1_connceted_resource2,
+    "WorkAreaType",
+    "xs:string",
+    "in_outfeed"
+)
+
+conncetion_point_1_connceted_resource2_local_coords = Configuration.add_collection(
+    conncetion_point_1_connceted_resource2,
+    "LocalLocation"
+)
+
+Configuration.add_property(
+    conncetion_point_1_connceted_resource2_local_coords,
+    "XPos",
+    "xs:float",
+    350
+)
+
+Configuration.add_property(
+    conncetion_point_1_connceted_resource2_local_coords,
+    "YPos",
+    "xs:float",
+    400
+)
+
+
+
+
+#====================================== Storage To Transport - Global =========================
 
 conncetion_point_2 = Configuration.add_collection(
     connection_points,
@@ -236,7 +306,7 @@ conncetion_point_2 = Configuration.add_collection(
 
 conncetion_point_2_location = Configuration.add_collection(
     conncetion_point_2,
-    "Location"
+    "GlobalLocation"
 )
 
 Configuration.add_property(
@@ -266,21 +336,94 @@ conncetion_point_2_connceted_resources = Configuration.add_collection(
     "ConnectedResources"
 )
 
+#====================================== Storage To Transport - Storage Local =========================
+
+
+conncetion_point_2_connceted_resource1 = Configuration.add_collection(
+    conncetion_point_2_connceted_resources,
+    "Resource1"
+)
 
 Configuration.add_property(
-    conncetion_point_2_connceted_resources,
-    "Resource1",
+    conncetion_point_2_connceted_resource1,
+    "ResourceReference",
     "xs:string",
     "https://aausmartlab.org/Shells/Resources/Storage-12345678"
 )
 
 Configuration.add_property(
+    conncetion_point_2_connceted_resource1,
+    "WorkAreaType",
+    "xs:string",
+    "in_outfeed"
+)
+
+conncetion_point_2_connceted_resource1_local_coords = Configuration.add_collection(
+    conncetion_point_2_connceted_resource1,
+    "LocalLocation"
+)
+
+Configuration.add_property(
+    conncetion_point_2_connceted_resource1_local_coords,
+    "XPos",
+    "xs:float",
+    100
+)
+
+Configuration.add_property(
+    conncetion_point_2_connceted_resource1_local_coords,
+    "YPos",
+    "xs:float",
+    150
+)
+
+
+#====================================== Storage To Transport - Transport Local =========================
+
+
+conncetion_point_2_connceted_resource2 = Configuration.add_collection(
     conncetion_point_2_connceted_resources,
-    "Resource2",
+    "Resource2"
+)
+
+Configuration.add_property(
+    conncetion_point_2_connceted_resource2,
+    "ResourceReference",
     "xs:string",
     "https://aausmartlab.org/Shells/Resources/Transport-12345678"
 )
 
+Configuration.add_property(
+    conncetion_point_2_connceted_resource2,
+    "WorkAreaType",
+    "xs:string",
+    "in_outfeed"
+)
 
-AAS_SERVER_URL = "http://localhost:8081"
-Configuration.send_submodel(AAS_SERVER_URL)
+conncetion_point_2_connceted_resource2_local_coords = Configuration.add_collection(
+    conncetion_point_2_connceted_resource2,
+    "LocalLocation"
+)
+
+Configuration.add_property(
+    conncetion_point_2_connceted_resource2_local_coords,
+    "XPos",
+    "xs:float",
+    100
+)
+
+Configuration.add_property(
+    conncetion_point_2_connceted_resource2_local_coords,
+    "YPos",
+    "xs:float",
+    150
+)
+
+submodel = Configuration.get()
+submodel_json_string = json.dumps(submodel, cls=aas_json.AASToJsonEncoder)
+aas_dict = json.loads(submodel_json_string)
+
+print(submodel_json_string)
+
+#AAS_SERVER_URL = "http://localhost:8081"
+#Configuration.send_submodel(AAS_SERVER_URL)
