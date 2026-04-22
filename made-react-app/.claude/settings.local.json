@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la \"/c/Users/jeppe/OneDrive/Dokumenter/GitHub/VT4-Modular-Structure/\")",
+      "Bash(ls -la \"c:/Users/jeppe/OneDrive/Dokumenter/GitHub/VT4-Modular-Structure/\")",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)"
+    ]
+  }
+}

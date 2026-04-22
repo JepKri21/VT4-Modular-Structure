@@ -7,6 +7,7 @@ import {
   Coins,
   Factory,
   LayoutDashboard,
+  Layers,
   LucideIcon,
   Menu,
   PackageOpen,
@@ -201,6 +202,12 @@ const Sidebar = () => {
           href="/aas-server"
           icon={Server}
           label="AAS Server"
+          isCollapsed={isSidebarCollapsed}
+        />
+        <SidebarLink
+          href="/aas-configurator"
+          icon={Layers}
+          label="AAS Configurator"
           isCollapsed={isSidebarCollapsed}
         />
       </div>

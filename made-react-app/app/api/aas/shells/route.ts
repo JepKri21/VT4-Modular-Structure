@@ -1,11 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-const AAS_SERVER = "http://localhost:8081";
+function serverBase(req: NextRequest): string {
+  const s = req.nextUrl.searchParams.get("server") ?? "http://localhost:8081";
+  return s.replace(/\/$/, "");
+}
 
-/** GET /api/aas/shells — list all shells on the AAS server */
-export async function GET() {
+/** GET /api/aas/shells?server=http://localhost:8081 — list all shells */
+export async function GET(req: NextRequest) {
+  const base = serverBase(req);
   try {
-    const res = await fetch(`${AAS_SERVER}/shells`);
+    const res = await fetch(`${base}/shells`);
     const data = await res.json();
     return NextResponse.json(data, { status: res.status });
   } catch {
@@ -13,32 +17,42 @@ export async function GET() {
   }
 }
 
-/** DELETE /api/aas/shells — delete every shell and its submodels from the AAS server */
-export async function DELETE() {
+/** DELETE /api/aas/shells — delete selected or all shells + their submodels.
+ *  Body: { server: string; ids?: string[] }
+ *  If ids is omitted or empty, deletes all shells on the server.
+ */
+export async function DELETE(req: NextRequest) {
+  const body = await req.json() as { server?: string; ids?: string[] };
+  const base = (body.server ?? "http://localhost:8081").replace(/\/$/, "");
+
   try {
-    const res = await fetch(`${AAS_SERVER}/shells`);
-    if (!res.ok) {
+    // Fetch full shell list to resolve submodel references
+    const listRes = await fetch(`${base}/shells`);
+    if (!listRes.ok) {
       return NextResponse.json({ error: "Failed to list shells" }, { status: 502 });
     }
-    const data = await res.json();
-    const shells: { id: string; submodels?: { keys: { value: string }[] }[] }[] =
-      data.result ?? [];
+    const listData = await listRes.json();
+    type RawShell = { id: string; submodels?: { keys: { value: string }[] }[] };
+    let shells: RawShell[] = listData.result ?? [];
+
+    // Filter to requested IDs if provided
+    if (body.ids && body.ids.length > 0) {
+      const idSet = new Set(body.ids);
+      shells = shells.filter((s) => idSet.has(s.id));
+    }
 
     const results: { id: string; type: string; status: number; ok: boolean }[] = [];
 
     for (const shell of shells) {
-      // Delete all referenced submodels first
       for (const ref of shell.submodels ?? []) {
         const smId = ref.keys?.[0]?.value;
         if (!smId) continue;
         const encoded = Buffer.from(smId).toString("base64url");
-        const del = await fetch(`${AAS_SERVER}/submodels/${encoded}`, { method: "DELETE" });
+        const del = await fetch(`${base}/submodels/${encoded}`, { method: "DELETE" });
         results.push({ id: smId, type: "submodel", status: del.status, ok: del.ok });
       }
-
-      // Then delete the shell itself
       const encoded = Buffer.from(shell.id).toString("base64url");
-      const del = await fetch(`${AAS_SERVER}/shells/${encoded}`, { method: "DELETE" });
+      const del = await fetch(`${base}/shells/${encoded}`, { method: "DELETE" });
       results.push({ id: shell.id, type: "shell", status: del.status, ok: del.ok });
     }
 

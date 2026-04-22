@@ -376,14 +376,14 @@ class AASInstanceBuilder:
         qualifier_kind_map = {
             "VALUE_QUALIFIER":    model.QualifierKind.VALUE_QUALIFIER,
             "CONCEPT_QUALIFIER":  model.QualifierKind.CONCEPT_QUALIFIER,
-            "INSTANCE_QUALIFIER": model.QualifierKind.INSTANCE_QUALIFIER,
+            "TEMPLATE_QUALIFIER": model.QualifierKind.TEMPLATE_QUALIFIER,
         }
 
         q = Qualifier(
             type_=type_,
             value_type=value_type,
             value=value,
-            kind=qualifier_kind_map.get(kind, model.QualifierKind.INSTANCE_QUALIFIER),
+            kind=qualifier_kind_map.get(kind, model.QualifierKind.VALUE_QUALIFIER),
         )
         if semantic_id:
             q.semantic_id = ExternalReference(
@@ -421,10 +421,10 @@ class AASInstanceBuilder:
         submodel_json_string = json.dumps(submodel, cls=basyx.aas.adapter.json.AASToJsonEncoder)
         aas_dict = json.loads(submodel_json_string)
 
-        AAS_SERVER_URL = "http://localhost:8081"
+        #AAS_SERVER_URL = "http://localhost:8081"
 
         response = requests.post(
-            f"{AAS_SERVER_URL}/submodels",
+            f"{SEVER_URL}/submodels",
             headers={"Content-Type": "application/json"},
             json=aas_dict
         )

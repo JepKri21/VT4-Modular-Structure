@@ -15,9 +15,9 @@
 kind: "Type"
 description: "AAS shell template for manufactured Component type assets"
 
-id_pattern: "https://aausmartlab.com/AAS/Component/{category}/{name}/Type"
-id_short_pattern: "{name}_Type"
-global_asset_id_pattern: "https://aausmartlab.com/Assets/Product/AAU/{name}/Type"
+id_pattern: "https://aausmartlab.com/AAS/Component/{category}/{name}/Instance"
+id_short_pattern: "{name}_Instance"
+global_asset_id_pattern: "https://aausmartlab.com/Assets/Product/AAU/{name}/Instance"
 
 submodels:
   - template_id: "https://aausmartlab.com/SubmodelTemplate/Component/Properties/1/0"

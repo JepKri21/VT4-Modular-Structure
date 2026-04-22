@@ -1,0 +1,74 @@
+# Preset for a sub-assembly where a bottom cover component is drilled.
+# The BOM references the required bottom cover component type.
+# The BOP contains a single Drilling step that references the
+# RequiredDrillingCapability submodel — an orchestrator must match this
+# against an offered capability before dispatching the step.
+# Update SerialNumber, BatchNumber, and AssemblyDate per physical instance.
+
+shell: "sub_assembly_shell"
+label: "Bottom Cover – Drilling Sub-Assembly"
+description: "Sub-assembly in which a bottom cover component is drilled to specification. Requires a station that offers the matching drilling capability."
+
+asset_name: "BottomCoverDrilling_SA"
+asset_category: "Mechanical"
+
+submodels:
+  ComponentProperties:
+    ProductionIdentification:
+      ModelNumber: "SA-BCD-001"
+      HardwareRevision: "v1.0"
+    AssemblyTracking:
+      AssemblyStatus: "Pending"
+    PhysicalProperties:
+      Weight_g: 118.5   # equals the undrilled bottom cover — update if drilling removes significant mass
+
+  Documentation:
+    DisplayName:
+      - language: "en"
+        text: "Bottom Cover Drilling Sub-Assembly"
+      - language: "da"
+        text: "Bundlåg Bore-Samleenhed"
+    Description:
+      - language: "en"
+        text: "Sub-assembly: aluminium bottom cover drilled to mounting-hole pattern SA-BCD-001"
+      - language: "da"
+        text: "Samleenhed: aluminiums bundlåg boret til monteringshulsmønster SA-BCD-001"
+    ProductFamily: "FuseBox Series A"
+    HardwareRevision: "v1.0"
+
+  BillOfMaterials:
+    BOMEntries:
+      - Description: "Bottom Cover – Aluminium"
+        Quantity: 1
+        IsConfigurable: false
+        ConfigurableNote: "Aluminium bottom cover — must be undrilled raw stock"
+        ComponentTypeRef: "https://aausmartlab.com/AAS/Component/Mechanical/BottomCover_ALU/Type"
+
+  BillOfProcesses:
+    ProcessSteps:
+      - Operation: "Drilling"
+        RequiredComponents:
+          - "BottomCover"
+        RequiredCapabilityRef: "RequiredDrillingCapability"
+        StepConstraints:
+          MaxDuration_s: 180
+          RequiresInspection: true
+          RequiredComponentState: "Raw"
+
+  RequiredDrillingCapability:
+    DrillingParameters:
+      BitDiameter_mm: 5.0
+      DrillDepth_mm: 3.0
+      SpindleSpeed_RPM: 1800.0
+      SpindleFeed_mm_per_s: 2.5
+      HolePlacement_x_mm: 75.0
+      HolePlacement_y_mm: 40.0
+      OperationLabel:
+        - language: "en"
+          text: "Drill mounting holes in aluminium bottom cover"
+        - language: "da"
+          text: "Bor monteringshuller i aluminiums bundlåg"
+    SupportedComponents:
+      - "BottomCover_ALU"
+    AllowedMaterials:
+      - "Aluminium"
