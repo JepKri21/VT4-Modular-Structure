@@ -10,12 +10,13 @@ import React, {
 import { useHistory } from "./hooks/useHistory";
 import { useSceneTransforms } from "./hooks/useSceneTransforms";
 import { useZoneOverlaps } from "./hooks/useZoneOverlaps";
-import { RESOURCE_LIBRARY } from "./lib/resourceLibrary";
 import { localToWorld } from "./lib/geometry";
-import { buildAASPayload } from "./lib/aasExport";
+import { exportLineConfiguration } from "./lib/aasExport";
+import { fetchResourceLibrary } from "./lib/aasFetch";
 import type {
   Scene,
   ZoneType,
+  ResourceType,
   TypeById,
   EditorMode,
   ViewTransform,
@@ -30,12 +31,31 @@ import { Inspector } from "./Inspector";
 import { Toolbar } from "./Toolbar";
 
 export default function LineConfigurator() {
+  const [library, setLibrary] = useState<ResourceType[]>([]);
+  const [libraryError, setLibraryError] = useState<string | null>(null);
+  const [libraryLoading, setLibraryLoading] = useState(true);
+
+  const reloadLibrary = useCallback(async () => {
+    setLibraryLoading(true);
+    try {
+      const lib = await fetchResourceLibrary();
+      setLibrary(lib);
+      setLibraryError(null);
+    } catch (e) {
+      setLibraryError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLibraryLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    reloadLibrary();
+  }, [reloadLibrary]);
+
   const typeById = useMemo(
     () =>
-      Object.fromEntries(
-        RESOURCE_LIBRARY.map((t) => [t.typeId, t]),
-      ) as TypeById,
-    [],
+      Object.fromEntries(library.map((t) => [t.typeId, t])) as TypeById,
+    [library],
   );
 
   const {
@@ -252,21 +272,23 @@ export default function LineConfigurator() {
   );
 
   const handleExport = useCallback(() => {
-    const payload = buildAASPayload(scene, typeById);
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `line-configuration-${Date.now()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    exportLineConfiguration(scene, typeById);
   }, [scene, typeById]);
+
+  const placedTypeIds = useMemo(
+    () => new Set(scene.resources.map((r) => r.typeId)),
+    [scene.resources],
+  );
 
   return (
     <div className="grid grid-cols-[240px_1fr_320px] h-screen bg-gray-900 text-gray-400 font-mono text-xs">
-      <ResourcePalette onPaletteDragStart={onPaletteDragStart} />
+      <ResourcePalette
+        onPaletteDragStart={onPaletteDragStart}
+        library={library}
+        placedTypeIds={placedTypeIds}
+        loading={libraryLoading}
+        error={libraryError}
+      />
       <div className="relative">
         <Toolbar
           mode={mode}
@@ -284,6 +306,8 @@ export default function LineConfigurator() {
           setNewZoneType={setNewZoneType}
           invalidConnectionCount={invalidConnectionIds.size}
           handleExport={handleExport}
+          onRefreshLibrary={reloadLibrary}
+          libraryLoading={libraryLoading}
         />
         <CanvasView
           canvasRef={canvasRef}

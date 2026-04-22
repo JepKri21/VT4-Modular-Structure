@@ -12,6 +12,7 @@ import {
   Eye,
   EyeOff,
   Pencil,
+  RefreshCw,
 } from "lucide-react";
 import type { EditorMode, ZoneType } from "./lib/types";
 
@@ -31,6 +32,8 @@ interface ToolbarProps {
   setNewZoneType: (type: ZoneType) => void;
   handleExport: () => void;
   invalidConnectionCount: number;
+  onRefreshLibrary: () => void;
+  libraryLoading: boolean;
 }
 
 function ToolbarGroup({ children }: { children: React.ReactNode }) {
@@ -92,6 +95,8 @@ export function Toolbar({
   setNewZoneType,
   handleExport,
   invalidConnectionCount,
+  onRefreshLibrary,
+  libraryLoading,
 }: ToolbarProps) {
   return (
     <div className="absolute top-3 left-3 right-3 z-10 flex gap-2 items-center">
@@ -166,6 +171,15 @@ export function Toolbar({
         </ToolbarBtn>
         <ToolbarBtn onClick={redo} disabled={!canRedo} title="Redo">
           <Redo2 size={13} />
+        </ToolbarBtn>
+      </ToolbarGroup>
+      <ToolbarGroup>
+        <ToolbarBtn
+          onClick={onRefreshLibrary}
+          disabled={libraryLoading}
+          title="Refresh resource library from AAS server"
+        >
+          <RefreshCw size={13} className={libraryLoading ? "animate-spin" : ""} />
         </ToolbarBtn>
       </ToolbarGroup>
       <ToolbarGroup>

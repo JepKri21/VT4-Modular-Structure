@@ -1,0 +1,189 @@
+{
+  "idShort": "ResourceZones",
+  "modelType": "Submodel",
+  "id": "https://aausmartlab.org/Shells/Resources/Drilling-12345678/ResourceZones",
+  "submodelElements": [
+    {
+      "idShort": "CenterPoint",
+      "modelType": "SubmodelElementCollection",
+      "value": [
+        {
+          "idShort": "XPos",
+          "modelType": "Property",
+          "value": "0.0",
+          "valueType": "xs:float"
+        },
+        {
+          "idShort": "YPos",
+          "modelType": "Property",
+          "value": "0.0",
+          "valueType": "xs:float"
+        }
+      ]
+    },
+    {
+      "idShort": "ResourceGeometry",
+      "modelType": "SubmodelElementCollection",
+      "value": [
+        {
+          "idShort": "Point1",
+          "modelType": "SubmodelElementCollection",
+          "value": [
+            {
+              "idShort": "XPos",
+              "modelType": "Property",
+              "value": "-50.0",
+              "valueType": "xs:float"
+            },
+            {
+              "idShort": "YPos",
+              "modelType": "Property",
+              "value": "-50.0",
+              "valueType": "xs:float"
+            }
+          ]
+        },
+        {
+          "idShort": "Point2",
+          "modelType": "SubmodelElementCollection",
+          "value": [
+            {
+              "idShort": "XPos",
+              "modelType": "Property",
+              "value": "50.0",
+              "valueType": "xs:float"
+            },
+            {
+              "idShort": "YPos",
+              "modelType": "Property",
+              "value": "-50.0",
+              "valueType": "xs:float"
+            }
+          ]
+        },
+        {
+          "idShort": "Point3",
+          "modelType": "SubmodelElementCollection",
+          "value": [
+            {
+              "idShort": "XPos",
+              "modelType": "Property",
+              "value": "50.0",
+              "valueType": "xs:float"
+            },
+            {
+              "idShort": "YPos",
+              "modelType": "Property",
+              "value": "50.0",
+              "valueType": "xs:float"
+            }
+          ]
+        },
+        {
+          "idShort": "Point4",
+          "modelType": "SubmodelElementCollection",
+          "value": [
+            {
+              "idShort": "XPos",
+              "modelType": "Property",
+              "value": "-50.0",
+              "valueType": "xs:float"
+            },
+            {
+              "idShort": "YPos",
+              "modelType": "Property",
+              "value": "50.0",
+              "valueType": "xs:float"
+            }
+          ]
+        }
+      ]
+    },
+    { "idShort": "InputZones", "modelType": "SubmodelElementCollection" },
+    { "idShort": "OutputZones", "modelType": "SubmodelElementCollection" },
+    {
+      "idShort": "InOutputZones",
+      "modelType": "SubmodelElementCollection",
+      "value": [
+        {
+          "idShort": "Zone1",
+          "modelType": "SubmodelElementCollection",
+          "value": [
+            {
+              "idShort": "Point1",
+              "modelType": "SubmodelElementCollection",
+              "value": [
+                {
+                  "idShort": "XPos",
+                  "modelType": "Property",
+                  "value": "-40.0",
+                  "valueType": "xs:float"
+                },
+                {
+                  "idShort": "YPos",
+                  "modelType": "Property",
+                  "value": "50.0",
+                  "valueType": "xs:float"
+                }
+              ]
+            },
+            {
+              "idShort": "Point2",
+              "modelType": "SubmodelElementCollection",
+              "value": [
+                {
+                  "idShort": "XPos",
+                  "modelType": "Property",
+                  "value": "40.0",
+                  "valueType": "xs:float"
+                },
+                {
+                  "idShort": "YPos",
+                  "modelType": "Property",
+                  "value": "50.0",
+                  "valueType": "xs:float"
+                }
+              ]
+            },
+            {
+              "idShort": "Point3",
+              "modelType": "SubmodelElementCollection",
+              "value": [
+                {
+                  "idShort": "XPos",
+                  "modelType": "Property",
+                  "value": "40.0",
+                  "valueType": "xs:float"
+                },
+                {
+                  "idShort": "YPos",
+                  "modelType": "Property",
+                  "value": "130.0",
+                  "valueType": "xs:float"
+                }
+              ]
+            },
+            {
+              "idShort": "Point4",
+              "modelType": "SubmodelElementCollection",
+              "value": [
+                {
+                  "idShort": "XPos",
+                  "modelType": "Property",
+                  "value": "-40.0",
+                  "valueType": "xs:float"
+                },
+                {
+                  "idShort": "YPos",
+                  "modelType": "Property",
+                  "value": "130.0",
+                  "valueType": "xs:float"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

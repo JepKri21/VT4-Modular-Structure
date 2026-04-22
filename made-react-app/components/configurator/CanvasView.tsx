@@ -206,10 +206,7 @@ export function CanvasView({
       ctx.rotate((res.rotation * Math.PI) / 180);
       const w = type.footprint.width * view.scale;
       const h = type.footprint.height * view.scale;
-
-      ctx.fillStyle = type.color + "33";
-      ctx.fillRect(-w / 2, -h / 2, w, h);
-      ctx.strokeStyle = isOverlapping
+      const bodyStroke = isOverlapping
         ? "#dc2626"
         : isConnectFirst
           ? "#fbbf24"
@@ -218,8 +215,34 @@ export function CanvasView({
             : isHover
               ? type.color
               : type.color + "aa";
-      ctx.lineWidth = isSelected || isConnectFirst ? 2 : 1.2;
-      ctx.strokeRect(-w / 2, -h / 2, w, h);
+      const bodyLineWidth = isSelected || isConnectFirst ? 2 : 1.2;
+
+      if (type.geometry && type.geometry.length >= 3) {
+        ctx.beginPath();
+        type.geometry.forEach(([gx, gy], i) => {
+          const sx = gx * view.scale;
+          const sy = gy * view.scale;
+          if (i === 0) ctx.moveTo(sx, sy);
+          else ctx.lineTo(sx, sy);
+        });
+        ctx.closePath();
+        ctx.fillStyle = type.color + "33";
+        ctx.fill();
+        ctx.strokeStyle = bodyStroke;
+        ctx.lineWidth = bodyLineWidth;
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = type.color + "33";
+        ctx.fillRect(-w / 2, -h / 2, w, h);
+        ctx.strokeStyle = bodyStroke;
+        ctx.lineWidth = bodyLineWidth;
+        ctx.strokeRect(-w / 2, -h / 2, w, h);
+      }
+
+      ctx.fillStyle = type.color;
+      ctx.beginPath();
+      ctx.arc(0, 0, Math.max(2, 3 * Math.min(view.scale * 20, 1)), 0, Math.PI * 2);
+      ctx.fill();
 
       ctx.fillStyle = type.color;
       ctx.beginPath();
@@ -435,9 +458,15 @@ export function CanvasView({
         const res = scene.resources[i];
         const type = typeById[res.typeId];
         const local = worldToLocal(res, worldX, worldY);
-        const { width: w, height: h } = type.footprint;
-        if (Math.abs(local.x) <= w / 2 && Math.abs(local.y) <= h / 2) {
-          return { res, local };
+        if (type.geometry && type.geometry.length >= 3) {
+          if (pointInPolygon(local.x, local.y, type.geometry)) {
+            return { res, local };
+          }
+        } else {
+          const { width: w, height: h } = type.footprint;
+          if (Math.abs(local.x) <= w / 2 && Math.abs(local.y) <= h / 2) {
+            return { res, local };
+          }
         }
       }
       return null;
