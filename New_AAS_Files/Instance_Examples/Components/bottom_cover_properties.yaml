@@ -1,0 +1,64 @@
+id_short: "ComponentProperties"
+id: "https://aausmartlab.com/SubmodelInstance/Component/BottomCover/BC-001/Properties"
+description: "Properties submodel instance for Bottom Cover component BC-001"
+
+elements:
+  - type: collection
+    id_short: "PhysicalDimensions"
+    semantic_id: "https://aausmartlab.com/Semantics/PhysicalDimensions"
+    elements:
+      - type: property
+        id_short: "Length"
+        value_type: "xs:integer"
+        value: 150
+        semantic_id: "https://aausmartlab.com/Semantics/Length_mm"
+
+      - type: property
+        id_short: "Width"
+        value_type: "xs:integer"
+        value: 75
+        semantic_id: "https://aausmartlab.com/Semantics/Width_mm"
+
+      - type: property
+        id_short: "Height"
+        value_type: "xs:integer"
+        value: 5
+        semantic_id: "https://aausmartlab.com/Semantics/Height_mm"
+
+  - type: collection
+    id_short: "MaterialProperties"
+    semantic_id: "https://aausmartlab.com/Semantics/MaterialProperties"
+    elements:
+      - type: property
+        id_short: "Material"
+        value_type: "xs:string"
+        value: "PLA"
+        semantic_id: "https://aausmartlab.com/Semantics/Material"
+
+      - type: property
+        id_short: "Color"
+        value_type: "xs:string"
+        value: "Black"
+        semantic_id: "https://aausmartlab.com/Semantics/Color"
+
+      - type: property
+        id_short: "Finish"
+        value_type: "xs:string"
+        value: "Textured"
+        semantic_id: "https://aausmartlab.com/Semantics/SurfaceFinish"
+
+  - type: collection
+    id_short: "ManufacturingProperties"
+    semantic_id: "https://aausmartlab.com/Semantics/ManufacturingProperties"
+    elements:
+      - type: property
+        id_short: "ModelNumber"
+        value_type: "xs:string"
+        value: "BC-PLA-Black-Textured"
+        semantic_id: "https://aausmartlab.com/Semantics/ModelNumber"
+
+      - type: property
+        id_short: "SerialNumber"
+        value_type: "xs:string"
+        value: "BC-001"
+        semantic_id: "https://aausmartlab.com/Semantics/SerialNumber"

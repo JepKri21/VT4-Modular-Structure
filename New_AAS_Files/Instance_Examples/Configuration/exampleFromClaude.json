@@ -1,0 +1,86 @@
+{
+  "schemaVersion": "1.2",
+  "generatedAt": "2026-04-21T13:47:05.525Z",
+  "globalReferenceFrame": {
+    "unit": "mm",
+    "origin": {
+      "x": 0,
+      "y": 0
+    }
+  },
+  "resources": [
+    {
+      "instanceId": "799j0k9t",
+      "aasIdShort": "acopos6d-table_799j0k9t",
+      "typeId": "acopos6d-table",
+      "submodels": {
+        "Nameplate": {
+          "manufacturerName": "B&R",
+          "manufacturerProductDesignation": "ACOPOS 6D Table"
+        },
+        "LineConfiguration": {
+          "position": {
+            "x": 1600,
+            "y": 1000
+          },
+          "rotationDeg": 0,
+          "footprint": {
+            "width": 1200,
+            "height": 800
+          }
+        }
+      }
+    },
+    {
+      "instanceId": "g8ttspt4",
+      "aasIdShort": "robot-cell_g8ttspt4",
+      "typeId": "robot-cell",
+      "submodels": {
+        "Nameplate": {
+          "manufacturerName": "Generic",
+          "manufacturerProductDesignation": "Robot Cell"
+        },
+        "LineConfiguration": {
+          "position": {
+            "x": 200,
+            "y": 1000
+          },
+          "rotationDeg": 0,
+          "footprint": {
+            "width": 1000,
+            "height": 1000
+          }
+        }
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "wlymygzz",
+      "resourceA": {
+        "instanceId": "799j0k9t",
+        "zoneId": "west",
+        "zoneType": "infeed",
+        "local": {
+          "x": -800,
+          "y": 200
+        },
+        "aasIdShort": "acopos6d-table_799j0k9t"
+      },
+      "resourceB": {
+        "instanceId": "g8ttspt4",
+        "zoneId": "right",
+        "zoneType": "inout",
+        "local": {
+          "x": 600,
+          "y": 200
+        },
+        "aasIdShort": "robot-cell_g8ttspt4"
+      },
+      "global": {
+        "x": 800,
+        "y": 1200
+      }
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+id_short: "Documentation"
+id: "https://aausmartlab.com/SubmodelInstance/Component/BottomCover/BC-001/Documentation"
+description: "Documentation submodel instance for Bottom Cover component BC-001"
+
+elements:
+  - type: multi_language_property
+    id_short: "DisplayName"
+    semantic_id: "https://aausmartlab.com/Semantics/DisplayName"
+    value:
+      - language: "en"
+        text: "Bottom Cover"
+      - language: "da"
+        text: "Bundlåg"
+
+  - type: multi_language_property
+    id_short: "Description"
+    semantic_id: "https://aausmartlab.com/Semantics/Description"
+    value:
+      - language: "en"
+        text: "3D-printed PLA bottom cover for enclosure. Provides structural base and protects internal components."
+      - language: "da"
+        text: "3D-printet PLA bundlåg til kabinet. Udgør strukturelt fundament og beskytter interne komponenter."
+
+  - type: property
+    id_short: "ManufacturerName"
+    value_type: "xs:string"
+    value: "AAU Smart Lab"
+    semantic_id: "https://aausmartlab.com/Semantics/ManufacturerName"
+
+  - type: property
+    id_short: "ProductFamily"
+    value_type: "xs:string"
+    value: "VT4 Enclosure"
+    semantic_id: "https://aausmartlab.com/Semantics/ProductFamily"
+
+  - type: property
+    id_short: "HardwareRevision"
+    value_type: "xs:string"
+    value: "1.0"
+    semantic_id: "https://aausmartlab.com/Semantics/HardwareRevision"

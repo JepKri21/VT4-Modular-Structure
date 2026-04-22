@@ -1,0 +1,36 @@
+id_short: "BillOfProcess"
+id: "https://aausmartlab.com/SubmodelInstance/SubAssembly/BottomCoverPCB/SA-001/BOP"
+description: "Bill of Process for Bottom Cover with PCB sub-assembly SA-001"
+
+elements:
+  - type: collection
+    id_short: "Drilling_1"
+    semantic_id: "https://aausmartlab.com/Semantics/ProcessStep"
+    elements:
+      - type: property
+        id_short: "Operation"
+        value_type: "xs:string"
+        value: "Drilling"
+        semantic_id: "https://aausmartlab.com/Semantics/Operation"
+
+      - type: list
+        id_short: "RequiredComponents"
+        element_type: "property"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.com/Semantics/RequiredComponents"
+        items:
+          - "Bottom_Cover_1"
+
+      - type: list
+        id_short: "Constraints"
+        element_type: "property"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.com/Semantics/StepConstraints"
+        items: []
+
+      - type: reference_element
+        id_short: "RequiredCapabilityRef"
+        value: "https://aausmartlab.com/SubmodelInstance/SubAssembly/BottomCoverPCB/SA-001/RequiredCapability/Drilling"
+        semantic_id: "https://aausmartlab.com/Semantics/RequiredCapabilityRef"
+
+

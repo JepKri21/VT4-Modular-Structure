@@ -1,0 +1,69 @@
+id_short: "BillOfMaterials"
+id: "https://aausmartlab.com/SubmodelInstance/SubAssembly/BottomCoverPCB/SA-001/BOM"
+description: "Bill of Materials for Bottom Cover with PCB sub-assembly SA-001"
+
+elements:
+  - type: collection
+    id_short: "Bottom_Cover"
+    semantic_id: "https://aausmartlab.com/Semantics/BOMEntry"
+    elements:
+      - type: property
+        id_short: "Description"
+        value_type: "xs:string"
+        value: "Bottom housing cover"
+        semantic_id: "https://aausmartlab.com/Semantics/Description"
+
+      - type: property
+        id_short: "Quantity"
+        value_type: "xs:integer"
+        value: 1
+        semantic_id: "https://aausmartlab.com/Semantics/Quantity"
+
+      - type: property
+        id_short: "IsConfigurable"
+        value_type: "xs:boolean"
+        value: true
+        semantic_id: "https://aausmartlab.com/Semantics/IsConfigurable"
+
+      - type: reference_element
+        id_short: "ComponentTypeRef"
+        value: "https://aausmartlab.com/Assets/Product/Component/AAU/Bottom_Cover"
+        semantic_id: "https://aausmartlab.com/Semantics/ComponentTypeRef"
+
+      - type: reference_element
+        id_short: "ComponentInstanceRef"
+        value: "https://aausmartlab.com/SubmodelInstance/Component/BottomCover/BC-001/Properties"
+        semantic_id: "https://aausmartlab.com/Semantics/ComponentInstanceRef"
+
+  - type: collection
+    id_short: "PCB"
+    semantic_id: "https://aausmartlab.com/Semantics/BOMEntry"
+    elements:
+      - type: property
+        id_short: "Description"
+        value_type: "xs:string"
+        value: "PCB for bottom cover sub-assembly"
+        semantic_id: "https://aausmartlab.com/Semantics/Description"
+
+      - type: property
+        id_short: "Quantity"
+        value_type: "xs:integer"
+        value: 1
+        semantic_id: "https://aausmartlab.com/Semantics/Quantity"
+
+      - type: property
+        id_short: "IsConfigurable"
+        value_type: "xs:boolean"
+        value: false
+        semantic_id: "https://aausmartlab.com/Semantics/IsConfigurable"
+
+      - type: property
+        id_short: "ConfigurableNote"
+        value_type: "xs:string"
+        value: "This component is not configurable since it is a specific PCB design for the bottom cover sub-assembly"
+        semantic_id: "https://aausmartlab.com/Semantics/ConfigurableNote"
+
+      - type: reference_element
+        id_short: "ComponentTypeRef"
+        value: "https://aausmartlab.com/Assets/Product/Component/AAU/PCB"
+        semantic_id: "https://aausmartlab.com/Semantics/ComponentTypeRef"
