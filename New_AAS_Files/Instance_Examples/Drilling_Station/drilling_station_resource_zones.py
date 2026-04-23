@@ -114,56 +114,6 @@ DrillingStationZones.add_property(point4,"YPos","xs:float",130.0)
 
 
 
-
-
-
-############################################################################################
-# Step 1: Create a Simple Asset Administration Shell Containing an AssetInformation object #
-############################################################################################
-# Step 1.1: create the AssetInformation object
-asset_information = model.AssetInformation(
-    asset_kind=model.AssetKind.INSTANCE,
-    global_asset_id='https://aausmartlab.org/Shells/Resources/Drilling-12345678'
-)
-
-# step 1.2: create the Asset Administration Shell
-identifier = 'https://aausmartlab.org/Shells/Resources/Drilling-12345678'
-aas = model.AssetAdministrationShell(
-    id_=identifier,  # set identifier
-    id_short="DrillStation",
-    asset_information=asset_information
-)
-
-aas.submodel.add(model.ModelReference.from_referable(DrillingStationZones.get()))
-
-
-server_url = "http://localhost:8081"
-
-
-submodel_json_string = json.dumps(aas, cls=basyx.aas.adapter.json.AASToJsonEncoder)
-aas_dict = json.loads(submodel_json_string)
-# aas_dict = basyx_json.AASToJsonEncoder().default(aas) #<-- 
-
-print(aas_dict)
-
-response = requests.post(
-    f"{server_url}/shells",
-    headers={"Content-Type": "application/json"},
-    json=aas_dict
-)
-
-if response.status_code in (200, 201):
-    print("Shell uploaded successfully!")
-else:
-    print(f"Upload failed: {response.status_code} - {response.text}")
-
-
-DrillingStationZones.send_submodel(server_url)
-
-submodel_json_string = json.dumps(DrillingStationZones.get(), cls=basyx.aas.adapter.json.AASToJsonEncoder)
-print(submodel_json_string)
-
-
 """ An attempt at using the registry, but there didn't seem to be a link between the registry and discovery, which makes it pretty useless unless we make the connection ourselves.
 
 descriptor_json = """
