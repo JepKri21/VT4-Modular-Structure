@@ -1,12 +1,12 @@
 """
-AASTemplateBuilder — fluent builder for BaSyx AAS submodel templates.
+AASInstanceBuilder — fluent builder for BaSyx AAS submodel instances.
 
-All submodels created by this class use ModellingKind.TEMPLATE, meaning they
+All submodels created by this class use ModellingKind.INSTANCE, meaning they
 describe the *structure* of a submodel (what elements it must/may contain) rather
 than holding actual instance data.  Instance creation is a separate step.
 
 Typical usage (Python):
-    builder = AASTemplateBuilder("MySubmodel", "https://example.com/MySubmodel/1/0")
+    builder = AASInstanceBuilder("MySubmodel", "https://example.com/MySubmodel/1/0")
     root = builder.get()
 
     params = builder.add_collection(root, "Parameters", cardinality="One")

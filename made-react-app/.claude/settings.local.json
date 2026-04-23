@@ -5,7 +5,8 @@
       "Bash(ls -la \"c:/Users/jeppe/OneDrive/Dokumenter/GitHub/VT4-Modular-Structure/\")",
       "Bash(npx tsc *)",
       "Bash(npm run *)",
-      "Bash(find \"c:\\\\Users\\\\jeppe\\\\OneDrive\\\\Dokumenter\\\\GitHub\\\\VT4-Modular-Structure\\\\made-react-app\\\\app\\\\aas-configurator\\\\\" -type f -name \"*.tsx\" -o -name \"*.ts\" -o -name \"*.json\" -o -name \"*.yaml\" -o -name \"*.yml\" 2>/dev/null | head -50)"
+      "Bash(find \"c:\\\\Users\\\\jeppe\\\\OneDrive\\\\Dokumenter\\\\GitHub\\\\VT4-Modular-Structure\\\\made-react-app\\\\app\\\\aas-configurator\\\\\" -type f -name \"*.tsx\" -o -name \"*.ts\" -o -name \"*.json\" -o -name \"*.yaml\" -o -name \"*.yml\" 2>/dev/null | head -50)",
+      "Bash(grep -r \"^import\\\\|^export\\\\|^from\" \"/c/Users/jeppe/OneDrive/Dokumenter/GitHub/VT4-Modular-Structure/made-react-app\" --include=\"*.tsx\" --include=\"*.ts\" ! -path \"*/.next/*\" ! -path \"*/node_modules/*\")"
     ]
   }
 }
