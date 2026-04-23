@@ -69,10 +69,12 @@ export async function GET(
       const raw = fs.readFileSync(filePath, "utf-8");
       const doc = yaml.load(raw) as Record<string, unknown>;
       const { options, derived, operations } = loadFieldOptions(name);
+      const operationKeys = Object.keys(operations);
+      if (operationKeys.length > 0) options["Operation"] = operationKeys;
       if (Array.isArray(doc.elements)) {
         doc.elements = injectFieldMeta(doc.elements as Element[], options, derived);
       }
-      if (Object.keys(operations).length > 0) {
+      if (operationKeys.length > 0) {
         doc.operations = operations;
       }
       return NextResponse.json(doc);

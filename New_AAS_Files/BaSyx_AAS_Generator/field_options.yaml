@@ -56,17 +56,6 @@ sub_assembly_properties:
     - "Painted"
     - "Powder Coated"
 
-sub_assembly_bop:
-  Operation:
-    - "Drilling"
-    - "Assemble"
-    - "Inspect"
-    - "Transport"
-    - "Weld"
-    - "Solder"
-    - "Press"
-    - "Test"
-
 # ── Operation → Required Capability mapping ─────────────────────────────────
 # Each entry links a BOP Operation value to the required capability submodel
 # template that must be filled out for that step.

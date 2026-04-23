@@ -9,7 +9,7 @@ elements:
     description: "Container for all BOM entries"
     cardinality: "One"
     extensible: true
-    entry_template: "{ComponentName}"
+    entry_template: "{Description}_{N}"
     elements:
       - type: collection
         id_short: "BOMEntry"
@@ -36,28 +36,15 @@ elements:
                 value: 1
                 kind: "TEMPLATE_QUALIFIER"
 
-          - type: property
-            id_short: "IsConfigurable"
-            value_type: "xs:boolean"
-            semantic_id: "https://aausmartlab.com/Semantics/IsConfigurable"
-            description: "Whether quantity or variant is configurable per order"
-            cardinality: "One"
-
-          - type: property
-            id_short: "ConfigurableNote"
-            value_type: "xs:string"
-            semantic_id: "https://aausmartlab.com/Semantics/ConfigurableNote"
-            description: "Explanation of what is configurable or why it is not"
-            cardinality: "ZeroToOne"
 
           - type: reference_element
-            id_short: "ComponentTypeRef"
-            semantic_id: "https://aausmartlab.com/Semantics/ComponentTypeRef"
-            description: "Reference to the AAS type of the required component"
+            id_short: "ProductFamilyRef"
+            semantic_id: "https://aausmartlab.com/Semantics/ProductFamilyRef"
+            description: "Reference to the product family this component belongs to — enables searching across all variants (e.g. all BottomCovers regardless of material)"
             cardinality: "One"
 
           - type: reference_element
             id_short: "ComponentInstanceRef"
             semantic_id: "https://aausmartlab.com/Semantics/ComponentInstanceRef"
-            description: "Reference to the actual component instance used"
-            cardinality: "ZeroToOne"
+            description: "Reference to the actual component instance used — empty at creation, filled during production"
+            cardinality: "One"

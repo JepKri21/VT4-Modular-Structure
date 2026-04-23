@@ -40,7 +40,3 @@ submodels:
     description: "Bill of Processes — ordered assembly steps and required capabilities"
     required: true
 
-  - template_id: "https://aausmartlab.com/SubmodelTemplate/Capability/DrillingCapabilityRequired/1/0"
-    id_short: "RequiredDrillingCapability"
-    description: "Drilling capability parameters required from the station"
-    required: false

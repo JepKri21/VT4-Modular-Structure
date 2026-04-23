@@ -3,17 +3,22 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { FieldRenderer } from "@/components/aas-configurator/FieldRenderer";
 import {
+  BomEntry,
   FormData,
   FormValue,
   OperationCapability,
+  ProcessStepEntry,
   ShellPreset,
   ShellPresetSummary,
   ShellSubmodelSlot,
   ShellType,
   SubmodelTemplate,
+  TemplateElement,
   mergePresetIntoForm,
   flattenFormData,
   applyDerivedFields,
+  computeBomEntryIdShort,
+  computeStepIdShort,
 } from "@/components/aas-configurator/types";
 import {
   ArrowLeft,
@@ -48,47 +53,68 @@ function buildSubmodelId(instanceShellId: string, slot: ShellSubmodelSlot, index
   return `${instanceShellId}/Submodel/${slot.id_short}/${index}`;
 }
 
-function buildCapabilityRefTemplate(
-  shellIdBase: string,
-  capabilityIdShort: string,
-  capabilitySlotIndex: number
-) {
-  return `${shellIdBase}/{instance_uuid}/Submodel/${capabilityIdShort}/${capabilitySlotIndex}`;
-}
 
-function resolveBopCapabilityRefsForInstance(
+type CapabilitySubmodelInput = {
+  template_file: string;
+  id_short: string;
+  id: string;
+  form_data: FormData;
+};
+
+function resolveBopForGeneration(
   formData: FormData,
-  slots: ShellSubmodelSlot[],
   operations: Record<string, OperationCapability>,
-  instanceShellId: string
-): FormData {
+  instanceShellId: string,
+  baseSubmodelCount: number,
+  bomSubmodelId?: string,
+): { bopData: FormData; capabilitySubmodels: CapabilitySubmodelInput[] } {
   const rawSteps = formData.ProcessSteps;
-  if (!Array.isArray(rawSteps) || rawSteps.length === 0) return formData;
+  if (!Array.isArray(rawSteps) || rawSteps.length === 0)
+    return { bopData: formData, capabilitySubmodels: [] };
+
+  const capabilitySubmodels: CapabilitySubmodelInput[] = [];
+
+  const resolveComponents = (ids: string[]) =>
+    bomSubmodelId
+      ? ids.map((idShort) => ({ submodel_id: bomSubmodelId, path: ["BOMEntries", idShort] }))
+      : ids;
 
   const resolvedSteps = rawSteps.map((rawStep) => {
-    if (!rawStep || typeof rawStep !== "object" || Array.isArray(rawStep)) {
-      return rawStep;
-    }
+    if (!rawStep || typeof rawStep !== "object" || Array.isArray(rawStep))
+      return rawStep as FormData;
 
     const step = rawStep as FormData;
     const op = typeof step.Operation === "string" ? step.Operation : "";
     const cap = operations[op];
-    if (!cap) return step;
+    const capParams = step.CapabilityParams as FormData | undefined;
 
-    const capSlotIndex = slots.findIndex((s) => s.id_short === cap.id_short);
-    if (capSlotIndex < 0) return step;
+    // Strip CapabilityParams — not part of the BOP submodel schema the Python script expects
+    const { CapabilityParams: _dropped, ...stepWithoutCap } = step as Record<string, unknown>;
 
-    return {
-      ...step,
-      RequiredCapabilityRef: buildSubmodelId(
-        instanceShellId,
-        slots[capSlotIndex],
-        capSlotIndex
-      ),
-    };
+    const rawComponents = Array.isArray(step.RequiredComponents) ? (step.RequiredComponents as string[]) : [];
+    const resolvedStep = { ...stepWithoutCap, RequiredComponents: resolveComponents(rawComponents) };
+
+    if (!cap || !capParams) return resolvedStep as FormData;
+
+    const capIdx = capabilitySubmodels.length;
+    const idShort = `${cap.id_short}_${capIdx}`;
+    const submodelIdx = baseSubmodelCount + capIdx;
+    const submodelId = `${instanceShellId}/Submodel/${idShort}/${submodelIdx}`;
+
+    capabilitySubmodels.push({
+      template_file: cap.template_file,
+      id_short: idShort,
+      id: submodelId,
+      form_data: capParams,
+    });
+
+    return { ...resolvedStep, RequiredCapabilityRef: submodelId } as FormData;
   });
 
-  return { ...formData, ProcessSteps: resolvedSteps as FormData[] };
+  return {
+    bopData: { ...formData, ProcessSteps: resolvedSteps as FormData[] },
+    capabilitySubmodels,
+  };
 }
 
 /* ─────────────────────────────────────── step bar ── */
@@ -367,6 +393,8 @@ export default function AasConfiguratorPage() {
   const [extraSlots, setExtraSlots] = useState<ShellSubmodelSlot[]>([]);
   // Operation → capability mapping loaded from BOP template
   const [bopOperations, setBopOperations] = useState<Record<string, OperationCapability>>({});
+  // Fetched capability templates keyed by template_file name
+  const [capabilityTemplates, setCapabilityTemplates] = useState<Record<string, SubmodelTemplate>>({});
 
   // Active shell: base shell slots + any capability slots injected from BOP operations
   const activeShell = React.useMemo<ShellType | null>(() => {
@@ -504,10 +532,33 @@ export default function AasConfiguratorPage() {
     [loadedTemplates]
   );
 
-  /* watch BOP form data — auto-fill RequiredCapabilityRef and inject capability slots */
+  /* watch BOP form data — fetch capability templates for operations in use */
   const bopSlotIndex = activeShell?.submodels.findIndex(
     (s) => s.template_file === "sub_assembly_bop"
   ) ?? -1;
+
+  const bomSlotIndex = activeShell?.submodels.findIndex(
+    (s) => s.id_short === "BillOfMaterials"
+  ) ?? -1;
+
+  const bomEntries: BomEntry[] = React.useMemo(() => {
+    if (bomSlotIndex < 0) return [];
+    const entries = ((submodelForms[bomSlotIndex] ?? {}).BOMEntries ?? []) as FormData[];
+    return entries.map((entry, i) => ({
+      idShort: computeBomEntryIdShort(entry, i),
+      description: String(entry.Description ?? `Entry ${i + 1}`),
+    }));
+  }, [bomSlotIndex, submodelForms]);
+
+  const processStepEntries: ProcessStepEntry[] = React.useMemo(() => {
+    if (bopSlotIndex < 0) return [];
+    const steps = ((submodelForms[bopSlotIndex] ?? {}).ProcessSteps ?? []) as FormData[];
+    return steps.map((step, i) => {
+      const idShort = computeStepIdShort(step, i);
+      const op = String(step.Operation ?? "");
+      return { idShort, label: op ? `${op} (${idShort})` : idShort };
+    });
+  }, [bopSlotIndex, submodelForms]);
 
   useEffect(() => {
     if (bopSlotIndex < 0 || Object.keys(bopOperations).length === 0) return;
@@ -515,69 +566,24 @@ export default function AasConfiguratorPage() {
     const steps = (bopData.ProcessSteps ?? []) as FormData[];
     if (steps.length === 0) return;
 
-    // Auto-fill/normalize RequiredCapabilityRef using capability URL template.
-    let changed = false;
-    const updatedSteps = steps.map((step) => {
-      const op = step.Operation as string;
-      if (!op) return step;
+    // Fetch capability templates for any new operations not yet cached
+    const usedOps = [...new Set(steps.map((s) => s.Operation as string).filter(Boolean))];
+    usedOps.forEach(async (op) => {
       const cap = bopOperations[op];
-      if (!cap) return step;
-
-      const capSlotIndex = activeShell?.submodels.findIndex(
-        (s) => s.id_short === cap.id_short
-      ) ?? -1;
-      if (capSlotIndex < 0) return step;
-
-      const currentRef =
-        typeof step.RequiredCapabilityRef === "string"
-          ? step.RequiredCapabilityRef
-          : "";
-      const shouldUpdate = !currentRef || currentRef === cap.id_short;
-      if (!shouldUpdate) return step;
-
-      changed = true;
-      return {
-        ...step,
-        RequiredCapabilityRef: buildCapabilityRefTemplate(
-          shellId,
-          cap.id_short,
-          capSlotIndex
-        ),
-      };
-    });
-
-    if (changed) {
-      setSubmodelForms((prev) => ({
-        ...prev,
-        [bopSlotIndex]: { ...bopData, ProcessSteps: updatedSteps },
-      }));
-    }
-
-    // Inject capability submodel slots for all operations currently in the BOP
-    const usedCaps = steps
-      .map((s) => bopOperations[s.Operation as string])
-      .filter((c): c is OperationCapability => !!c);
-
-    setExtraSlots((current) => {
-      const shellIds = new Set(selectedShell?.submodels.map((s) => s.id_short) ?? []);
-      const neededIds = new Set(usedCaps.map((c) => c.id_short));
-      // Keep only slots still needed (remove stale ones); add new ones
-      const kept = current.filter((s) => neededIds.has(s.id_short));
-      const existingIds = new Set(kept.map((s) => s.id_short));
-      const toAdd = usedCaps.filter(
-        (c) => !shellIds.has(c.id_short) && !existingIds.has(c.id_short)
-      );
-      if (toAdd.length === 0 && kept.length === current.length) return current;
-      return [
-        ...kept,
-        ...toAdd.map((cap) => ({
-          template_id: cap.template_id,
-          id_short: cap.id_short,
-          description: `Required capability submodel for ${cap.id_short}`,
-          required: false,
-          template_file: cap.template_file,
-        })),
-      ];
+      if (!cap) return;
+      setCapabilityTemplates((prev) => {
+        if (prev[cap.template_file]) return prev; // already cached
+        // Fetch asynchronously and update state when done
+        fetch(`/api/aas-configurator/templates/${cap.template_file}`)
+          .then((r) => r.json())
+          .then((data: SubmodelTemplate) => {
+            setCapabilityTemplates((p) =>
+              p[cap.template_file] ? p : { ...p, [cap.template_file]: data }
+            );
+          })
+          .catch(() => {});
+        return prev;
+      });
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(submodelForms[bopSlotIndex]), bopOperations]);
@@ -687,9 +693,14 @@ export default function AasConfiguratorPage() {
       activeShell.submodels.map((slot, i) => loadTemplateForSlot(i, slot))
     );
     const templateMap: Record<number, SubmodelTemplate> = {};
-    results.forEach((t, i) => { if (t) templateMap[i] = t; });
+    const freshOperations: Record<string, OperationCapability> = {};
+    results.forEach((t, i) => {
+      if (!t) return;
+      templateMap[i] = t;
+      if (t.operations) Object.assign(freshOperations, t.operations);
+    });
     setFilledSlots(new Set(activeShell.submodels.map((_, i) => i)));
-    await buildEnvironment(templateMap);
+    await buildEnvironment(templateMap, freshOperations);
     setStep({ kind: "review" });
   };
 
@@ -722,7 +733,7 @@ export default function AasConfiguratorPage() {
     }
   };
 
-  const buildEnvironment = async (templateOverride?: Record<number, SubmodelTemplate>) => {
+  const buildEnvironment = async (templateOverride?: Record<number, SubmodelTemplate>, operationsOverride?: Record<string, OperationCapability>) => {
     if (!activeShell) return;
     setGenerating(true);
     setGenerateError(null);
@@ -734,7 +745,14 @@ export default function AasConfiguratorPage() {
           const instanceShellId = `${shellId}/${uuid}`;
           const instanceGlobalAssetId = `${globalAssetId}/${uuid}`;
 
-          const submodelInputs = activeShell.submodels
+          let capabilitySubmodelInputs: CapabilitySubmodelInput[] = [];
+
+          const bomSlotIdx = activeShell.submodels.findIndex((s) => s.id_short === "BillOfMaterials");
+          const bomSubmodelId = bomSlotIdx >= 0
+            ? buildSubmodelId(instanceShellId, activeShell.submodels[bomSlotIdx], bomSlotIdx)
+            : undefined;
+
+          const baseInputs = activeShell.submodels
             .map((slot, i) => {
               const template = templates[i];
               if (!template) return null;
@@ -749,15 +767,19 @@ export default function AasConfiguratorPage() {
                 rawForm,
                 derivedCtx
               );
-              const formData =
-                slot.template_file === "sub_assembly_bop"
-                  ? resolveBopCapabilityRefsForInstance(
-                      withDerived,
-                      activeShell.submodels,
-                      bopOperations,
-                      instanceShellId
-                    )
-                  : withDerived;
+
+              let formData = withDerived;
+              if (slot.template_file === "sub_assembly_bop") {
+                const result = resolveBopForGeneration(
+                  withDerived,
+                  operationsOverride ?? bopOperations,
+                  instanceShellId,
+                  activeShell.submodels.length,
+                  bomSubmodelId,
+                );
+                formData = result.bopData;
+                capabilitySubmodelInputs = result.capabilitySubmodels;
+              }
 
               return {
                 template_file: slot.template_file,
@@ -767,6 +789,8 @@ export default function AasConfiguratorPage() {
               };
             })
             .filter(Boolean);
+
+          const submodelInputs = [...baseInputs, ...capabilitySubmodelInputs];
 
           const res = await fetch("/api/aas-configurator/generate", {
             method: "POST",
@@ -831,7 +855,15 @@ export default function AasConfiguratorPage() {
     setAasInstances(null);
     setExtraSlots([]);
     setBopOperations({});
+    setCapabilityTemplates({});
   };
+
+  /* ── inline capability map: operation name → template elements ── */
+  const inlineCapabilityMap: Record<string, TemplateElement[]> = {};
+  Object.entries(bopOperations).forEach(([op, cap]) => {
+    const tpl = capabilityTemplates[cap.template_file];
+    if (tpl) inlineCapabilityMap[op] = tpl.elements;
+  });
 
   /* ── render ── */
 
@@ -1196,6 +1228,9 @@ export default function AasConfiguratorPage() {
                       AssetCategory: assetCategory,
                       ...flattenFormData(currentFormData),
                     }}
+                    inlineCapabilityMap={inlineCapabilityMap}
+                    bomEntries={bomEntries}
+                    processStepEntries={processStepEntries}
                   />
                 ))}
               </div>
@@ -1330,7 +1365,7 @@ export default function AasConfiguratorPage() {
                   {submodels.map((sm, si) => (
                     <JsonOutput
                       key={si}
-                      label={`${label}_${activeShell.submodels[si]?.id_short ?? `submodel_${si + 1}`}`}
+                      label={`${label}_${(sm.idShort as string) ?? activeShell.submodels[si]?.id_short ?? `submodel_${si + 1}`}`}
                       data={sm}
                     />
                   ))}

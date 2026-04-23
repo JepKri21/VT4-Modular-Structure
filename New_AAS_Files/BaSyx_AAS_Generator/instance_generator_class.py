@@ -229,7 +229,8 @@ class AASInstanceBuilder:
         parent,
         id_short: str,
         semantic_id: str | None = None,
-        element_type: type = model.Property
+        element_type: type = model.Property,
+        value_type=None,
     ):
         """Add a SubmodelElementList to parent.
 
@@ -250,10 +251,10 @@ class AASInstanceBuilder:
                               element_type=model.Property,
                               cardinality="ZeroToMany")
         """
-        lst = SubmodelElementList(
-            id_short=id_short,
-            type_value_list_element=element_type
-        )
+        kwargs: dict = {"id_short": id_short, "type_value_list_element": element_type}
+        if element_type is model.Property and value_type is not None:
+            kwargs["value_type_list_element"] = value_type
+        lst = SubmodelElementList(**kwargs)
         if semantic_id:
             lst.semantic_id = ExternalReference(
                 key=(Key(type_=KeyTypes.GLOBAL_REFERENCE, value=semantic_id),)

@@ -26,6 +26,7 @@ Exit codes: 0 = success, 1 = error (traceback on stderr).
 """
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -124,11 +125,21 @@ def build_elements_from_form(
                         and not child_elems[0].get("extensible")):
                     child_elems = child_elems[0].get("elements", [])
                 for i, entry in enumerate(entries):
-                    label = (
-                        entry_template
-                        .replace("{N}", str(i + 1))
-                        .replace("{ComponentName}", f"Entry{i + 1}")
-                    )
+                    entry_dict = entry if isinstance(entry, dict) else {}
+
+                    def _fill(m, _d=entry_dict, _i=i):
+                        token = m.group(1)
+                        if token == "N":
+                            return str(_i + 1)
+                        val = _d.get(token)
+                        if val is not None and str(val).strip():
+                            return re.sub(r"[^A-Za-z0-9]", "_", str(val))
+                        return str(_i + 1)
+
+                    raw = re.sub(r"\{(\w+)\}", _fill, entry_template)
+                    label = re.sub(r"_+", "_", raw).strip("_")
+                    if not label or not label[0].isalpha():
+                        label = f"Entry{i + 1}"
                     entry_col = builder.add_collection(col, label)
                     build_elements_from_form(
                         builder, entry_col, child_elems,
@@ -157,21 +168,45 @@ def build_elements_from_form(
         elif etype == "reference_element":
             if not val:
                 continue
-            builder.add_reference_element(parent, id_short, value=_ext_ref(str(val)), semantic_id=sem_id)
+            ref = _sm_ref(str(val)) if elem.get("reference_type") == "model" else _ext_ref(str(val))
+            builder.add_reference_element(parent, id_short, value=ref, semantic_id=sem_id)
 
         elif etype == "list":
             if not isinstance(val, list) or not val:
                 continue
+            raw_et = elem.get("element_type", "property")
+
+            if raw_et == "reference_element":
+                lst = builder.add_list(parent, id_short, semantic_id=sem_id, element_type=model.ReferenceElement)
+                for item in val:
+                    if not isinstance(item, dict):
+                        continue
+                    sm_id = item.get("submodel_id", "")
+                    path = item.get("path", [])
+                    if not sm_id or not path:
+                        continue
+                    keys = [model.Key(type_=model.KeyTypes.SUBMODEL, value=sm_id)]
+                    for segment in path:
+                        keys.append(model.Key(
+                            type_=model.KeyTypes.SUBMODEL_ELEMENT_COLLECTION,
+                            value=str(segment),
+                        ))
+                    ref = model.ModelReference(
+                        key=tuple(keys),
+                        type_=model.SubmodelElementCollection,
+                    )
+                    lst.value.append(model.ReferenceElement(id_short=None, value=ref))
+                continue
+
             vt = XS_TYPE_MAP.get(elem.get("value_type", "xs:string"))
             if vt is None:
                 continue
-            raw_et = elem.get("element_type", "property")
             element_cls = (
                 model.SubmodelElementCollection
                 if raw_et == "collection"
                 else model.Property
             )
-            lst = builder.add_list(parent, id_short, semantic_id=sem_id, element_type=element_cls)
+            lst = builder.add_list(parent, id_short, semantic_id=sem_id, element_type=element_cls, value_type=vt)
             for item in val:
                 prop = model.Property(id_short=None, value_type=vt, value=_convert_value(item, vt))
                 lst.value.append(prop)

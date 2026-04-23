@@ -9,7 +9,7 @@ elements:
     description: "Container for all process steps"
     cardinality: "One"
     extensible: true
-    entry_template: "{OperationName}_{N}"
+    entry_template: "{Operation}_{N}"
     elements:
       - type: collection
         id_short: "ProcessStep"
@@ -21,30 +21,39 @@ elements:
             id_short: "Operation"
             value_type: "xs:string"
             semantic_id: "https://aausmartlab.com/Semantics/Operation"
-            description: "Operation type (e.g. Drilling, Assemble, Inspect)"
+            description: "Operation type"
             cardinality: "One"
 
           - type: list
             id_short: "RequiredComponents"
-            element_type: "property"
-            value_type: "xs:string"
+            element_type: "reference_element"
+            reference_type: "model"
             semantic_id: "https://aausmartlab.com/Semantics/RequiredComponents"
-            description: "BOM entry id_shorts of components consumed by this step"
+            description: "References to BOM entries consumed by this step"
             cardinality: "OneToMany"
 
-          - type: list
+          - type: collection
             id_short: "Constraints"
-            element_type: "property"
-            value_type: "xs:string"
-            semantic_id: "https://aausmartlab.com/Semantics/StepConstraints"
-            description: "id_shorts of steps that must complete before this step can start"
-            cardinality: "ZeroToMany"
+            semantic_id: "https://aausmartlab.com/Semantics/Constraints"
+            description: "Steps that must complete before this step can start"
+            cardinality: "ZeroToOne"
+            extensible: true
+            entry_template: "Constraint_{N}"
+            elements:
+              - type: property
+                id_short: "PredecessorStep"
+                value_type: "xs:string"
+                semantic_id: "https://aausmartlab.com/Semantics/PredecessorStep"
+                description: "Step that must complete before this step can start"
+                cardinality: "One"
+                ref_source: "process_steps"
 
           - type: reference_element
             id_short: "RequiredCapabilityRef"
             semantic_id: "https://aausmartlab.com/Semantics/RequiredCapabilityRef"
             description: "Reference to the required capability submodel instance for this step"
             cardinality: "ZeroToOne"
+            reference_type: "model"
 
           - type: collection
             id_short: "StepConstraints"

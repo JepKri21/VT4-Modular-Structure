@@ -2,9 +2,11 @@
 
 import React, { useRef, useState } from "react";
 import {
+  BomEntry,
   FormData,
   FormValue,
   LangEntry,
+  ProcessStepEntry,
   TemplateElement,
   isOptional,
   resolveDerived,
@@ -31,6 +33,12 @@ interface FieldProps {
   path: string;
   /** flat key→value map used to resolve {Token} in element.derived patterns */
   context?: Record<string, string>;
+  /** operation name → capability template elements; enables inline capability rendering in extensible ProcessStep collections */
+  inlineCapabilityMap?: Record<string, TemplateElement[]>;
+  /** available BOM entries for RequiredComponents reference pickers */
+  bomEntries?: BomEntry[];
+  /** available process steps for PredecessorStep pickers */
+  processStepEntries?: ProcessStepEntry[];
 }
 
 /* ──────────────────────────────── property ── */
@@ -373,9 +381,123 @@ function ListField({ element, value, onChange }: FieldProps) {
   );
 }
 
+/* ──────────────────────────────── BOM reference list ── */
+
+function BomRefListField({ element, value, onChange, bomEntries = [] }: FieldProps) {
+  const selected = Array.isArray(value) ? (value as string[]) : [];
+  const [draft, setDraft] = useState("");
+  const available = bomEntries.filter((e) => !selected.includes(e.idShort));
+
+  const add = (idShort: string) => {
+    if (idShort && !selected.includes(idShort)) {
+      onChange([...selected, idShort]);
+      setDraft("");
+    }
+  };
+
+  const remove = (idShort: string) =>
+    onChange(selected.filter((s) => s !== idShort));
+
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="text-sm font-medium">
+        {labelFor(element.id_short)}
+        {element.description && (
+          <span className="text-xs text-muted-foreground ml-1">
+            — {element.description}
+          </span>
+        )}
+      </span>
+      <div className="flex flex-wrap gap-2">
+        {selected.map((idShort) => {
+          const entry = bomEntries.find((e) => e.idShort === idShort);
+          return (
+            <span
+              key={idShort}
+              className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-mono"
+            >
+              {entry?.description ?? idShort}
+              <button
+                type="button"
+                onClick={() => remove(idShort)}
+                className="hover:text-destructive ml-1"
+              >
+                ×
+              </button>
+            </span>
+          );
+        })}
+      </div>
+      {bomEntries.length === 0 ? (
+        <p className="text-xs text-muted-foreground italic px-1">
+          No BOM entries available — fill the BillOfMaterials step first.
+        </p>
+      ) : (
+        <div className="flex gap-2">
+          <select
+            className={inputClass()}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+          >
+            <option value="">— select BOM entry —</option>
+            {available.map((e) => (
+              <option key={e.idShort} value={e.idShort}>
+                {e.description}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            disabled={!draft}
+            onClick={() => add(draft)}
+            className="rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm hover:opacity-90 disabled:opacity-40"
+          >
+            Add
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ──────────────────────────────── process step ref ── */
+
+function ProcessStepRefField({ element, value, onChange, path, processStepEntries = [] }: FieldProps) {
+  const id = `${path}-${element.id_short}`;
+  const strVal = (value ?? "") as string;
+
+  return (
+    <div className="flex flex-col gap-1">
+      <label htmlFor={id} className="text-sm font-medium">
+        {labelFor(element.id_short)}
+        {element.description && (
+          <span className="text-xs text-muted-foreground ml-1">— {element.description}</span>
+        )}
+      </label>
+      {processStepEntries.length === 0 ? (
+        <p className="text-xs text-muted-foreground italic px-1">
+          No other steps defined yet — add more process steps first.
+        </p>
+      ) : (
+        <select
+          id={id}
+          className={inputClass()}
+          value={strVal}
+          onChange={(e) => onChange(e.target.value || null)}
+        >
+          <option value="">— select step —</option>
+          {processStepEntries.map((s) => (
+            <option key={s.idShort} value={s.idShort}>{s.label}</option>
+          ))}
+        </select>
+      )}
+    </div>
+  );
+}
+
 /* ──────────────────────────────── collection (recursive) ── */
 
-function CollectionField({ element, value, onChange, path, context }: FieldProps) {
+function CollectionField({ element, value, onChange, path, context, inlineCapabilityMap, bomEntries, processStepEntries }: FieldProps) {
   const [open, setOpen] = useState(true);
   const optional = isOptional(element.cardinality);
   const hasPresetValue = value !== null && value !== undefined;
@@ -436,35 +558,81 @@ function CollectionField({ element, value, onChange, path, context }: FieldProps
 
         {open && (
           <div className="flex flex-col gap-4 ml-4">
-            {entries.map((entry, i) => (
-              <div
-                key={i}
-                className="border border-dashed border-border rounded-md p-3 flex flex-col gap-3 relative"
-              >
-                <button
-                  type="button"
-                  onClick={() => removeEntry(i)}
-                  className="absolute top-2 right-2 text-muted-foreground hover:text-destructive"
+            {entries.map((entry, i) => {
+              const operation = entry.Operation as string | undefined;
+              const capElements = operation ? inlineCapabilityMap?.[operation] : undefined;
+              return (
+                <div
+                  key={i}
+                  className="border border-dashed border-border rounded-md p-3 flex flex-col gap-3 relative"
                 >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-                <span className="text-xs text-muted-foreground font-mono">
-                  Entry {i + 1}
-                </span>
-                {childElements.map((child) => (
-                  <FieldRenderer
-                    key={child.id_short}
-                    element={child}
-                    value={entry[child.id_short] as FormValue}
-                    onChange={(v) =>
-                      updateEntry(i, { ...entry, [child.id_short]: v })
+                  <button
+                    type="button"
+                    onClick={() => removeEntry(i)}
+                    className="absolute top-2 right-2 text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                  <span className="text-xs text-muted-foreground font-mono">
+                    Entry {i + 1}
+                  </span>
+                  {childElements.map((child) => {
+                    if (capElements && child.id_short === "RequiredCapabilityRef") {
+                      return (
+                        <div key={child.id_short} className="flex flex-col gap-1">
+                          <span className="text-sm font-medium">RequiredCapabilityRef</span>
+                          <span className="text-xs text-muted-foreground italic px-3 py-2 border border-border rounded-md bg-muted/30">
+                            (auto-assigned from capability parameters below)
+                          </span>
+                        </div>
+                      );
                     }
-                    path={`${path}-${element.id_short}-${i}`}
-                    context={context}
-                  />
-                ))}
-              </div>
-            ))}
+                    return (
+                      <FieldRenderer
+                        key={child.id_short}
+                        element={child}
+                        value={entry[child.id_short] as FormValue}
+                        onChange={(v) =>
+                          updateEntry(i, { ...entry, [child.id_short]: v })
+                        }
+                        path={`${path}-${element.id_short}-${i}`}
+                        context={context}
+                        inlineCapabilityMap={inlineCapabilityMap}
+                        bomEntries={bomEntries}
+                        processStepEntries={processStepEntries}
+                      />
+                    );
+                  })}
+                  {capElements && (
+                    <div className="border-l-2 border-primary/40 pl-4 flex flex-col gap-3 mt-1">
+                      <span className="text-xs font-semibold text-primary uppercase tracking-wide">
+                        Capability Parameters — {operation}
+                      </span>
+                      {capElements.map((capEl) => (
+                        <FieldRenderer
+                          key={capEl.id_short}
+                          element={capEl}
+                          value={((entry.CapabilityParams as FormData) ?? {})[capEl.id_short] as FormValue}
+                          onChange={(v) =>
+                            updateEntry(i, {
+                              ...entry,
+                              CapabilityParams: {
+                                ...((entry.CapabilityParams as FormData) ?? {}),
+                                [capEl.id_short]: v,
+                              },
+                            })
+                          }
+                          path={`${path}-${element.id_short}-${i}-cap`}
+                          context={context}
+                          inlineCapabilityMap={inlineCapabilityMap}
+                          bomEntries={bomEntries}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
             <button
               type="button"
               onClick={addEntry}
@@ -522,6 +690,9 @@ function CollectionField({ element, value, onChange, path, context }: FieldProps
               onChange={(v) => updateChild(child.id_short, v)}
               path={`${path}-${element.id_short}`}
               context={context}
+              inlineCapabilityMap={inlineCapabilityMap}
+              bomEntries={bomEntries}
+              processStepEntries={processStepEntries}
             />
           ))}
         </div>
@@ -532,7 +703,7 @@ function CollectionField({ element, value, onChange, path, context }: FieldProps
 
 /* ──────────────────────────────── dispatcher ── */
 
-export function FieldRenderer({ element, value, onChange, path, context }: FieldProps) {
+export function FieldRenderer({ element, value, onChange, path, context, inlineCapabilityMap, bomEntries, processStepEntries }: FieldProps) {
   const optional = isOptional(element.cardinality);
   const hasPresetValue = value !== null && value !== undefined;
   const [enabled, setEnabled] = useState(!optional || hasPresetValue);
@@ -548,6 +719,9 @@ export function FieldRenderer({ element, value, onChange, path, context }: Field
         onChange={onChange}
         path={path}
         context={context}
+        inlineCapabilityMap={inlineCapabilityMap}
+        bomEntries={bomEntries}
+        processStepEntries={processStepEntries}
       />
     );
   }
@@ -577,6 +751,18 @@ export function FieldRenderer({ element, value, onChange, path, context }: Field
       </div>
     );
   };
+
+  if (element.type === "property" && element.ref_source === "process_steps") {
+    return wrap(
+      <ProcessStepRefField
+        element={element}
+        value={value}
+        onChange={onChange}
+        path={path}
+        processStepEntries={processStepEntries}
+      />
+    );
+  }
 
   if (element.type === "property" && element.options && element.options.length > 0) {
     return wrap(
@@ -622,6 +808,18 @@ export function FieldRenderer({ element, value, onChange, path, context }: Field
         onChange={onChange}
         path={path}
         context={context}
+      />
+    );
+  }
+
+  if (element.type === "list" && element.element_type === "reference_element") {
+    return wrap(
+      <BomRefListField
+        element={element}
+        value={value}
+        onChange={onChange}
+        path={path}
+        bomEntries={bomEntries}
       />
     );
   }

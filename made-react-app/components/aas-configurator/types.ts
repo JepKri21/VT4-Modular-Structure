@@ -26,6 +26,8 @@ export interface TemplateElement {
   options?: string[];
   /** Pattern like "{AssetName}-{Material}-{Color}" — resolved from context at render and generation time */
   derived?: string;
+  /** When set to "process_steps", renders a dropdown of current BOP steps instead of a text input */
+  ref_source?: string;
 }
 
 /** Flatten a nested FormData into a single-level { id_short: stringValue } map. */
@@ -79,7 +81,7 @@ export function applyDerivedFields(
         const computed = resolveDerived(el.derived, ctx);
         if (computed) result[el.id_short] = computed;
       }
-    } else if (el.type === "collection" && el.elements) {
+    } else if (el.type === "collection" && el.elements && !el.extensible) {
       const colData = (result[el.id_short] ?? {}) as FormData;
       result[el.id_short] = applyDerivedFields(el.elements, colData, ctx);
     }
@@ -204,4 +206,30 @@ export interface ShellType {
 export function isMany(cardinality?: string): boolean {
   const c = (cardinality ?? "One").toLowerCase();
   return c === "zerotomany" || c === "onetomany";
+}
+
+export interface BomEntry {
+  idShort: string;
+  description: string;
+}
+
+export interface ProcessStepEntry {
+  idShort: string;
+  label: string;
+}
+
+/** Compute the AAS id_short for a BOP process step at the given index.
+ *  Mirrors entry_template: "{Operation}_{N}" */
+export function computeStepIdShort(step: FormData, index: number): string {
+  const op = String(step.Operation ?? "");
+  return op ? `${op}_${index + 1}` : `Step_${index + 1}`;
+}
+
+/** Compute the AAS id_short for a BOM entry at the given index.
+ *  Mirrors the Python label generation in form_to_aas.py. */
+export function computeBomEntryIdShort(entry: FormData, index: number): string {
+  const desc = String(entry.Description ?? "");
+  const sanitized = desc.replace(/[^A-Za-z0-9]/g, "_").replace(/_+/g, "_").replace(/^_+|_+$/g, "");
+  const label = sanitized ? `${sanitized}_${index + 1}` : "";
+  return label && /^[A-Za-z]/.test(label) ? label : `Entry${index + 1}`;
 }
