@@ -166,7 +166,12 @@ def build_elements_from_form(
             builder.add_multi_language_property(parent, id_short, value=mlp_val, semantic_id=sem_id)
 
         elif etype == "reference_element":
+            cardinality = (elem.get("cardinality") or "One").lower()
+            is_optional = cardinality in ("zerotoone", "zerotomany")
             if not val:
+                if is_optional:
+                    continue
+                builder.add_reference_element(parent, id_short, value=None, semantic_id=sem_id)
                 continue
             ref = _sm_ref(str(val)) if elem.get("reference_type") == "model" else _ext_ref(str(val))
             builder.add_reference_element(parent, id_short, value=ref, semantic_id=sem_id)

@@ -231,13 +231,16 @@ function EnumField({ element, value, onChange, path }: FieldProps) {
 
 function ReferenceField({ element, value, onChange, path }: FieldProps) {
   const id = `${path}-${element.id_short}`;
+  const required = !isOptional(element.cardinality);
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-sm font-medium">
-        {labelFor(element.id_short)}{" "}
+      <label htmlFor={id} className="text-sm font-medium flex items-center gap-1.5 flex-wrap">
+        {labelFor(element.id_short)}
+        {required && <span className="text-destructive text-xs font-bold">*</span>}
+        {" "}
         <span className="text-xs text-muted-foreground">(Reference URI)</span>
         {element.description && (
-          <span className="text-xs text-muted-foreground ml-1">
+          <span className="text-xs text-muted-foreground">
             — {element.description}
           </span>
         )}

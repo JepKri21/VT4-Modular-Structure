@@ -1,0 +1,23 @@
+kind: "Instance"               # Type | Instance
+description: "AAS shell for a drilling station"
+
+id_pattern: "https://aausmartlab.org/Shells/Resources/Drilling-12345678"
+id_short_pattern: "Drilling_12345678"
+global_asset_id_pattern: "https://aausmartlab.org/Shells/Resources/Drilling-12345678"
+
+submodels:
+  - template_id: "https://aausmartlab.org/Shells/Resources/Drilling-12345678/DrillingCapabilityOffered"
+    id_short: "DrillingCapabilityOffered"
+    description: "Offered drilling capability with parameters expressed as ranges defining the operational envelope"
+
+  - template_id: "https://aausmartlab.org/Shells/Resources/Drilling-12345678/Skills"
+    id_short: "Skills"
+    description: "Offered skills for the drilling station"
+
+  - template_id: "https://aausmartlab.org/Shells/Resources/Drilling-12345678/HandoffCapabilityOffered"
+    id_short: "HandoffCapabilityOffered"
+    description: "Offered handoff capability with parameters expressed as ranges defining the operational envelope"
+
+  - template_id: "https://aausmartlab.org/Shells/Resources/Drilling-12345678/ResourceZones"
+    id_short: "ResourceZones"
+    description: "Resource zones for the drilling station"
