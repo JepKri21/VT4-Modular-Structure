@@ -15,9 +15,9 @@
 kind: "Type"
 description: "AAS shell template for Sub-Assembly type assets"
 
-id_pattern: "https://aausmartlab.com/AAS/SubAssembly/{category}/{name}/Type"
-id_short_pattern: "{name}_Type"
-global_asset_id_pattern: "https://aausmartlab.com/Assets/Product/AAU/{name}/Type"
+id_pattern: "https://aausmartlab.com/AAS/SubAssembly/{category}/{name}/Instance"
+id_short_pattern: "{name}_Instance"
+global_asset_id_pattern: "https://aausmartlab.com/Assets/Product/AAU/{name}/Instance"
 
 submodels:
   - template_id: "https://aausmartlab.com/SubmodelTemplate/SubAssembly/Properties/1/0"
@@ -40,7 +40,3 @@ submodels:
     description: "Bill of Processes — ordered assembly steps and required capabilities"
     required: true
 
-  - template_id: "https://aausmartlab.com/SubmodelTemplate/Capability/DrillingCapabilityRequired/1/0"
-    id_short: "RequiredDrillingCapability"
-    description: "Drilling capability parameters required from the station"
-    required: false

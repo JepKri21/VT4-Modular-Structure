@@ -229,7 +229,8 @@ class AASInstanceBuilder:
         parent,
         id_short: str,
         semantic_id: str | None = None,
-        element_type: type = model.Property
+        element_type: type = model.Property,
+        value_type=None,
     ):
         """Add a SubmodelElementList to parent.
 
@@ -250,10 +251,10 @@ class AASInstanceBuilder:
                               element_type=model.Property,
                               cardinality="ZeroToMany")
         """
-        lst = SubmodelElementList(
-            id_short=id_short,
-            type_value_list_element=element_type
-        )
+        kwargs: dict = {"id_short": id_short, "type_value_list_element": element_type}
+        if element_type is model.Property and value_type is not None:
+            kwargs["value_type_list_element"] = value_type
+        lst = SubmodelElementList(**kwargs)
         if semantic_id:
             lst.semantic_id = ExternalReference(
                 key=(Key(type_=KeyTypes.GLOBAL_REFERENCE, value=semantic_id),)
@@ -376,14 +377,14 @@ class AASInstanceBuilder:
         qualifier_kind_map = {
             "VALUE_QUALIFIER":    model.QualifierKind.VALUE_QUALIFIER,
             "CONCEPT_QUALIFIER":  model.QualifierKind.CONCEPT_QUALIFIER,
-            "INSTANCE_QUALIFIER": model.QualifierKind.INSTANCE_QUALIFIER,
+            "TEMPLATE_QUALIFIER": model.QualifierKind.TEMPLATE_QUALIFIER,
         }
 
         q = Qualifier(
             type_=type_,
             value_type=value_type,
             value=value,
-            kind=qualifier_kind_map.get(kind, model.QualifierKind.INSTANCE_QUALIFIER),
+            kind=qualifier_kind_map.get(kind, model.QualifierKind.VALUE_QUALIFIER),
         )
         if semantic_id:
             q.semantic_id = ExternalReference(
@@ -421,10 +422,10 @@ class AASInstanceBuilder:
         submodel_json_string = json.dumps(submodel, cls=basyx.aas.adapter.json.AASToJsonEncoder)
         aas_dict = json.loads(submodel_json_string)
 
-        AAS_SERVER_URL = "http://localhost:8081"
+        #AAS_SERVER_URL = "http://localhost:8081"
 
         response = requests.post(
-            f"{AAS_SERVER_URL}/submodels",
+            f"{SEVER_URL}/submodels",
             headers={"Content-Type": "application/json"},
             json=aas_dict
         )

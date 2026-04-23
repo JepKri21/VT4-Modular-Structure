@@ -1,0 +1,40 @@
+# Preset for a standard 16A slow-blow fuse component.
+
+shell: "component_shell"
+label: "Fuse – 16A Slow-Blow"
+description: "Standard 16A slow-blow glass fuse. Change SerialNumber and BatchNumber per instance."
+
+asset_name: "Fuse_16A_SB"
+asset_category: "Electrical"
+
+submodels:
+  ComponentProperties:
+    ProductionIdentification:
+      ModelNumber: "FUSE-SB-16A-001"
+    PhysicalDimensions:
+      Length: 30
+      Width: 6
+      Height: 6
+      Weight_g: 3.2
+    MaterialProperties:
+      Material: "Glass"
+      Color: "Clear"
+    ElectricalProperties:
+      Voltage_Rating: 250
+      Current_Rating: 16.0
+      Type: "slow-blow"
+
+  Documentation:
+    DisplayName:
+      - language: "en"
+        text: "Fuse – 16A Slow-Blow"
+      - language: "da"
+        text: "Sikring – 16A Tidsforsinket"
+    Description:
+      - language: "en"
+        text: "250V 16A slow-blow glass cartridge fuse for FuseBox Series A"
+      - language: "da"
+        text: "250V 16A tidsforsinket glassikring til FuseBox Serie A"
+    ManufacturerName: "AAU SmartLab"
+    ProductFamily: "FuseBox Series A"
+    HardwareRevision: "v1.0"

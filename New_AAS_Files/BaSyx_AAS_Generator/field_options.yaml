@@ -1,0 +1,80 @@
+# Dropdown options and derived patterns for configurator fields.
+#
+# "options" sections: keys match id_short of property elements.
+#   value is a list of strings → rendered as a dropdown.
+#   "global" options apply to every template; template-specific entries override.
+#
+# "derived" section: specifies auto-computed patterns for specific fields.
+#   Tokens like {AssetName}, {Material}, {Color} are resolved from form context.
+#   Empty tokens and their separators are dropped automatically.
+#   This lives here (not in the template) so templates stay general-purpose.
+
+global:
+  Color:
+    - "Black"
+    - "White"
+    - "Grey"
+    - "Red"
+    - "Blue"
+    - "Green"
+    - "Yellow"
+    - "Orange"
+    - "Silver"
+    - "Natural / Unpainted"
+
+component_properties:
+  Material:
+    - "Aluminum"
+    - "Steel"
+    - "Stainless Steel"
+    - "Plastic (ABS)"
+    - "Plastic (PLA)"
+    - "Plastic (PETG)"
+    - "Nylon"
+    - "Carbon Fiber"
+    - "Copper"
+    - "PCB FR4"
+  Finish:
+    - "Raw"
+    - "Anodized"
+    - "Painted"
+    - "Powder Coated"
+    - "Plated"
+    - "Brushed"
+    - "Polished"
+    - "Matte"
+    - "Gloss"
+
+sub_assembly_properties:
+  Material:
+    - "Multi-part Assembly"
+    - "Aluminum + Plastic"
+    - "Steel + Plastic"
+    - "PCB + Housing"
+  Finish:
+    - "Raw"
+    - "Painted"
+    - "Powder Coated"
+
+# ── Operation → Required Capability mapping ─────────────────────────────────
+# Each entry links a BOP Operation value to the required capability submodel
+# template that must be filled out for that step.
+# id_short    — the submodel id_short added to the shell
+# template_file — filename (without extension) in submodel_templates/
+# template_id   — globally unique AAS template IRI for this capability type
+operations:
+  Drilling:
+    id_short: "RequiredDrillingCapability"
+    template_file: "drilling_capability_required"
+    template_id: "https://aausmartlab.org/SubmodelTemplate/Capability/BasicDrillingCapability/Required/1/0"
+  Assemble:
+    id_short: "RequiredAssembleCapability"
+    template_file: "assemble_capability"
+    template_id: "https://aausmartlab.org/SubmodelTemplate/Capability/AssembleCapability/1/0"
+
+# ── Derived field patterns ──────────────────────────────────────────────────
+# Keys are submodel template names, values map id_short → pattern string.
+# Tokens that resolve to empty are dropped along with their separator.
+derived:
+  component_properties:
+    ModelNumber: "{AssetName}-{Material}-{Color}-{Voltage_Rating}V-{Current_Rating}A-{Type}"
