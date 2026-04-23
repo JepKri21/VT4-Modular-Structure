@@ -1,0 +1,113 @@
+id_short: "Skills"
+id: "https://aausmartlab.org/Shells/Resources/Storage-12345678/Skills"
+description: "Submodel of skills and capabilities provided by this resource"
+
+elements:
+  - type: collection
+    id_short: "Retrieve"
+    semantic_id: "https://aausmartlab.org/Semantics/Capability"
+    description: "Name of skill offered by this resource"
+
+    elements:
+      - type: reference_element
+        id_short: "CapabilityReference"
+        value: "https://aausmartlab.org/Shells/Resources/Storage-12345678/RetrieveCapabilityOffered"
+      
+      - type: list
+        id_short: "SkillTriggers"
+        semantic_id: "https://aausmartlab.org/Semantics/SkillTriggers"
+        description: "Skill trigger commands for a given capability"
+        element_type: "property"
+        value_type: "xs:string"
+        items:
+          - "START"
+          - "STOP"
+          - "RESET"
+          - "ABORT"
+          - "CLEAR"
+          - "HOLD"
+          - "UNHOLD"
+          - "SUSPEND"
+          - "UNSUSPEND"
+
+      - type: list
+        id_short: "Actors"
+        semantic_id: "https://aausmartlab.org/Semantics/Actors"
+        description: "Actors involved in the execution of this capability"
+        element_type: "property"
+        value_type: "xs:string"
+        items:
+          - "KUKAManipulator"
+
+
+  - type: collection
+    id_short: "Handoff"
+    semantic_id: "https://aausmartlab.org/Semantics/Capability"
+    description: "Name of skill offered by this resource"
+
+    elements:
+      - type: reference_element
+        id_short: "CapabilityReference"
+        value: "https://aausmartlab.org/Shells/Resources/Storage-12345678/HandoffCapabilityOffered"
+      
+      - type: list
+        id_short: "SkillTriggers"
+        semantic_id: "https://aausmartlab.org/Semantics/SkillTriggers"
+        description: "Skill trigger commands for a given capability"
+        element_type: "property"
+        value_type: "xs:string"
+        items:
+          - "START"
+          - "STOP"
+          - "RESET"
+          - "ABORT"
+          - "CLEAR"
+          - "HOLD"
+          - "UNHOLD"
+          - "SUSPEND"
+          - "UNSUSPEND"
+
+      - type: list
+        id_short: "Actors"
+        semantic_id: "https://aausmartlab.org/Semantics/Actors"
+        description: "Actors involved in the execution of this capability"
+        element_type: "property"
+        value_type: "xs:string"
+        items:
+          - "KUKAManipulator"
+
+  - type: collection
+    id_short: "Store"
+    semantic_id: "https://aausmartlab.org/Semantics/Capability"
+    description: "Name of skill offered by this resource"
+
+    elements:
+      - type: reference_element
+        id_short: "CapabilityReference"
+        value: "https://aausmartlab.org/Shells/Resources/Storage-12345678/StoreCapabilityOffered"
+      
+      - type: list
+        id_short: "SkillTriggers"
+        semantic_id: "https://aausmartlab.org/Semantics/SkillTriggers"
+        description: "Skill trigger commands for a given capability"
+        element_type: "property"
+        value_type: "xs:string"
+        items:
+          - "START"
+          - "STOP"
+          - "RESET"
+          - "ABORT"
+          - "CLEAR"
+          - "HOLD"
+          - "UNHOLD"
+          - "SUSPEND"
+          - "UNSUSPEND"
+
+      - type: list
+        id_short: "Actors"
+        semantic_id: "https://aausmartlab.org/Semantics/Actors"
+        description: "Actors involved in the execution of this capability"
+        element_type: "property"
+        value_type: "xs:string"
+        items:
+          - "KUKAManipulator"

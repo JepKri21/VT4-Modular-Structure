@@ -71,7 +71,7 @@ def _resolve_value_type(value_type):
 
 
 class AASInstanceBuilder:
-    """Builds a single AAS submodel template incrementally.
+    """Builds a single AAS submodel instance incrementally.
 
     Instantiate once per submodel, then call add_* methods to attach elements.
     Every element automatically receives a cardinality qualifier so instance
@@ -82,12 +82,12 @@ class AASInstanceBuilder:
     """
 
     def __init__(self, id_short: str, identification: str):
-        """Create a new template submodel.
+        """Create a new instance submodel.
 
         Args:
             id_short:       Short identifier used inside the AAS (no spaces).
-            identification: Globally unique IRI for this submodel template,
-                            e.g. "https://example.com/SubmodelTemplate/Name/1/0".
+            identification: Globally unique IRI for this submodel instance,
+                            e.g. "https://example.com/SubmodelInstance/Name/1/0".
         """
         self.submodel = Submodel(
             id_short=id_short,
@@ -123,7 +123,7 @@ class AASInstanceBuilder:
 
         Args:
             parent:      The submodel root (builder.get()) or a collection returned
-                         by add_collection().
+                         by add_collection().   
             id_short:    Element identifier.
             value_type:  BaSyx datatype, e.g. model.datatypes.String,
                          model.datatypes.Float, model.datatypes.Int.
@@ -417,21 +417,25 @@ class AASInstanceBuilder:
         return self.submodel
 
     def send_submodel(self, SEVER_URL):
+        import base64
         submodel = self.get()
 
         submodel_json_string = json.dumps(submodel, cls=basyx.aas.adapter.json.AASToJsonEncoder)
         aas_dict = json.loads(submodel_json_string)
 
-        #AAS_SERVER_URL = "http://localhost:8081"
-
-        response = requests.post(
-            f"{SEVER_URL}/submodels",
-            headers={"Content-Type": "application/json"},
-            json=aas_dict
-        )
+        url = SEVER_URL.rstrip("/")
+        headers = {"Content-Type": "application/json"}
+        response = requests.post(f"{url}/submodels", headers=headers, json=aas_dict)
 
         if response.status_code in (200, 201):
             print("Submodel uploaded successfully!")
+        elif response.status_code == 409:
+            encoded_id = base64.urlsafe_b64encode(submodel.id.encode("utf-8")).decode("ascii")
+            response = requests.put(f"{url}/submodels/{encoded_id}", headers=headers, json=aas_dict)
+            if response.status_code in (200, 201, 204):
+                print("Submodel updated successfully (PUT)!")
+            else:
+                print(f"Upload failed on PUT: {response.status_code} - {response.text}")
         else:
             print(f"Upload failed: {response.status_code} - {response.text}")
 
@@ -490,18 +494,22 @@ if __name__ == "__main__":
     drill_capability_instance = DrillingCapability.get()
     print(drill_capability_instance)
 
+    import base64
     submodel_json_string = json.dumps(drill_capability_instance, cls=basyx.aas.adapter.json.AASToJsonEncoder)
     aas_dict = json.loads(submodel_json_string)
 
     AAS_SERVER_URL = "http://localhost:8081"
-
-    response = requests.post(
-        f"{AAS_SERVER_URL}/submodels",
-        headers={"Content-Type": "application/json"},
-        json=aas_dict
-    )
+    headers = {"Content-Type": "application/json"}
+    response = requests.post(f"{AAS_SERVER_URL}/submodels", headers=headers, json=aas_dict)
 
     if response.status_code in (200, 201):
         print("Submodel uploaded successfully!")
+    elif response.status_code == 409:
+        encoded_id = base64.urlsafe_b64encode(drill_capability_instance.id.encode("utf-8")).decode("ascii")
+        response = requests.put(f"{AAS_SERVER_URL}/submodels/{encoded_id}", headers=headers, json=aas_dict)
+        if response.status_code in (200, 201, 204):
+            print("Submodel updated successfully (PUT)!")
+        else:
+            print(f"Upload failed on PUT: {response.status_code} - {response.text}")
     else:
         print(f"Upload failed: {response.status_code} - {response.text}")

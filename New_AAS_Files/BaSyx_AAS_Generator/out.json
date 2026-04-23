@@ -1,0 +1,250 @@
+{
+  "idShort": "DrillingCapabilityOffered",
+  "description": [
+    {
+      "language": "en",
+      "text": "Offered capability template for a drilling capability — parameters expressed as ranges defining the operational envelope"
+    }
+  ],
+  "modelType": "Submodel",
+  "id": "https://aausmartlab.org/Shells/Resources/Drilling-12345678/DrillingCapabilityOffered",
+  "submodelElements": [
+    {
+      "idShort": "Parameters",
+      "modelType": "SubmodelElementCollection",
+      "semanticId": {
+        "type": "ExternalReference",
+        "keys": [
+          {
+            "type": "GlobalReference",
+            "value": "https://aausmartlab.org/Semantics/Parameters"
+          }
+        ]
+      },
+      "value": [
+        {
+          "idShort": "BitDiameter_mm",
+          "modelType": "Property",
+          "semanticId": {
+            "type": "ExternalReference",
+            "keys": [
+              {
+                "type": "GlobalReference",
+                "value": "https://aausmartlab.org/Semantics/BitDiameter_mm"
+              }
+            ]
+          },
+          "qualifiers": [
+            {
+              "value": "1.0",
+              "kind": "ValueQualifier",
+              "valueType": "xs:float",
+              "type": "range_min"
+            },
+            {
+              "value": "20.0",
+              "kind": "ValueQualifier",
+              "valueType": "xs:float",
+              "type": "range_max"
+            }
+          ],
+          "value": "5.0",
+          "valueType": "xs:float"
+        },
+        {
+          "idShort": "DrillDepth_mm",
+          "modelType": "Range",
+          "semanticId": {
+            "type": "ExternalReference",
+            "keys": [
+              {
+                "type": "GlobalReference",
+                "value": "https://aausmartlab.org/Semantics/DrillDepth_mm"
+              }
+            ]
+          },
+          "valueType": "xs:float",
+          "min": "0.0",
+          "max": "200.0"
+        },
+        {
+          "idShort": "SpindleSpeed_RPM",
+          "modelType": "Range",
+          "semanticId": {
+            "type": "ExternalReference",
+            "keys": [
+              {
+                "type": "GlobalReference",
+                "value": "https://aausmartlab.org/Semantics/SpindleSpeed_RPM"
+              }
+            ]
+          },
+          "valueType": "xs:float",
+          "min": "0.0",
+          "max": "1200.0"
+        },
+        {
+          "idShort": "SpindleFeed_mm_per_s",
+          "modelType": "Range",
+          "semanticId": {
+            "type": "ExternalReference",
+            "keys": [
+              {
+                "type": "GlobalReference",
+                "value": "https://aausmartlab.org/Semantics/SpindleFeed_mm_per_s"
+              }
+            ]
+          },
+          "valueType": "xs:float",
+          "min": "0.0",
+          "max": "50.0"
+        },
+        {
+          "idShort": "HolePlacement_x_mm",
+          "modelType": "Range",
+          "semanticId": {
+            "type": "ExternalReference",
+            "keys": [
+              {
+                "type": "GlobalReference",
+                "value": "https://aausmartlab.org/Semantics/HolePlacement_x_mm"
+              }
+            ]
+          },
+          "valueType": "xs:float",
+          "min": "-50.0",
+          "max": "50.0"
+        },
+        {
+          "idShort": "HolePlacement_y_mm",
+          "modelType": "Range",
+          "semanticId": {
+            "type": "ExternalReference",
+            "keys": [
+              {
+                "type": "GlobalReference",
+                "value": "https://aausmartlab.org/Semantics/HolePlacement_y_mm"
+              }
+            ]
+          },
+          "valueType": "xs:float",
+          "min": "-50.0",
+          "max": "50.0"
+        },
+        {
+          "idShort": "OperationLabel",
+          "description": [
+            {
+              "language": "en",
+              "text": "Human-readable operation label in multiple languages"
+            }
+          ],
+          "modelType": "MultiLanguageProperty",
+          "semanticId": {
+            "type": "ExternalReference",
+            "keys": [
+              {
+                "type": "GlobalReference",
+                "value": "https://aausmartlab.org/Semantics/OperationLabel"
+              }
+            ]
+          },
+          "value": [
+            {
+              "language": "dk",
+              "text": "Dette er en boreoperation for en ressource"
+            },
+            {
+              "language": "en",
+              "text": "This is a drilling operation for a resource"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "idShort": "SupportedComponents",
+      "modelType": "SubmodelElementList",
+      "semanticId": {
+        "type": "ExternalReference",
+        "keys": [
+          {
+            "type": "GlobalReference",
+            "value": "https://aausmartlab.org/Semantics/SupportedComponents"
+          }
+        ]
+      },
+      "orderRelevant": true,
+      "typeValueListElement": "Property",
+      "valueTypeListElement": "xs:string",
+      "value": [
+        {
+          "modelType": "Property",
+          "value": "BottomCover_ALU",
+          "valueType": "xs:string"
+        },
+        {
+          "modelType": "Property",
+          "value": "TopCover_ALU",
+          "valueType": "xs:string"
+        }
+      ]
+    },
+    {
+      "idShort": "AllowedMaterials",
+      "modelType": "SubmodelElementList",
+      "semanticId": {
+        "type": "ExternalReference",
+        "keys": [
+          {
+            "type": "GlobalReference",
+            "value": "https://aausmartlab.org/Semantics/AllowedMaterials"
+          }
+        ]
+      },
+      "orderRelevant": true,
+      "typeValueListElement": "Property",
+      "valueTypeListElement": "xs:string",
+      "value": [
+        {
+          "modelType": "Property",
+          "value": "PLA",
+          "valueType": "xs:string"
+        },
+        {
+          "modelType": "Property",
+          "value": "ABS",
+          "valueType": "xs:string"
+        }
+      ]
+    },
+    {
+      "idShort": "ResourceReference",
+      "description": [
+        {
+          "language": "en",
+          "text": "Reference to the physical resource realizing this capability"
+        }
+      ],
+      "modelType": "ReferenceElement",
+      "semanticId": {
+        "type": "ExternalReference",
+        "keys": [
+          {
+            "type": "GlobalReference",
+            "value": "https://aausmartlab.org/Semantics/ResourceReference"
+          }
+        ]
+      },
+      "value": {
+        "type": "ExternalReference",
+        "keys": [
+          {
+            "type": "GlobalReference",
+            "value": "https://aausmartlab.org/Shells/Resources/Drilling-12345678"
+          }
+        ]
+      }
+    }
+  ]
+}

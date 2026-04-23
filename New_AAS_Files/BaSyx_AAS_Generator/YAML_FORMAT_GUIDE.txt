@@ -1,0 +1,531 @@
+================================================================================
+  YAML FORMAT GUIDE — Submodel Templates, Instances & Shell Presets
+================================================================================
+
+There are three distinct YAML file types in this project. Each has a different
+purpose, location, and structure. Do NOT mix their formats.
+
+    FILE TYPE          LOCATION                        FED TO
+    ─────────────────────────────────────────────────────────────────────────
+    Submodel Template  submodel_templates/*.yaml        Configurator UI
+    Instance           Instance_Examples/**/*.yaml      yaml_to_instance.py
+    Shell Preset       shell_presets/*.yaml             Configurator generator
+    Shell Template     shell_templates/*.yaml           Configurator generator
+
+
+================================================================================
+  1. SUBMODEL TEMPLATES   (submodel_templates/*.yaml)
+================================================================================
+
+PURPOSE:
+  Define the SCHEMA of a submodel — what fields exist, what types they are,
+  and whether they are mandatory. Used by the configurator to render forms.
+  Do NOT add concrete values here. Do NOT pass these to yaml_to_instance.py.
+
+TOP-LEVEL STRUCTURE:
+─────────────────────
+  id_short: "MySubmodel"
+  id: "https://aausmartlab.org/SubmodelTemplate/Category/Name/1/0"
+  description: "What this submodel is for"
+
+  elements:
+    - ...
+
+ELEMENT TYPES:
+──────────────
+  All elements share these common fields:
+    type:        property | range | collection | list |
+                 multi_language_property | reference_element
+    id_short:    "FieldName"                      (always required)
+    semantic_id: "https://..."                    (recommended)
+    description: "Human-readable explanation"     (recommended)
+    cardinality: "One"                            (see table below)
+
+  CARDINALITY VALUES:
+    One        — always required, exactly one
+    ZeroToOne  — optional, at most one
+    ZeroToMany — optional, any number  (use on lists)
+    OneToMany  — at least one required (use on lists)
+
+ELEMENT TYPE DETAILS:
+─────────────────────
+  # property — a single typed scalar value
+  - type: property
+    id_short: "BitDiameter_mm"
+    value_type: "xs:float"         # xs:string | xs:float | xs:double |
+    semantic_id: "https://..."     # xs:integer | xs:boolean | xs:dateTime
+    description: "..."
+    cardinality: "One"
+    qualifiers:                    # optional — use to express constraints
+      - type: "range_min"
+        value_type: "xs:float"
+        value: 1.0
+        kind: "TEMPLATE_QUALIFIER" # always TEMPLATE_QUALIFIER in templates
+
+  # range — min/max pair of the same type
+  - type: range
+    id_short: "DrillDepth_mm"
+    value_type: "xs:float"
+    semantic_id: "https://..."
+    description: "..."
+    cardinality: "One"
+    # Do NOT add min/max values in templates
+
+  # collection — named group of mixed element types
+  - type: collection
+    id_short: "DrillingParameters"
+    semantic_id: "https://..."
+    description: "..."
+    cardinality: "One"
+    elements:
+      - type: property
+        id_short: "BitDiameter_mm"
+        ...
+
+  # list — ordered sequence of same-type elements (identified by index)
+  - type: list
+    id_short: "AllowedMaterials"
+    semantic_id: "https://..."
+    description: "..."
+    element_type: "property"       # property | collection
+    value_type: "xs:string"        # required when element_type is property
+    cardinality: "ZeroToMany"
+    # Do NOT add items/elements in templates
+
+  # multi_language_property — text in multiple languages
+  - type: multi_language_property
+    id_short: "OperationLabel"
+    semantic_id: "https://..."
+    description: "..."
+    cardinality: "ZeroToOne"
+    # Do NOT add values in templates
+
+  # reference_element — pointer to another AAS shell or submodel
+  - type: reference_element
+    id_short: "ResourceReference"
+    semantic_id: "https://..."
+    description: "..."
+    cardinality: "ZeroToOne"
+    # Do NOT add values in templates
+
+FULL TEMPLATE EXAMPLE:
+───────────────────────
+  id_short: "DrillingCapabilityOffered"
+  id: "https://aausmartlab.org/SubmodelTemplate/Capability/BasicDrillingCapability/Offered/1/0"
+  description: "Offered capability for a drilling resource"
+
+  elements:
+    - type: collection
+      id_short: "DrillingParameters"
+      semantic_id: "https://aausmartlab.org/Semantics/DrillingParameters"
+      cardinality: "One"
+      elements:
+        - type: property
+          id_short: "BitDiameter_mm"
+          value_type: "xs:float"
+          semantic_id: "https://aausmartlab.org/Semantics/BitDiameter_mm"
+          cardinality: "One"
+          qualifiers:
+            - type: "range_min"
+              value_type: "xs:float"
+              value: 1.0
+              kind: "TEMPLATE_QUALIFIER"
+            - type: "range_max"
+              value_type: "xs:float"
+              value: 20.0
+              kind: "TEMPLATE_QUALIFIER"
+
+        - type: range
+          id_short: "DrillDepth_mm"
+          value_type: "xs:float"
+          semantic_id: "https://aausmartlab.org/Semantics/DrillDepth_mm"
+          cardinality: "One"
+
+        - type: multi_language_property
+          id_short: "OperationLabel"
+          semantic_id: "https://aausmartlab.org/Semantics/OperationLabel"
+          cardinality: "ZeroToOne"
+
+    - type: list
+      id_short: "AllowedMaterials"
+      semantic_id: "https://aausmartlab.org/Semantics/AllowedMaterials"
+      element_type: "property"
+      value_type: "xs:string"
+      cardinality: "ZeroToMany"
+
+    - type: reference_element
+      id_short: "ResourceReference"
+      semantic_id: "https://aausmartlab.org/Semantics/ResourceReference"
+      cardinality: "ZeroToOne"
+
+
+================================================================================
+  2. INSTANCE FILES   (Instance_Examples/**/*.yaml)
+================================================================================
+
+PURPOSE:
+  Concrete submodel data. Passed to yaml_to_instance.py to produce
+  BaSyx-compatible JSON that can be uploaded to the AAS server.
+  Every mandatory field (cardinality One / OneToMany) from the template
+  must be present. Do NOT include cardinality fields.
+
+TOP-LEVEL STRUCTURE:
+─────────────────────
+  id_short: "MySubmodel"
+  id: "https://aausmartlab.org/Shells/Resources/MyDevice-UUID/MySubmodel"
+  description: "Optional description"   # becomes English description in AAS
+
+  elements:
+    - ...
+
+  The id should follow the pattern:
+    <shell-id>/<submodel-id_short>
+  Example:
+    shell:    https://aausmartlab.org/Shells/Resources/Drilling-12345678
+    submodel: https://aausmartlab.org/Shells/Resources/Drilling-12345678/ResourceZones
+
+ELEMENT TYPE DETAILS:
+─────────────────────
+  # property — single typed value
+  - type: property
+    id_short: "BitDiameter_mm"
+    value_type: "xs:float"
+    semantic_id: "https://..."     # optional but recommended
+    value: 5.0
+
+  # range — min/max pair
+  - type: range
+    id_short: "DrillDepth_mm"
+    value_type: "xs:float"
+    semantic_id: "https://..."
+    min: 0.0
+    max: 200.0
+
+  # collection — named group of mixed elements
+  - type: collection
+    id_short: "DrillingParameters"
+    semantic_id: "https://..."
+    elements:
+      - type: property
+        id_short: "BitDiameter_mm"
+        value_type: "xs:float"
+        value: 5.0
+
+  # list — use "items" with plain scalar values (NOT dicts)
+  - type: list
+    id_short: "AllowedMaterials"
+    element_type: "property"
+    value_type: "xs:string"
+    items:
+      - "PLA"
+      - "ABS"
+      - "PETG"
+
+  # multi_language_property — "value" MUST be on its own line
+  - type: multi_language_property
+    id_short: "OperationLabel"
+    value:                         # new line required here
+      en: "Drilling operation"
+      dk: "Boreoperation"
+
+  # reference_element — plain IRI string
+  - type: reference_element
+    id_short: "ResourceReference"
+    value: "https://aausmartlab.org/Shells/Resources/Drilling-12345678"
+
+QUALIFIERS IN INSTANCES:
+──────────────────────────
+  Change kind from TEMPLATE_QUALIFIER to VALUE_QUALIFIER:
+
+  qualifiers:
+    - type: "range_min"
+      value_type: "xs:float"
+      value: 1.0
+      kind: "VALUE_QUALIFIER"     # VALUE_QUALIFIER in instances
+    - type: "range_max"
+      value_type: "xs:float"
+      value: 20.0
+      kind: "VALUE_QUALIFIER"
+
+COMMON MISTAKES:
+─────────────────
+  WRONG                                     CORRECT
+  ──────────────────────────────────────────────────────────────────────────
+  value: dk: "text"                         value:
+         en: "text"                           dk: "text"
+                                              en: "text"
+
+  elements:                                 items:
+    - id_short: "Item1"                       - "PLA"
+      value: "PLA"                            - "ABS"
+
+  kind: "TEMPLATE_QUALIFIER"  (instance)    kind: "VALUE_QUALIFIER"
+
+  description: "text without               description: "text with closing quote"
+  closing quote
+
+FULL INSTANCE EXAMPLE:
+───────────────────────
+  id_short: "DrillingCapabilityOffered"
+  id: "https://aausmartlab.org/Shells/Resources/Drilling-12345678/DrillingCapabilityOffered"
+  description: "Offered drilling capability for station DS-001"
+
+  elements:
+    - type: collection
+      id_short: "DrillingParameters"
+      semantic_id: "https://aausmartlab.org/Semantics/DrillingParameters"
+      elements:
+        - type: property
+          id_short: "BitDiameter_mm"
+          value_type: "xs:float"
+          semantic_id: "https://aausmartlab.org/Semantics/BitDiameter_mm"
+          value: 5.0
+          qualifiers:
+            - type: "range_min"
+              value_type: "xs:float"
+              value: 1.0
+              kind: "VALUE_QUALIFIER"
+            - type: "range_max"
+              value_type: "xs:float"
+              value: 20.0
+              kind: "VALUE_QUALIFIER"
+
+        - type: range
+          id_short: "DrillDepth_mm"
+          value_type: "xs:float"
+          semantic_id: "https://aausmartlab.org/Semantics/DrillDepth_mm"
+          min: 0.0
+          max: 200.0
+
+        - type: multi_language_property
+          id_short: "OperationLabel"
+          semantic_id: "https://aausmartlab.org/Semantics/OperationLabel"
+          value:
+            en: "Drilling operation"
+            dk: "Boreoperation"
+
+    - type: list
+      id_short: "AllowedMaterials"
+      semantic_id: "https://aausmartlab.org/Semantics/AllowedMaterials"
+      element_type: "property"
+      value_type: "xs:string"
+      items:
+        - "PLA"
+        - "ABS"
+
+    - type: reference_element
+      id_short: "ResourceReference"
+      semantic_id: "https://aausmartlab.org/Semantics/ResourceReference"
+      value: "https://aausmartlab.org/Shells/Resources/Drilling-12345678"
+
+RUNNING THE GENERATOR:
+───────────────────────
+  python yaml_to_instance.py <instance.yaml> --output out.json
+  python yaml_to_instance.py <instance.yaml> --upload http://localhost:8081
+
+
+================================================================================
+  3. SHELL PRESETS   (shell_presets/*.yaml)
+================================================================================
+
+PURPOSE:
+  High-level shorthand that fills in an entire AAS shell (multiple submodels)
+  in one file. The configurator reads this and generates each submodel
+  separately. Do NOT pass these to yaml_to_instance.py directly.
+  Data is expressed as a nested dict matching the template structure —
+  no "type:" or "value_type:" fields needed here.
+
+TOP-LEVEL STRUCTURE:
+─────────────────────
+  shell: "component_shell"          # filename (no extension) in shell_templates/
+  label: "My Component – Version A" # display name in configurator
+  description: "Brief explanation. Note what fields to change per instance."
+
+  asset_name: "MyComponent"
+  asset_category: "Mechanical"
+
+  submodels:
+    SubmodelIdShort:               # must match id_short in the shell template
+      CollectionIdShort:
+        FieldIdShort: value        # plain scalar — no type/value_type needed
+
+SCALAR VALUES:
+───────────────
+  Numbers:   Weight_g: 118.5
+  Strings:   Material: "PLA"
+  Booleans:  IsConfigurable: true
+
+MULTI-LANGUAGE FIELDS:
+───────────────────────
+  Use a list of {language, text} objects:
+
+  DisplayName:
+    - language: "en"
+      text: "Bottom Cover"
+    - language: "da"
+      text: "Bundlåg"
+
+LISTS OF STRINGS:
+──────────────────
+  SupportedComponents:
+    - "BottomCover_ALU"
+    - "TopCover_ALU"
+
+BOP CAPABILITY PARAMS:
+───────────────────────
+  The configurator auto-generates a RequiredCapability submodel from this.
+  Structure mirrors the capability submodel template:
+
+  BillOfProcesses:
+    ProcessSteps:
+      - Operation: "Drilling"           # must match a key in field_options.yaml
+        RequiredComponents:
+          - "BottomCover"
+        StepConstraints:
+          MaxDuration_s: 180
+          RequiresInspection: true
+          RequiredComponentState: "Raw"
+        CapabilityParams:
+          DrillingParameters:
+            BitDiameter_mm: 5.0
+            DrillDepth_mm: 3.0
+            SpindleSpeed_RPM: 1800.0
+            SpindleFeed_mm_per_s: 2.5
+          SupportedComponents:
+            - "BottomCover_ALU"
+          AllowedMaterials:
+            - "Aluminium"
+
+FULL PRESET EXAMPLE:
+─────────────────────
+  shell: "component_shell"
+  label: "Bottom Cover – PLA Black"
+  description: "3D-printed PLA bottom cover. Change SerialNumber per instance."
+
+  asset_name: "BottomCover_3DP"
+  asset_category: "Mechanical"
+
+  submodels:
+    ComponentProperties:
+      ProductionIdentification:
+        ModelNumber: "BC-3DP-BLK-001"
+        # SerialNumber: leave blank — unique per physical instance
+      PhysicalDimensions:
+        Length: 150
+        Width: 80
+        Height: 5
+        Weight_g: 118.5
+      MaterialProperties:
+        Material: "PLA"
+        Color: "Black"
+        Finish: "Textured"
+
+    Documentation:
+      DisplayName:
+        - language: "en"
+          text: "Bottom Cover – PLA Black"
+        - language: "da"
+          text: "Bundlåg – PLA Sort"
+      Description:
+        - language: "en"
+          text: "3D-printed PLA bottom cover for FuseBox Series A"
+        - language: "da"
+          text: "3D-printet PLA bundlåg til FuseBox Serie A"
+      ManufacturerName: "AAU SmartLab"
+      ProductFamily: "FuseBox Series A"
+      HardwareRevision: "v1.0"
+
+
+================================================================================
+  4. SHELL TEMPLATES   (shell_templates/*.yaml)
+================================================================================
+
+PURPOSE:
+  Declare which submodels a shell TYPE must or may contain. Referenced by
+  presets via the "shell:" field. You rarely need to create new ones.
+  Use kind: "Type" for templates, kind: "Instance" for specific asset shells.
+
+  IMPORTANT: "required:" only belongs in shell TEMPLATES (kind: "Type").
+  Shell instance descriptors (kind: "Instance") do NOT use "required:".
+
+SHELL TEMPLATE STRUCTURE  (kind: "Type"):
+──────────────────────────────────────────
+  kind: "Type"
+  description: "..."
+
+  id_pattern: "https://aausmartlab.com/AAS/Component/{category}/{name}/Instance"
+  id_short_pattern: "{name}_Instance"
+  global_asset_id_pattern: "https://aausmartlab.com/Assets/Product/AAU/{name}/Instance"
+
+  submodels:
+    - template_id: "https://aausmartlab.com/SubmodelTemplate/Component/Properties/1/0"
+      id_short: "ComponentProperties"
+      description: "Production-relevant physical and material properties"
+      required: true              # true = must exist | false = optional
+
+    - template_id: "https://aausmartlab.com/SubmodelTemplate/Component/Documentation/1/0"
+      id_short: "Documentation"
+      description: "Human-readable reference information"
+      required: true
+
+SHELL INSTANCE DESCRIPTOR  (kind: "Instance"):
+───────────────────────────────────────────────
+  kind: "Instance"
+  description: "..."
+
+  id_pattern: "https://aausmartlab.com/AAS/Resource/Drilling/Drilling-12345678/Instance"
+  id_short_pattern: "Drilling-12345678"
+  global_asset_id_pattern: "https://aausmartlab.com/AAS/Resource/Drilling/Drilling-12345678"
+
+  submodels:
+    - template_id: "https://aausmartlab.org/SubmodelTemplate/Capability/BasicDrillingCapability/Offered/1/0"
+      id_short: "DrillingCapabilityOffered"
+      description: "Offered drilling capability"
+                                # NO "required:" field in instance descriptors
+
+    - template_id: "https://aausmartlab.org/SubmodelTemplate/Skill/BasicSkill/1/0"
+      id_short: "Skills"
+      description: "Offered skills for this station"
+
+
+================================================================================
+  QUICK REFERENCE — ALLOWED VALUE TYPES
+================================================================================
+
+  xs:string       — text, e.g. "PLA"
+  xs:float        — decimal number, e.g. 5.0
+  xs:double       — high-precision decimal, e.g. 118.5
+  xs:integer      — whole number, e.g. 10
+  xs:boolean      — true or false
+  xs:dateTime     — ISO 8601 date/time, e.g. "2024-01-15T10:30:00"
+
+
+================================================================================
+  QUICK REFERENCE — ELEMENT FIELDS BY TYPE
+================================================================================
+
+  TYPE                  REQUIRED FIELDS              VALUE FIELDS
+  ────────────────────────────────────────────────────────────────────────────
+  property              id_short, value_type          value
+  range                 id_short, value_type          min, max
+  collection            id_short                      elements: [...]
+  list                  id_short, element_type,       items: [scalar, ...]
+                        value_type (if property)
+  multi_language_prop.  id_short                      value: {lang: text, ...}
+  reference_element     id_short                      value: "https://..."
+
+
+================================================================================
+  QUICK REFERENCE — TEMPLATE vs INSTANCE DIFFERENCES
+================================================================================
+
+  FIELD / FEATURE         TEMPLATE              INSTANCE
+  ──────────────────────────────────────────────────────────────────────────
+  cardinality             required              omit
+  qualifier kind          TEMPLATE_QUALIFIER    VALUE_QUALIFIER
+  property value          omit                  set the actual value
+  range min/max           omit                  set the actual values
+  list items              omit                  use "items: [...]"
+  multi_lang value        omit                  use "value:\n  en: ..."
+  reference value         omit                  use "value: https://..."
+  id (IRI)                template IRI          instance IRI (unique per asset)

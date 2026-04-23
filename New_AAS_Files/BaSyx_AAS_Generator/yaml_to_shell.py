@@ -40,6 +40,13 @@ sys.path.insert(0, str(Path(__file__).parent))
 import basyx.aas.adapter.json
 from builders import _sm_ref
 
+_HERE = Path(__file__).parent
+SHELLS = [
+    _HERE / "../Instance_Examples/Drilling_Station/Drilling_Station.yaml",
+    _HERE / "../Instance_Examples/Storage_Station/Shell.yaml",
+    _HERE / "../Instance_Examples/Transport_Station/Transport_Shell.yaml",
+]
+
 
 ASSET_KIND_MAP = {
     "type":     model.AssetKind.TYPE,
@@ -95,45 +102,60 @@ def load_shell_from_yaml(
     return shell
 
 
+def _upload_shell(json_str: str, shell_id: str, url: str) -> None:
+    import base64
+    import requests
+    headers = {"Content-Type": "application/json"}
+    response = requests.post(f"{url}/shells", headers=headers, data=json_str.encode("utf-8"))
+    if response.status_code in (200, 201):
+        print("Shell uploaded successfully!")
+    elif response.status_code == 409:
+        encoded_id = base64.urlsafe_b64encode(shell_id.encode("utf-8")).decode("ascii")
+        response = requests.put(f"{url}/shells/{encoded_id}", headers=headers, data=json_str.encode("utf-8"))
+        if response.status_code in (200, 201, 204):
+            print("Shell updated successfully (PUT)!")
+        else:
+            print(f"Upload failed on PUT: {response.status_code} - {response.text}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        print(f"Upload failed: {response.status_code} - {response.text}", file=sys.stderr)
+        sys.exit(1)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Build an AAS shell from a shell template YAML file."
+        description="Build an AAS shell from one or more shell template YAML files."
     )
-    parser.add_argument("yaml_file",   help="Path to the shell template YAML")
-    parser.add_argument("--name",      required=True, help="Asset name, e.g. BottomCover")
-    parser.add_argument("--category",  default="",    help="Asset category, e.g. Enclosure")
-    parser.add_argument("--output",    "-o",          help="Write JSON to this file (default: stdout)")
+    parser.add_argument("yaml_file",   nargs="*", help="Path(s) to shell template YAML(s); omit to use built-in SHELLS list")
+    parser.add_argument("--name",      default="", help="Asset name for {name} placeholder")
+    parser.add_argument("--category",  default="", help="Asset category for {category} placeholder")
+    parser.add_argument("--output",    "-o",       help="Write JSON to this file (single file only; ignored for multiple inputs)")
     parser.add_argument("--upload",    "-u", metavar="URL",
                         help="POST JSON to <URL>/shells")
     args = parser.parse_args()
 
-    try:
-        shell = load_shell_from_yaml(args.yaml_file, args.name, args.category)
-    except (KeyError, ValueError, FileNotFoundError) as exc:
-        print(f"Error: {exc}", file=sys.stderr)
-        sys.exit(1)
+    files = [str(p) for p in args.yaml_file] if args.yaml_file else [str(p) for p in SHELLS]
+    multi = len(files) > 1
 
-    json_str = json.dumps(shell, cls=basyx.aas.adapter.json.AASToJsonEncoder, indent=2, ensure_ascii=False)
-
-    if args.output:
-        Path(args.output).write_text(json_str, encoding="utf-8")
-        print(f"Written to {args.output}")
-    else:
-        print(json_str)
-
-    if args.upload:
-        import requests
-        url = args.upload.rstrip("/")
-        response = requests.post(
-            f"{url}/shells",
-            headers={"Content-Type": "application/json"},
-            data=json_str.encode("utf-8"),
-        )
-        if response.status_code in (200, 201):
-            print("Shell uploaded successfully!")
-        else:
-            print(f"Upload failed: {response.status_code} - {response.text}", file=sys.stderr)
+    for yaml_path in files:
+        if multi:
+            print(f"\n--- {yaml_path} ---")
+        try:
+            shell = load_shell_from_yaml(str(yaml_path), args.name, args.category)
+        except (KeyError, ValueError, FileNotFoundError) as exc:
+            print(f"Error ({yaml_path}): {exc}", file=sys.stderr)
             sys.exit(1)
+
+        json_str = json.dumps(shell, cls=basyx.aas.adapter.json.AASToJsonEncoder, indent=2, ensure_ascii=False)
+
+        if args.output and not multi:
+            Path(args.output).write_text(json_str, encoding="utf-8")
+            print(f"Written to {args.output}")
+        else:
+            print(json_str)
+
+        if args.upload:
+            _upload_shell(json_str, shell.id, args.upload.rstrip("/"))
 
 
 if __name__ == "__main__":

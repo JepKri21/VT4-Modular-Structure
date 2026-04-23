@@ -26,7 +26,7 @@ sup_compo = TransportCapability.add_collection(
 
 speed_constrant_ms = TransportCapability.add_range(
     params,
-    "SpeedConstraint",
+    "SpeedConstraint_m_per_s",
     "xs:float",
     0,
     3,

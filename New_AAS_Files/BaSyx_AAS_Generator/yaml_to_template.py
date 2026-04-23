@@ -193,40 +193,54 @@ def load_template_from_yaml(path: str) -> AASTemplateBuilder:
     return builder
 
 
+def _upload_submodel(json_str: str, submodel_id: str, url: str) -> None:
+    import base64
+    import requests
+    headers = {"Content-Type": "application/json"}
+    response = requests.post(f"{url}/submodels", headers=headers, data=json_str.encode("utf-8"))
+    if response.status_code in (200, 201):
+        print("Submodel uploaded successfully!")
+    elif response.status_code == 409:
+        encoded_id = base64.urlsafe_b64encode(submodel_id.encode("utf-8")).decode("ascii")
+        response = requests.put(f"{url}/submodels/{encoded_id}", headers=headers, data=json_str.encode("utf-8"))
+        if response.status_code in (200, 201, 204):
+            print("Submodel updated successfully (PUT)!")
+        else:
+            print(f"Upload failed on PUT: {response.status_code} - {response.text}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        print(f"Upload failed: {response.status_code} - {response.text}", file=sys.stderr)
+        sys.exit(1)
+
+
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Build an AAS submodel template from a YAML file.")
-    parser.add_argument("yaml_file", help="Path to the YAML template definition")
-    parser.add_argument("--output", "-o", help="Write JSON to this file (default: stdout)")
+    parser = argparse.ArgumentParser(description="Build an AAS submodel template from one or more YAML files.")
+    parser.add_argument("yaml_file", nargs="+", help="Path(s) to YAML template definition(s)")
+    parser.add_argument("--output", "-o", help="Write JSON to this file (single file only; ignored for multiple inputs)")
     parser.add_argument("--upload", "-u", metavar="URL", help="POST JSON to <URL>/submodels")
     args = parser.parse_args()
 
-    try:
-        builder = load_template_from_yaml(args.yaml_file)
-    except (KeyError, ValueError, FileNotFoundError) as exc:
-        print(f"Error: {exc}", file=sys.stderr)
-        sys.exit(1)
+    multi = len(args.yaml_file) > 1
 
-    json_str = json.dumps(builder.get(), cls=basyx.aas.adapter.json.AASToJsonEncoder, indent=2, ensure_ascii=False)
-
-    if args.output:
-        Path(args.output).write_text(json_str, encoding="utf-8")
-        print(f"Written to {args.output}")
-    else:
-        print(json_str)
-
-    if args.upload:
-        import requests
-        url = args.upload.rstrip("/")
-        response = requests.post(
-            f"{url}/submodels",
-            headers={"Content-Type": "application/json"},
-            data=json_str.encode("utf-8"),
-        )
-        if response.status_code in (200, 201):
-            print("Submodel uploaded successfully!")
-        else:
-            print(f"Upload failed: {response.status_code} - {response.text}", file=sys.stderr)
+    for yaml_path in args.yaml_file:
+        if multi:
+            print(f"\n--- {yaml_path} ---")
+        try:
+            builder = load_template_from_yaml(yaml_path)
+        except (KeyError, ValueError, FileNotFoundError) as exc:
+            print(f"Error ({yaml_path}): {exc}", file=sys.stderr)
             sys.exit(1)
+
+        json_str = json.dumps(builder.get(), cls=basyx.aas.adapter.json.AASToJsonEncoder, indent=2, ensure_ascii=False)
+
+        if args.output and not multi:
+            Path(args.output).write_text(json_str, encoding="utf-8")
+            print(f"Written to {args.output}")
+        else:
+            print(json_str)
+
+        if args.upload:
+            _upload_submodel(json_str, builder.get().id, args.upload.rstrip("/"))
 
 
 if __name__ == "__main__":

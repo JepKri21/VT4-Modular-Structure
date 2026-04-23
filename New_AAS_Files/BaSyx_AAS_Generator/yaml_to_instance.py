@@ -70,6 +70,23 @@ sys.path.insert(0, str(Path(__file__).parent))
 from builders import XS_TYPE_MAP, _convert_value
 from instance_generator_class import AASInstanceBuilder
 
+_HERE = Path(__file__).parent
+SUBMODELS = [
+    _HERE / "../Instance_Examples/Drilling_Station/drilling_capability_offered.yaml",
+    _HERE / "../Instance_Examples/Drilling_Station/drilling_skills.yaml",
+    _HERE / "../Instance_Examples/Drilling_Station/HandoffCapabilityOffered.yaml",
+    _HERE / "../Instance_Examples/Drilling_Station/drilling_station_resource_zones.yaml",
+    _HERE / "../Instance_Examples/Storage_Station/Inventory.yaml",
+    _HERE / "../Instance_Examples/Storage_Station/HandoffCapabilityOffered.yaml",
+    _HERE / "../Instance_Examples/Storage_Station/RetrieveCapabilityOffered.yaml",
+    _HERE / "../Instance_Examples/Storage_Station/StoreCapbilityOffered.yaml",
+    _HERE / "../Instance_Examples/Storage_Station/Skills.yaml",
+    _HERE / "../Instance_Examples/Storage_Station/ResourceZones.yaml",
+    _HERE / "../Instance_Examples/Transport_Station/transport_skills.yaml",
+    _HERE / "../Instance_Examples/Transport_Station/TransportCapabilityOffered.yaml",
+    _HERE / "../Instance_Examples/Transport_Station/ResourceZones.yaml",
+]
+
 import basyx.aas.adapter.json
 
 ELEMENT_TYPE_MAP: dict = {
@@ -120,7 +137,7 @@ def _make_ref(value):
 
 
 def _build_elements(builder: AASInstanceBuilder, parent, elements: list) -> None:
-    for elem in elements:
+    for elem in (elements or []):
         etype       = elem["type"]
         id_short    = elem["id_short"]
         semantic_id = elem.get("semantic_id")
@@ -164,7 +181,7 @@ def _build_elements(builder: AASInstanceBuilder, parent, elements: list) -> None
 
         elif etype == "collection":
             el = builder.add_collection(parent, id_short, semantic_id=semantic_id)
-            _build_elements(builder, el, elem.get("elements", []))
+            _build_elements(builder, el, elem.get("elements") or [])
 
         elif etype == "list":
             raw_et = elem.get("element_type")
@@ -180,7 +197,7 @@ def _build_elements(builder: AASInstanceBuilder, parent, elements: list) -> None
                     raise ValueError(f"Unknown value_type '{raw_vt}' for list '{id_short}'")
             elif raw_et == "property":
                 raise ValueError(f"'value_type' is required for list '{id_short}' when element_type is 'property'")
-            el = builder.add_list(parent, id_short, semantic_id=semantic_id, element_type=element_cls)
+            el = builder.add_list(parent, id_short, semantic_id=semantic_id, element_type=element_cls, value_type=vt)
             for item in elem.get("items", []):
                 prop = model.Property(id_short=None, value_type=vt, value=_convert_value(item, vt))
                 el.value.append(prop)
@@ -206,44 +223,59 @@ def load_instance_from_yaml(path: str) -> AASInstanceBuilder:
     if desc := cfg.get("description"):
         builder.submodel.description = model.MultiLanguageTextType({"en": desc})
 
-    _build_elements(builder, builder.get(), cfg.get("elements", []))
+    _build_elements(builder, builder.get(), cfg.get("elements") or [])
     return builder
 
 
+def _upload_submodel(json_str: str, submodel_id: str, url: str) -> None:
+    import base64
+    import requests
+    headers = {"Content-Type": "application/json"}
+    response = requests.post(f"{url}/submodels", headers=headers, data=json_str.encode("utf-8"))
+    if response.status_code in (200, 201):
+        print("Submodel uploaded successfully!")
+    elif response.status_code == 409:
+        encoded_id = base64.urlsafe_b64encode(submodel_id.encode("utf-8")).decode("ascii")
+        response = requests.put(f"{url}/submodels/{encoded_id}", headers=headers, data=json_str.encode("utf-8"))
+        if response.status_code in (200, 201, 204):
+            print("Submodel updated successfully (PUT)!")
+        else:
+            print(f"Upload failed on PUT: {response.status_code} - {response.text}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        print(f"Upload failed: {response.status_code} - {response.text}", file=sys.stderr)
+        sys.exit(1)
+
+
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Build an AAS submodel instance from a YAML file.")
-    parser.add_argument("yaml_file", help="Path to the YAML instance definition")
-    parser.add_argument("--output", "-o", help="Write JSON to this file (default: stdout)")
+    parser = argparse.ArgumentParser(description="Build an AAS submodel instance from one or more YAML files.")
+    parser.add_argument("yaml_file", nargs="*", help="Path(s) to YAML instance definition(s); omit to use built-in SUBMODELS list")
+    parser.add_argument("--output", "-o", help="Write JSON to this file (single file only; ignored for multiple inputs)")
     parser.add_argument("--upload", "-u", metavar="URL", help="POST JSON to <URL>/submodels")
     args = parser.parse_args()
 
-    try:
-        builder = load_instance_from_yaml(args.yaml_file)
-    except (KeyError, ValueError, FileNotFoundError) as exc:
-        print(f"Error: {exc}", file=sys.stderr)
-        sys.exit(1)
+    files = [str(p) for p in args.yaml_file] if args.yaml_file else [str(p) for p in SUBMODELS]
+    multi = len(files) > 1
 
-    json_str = json.dumps(builder.get(), cls=basyx.aas.adapter.json.AASToJsonEncoder, indent=2, ensure_ascii=False)
-
-    if args.output:
-        Path(args.output).write_text(json_str, encoding="utf-8")
-        print(f"Written to {args.output}")
-    else:
-        print(json_str)
-
-    if args.upload:
-        import requests
-        url = args.upload.rstrip("/")
-        response = requests.post(
-            f"{url}/submodels",
-            headers={"Content-Type": "application/json"},
-            data=json_str.encode("utf-8"),
-        )
-        if response.status_code in (200, 201):
-            print("Submodel uploaded successfully!")
-        else:
-            print(f"Upload failed: {response.status_code} - {response.text}", file=sys.stderr)
+    for yaml_path in files:
+        if multi:
+            print(f"\n--- {yaml_path} ---")
+        try:
+            builder = load_instance_from_yaml(yaml_path)
+        except (KeyError, ValueError, FileNotFoundError) as exc:
+            print(f"Error ({yaml_path}): {exc}", file=sys.stderr)
             sys.exit(1)
+
+        json_str = json.dumps(builder.get(), cls=basyx.aas.adapter.json.AASToJsonEncoder, indent=2, ensure_ascii=False)
+
+        if args.output and not multi:
+            Path(args.output).write_text(json_str, encoding="utf-8")
+            print(f"Written to {args.output}")
+        else:
+            print(json_str)
+
+        if args.upload:
+            _upload_submodel(json_str, builder.get().id, args.upload.rstrip("/"))
 
 
 if __name__ == "__main__":

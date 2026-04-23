@@ -1,0 +1,31 @@
+kind: "Instance"               # Type | Instance
+description: "AAS shell for a drilling station"
+
+id_pattern: "https://aausmartlab.org/Shells/Resources/Storage-12345678"
+id_short_pattern: "Storage_12345678"
+global_asset_id_pattern: "https://aausmartlab.org/Shells/Resources/Storage-12345678"
+
+submodels:
+  - template_id: "https://aausmartlab.org/Shells/Resources/Storage-12345678/StoreCapabilityOffered"
+    id_short: "StoreCapabilityOffered"
+    description: "Offered capability with"
+
+  - template_id: "https://aausmartlab.org/Shells/Resources/Storage-12345678/HandoffCapabilityOffered"
+    id_short: "HandoffCapabilityOffered"
+    description: "Offered capability with parameters"
+
+  - template_id: "https://aausmartlab.org/Shells/Resources/Storage-12345678/RetrieveCapabilityOffered"
+    id_short: "RetrieveCapabilityOffered"
+    description: "Offered capability with parameters"
+
+  - template_id: "https://aausmartlab.org/Shells/Resources/Storage-12345678/Skills"
+    id_short: "Skills"
+    description: "Offered skills for the resource"
+
+  - template_id: "https://aausmartlab.org/Shells/Resources/Storage-12345678/ResourceZones"
+    id_short: "ResourceZones"
+    description: "Resource zones for the resource"
+
+  - template_id: "https://aausmartlab.org/Shells/Resources/Storage-12345678/Inventory"
+    id_short: "Inventory"
+    description: "Inventory for the resource"
