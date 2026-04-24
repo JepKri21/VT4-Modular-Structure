@@ -2,12 +2,13 @@
 Build an AAS shell (AssetAdministrationShell) from a shell template YAML file.
 
 The shell template declares the asset kind, ID patterns, and which submodels
-the shell must reference.  Concrete values for {name} and {category} are
-supplied on the command line.
+the shell must reference.  If the YAML contains {name}/{category} placeholders,
+supply them on the command line; otherwise they can be omitted entirely.
 
 Usage:
-    python yaml_to_shell.py <shell_template.yaml> --name BottomCover --category Enclosure
-    python yaml_to_shell.py <shell_template.yaml> --name BottomCover --category Enclosure --output out.json
+    python yaml_to_shell.py <shell_template.yaml>
+    python yaml_to_shell.py <shell_template.yaml> --output out.json
+    python yaml_to_shell.py <shell_template.yaml> --upload http://localhost:8081
     python yaml_to_shell.py <shell_template.yaml> --name BottomCover --category Enclosure --upload http://localhost:8081
 
 Shell template YAML format:
@@ -24,7 +25,7 @@ Shell template YAML format:
         description: "..."          # optional, informational only
         required: true              # true | false
 
-Placeholders resolved at runtime: {name}, {category}
+Placeholders {name} and {category} are optional — omit --name/--category when IDs are already concrete.
 """
 
 import argparse
@@ -102,8 +103,10 @@ def load_shell_from_yaml(
     return shell
 
 
-def upload_shell(json_str: str, shell_id: str, url: str) -> str:
+def upload_shell(json_str: str, url: str) -> str:
     """Upload an AAS shell JSON payload to a BaSyx server.
+
+    The shell ID is extracted from the JSON payload itself.
 
     Returns:
         "created" if POST created the shell,
@@ -114,6 +117,7 @@ def upload_shell(json_str: str, shell_id: str, url: str) -> str:
     """
     import base64
     import requests
+    shell_id = json.loads(json_str).get("id", "")
     url = url.rstrip("/")
     headers = {"Content-Type": "application/json"}
     response = requests.post(f"{url}/shells", headers=headers, data=json_str.encode("utf-8"))
@@ -128,11 +132,6 @@ def upload_shell(json_str: str, shell_id: str, url: str) -> str:
             raise RuntimeError(f"Upload failed on PUT: {response.status_code} - {response.text}")
     else:
         raise RuntimeError(f"Upload failed: {response.status_code} - {response.text}")
-
-
-def _upload_shell(json_str: str, shell_id: str, url: str) -> str:
-    """Backward-compatible alias for upload_shell."""
-    return upload_shell(json_str, shell_id, url)
 
 
 def main() -> None:
@@ -169,7 +168,7 @@ def main() -> None:
 
         if args.upload:
             try:
-                result = upload_shell(json_str, shell.id, args.upload)
+                result = upload_shell(json_str, args.upload)
             except RuntimeError as exc:
                 print(str(exc), file=sys.stderr)
                 sys.exit(1)
