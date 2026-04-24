@@ -61,8 +61,8 @@ def _resolve(pattern: str, name: str, category: str) -> str:
 
 def load_shell_from_yaml(
     path: str,
-    name: str,
-    category: str,
+    name: str = "",
+    category: str = "",
 ) -> model.AssetAdministrationShell:
     with open(path, encoding="utf-8") as f:
         cfg = yaml.safe_load(f)

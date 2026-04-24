@@ -227,8 +227,10 @@ def load_instance_from_yaml(path: str) -> AASInstanceBuilder:
     return builder
 
 
-def upload_submodel(json_str: str, submodel_id: str, url: str) -> str:
+def upload_submodel(json_str: str, url: str) -> str:
     """Upload a submodel JSON payload to a BaSyx server.
+
+    The submodel ID is extracted from the JSON payload itself.
 
     Returns:
         "created" if POST created the submodel,
@@ -239,6 +241,7 @@ def upload_submodel(json_str: str, submodel_id: str, url: str) -> str:
     """
     import base64
     import requests
+    submodel_id = json.loads(json_str).get("id", "")
     url = url.rstrip("/")
     headers = {"Content-Type": "application/json"}
     response = requests.post(f"{url}/submodels", headers=headers, data=json_str.encode("utf-8"))
@@ -253,11 +256,6 @@ def upload_submodel(json_str: str, submodel_id: str, url: str) -> str:
             raise RuntimeError(f"Upload failed on PUT: {response.status_code} - {response.text}")
     else:
         raise RuntimeError(f"Upload failed: {response.status_code} - {response.text}")
-
-
-def _upload_submodel(json_str: str, submodel_id: str, url: str) -> str:
-    """Backward-compatible alias for upload_submodel."""
-    return upload_submodel(json_str, submodel_id, url)
 
 
 def main() -> None:
@@ -289,7 +287,7 @@ def main() -> None:
 
         if args.upload:
             try:
-                result = upload_submodel(json_str, builder.get().id, args.upload)
+                result = upload_submodel(json_str, args.upload)
             except RuntimeError as exc:
                 print(str(exc), file=sys.stderr)
                 sys.exit(1)
