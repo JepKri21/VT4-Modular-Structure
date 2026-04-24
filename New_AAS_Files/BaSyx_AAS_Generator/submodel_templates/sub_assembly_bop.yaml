@@ -95,3 +95,45 @@ elements:
                 semantic_id: "https://aausmartlab.org/Semantics/RequiredComponentState"
                 description: "State the component must be in before this step can start (e.g. Drilled, Cleaned)"
                 cardinality: "ZeroToOne"
+
+  - type: collection
+    id_short: "ProcessTracking"
+    semantic_id: "https://aausmartlab.org/Semantics/ProcessTracking"
+    description: "Runtime execution state for each process step — one entry per ProcessStep, populated by MES"
+    cardinality: "One"
+    extensible: true
+    entry_template: "{StepName}_Tracking"
+    elements:
+      - type: collection
+        id_short: "StepTracking"
+        semantic_id: "https://aausmartlab.org/Semantics/StepTracking"
+        description: "Tracking entry for one process step — id_short matches the corresponding ProcessStep id_short"
+        cardinality: "OneToMany"
+        elements:
+          - type: property
+            id_short: "Status"
+            value_type: "xs:string"
+            semantic_id: "https://aausmartlab.org/Semantics/StepStatus"
+            description: "Execution state of this step: Pending, InProgress, Complete, Failed, Skipped"
+            cardinality: "One"
+
+          - type: property
+            id_short: "AssignedResource"
+            value_type: "xs:string"
+            semantic_id: "https://aausmartlab.org/Semantics/AssignedResource"
+            description: "id_short of the resource station dispatched for this step"
+            cardinality: "ZeroToOne"
+
+          - type: property
+            id_short: "StartTime"
+            value_type: "xs:dateTime"
+            semantic_id: "https://aausmartlab.org/Semantics/StartTime"
+            description: "ISO 8601 timestamp when this step started"
+            cardinality: "ZeroToOne"
+
+          - type: property
+            id_short: "EndTime"
+            value_type: "xs:dateTime"
+            semantic_id: "https://aausmartlab.org/Semantics/EndTime"
+            description: "ISO 8601 timestamp when this step completed or failed"
+            cardinality: "ZeroToOne"

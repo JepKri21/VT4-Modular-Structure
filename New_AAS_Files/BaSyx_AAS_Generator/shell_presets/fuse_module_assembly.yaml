@@ -11,16 +11,16 @@ asset_name: "FuseModule_A"
 asset_category: "Electrical"
 
 submodels:
-  ComponentProperties:
-    ProductionIdentification:
-      ModelNumber: "FM-A-001"
-      HardwareRevision: "v1.0"
-    AssemblyTracking:
-      AssemblyStatus: "Pending"
-    PhysicalProperties:
+  Properties:
+    PhysicalDimensions:
       Weight_g: 295.7
 
   Documentation:
+    ProductionIdentification:
+      ModelNumber: "FM-A-001"
+      # SerialNumber: leave blank — unique per instance
+      # BatchNumber: leave blank — set at production time
+    HardwareRevision: "v1.0"
     DisplayName:
       - language: "en"
         text: "Fuse Module Series A"

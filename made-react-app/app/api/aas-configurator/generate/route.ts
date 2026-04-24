@@ -3,12 +3,11 @@ import { spawn } from "child_process";
 import path from "path";
 import { getGeneratorPath } from "@/lib/aas-config";
 
-const SCRIPT_PATH = path.join(getGeneratorPath(), "form_to_aas.py");
-const SCRIPT_CWD = getGeneratorPath();
-
 function runPython(payload: unknown): Promise<Record<string, unknown>> {
+  const generatorPath = getGeneratorPath();
+  const scriptPath = path.join(generatorPath, "form_to_aas.py");
   return new Promise((resolve, reject) => {
-    const child = spawn("python", [SCRIPT_PATH], { cwd: SCRIPT_CWD });
+    const child = spawn("python", [scriptPath], { cwd: generatorPath });
 
     let stdout = "";
     let stderr = "";

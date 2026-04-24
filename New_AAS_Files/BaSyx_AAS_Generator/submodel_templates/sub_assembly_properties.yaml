@@ -1,110 +1,129 @@
-id_short: "ComponentProperties"
-id: "https://aausmartlab.org/Submodels/Templates/SubAssemblyProperties"
-description: "Production-relevant properties submodel template for sub-assemblies"
+id_short: "Properties"
+id: "https://aausmartlab.org/Submodels/Templates/Properties"
+description: "Physical properties submodel template — shared by components and sub-assemblies"
 
 elements:
   - type: collection
-    id_short: "ProductionIdentification"
-    semantic_id: "https://aausmartlab.org/Semantics/ProductionIdentification"
-    description: "Identifiers needed to route and track the sub-assembly through production"
-    cardinality: "One"
-    elements:
-      - type: property
-        id_short: "ModelNumber"
-        value_type: "xs:string"
-        semantic_id: "https://aausmartlab.org/Semantics/ModelNumber"
-        description: "Sub-assembly model number — drives BOM and BOP selection"
-        cardinality: "One"
-
-      - type: property
-        id_short: "SerialNumber"
-        value_type: "xs:string"
-        semantic_id: "https://aausmartlab.org/Semantics/SerialNumber"
-        description: "Unique serial number for this physical instance"
-        cardinality: "ZeroToOne"
-
-      - type: property
-        id_short: "BatchNumber"
-        value_type: "xs:string"
-        semantic_id: "https://aausmartlab.org/Semantics/BatchNumber"
-        description: "Production batch identifier for traceability"
-        cardinality: "ZeroToOne"
-
-      - type: property
-        id_short: "HardwareRevision"
-        value_type: "xs:string"
-        semantic_id: "https://aausmartlab.org/Semantics/HardwareRevision"
-        description: "Design revision — a revision change may imply a different BOM or BOP"
-        cardinality: "ZeroToOne"
-
-  - type: collection
-    id_short: "AssemblyTracking"
-    semantic_id: "https://aausmartlab.org/Semantics/AssemblyTracking"
-    description: "Runtime production data recorded during assembly"
-    cardinality: "One"
-    elements:
-      - type: property
-        id_short: "AssemblyStatus"
-        value_type: "xs:string"
-        semantic_id: "https://aausmartlab.org/Semantics/AssemblyStatus"
-        description: "Current assembly status (e.g. Pending, InProgress, Completed)"
-        cardinality: "One"
-
-      - type: property
-        id_short: "AssemblyDate"
-        value_type: "xs:string"
-        semantic_id: "https://aausmartlab.org/Semantics/AssemblyDate"
-        description: "Date the sub-assembly was completed (ISO 8601)"
-        cardinality: "ZeroToOne"
-
-      - type: property
-        id_short: "AssemblyStation"
-        value_type: "xs:string"
-        semantic_id: "https://aausmartlab.org/Semantics/AssemblyStation"
-        description: "id_short of the station that produced this sub-assembly"
-        cardinality: "ZeroToOne"
-
-      - type: property
-        id_short: "AssemblyOperator"
-        value_type: "xs:string"
-        semantic_id: "https://aausmartlab.org/Semantics/AssemblyOperator"
-        description: "Operator or robot ID that performed the assembly"
-        cardinality: "ZeroToOne"
-
-  - type: collection
-    id_short: "QualityTracking"
-    semantic_id: "https://aausmartlab.org/Semantics/QualityTracking"
-    description: "Inspection results recorded after assembly — links to RequiresInspection in BOP"
+    id_short: "PhysicalDimensions"
+    semantic_id: "https://aausmartlab.org/Semantics/PhysicalDimensions"
+    description: "Dimensions required for fixturing, handling, and process planning"
     cardinality: "ZeroToOne"
     elements:
       - type: property
-        id_short: "InspectionResult"
-        value_type: "xs:string"
-        semantic_id: "https://aausmartlab.org/Semantics/InspectionResult"
-        description: "Outcome of post-assembly inspection (e.g. Pass, Fail, Pending)"
-        cardinality: "One"
+        id_short: "Length"
+        value_type: "xs:integer"
+        semantic_id: "https://aausmartlab.org/Semantics/Length_mm"
+        description: "Length in millimeters"
+        cardinality: "ZeroToOne"
+        qualifiers:
+          - type: "unit"
+            value_type: "xs:string"
+            value: "mm"
+            kind: "TEMPLATE_QUALIFIER"
 
       - type: property
-        id_short: "InspectionDate"
-        value_type: "xs:string"
-        semantic_id: "https://aausmartlab.org/Semantics/InspectionDate"
-        description: "Date of inspection (ISO 8601)"
+        id_short: "Width"
+        value_type: "xs:integer"
+        semantic_id: "https://aausmartlab.org/Semantics/Width_mm"
+        description: "Width in millimeters"
         cardinality: "ZeroToOne"
+        qualifiers:
+          - type: "unit"
+            value_type: "xs:string"
+            value: "mm"
+            kind: "TEMPLATE_QUALIFIER"
 
-  - type: collection
-    id_short: "PhysicalProperties"
-    semantic_id: "https://aausmartlab.org/Semantics/PhysicalProperties"
-    description: "Physical properties relevant to handling and downstream assembly"
-    cardinality: "ZeroToOne"
-    elements:
+      - type: property
+        id_short: "Height"
+        value_type: "xs:integer"
+        semantic_id: "https://aausmartlab.org/Semantics/Height_mm"
+        description: "Height in millimeters"
+        cardinality: "ZeroToOne"
+        qualifiers:
+          - type: "unit"
+            value_type: "xs:string"
+            value: "mm"
+            kind: "TEMPLATE_QUALIFIER"
+
       - type: property
         id_short: "Weight_g"
         value_type: "xs:double"
         semantic_id: "https://aausmartlab.org/Semantics/Weight_g"
-        description: "Total weight of the sub-assembly in grams"
+        description: "Weight in grams — used for handling and logistics"
         cardinality: "ZeroToOne"
         qualifiers:
           - type: "unit"
             value_type: "xs:string"
             value: "g"
             kind: "TEMPLATE_QUALIFIER"
+
+  - type: collection
+    id_short: "MaterialProperties"
+    semantic_id: "https://aausmartlab.org/Semantics/MaterialProperties"
+    description: "Material properties used for capability matching and process selection"
+    cardinality: "ZeroToOne"
+    elements:
+      - type: property
+        id_short: "Material"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.org/Semantics/Material"
+        description: "Material type — matched against AllowedMaterials in capability"
+        cardinality: "ZeroToOne"
+
+      - type: property
+        id_short: "Color"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.org/Semantics/Color"
+        description: "Color designation"
+        cardinality: "ZeroToOne"
+
+      - type: property
+        id_short: "Finish"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.org/Semantics/SurfaceFinish"
+        description: "Surface finish (e.g. Anodized, Painted, Raw)"
+        cardinality: "ZeroToOne"
+
+  - type: collection
+    id_short: "ElectricalProperties"
+    semantic_id: "https://aausmartlab.org/Semantics/ElectricalProperties"
+    description: "Electrical ratings required for production safety and process selection"
+    cardinality: "ZeroToOne"
+    elements:
+      - type: property
+        id_short: "Voltage_Rating"
+        value_type: "xs:integer"
+        semantic_id: "https://aausmartlab.org/Semantics/VoltageRating"
+        description: "Maximum voltage rating in volts"
+        cardinality: "ZeroToOne"
+        qualifiers:
+          - type: "unit"
+            value_type: "xs:string"
+            value: "V"
+            kind: "TEMPLATE_QUALIFIER"
+
+      - type: property
+        id_short: "Current_Rating"
+        value_type: "xs:double"
+        semantic_id: "https://aausmartlab.org/Semantics/CurrentRating"
+        description: "Current rating in amperes"
+        cardinality: "ZeroToOne"
+        qualifiers:
+          - type: "unit"
+            value_type: "xs:string"
+            value: "A"
+            kind: "TEMPLATE_QUALIFIER"
+
+      - type: property
+        id_short: "Type"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.org/Semantics/ElectricalType"
+        description: "Component type descriptor (e.g. fast-acting, slow-blow)"
+        cardinality: "ZeroToOne"
+
+      - type: property
+        id_short: "Layers"
+        value_type: "xs:integer"
+        semantic_id: "https://aausmartlab.org/Semantics/Layers"
+        description: "Number of structural layers — affects soldering and drilling process"
+        cardinality: "ZeroToOne"

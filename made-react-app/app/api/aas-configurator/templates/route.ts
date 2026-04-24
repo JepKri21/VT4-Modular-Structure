@@ -4,9 +4,8 @@ import path from "path";
 import yaml from "js-yaml";
 import { getGeneratorPath } from "@/lib/aas-config";
 
-const TEMPLATES_DIR = path.join(getGeneratorPath(), "submodel_templates");
-
 export async function GET() {
+  const TEMPLATES_DIR = path.join(getGeneratorPath(), "submodel_templates");
   try {
     const files = fs
       .readdirSync(TEMPLATES_DIR)

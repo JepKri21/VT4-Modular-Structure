@@ -14,15 +14,15 @@ asset_category: "Telefon"
 
 submodels:
   Properties:
-    ProductionIdentification:
-      ModelNumber: "SA-BCD-001"
-      HardwareRevision: "v1.0"
-    AssemblyTracking:
-      AssemblyStatus: "Pending"
-    PhysicalProperties:
+    PhysicalDimensions:
       Weight_g: 118.5   # equals the undrilled bottom cover — update if drilling removes significant mass
 
   Documentation:
+    ProductionIdentification:
+      ModelNumber: "SA-BCD-001"
+      # SerialNumber: leave blank — unique per instance
+      # BatchNumber: leave blank — set at production time
+    HardwareRevision: "v1.0"
     DisplayName:
       - language: "en"
         text: "Bottom Cover Drilling Sub-Assembly"

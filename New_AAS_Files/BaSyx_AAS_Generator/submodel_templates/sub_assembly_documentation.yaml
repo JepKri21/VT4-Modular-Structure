@@ -15,6 +15,40 @@ elements:
     description: "Free-text description of the sub-assembly and its role in the final product"
     cardinality: "One"
 
+  - type: collection
+    id_short: "ProductionIdentification"
+    semantic_id: "https://aausmartlab.org/Semantics/ProductionIdentification"
+    description: "Identifiers needed to route and track the sub-assembly through production"
+    cardinality: "One"
+    elements:
+      - type: property
+        id_short: "ModelNumber"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.org/Semantics/ModelNumber"
+        description: "Sub-assembly model number — drives BOM and BOP selection"
+        cardinality: "One"
+
+      - type: property
+        id_short: "SerialNumber"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.org/Semantics/SerialNumber"
+        description: "Unique serial number for this physical instance"
+        cardinality: "ZeroToOne"
+
+      - type: property
+        id_short: "BatchNumber"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.org/Semantics/BatchNumber"
+        description: "Production batch identifier for traceability"
+        cardinality: "ZeroToOne"
+
+  - type: property
+    id_short: "HardwareRevision"
+    value_type: "xs:string"
+    semantic_id: "https://aausmartlab.org/Semantics/HardwareRevision"
+    description: "Design revision — a revision change may imply a different BOM or BOP"
+    cardinality: "ZeroToOne"
+
   - type: property
     id_short: "ProductFamily"
     value_type: "xs:string"

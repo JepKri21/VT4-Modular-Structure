@@ -5,9 +5,8 @@ import yaml from "js-yaml";
 
 import { getGeneratorPath } from "@/lib/aas-config";
 
-const PRESETS_DIR = path.join(getGeneratorPath(), "shell_presets");
-
 export async function POST(req: Request) {
+  const PRESETS_DIR = path.join(getGeneratorPath(), "shell_presets");
   try {
     const body = await req.json() as Record<string, unknown>;
     const { shell, label, description, asset_name, asset_category, submodels, filename } = body as {
@@ -38,6 +37,7 @@ export async function POST(req: Request) {
 }
 
 export async function GET(req: Request) {
+  const PRESETS_DIR = path.join(getGeneratorPath(), "shell_presets");
   const { searchParams } = new URL(req.url);
   const shellFilter = searchParams.get("shell"); // e.g. "component_shell"
 

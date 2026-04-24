@@ -5,12 +5,11 @@ import yaml from "js-yaml";
 
 import { getGeneratorPath } from "@/lib/aas-config";
 
-const PRESETS_DIR = path.join(getGeneratorPath(), "shell_presets");
-
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ name: string }> }
 ) {
+  const PRESETS_DIR = path.join(getGeneratorPath(), "shell_presets");
   const { name } = await params;
   for (const ext of [".yaml", ".yml"]) {
     const filePath = path.join(PRESETS_DIR, `${name}${ext}`);
