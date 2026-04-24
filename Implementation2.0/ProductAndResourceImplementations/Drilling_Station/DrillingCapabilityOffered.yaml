@@ -10,9 +10,9 @@ elements:
 
     elements:
       - type: property
-        id_short: "BitDiameter_mm"
+        id_short: "BitDiameter"
         value_type: "xs:float"
-        semantic_id: "https://aausmartlab.org/Semantics/BitDiameter_mm"
+        semantic_id: "https://aausmartlab.org/Semantics/mm"
         description: "Drill bit diameter in mm"
         value: 5.0
         qualifiers:
@@ -26,41 +26,41 @@ elements:
             kind: "VALUE_QUALIFIER"
 
       - type: range
-        id_short: "DrillDepth_mm"
+        id_short: "DrillDepth"
         value_type: "xs:float"
-        semantic_id: "https://aausmartlab.org/Semantics/DrillDepth_mm"
+        semantic_id: "https://aausmartlab.org/Semantics/mm"
         description: "Minimum and maximum drill depth in mm"
         min: 0.0
         max: 200.0
 
       - type: range
-        id_short: "SpindleSpeed_RPM"
+        id_short: "SpindleSpeed"
         value_type: "xs:float"
-        semantic_id: "https://aausmartlab.org/Semantics/SpindleSpeed_RPM"
+        semantic_id: "https://aausmartlab.org/Semantics/RPM"
         description: "Spindle speed range in RPM"
         min: 0.0
         max: 1200.0
 
       - type: range
-        id_short: "SpindleFeed_mm_per_s"
+        id_short: "SpindleFeed"
         value_type: "xs:float"
-        semantic_id: "https://aausmartlab.org/Semantics/SpindleFeed_mm_per_s"
+        semantic_id: "https://aausmartlab.org/Semantics/mm_per_s"
         description: "Spindle feed rate range in mm/s"
         min: 0.0
         max: 50.0
 
       - type: range
-        id_short: "HolePlacement_x_mm"
+        id_short: "HolePlacement_X"
         value_type: "xs:float"
-        semantic_id: "https://aausmartlab.org/Semantics/HolePlacement_x_mm"
+        semantic_id: "https://aausmartlab.org/Semantics/mm"
         description: "Possible range of X-coordinate position of hole relative to product placement point"
         min: -50.0
         max: 50.0
 
       - type: range
-        id_short: "HolePlacement_y_mm"
+        id_short: "HolePlacement_Y"
         value_type: "xs:float"
-        semantic_id: "https://aausmartlab.org/Semantics/HolePlacement_y_mm"
+        semantic_id: "https://aausmartlab.org/Semantics/mm"
         description: "Possible range of Y-coordinate position of hole relative to product placement point"
         min: -50.0
         max: 50.0

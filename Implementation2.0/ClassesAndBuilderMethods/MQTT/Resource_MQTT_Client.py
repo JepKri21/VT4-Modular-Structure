@@ -145,7 +145,7 @@ class MQTT_Client_Resource():
         self.station_seq_no += 1
 
 
-    def publish_job_status(self, result, order_id, job_id, ideal_cycle_time_ms, cycle_time_ms, quality):
+    def publish_job_result(self, result, order_id, job_id, ideal_cycle_time_ms, cycle_time_ms, quality):
         job_data = {
             "station_id": self.CLIENT_ID,
             "seq_no": self.station_seq_no,
@@ -158,7 +158,7 @@ class MQTT_Client_Resource():
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")        }
         self.CLIENT.publish(
             
-            f"{self.BASE_TOPIC}/{self.CLIENT_ID}/job_status",
+            f"{self.BASE_TOPIC}/{self.CLIENT_ID}/job_result",
             json.dumps(job_data)
         )
         self.station_seq_no += 1
