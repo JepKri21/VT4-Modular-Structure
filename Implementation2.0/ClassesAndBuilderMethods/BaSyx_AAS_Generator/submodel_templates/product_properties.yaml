@@ -1,6 +1,6 @@
 id_short: "Properties"
-id: "https://aausmartlab.org/Submodels/Templates/Properties"
-description: "Production-relevant properties submodel template for manufactured components"
+id: "https://aausmartlab.org/Submodels/Templates/ProductProperties"
+description: "General product properties submodel template — used for components, sub-assemblies, and final products"
 
 elements:
   - type: collection

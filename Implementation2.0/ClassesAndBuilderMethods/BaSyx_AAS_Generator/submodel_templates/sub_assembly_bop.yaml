@@ -1,8 +1,58 @@
-id_short: "BillOfProcess"
+id_short: "BillOfProcesses"
 id: "https://aausmartlab.org/Submodels/Templates/SubAssemblyBOP"
 description: "Bill of Process submodel template for sub-assemblies — add one ProcessStep collection per manufacturing step"
 
 elements:
+  - type: collection
+    id_short: "ProcessTracking"
+    semantic_id: "https://aausmartlab.org/Semantics/ProcessTracking"
+    description: "Runtime execution tracking — one record per process step"
+    cardinality: "ZeroToOne"
+    extensible: true
+    entry_template: "{StepRef}_{N}"
+    elements:
+      - type: collection
+        id_short: "StepRecord"
+        semantic_id: "https://aausmartlab.org/Semantics/StepRecord"
+        description: "Execution record for a single process step"
+        cardinality: "OneToMany"
+        elements:
+          - type: property
+            id_short: "StepRef"
+            value_type: "xs:string"
+            semantic_id: "https://aausmartlab.org/Semantics/StepRef"
+            description: "id_short of the corresponding ProcessStep"
+            cardinality: "One"
+
+          - type: property
+            id_short: "StepStatus"
+            value_type: "xs:string"
+            semantic_id: "https://aausmartlab.org/Semantics/StepStatus"
+            description: "Execution status (Pending, InProgress, Completed, Failed)"
+            cardinality: "One"
+
+          - type: property
+            id_short: "ExecutedBy"
+            value_type: "xs:string"
+            semantic_id: "https://aausmartlab.org/Semantics/ExecutedBy"
+            description: "id_short of the station or operator that executed this step"
+            cardinality: "ZeroToOne"
+
+          - type: property
+            id_short: "StartTime"
+            value_type: "xs:string"
+            semantic_id: "https://aausmartlab.org/Semantics/StartTime"
+            description: "ISO 8601 timestamp when this step started"
+            cardinality: "ZeroToOne"
+
+          - type: property
+            id_short: "CompletionTime"
+            value_type: "xs:string"
+            semantic_id: "https://aausmartlab.org/Semantics/CompletionTime"
+            description: "ISO 8601 timestamp when this step completed"
+            cardinality: "ZeroToOne"
+
+
   - type: collection
     id_short: "ProcessSteps"
     semantic_id: "https://aausmartlab.org/Semantics/ProcessSteps"

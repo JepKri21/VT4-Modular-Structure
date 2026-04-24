@@ -12,9 +12,9 @@ Input schema:
   "global_asset_id": "https://aausmartlab.org/Shells/Component/FuseBox_A1-<uuid>",
   "submodels": [
     {
-      "template_file": "component_properties",
-      "id_short":      "ComponentProperties",
-      "id":            "https://.../Submodel/ComponentProperties/0",
+      "template_file": "product_properties",
+      "id_short":      "Properties",
+      "id":            "https://.../Submodel/Properties/0",
       "form_data":     { "ModelNumber": "FM-A-001", ... }
     }
   ]

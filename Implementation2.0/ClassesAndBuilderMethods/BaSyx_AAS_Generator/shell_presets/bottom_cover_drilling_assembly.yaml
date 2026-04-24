@@ -13,16 +13,14 @@ asset_name: "BottomCoverDrilling_SA"
 asset_category: "Telefon"
 
 submodels:
-  ComponentProperties:
+  Properties:
+    PhysicalDimensions:
+      Weight_g: 118.5
+
+  Documentation:
     ProductionIdentification:
       ModelNumber: "SA-BCD-001"
       HardwareRevision: "v1.0"
-    AssemblyTracking:
-      AssemblyStatus: "Pending"
-    PhysicalProperties:
-      Weight_g: 118.5   # equals the undrilled bottom cover — update if drilling removes significant mass
-
-  Documentation:
     DisplayName:
       - language: "en"
         text: "Bottom Cover Drilling Sub-Assembly"
@@ -34,7 +32,6 @@ submodels:
       - language: "da"
         text: "Samleenhed: aluminiums bundlåg boret til monteringshulsmønster SA-BCD-001"
     ProductFamily: "FuseBox Series A"
-    HardwareRevision: "v1.0"
 
   BillOfMaterials:
     BOMEntries:
@@ -43,6 +40,10 @@ submodels:
         ProductFamilyRef: "https://aausmartlab.org/Shells/Component/BottomCover"
 
   BillOfProcesses:
+    ProcessTracking:
+      - StepRef: "Drilling_1"
+        StepStatus: "Pending"
+
     ProcessSteps:
       - Operation: "Drilling"
         RequiredComponents:

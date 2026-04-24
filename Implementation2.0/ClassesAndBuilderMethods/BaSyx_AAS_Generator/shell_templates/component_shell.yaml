@@ -20,7 +20,7 @@ id_short_pattern: "{name}"
 global_asset_id_pattern: "https://aausmartlab.org/Shells/Component/{name}"
 
 submodels:
-  - template_id: "https://aausmartlab.org/Submodels/Templates/Properties"
+  - template_id: "https://aausmartlab.org/Submodels/Templates/ProductProperties"
     id_short: "Properties"
     description: "Production-relevant physical and material properties"
     required: true

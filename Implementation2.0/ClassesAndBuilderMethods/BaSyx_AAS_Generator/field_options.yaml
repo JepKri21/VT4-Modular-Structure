@@ -22,7 +22,7 @@ global:
     - "Silver"
     - "Natural / Unpainted"
 
-component_properties:
+product_properties:
   Material:
     - "Aluminum"
     - "Steel"

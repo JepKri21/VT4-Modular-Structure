@@ -20,9 +20,9 @@ id_short_pattern: "{name}"
 global_asset_id_pattern: "https://aausmartlab.org/Shells/Assembly/{name}"
 
 submodels:
-  - template_id: "https://aausmartlab.org/Submodels/Templates/SubAssemblyProperties"
-    id_short: "ComponentProperties"
-    description: "Production tracking, assembly status, and physical properties"
+  - template_id: "https://aausmartlab.org/Submodels/Templates/ProductProperties"
+    id_short: "Properties"
+    description: "Physical and material properties"
     required: true
 
   - template_id: "https://aausmartlab.org/Submodels/Templates/SubAssemblyDocumentation"

@@ -1,5 +1,5 @@
-id_short: "ComponentProperties"
-id: "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB-SA001/ComponentProperties"
+id_short: "Properties"
+id: "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB-SA001/Properties"
 description: "Properties submodel instance for Bottom Cover with PCB sub-assembly SA-001"
 
 elements:

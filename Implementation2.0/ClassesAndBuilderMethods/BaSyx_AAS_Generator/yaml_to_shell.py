@@ -20,8 +20,8 @@ Shell template YAML format:
     global_asset_id_pattern: "https://aausmartlab.org/Shells/Component/{name}"
 
     submodels:
-      - template_id: "https://aausmartlab.org/Submodels/Templates/ComponentProperties"
-        id_short: "ComponentProperties"
+      - template_id: "https://aausmartlab.org/Submodels/Templates/ProductProperties"
+        id_short: "Properties"
         description: "..."          # optional, informational only
         required: true              # true | false
 

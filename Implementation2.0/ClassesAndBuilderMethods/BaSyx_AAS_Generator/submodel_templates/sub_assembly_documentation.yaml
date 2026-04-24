@@ -3,6 +3,40 @@ id: "https://aausmartlab.org/Submodels/Templates/SubAssemblyDocumentation"
 description: "Documentation submodel template for sub-assemblies — human-readable reference information"
 
 elements:
+  - type: collection
+    id_short: "ProductionIdentification"
+    semantic_id: "https://aausmartlab.org/Semantics/ProductionIdentification"
+    description: "Identification labels for routing and traceability"
+    cardinality: "One"
+    elements:
+      - type: property
+        id_short: "ModelNumber"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.org/Semantics/ModelNumber"
+        description: "Model number — drives BOM and BOP selection"
+        cardinality: "One"
+
+      - type: property
+        id_short: "HardwareRevision"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.org/Semantics/HardwareRevision"
+        description: "Design revision — a change may imply a different BOM or BOP"
+        cardinality: "ZeroToOne"
+
+      - type: property
+        id_short: "SerialNumber"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.org/Semantics/SerialNumber"
+        description: "Unique serial number for this physical instance"
+        cardinality: "ZeroToOne"
+
+      - type: property
+        id_short: "BatchNumber"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.org/Semantics/BatchNumber"
+        description: "Production batch identifier for traceability"
+        cardinality: "ZeroToOne"
+
   - type: multi_language_property
     id_short: "DisplayName"
     semantic_id: "https://aausmartlab.org/Semantics/DisplayName"

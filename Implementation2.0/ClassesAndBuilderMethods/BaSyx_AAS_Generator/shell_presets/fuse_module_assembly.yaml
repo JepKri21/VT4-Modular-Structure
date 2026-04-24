@@ -11,16 +11,14 @@ asset_name: "FuseModule_A"
 asset_category: "Electrical"
 
 submodels:
-  ComponentProperties:
-    ProductionIdentification:
-      ModelNumber: "FM-A-001"
-      HardwareRevision: "v1.0"
-    AssemblyTracking:
-      AssemblyStatus: "Pending"
-    PhysicalProperties:
+  Properties:
+    PhysicalDimensions:
       Weight_g: 295.7
 
   Documentation:
+    ProductionIdentification:
+      ModelNumber: "FM-A-001"
+      HardwareRevision: "v1.0"
     DisplayName:
       - language: "en"
         text: "Fuse Module Series A"
@@ -53,6 +51,14 @@ submodels:
         ConfigurableNote: "Closes the assembly"
 
   BillOfProcesses:
+    ProcessTracking:
+      - StepRef: "Mount_PCB_1"
+        StepStatus: "Pending"
+      - StepRef: "Mount_Fuse_2"
+        StepStatus: "Pending"
+      - StepRef: "Close_Assembly_3"
+        StepStatus: "Pending"
+
     ProcessSteps:
       - Operation: "Mount PCB"
         RequiredComponents:
