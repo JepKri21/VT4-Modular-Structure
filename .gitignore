@@ -51,6 +51,9 @@ coverage.xml
 .pytest_cache/
 cover/
 
+# Geometry from lib/ files
+
+
 # Translations
 *.mo
 *.pot
