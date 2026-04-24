@@ -8,7 +8,7 @@ elements:
     elements:
 
       - type: collection
-        id_short: "Suffixes'"
+        id_short: "Suffixes"
         elements:
 
         - type: property

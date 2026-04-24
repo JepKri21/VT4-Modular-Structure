@@ -21,3 +21,7 @@ submodels:
   - template_id: "https://aausmartlab.org/Shells/Resources/Drilling-12345678/ResourceZones"
     id_short: "ResourceZones"
     description: "Resource zones for the drilling station"
+
+  - template_id: "https://aausmartlab.org/Shells/Resources/Drilling-12345678/Communication"
+    id_short: "Communication"
+    description: "Communication for the drilling station"
