@@ -29,3 +29,7 @@ submodels:
   - template_id: "https://aausmartlab.org/Shells/Resources/Storage-12345678/Inventory"
     id_short: "Inventory"
     description: "Inventory for the resource"
+
+  - template_id: "https://aausmartlab.org/Shells/Resources/Storage-12345678/Communication"
+    id_short: "Communication"
+    description: "Communication for the resource"
