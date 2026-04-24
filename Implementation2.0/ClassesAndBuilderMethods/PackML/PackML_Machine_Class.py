@@ -5,7 +5,7 @@ import asyncio
 import sys
 from pathlib import Path
 
-sys.path.append(str(Path(__file__).resolve().parent))
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from MQTT.Resource_MQTT_Client import MQTT_Client_Resource
 
