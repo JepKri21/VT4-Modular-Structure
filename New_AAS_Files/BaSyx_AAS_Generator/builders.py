@@ -22,7 +22,7 @@ from basyx.aas.adapter.json import AASToJsonEncoder
 
 # ─────────────────────────── constants ────────────────────────────────
 
-BASE_NS = "https://aausmartlab.com"
+BASE_NS = "https://aausmartlab.org"
 
 # Used only on Submodel constructors — SubmodelElements do not accept kind.
 TMPL = model.ModellingKind.TEMPLATE
@@ -464,21 +464,21 @@ def build_type_shell(
 
 # ─────────────────────── URL / ID helpers ─────────────────────────────
 
-def type_url_component(name: str, category: str) -> str:
-    return f"{BASE_NS}/Assets/Product/Component/{category}/{name}/Type"
+def type_url_component(name: str, category: str = "") -> str:
+    return f"{BASE_NS}/Shells/Component/{name}"
 
 
-def type_url_sub_assembly(name: str, category: str) -> str:
-    return f"{BASE_NS}/Assets/Product/Sub_Assembly/{category}/{name}/Type"
+def type_url_sub_assembly(name: str, category: str = "") -> str:
+    return f"{BASE_NS}/Shells/Assembly/{name}"
 
 
-def type_url_final_product(name: str, family: str) -> str:
-    return f"{BASE_NS}/Assets/Product/Final_Product/{family}/{name}/Type"
+def type_url_final_product(name: str, family: str = "") -> str:
+    return f"{BASE_NS}/Shells/Configuration/{name}"
 
 
 def global_asset_id(name: str) -> str:
-    """Canonical global asset ID shared by all categories of the same name."""
-    return f"{BASE_NS}/Assets/Product/AAU/{name}/Type"
+    """Canonical global asset ID — same as the shell ID for this asset."""
+    return f"{BASE_NS}/Shells/Component/{name}"
 
 
 def safe_id_short(name: str, suffix: str = "_Type") -> str:

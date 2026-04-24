@@ -1,5 +1,5 @@
 id_short: "assemble_capability"
-id: "https://aausmartlab.org/SubmodelTemplate/Capability/assemble/1/0"
+id: "https://aausmartlab.org/Submodels/Templates/AssembleCapability"
 description: "Capability template for an assembly operation defining the parameters and constraints of the assembly process"
 
 elements:

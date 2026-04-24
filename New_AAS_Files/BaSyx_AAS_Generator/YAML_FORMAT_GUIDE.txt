@@ -25,7 +25,7 @@ PURPOSE:
 TOP-LEVEL STRUCTURE:
 ─────────────────────
   id_short: "MySubmodel"
-  id: "https://aausmartlab.org/SubmodelTemplate/Category/Name/1/0"
+  id: "https://aausmartlab.org/Submodels/Templates/TemplateName"
   description: "What this submodel is for"
 
   elements:
@@ -111,7 +111,7 @@ ELEMENT TYPE DETAILS:
 FULL TEMPLATE EXAMPLE:
 ───────────────────────
   id_short: "DrillingCapabilityOffered"
-  id: "https://aausmartlab.org/SubmodelTemplate/Capability/BasicDrillingCapability/Offered/1/0"
+  id: "https://aausmartlab.org/Submodels/Templates/DrillingCapabilityOffered"
   description: "Offered capability for a drilling resource"
 
   elements:
@@ -453,17 +453,17 @@ SHELL TEMPLATE STRUCTURE  (kind: "Type"):
   kind: "Type"
   description: "..."
 
-  id_pattern: "https://aausmartlab.com/AAS/Component/{category}/{name}/Instance"
-  id_short_pattern: "{name}_Instance"
-  global_asset_id_pattern: "https://aausmartlab.com/Assets/Product/AAU/{name}/Instance"
+  id_pattern: "https://aausmartlab.org/Shells/Component/{name}"
+  id_short_pattern: "{name}"
+  global_asset_id_pattern: "https://aausmartlab.org/Shells/Component/{name}"
 
   submodels:
-    - template_id: "https://aausmartlab.com/SubmodelTemplate/Component/Properties/1/0"
+    - template_id: "https://aausmartlab.org/Submodels/Templates/ComponentProperties"
       id_short: "ComponentProperties"
       description: "Production-relevant physical and material properties"
       required: true              # true = must exist | false = optional
 
-    - template_id: "https://aausmartlab.com/SubmodelTemplate/Component/Documentation/1/0"
+    - template_id: "https://aausmartlab.org/Submodels/Templates/ComponentDocumentation"
       id_short: "Documentation"
       description: "Human-readable reference information"
       required: true
@@ -473,17 +473,17 @@ SHELL INSTANCE DESCRIPTOR  (kind: "Instance"):
   kind: "Instance"
   description: "..."
 
-  id_pattern: "https://aausmartlab.com/AAS/Resource/Drilling/Drilling-12345678/Instance"
+  id_pattern: "https://aausmartlab.org/Shells/Resources/Drilling-12345678"
   id_short_pattern: "Drilling-12345678"
-  global_asset_id_pattern: "https://aausmartlab.com/AAS/Resource/Drilling/Drilling-12345678"
+  global_asset_id_pattern: "https://aausmartlab.org/Shells/Resources/Drilling-12345678"
 
   submodels:
-    - template_id: "https://aausmartlab.org/SubmodelTemplate/Capability/BasicDrillingCapability/Offered/1/0"
+    - template_id: "https://aausmartlab.org/Submodels/Templates/DrillingCapabilityOffered"
       id_short: "DrillingCapabilityOffered"
       description: "Offered drilling capability"
                                 # NO "required:" field in instance descriptors
 
-    - template_id: "https://aausmartlab.org/SubmodelTemplate/Skill/BasicSkill/1/0"
+    - template_id: "https://aausmartlab.org/Submodels/Templates/BasicSkill"
       id_short: "Skills"
       description: "Offered skills for this station"
 

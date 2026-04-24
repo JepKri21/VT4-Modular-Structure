@@ -10,11 +10,7 @@ asset_name: "BottomCover_3DP"
 asset_category: "Mechanical"
 
 submodels:
-  ComponentProperties:
-    ProductionIdentification:
-      ModelNumber: "BC-3DP-BLK-001"
-      # SerialNumber: leave blank — unique per instance
-      # BatchNumber: leave blank — set at production time
+  Properties:
     PhysicalDimensions:
       Length: 150
       Width: 80
@@ -36,6 +32,10 @@ submodels:
         text: "3D-printed PLA bottom cover for FuseBox Series A enclosures"
       - language: "da"
         text: "3D-printet PLA bundlåg til FuseBox Serie A kabinetter"
+    ProductionIdentification:
+      ModelNumber: "BC-3DP-BLK-001"
+      # SerialNumber: leave blank — unique per instance
+      # BatchNumber: leave blank — set at production time
     ManufacturerName: "AAU SmartLab"
     ProductFamily: "FuseBox Series A"
     HardwareRevision: "v1.0"

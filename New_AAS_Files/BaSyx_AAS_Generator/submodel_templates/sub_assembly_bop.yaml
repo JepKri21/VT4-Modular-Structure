@@ -1,11 +1,11 @@
 id_short: "BillOfProcess"
-id: "https://aausmartlab.com/SubmodelTemplate/SubAssembly/BOP/1/0"
+id: "https://aausmartlab.org/Submodels/Templates/SubAssemblyBOP"
 description: "Bill of Process submodel template for sub-assemblies — add one ProcessStep collection per manufacturing step"
 
 elements:
   - type: collection
     id_short: "ProcessSteps"
-    semantic_id: "https://aausmartlab.com/Semantics/ProcessSteps"
+    semantic_id: "https://aausmartlab.org/Semantics/ProcessSteps"
     description: "Container for all process steps"
     cardinality: "One"
     extensible: true
@@ -13,14 +13,14 @@ elements:
     elements:
       - type: collection
         id_short: "ProcessStep"
-        semantic_id: "https://aausmartlab.com/Semantics/ProcessStep"
+        semantic_id: "https://aausmartlab.org/Semantics/ProcessStep"
         description: "Template entry — one collection per process step"
         cardinality: "OneToMany"
         elements:
           - type: property
             id_short: "Operation"
             value_type: "xs:string"
-            semantic_id: "https://aausmartlab.com/Semantics/Operation"
+            semantic_id: "https://aausmartlab.org/Semantics/Operation"
             description: "Operation type"
             cardinality: "One"
 
@@ -28,13 +28,13 @@ elements:
             id_short: "RequiredComponents"
             element_type: "reference_element"
             reference_type: "model"
-            semantic_id: "https://aausmartlab.com/Semantics/RequiredComponents"
+            semantic_id: "https://aausmartlab.org/Semantics/RequiredComponents"
             description: "References to BOM entries consumed by this step"
             cardinality: "OneToMany"
 
           - type: collection
             id_short: "Constraints"
-            semantic_id: "https://aausmartlab.com/Semantics/Constraints"
+            semantic_id: "https://aausmartlab.org/Semantics/Constraints"
             description: "Steps that must complete before this step can start"
             cardinality: "ZeroToOne"
             extensible: true
@@ -43,55 +43,55 @@ elements:
               - type: property
                 id_short: "PredecessorStep"
                 value_type: "xs:string"
-                semantic_id: "https://aausmartlab.com/Semantics/PredecessorStep"
+                semantic_id: "https://aausmartlab.org/Semantics/PredecessorStep"
                 description: "Step that must complete before this step can start"
                 cardinality: "One"
                 ref_source: "process_steps"
 
           - type: reference_element
             id_short: "RequiredCapabilityRef"
-            semantic_id: "https://aausmartlab.com/Semantics/RequiredCapabilityRef"
+            semantic_id: "https://aausmartlab.org/Semantics/RequiredCapabilityRef"
             description: "Reference to the required capability submodel instance for this step"
             cardinality: "ZeroToOne"
             reference_type: "model"
 
           - type: collection
             id_short: "StepConstraints"
-            semantic_id: "https://aausmartlab.com/Semantics/StepConstraints"
+            semantic_id: "https://aausmartlab.org/Semantics/StepConstraints"
             description: "Optional constraints an orchestrator must satisfy before dispatching this step"
             cardinality: "ZeroToOne"
             elements:
               - type: property
                 id_short: "RequiredStation"
                 value_type: "xs:string"
-                semantic_id: "https://aausmartlab.com/Semantics/RequiredStation"
+                semantic_id: "https://aausmartlab.org/Semantics/RequiredStation"
                 description: "id_short of the specific station this step must run on"
                 cardinality: "ZeroToOne"
 
               - type: property
                 id_short: "MaxDuration_s"
                 value_type: "xs:integer"
-                semantic_id: "https://aausmartlab.com/Semantics/MaxDuration_s"
+                semantic_id: "https://aausmartlab.org/Semantics/MaxDuration_s"
                 description: "Maximum allowed duration for this step in seconds"
                 cardinality: "ZeroToOne"
 
               - type: property
                 id_short: "MaxWaitAfter_s"
                 value_type: "xs:integer"
-                semantic_id: "https://aausmartlab.com/Semantics/MaxWaitAfter_s"
+                semantic_id: "https://aausmartlab.org/Semantics/MaxWaitAfter_s"
                 description: "Maximum seconds allowed between this step completing and the next step starting"
                 cardinality: "ZeroToOne"
 
               - type: property
                 id_short: "RequiresInspection"
                 value_type: "xs:boolean"
-                semantic_id: "https://aausmartlab.com/Semantics/RequiresInspection"
+                semantic_id: "https://aausmartlab.org/Semantics/RequiresInspection"
                 description: "If true the step output must pass a quality inspection before the next step can start"
                 cardinality: "ZeroToOne"
 
               - type: property
                 id_short: "RequiredComponentState"
                 value_type: "xs:string"
-                semantic_id: "https://aausmartlab.com/Semantics/RequiredComponentState"
+                semantic_id: "https://aausmartlab.org/Semantics/RequiredComponentState"
                 description: "State the component must be in before this step can start (e.g. Drilled, Cleaned)"
                 cardinality: "ZeroToOne"

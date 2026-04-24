@@ -14,12 +14,12 @@ Shell template YAML format:
     kind: "Type"                    # "Type" or "Instance"
     description: "..."              # optional
 
-    id_pattern: "https://aausmartlab.com/AAS/Component/{category}/{name}/Type"
-    id_short_pattern: "{name}_Type"
-    global_asset_id_pattern: "https://aausmartlab.com/Assets/Product/AAU/{name}/Type"
+    id_pattern: "https://aausmartlab.org/Shells/Component/{name}"
+    id_short_pattern: "{name}"
+    global_asset_id_pattern: "https://aausmartlab.org/Shells/Component/{name}"
 
     submodels:
-      - template_id: "https://aausmartlab.com/SubmodelTemplate/Component/Properties/1/0"
+      - template_id: "https://aausmartlab.org/Submodels/Templates/ComponentProperties"
         id_short: "ComponentProperties"
         description: "..."          # optional, informational only
         required: true              # true | false

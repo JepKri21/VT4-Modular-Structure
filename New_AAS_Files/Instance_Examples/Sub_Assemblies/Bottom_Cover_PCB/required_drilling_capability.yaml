@@ -1,5 +1,5 @@
 id_short: "DrillingCapability"
-id: "https://aausmartlab.com/SubmodelInstance/SubAssembly/BottomCoverPCB/SA-001/RequiredCapability/Drilling"
+id: "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB-SA001/DrillingCapabilityRequired"
 description: "Required drilling capability parameters for the Bottom Cover PCB drilling step"
 
 elements:

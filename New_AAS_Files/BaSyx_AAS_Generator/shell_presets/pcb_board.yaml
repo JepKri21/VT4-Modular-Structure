@@ -8,11 +8,7 @@ asset_name: "PCB_FuseBoxA"
 asset_category: "Electrical"
 
 submodels:
-  ComponentProperties:
-    ProductionIdentification:
-      ModelNumber: "PCB-FB-A-001"
-      # SerialNumber: leave blank — unique per instance
-      # BatchNumber: leave blank — set at production time
+  Properties:
     PhysicalDimensions:
       Length: 140
       Width: 70
@@ -26,6 +22,10 @@ submodels:
       Current_Rating: 16.0
 
   Documentation:
+    ProductionIdentification:
+      ModelNumber: "PCB-FB-A-001"
+      # SerialNumber: leave blank — unique per instance
+      # BatchNumber: leave blank — set at production time
     DisplayName:
       - language: "en"
         text: "PCB Board – FuseBox Series A"

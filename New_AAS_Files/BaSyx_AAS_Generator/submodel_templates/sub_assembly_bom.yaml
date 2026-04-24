@@ -1,11 +1,11 @@
 id_short: "BillOfMaterials"
-id: "https://aausmartlab.com/SubmodelTemplate/SubAssembly/BOM/1/0"
+id: "https://aausmartlab.org/Submodels/Templates/SubAssemblyBOM"
 description: "Bill of Materials submodel template for sub-assemblies — add one BOMEntry collection per required component or sub-assembly"
 
 elements:
   - type: collection
     id_short: "BOMEntries"
-    semantic_id: "https://aausmartlab.com/Semantics/BOMEntries"
+    semantic_id: "https://aausmartlab.org/Semantics/BOMEntries"
     description: "Container for all BOM entries"
     cardinality: "One"
     extensible: true
@@ -13,21 +13,21 @@ elements:
     elements:
       - type: collection
         id_short: "BOMEntry"
-        semantic_id: "https://aausmartlab.com/Semantics/BOMEntry"
+        semantic_id: "https://aausmartlab.org/Semantics/BOMEntry"
         description: "Template entry — one collection per required component"
         cardinality: "OneToMany"
         elements:
           - type: property
             id_short: "Description"
             value_type: "xs:string"
-            semantic_id: "https://aausmartlab.com/Semantics/Description"
+            semantic_id: "https://aausmartlab.org/Semantics/Description"
             description: "Human-readable description of the component"
             cardinality: "One"
 
           - type: property
             id_short: "Quantity"
             value_type: "xs:integer"
-            semantic_id: "https://aausmartlab.com/Semantics/Quantity"
+            semantic_id: "https://aausmartlab.org/Semantics/Quantity"
             description: "Number of this component required"
             cardinality: "One"
             qualifiers:
@@ -39,12 +39,12 @@ elements:
 
           - type: reference_element
             id_short: "ProductFamilyRef"
-            semantic_id: "https://aausmartlab.com/Semantics/ProductFamilyRef"
+            semantic_id: "https://aausmartlab.org/Semantics/ProductFamilyRef"
             description: "Reference to the product family this component belongs to — enables searching across all variants (e.g. all BottomCovers regardless of material)"
             cardinality: "One"
 
           - type: reference_element
             id_short: "ComponentInstanceRef"
-            semantic_id: "https://aausmartlab.com/Semantics/ComponentInstanceRef"
+            semantic_id: "https://aausmartlab.org/Semantics/ComponentInstanceRef"
             description: "Reference to the actual component instance used — empty at creation, filled during production"
             cardinality: "One"

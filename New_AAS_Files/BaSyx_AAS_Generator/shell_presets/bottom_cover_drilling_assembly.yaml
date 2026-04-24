@@ -13,7 +13,7 @@ asset_name: "BottomCoverDrilling_SA"
 asset_category: "Telefon"
 
 submodels:
-  ComponentProperties:
+  Properties:
     ProductionIdentification:
       ModelNumber: "SA-BCD-001"
       HardwareRevision: "v1.0"
@@ -40,7 +40,7 @@ submodels:
     BOMEntries:
       - Description: "Bottom Cover – PLA"
         Quantity: 1
-        ProductFamilyRef: "https://aausmartlab.com/AAS/ProductFamily/Telefon/BottomCover"
+        ProductFamilyRef: "https://aausmartlab.org/Shells/Component/BottomCover"
 
   BillOfProcesses:
     ProcessSteps:

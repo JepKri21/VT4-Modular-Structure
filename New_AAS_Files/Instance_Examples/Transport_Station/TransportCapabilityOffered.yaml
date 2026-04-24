@@ -10,17 +10,17 @@ elements:
     elements:
 
       - type: range
-        id_short: "SpeedConstraint_m_per_s"
+        id_short: "SpeedConstraint"
         value_type: "xs:float"
-        semantic_id: "https://aausmartlab.org/Semantics/SpeedConstraint_m_per_s"
+        semantic_id: "https://aausmartlab.org/Semantics/m_per_s"
         description: "Minimum and maximum transport speed m/s"
         min: 0.0
         max: 3.0
 
       - type: range
-        id_short: "AccelerationConstraint_m_per_s2"
+        id_short: "AccelerationConstraint"
         value_type: "xs:float"
-        semantic_id: "https://aausmartlab.org/Semantics/AccelerationConstraint_m_per_s2"
+        semantic_id: "https://aausmartlab.org/Semantics/m_per_s2"
         description: "Minimum and maximum transport speed m/s2"
         min: 0.0
         max: 20.0
@@ -31,11 +31,13 @@ elements:
           - type: range
             id_short: "XPos"
             value_type: "xs:float"
+            semantic_id: "https://aausmartlab.org/Semantics/mm"
             min: 60.0 
             max: 660
           - type: range
             id_short: "YPos"
             value_type: "xs:float"
+            semantic_id: "https://aausmartlab.org/Semantics/mm"
             min: 60.0
             max: 900.0
       

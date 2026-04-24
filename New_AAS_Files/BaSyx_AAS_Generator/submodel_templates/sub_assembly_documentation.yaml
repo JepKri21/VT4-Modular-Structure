@@ -1,35 +1,35 @@
 id_short: "Documentation"
-id: "https://aausmartlab.com/SubmodelTemplate/SubAssembly/Documentation/1/0"
+id: "https://aausmartlab.org/Submodels/Templates/SubAssemblyDocumentation"
 description: "Documentation submodel template for sub-assemblies — human-readable reference information"
 
 elements:
   - type: multi_language_property
     id_short: "DisplayName"
-    semantic_id: "https://aausmartlab.com/Semantics/DisplayName"
+    semantic_id: "https://aausmartlab.org/Semantics/DisplayName"
     description: "Human-readable sub-assembly name in one or more languages"
     cardinality: "One"
 
   - type: multi_language_property
     id_short: "Description"
-    semantic_id: "https://aausmartlab.com/Semantics/Description"
+    semantic_id: "https://aausmartlab.org/Semantics/Description"
     description: "Free-text description of the sub-assembly and its role in the final product"
     cardinality: "One"
 
   - type: property
     id_short: "ProductFamily"
     value_type: "xs:string"
-    semantic_id: "https://aausmartlab.com/Semantics/ProductFamily"
+    semantic_id: "https://aausmartlab.org/Semantics/ProductFamily"
     description: "Product family this sub-assembly belongs to"
     cardinality: "ZeroToOne"
 
   - type: reference_element
     id_short: "AssemblyInstructionsRef"
-    semantic_id: "https://aausmartlab.com/Semantics/AssemblyInstructionsRef"
+    semantic_id: "https://aausmartlab.org/Semantics/AssemblyInstructionsRef"
     description: "Reference to the assembly instructions document"
     cardinality: "ZeroToOne"
 
   - type: reference_element
     id_short: "ParentProductRef"
-    semantic_id: "https://aausmartlab.com/Semantics/ParentProductRef"
+    semantic_id: "https://aausmartlab.org/Semantics/ParentProductRef"
     description: "Reference to the final product type this sub-assembly is destined for"
     cardinality: "ZeroToOne"

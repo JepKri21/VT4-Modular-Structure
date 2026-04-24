@@ -1,11 +1,11 @@
 id_short: "Documentation"
-id: "https://aausmartlab.com/SubmodelInstance/Component/BottomCover/BC-001/Documentation"
+id: "https://aausmartlab.org/Shells/Component/BottomCover-BC001/Documentation"
 description: "Documentation submodel instance for Bottom Cover component BC-001"
 
 elements:
   - type: multi_language_property
     id_short: "DisplayName"
-    semantic_id: "https://aausmartlab.com/Semantics/DisplayName"
+    semantic_id: "https://aausmartlab.org/Semantics/DisplayName"
     value:
       - language: "en"
         text: "Bottom Cover"
@@ -14,27 +14,43 @@ elements:
 
   - type: multi_language_property
     id_short: "Description"
-    semantic_id: "https://aausmartlab.com/Semantics/Description"
+    semantic_id: "https://aausmartlab.org/Semantics/Description"
     value:
       - language: "en"
         text: "3D-printed PLA bottom cover for enclosure. Provides structural base and protects internal components."
       - language: "da"
         text: "3D-printet PLA bundlåg til kabinet. Udgør strukturelt fundament og beskytter interne komponenter."
 
+  - type: collection
+    id_short: "ProductionIdentification"
+    semantic_id: "https://aausmartlab.org/Semantics/ProductionIdentification"
+    elements:
+      - type: property
+        id_short: "ModelNumber"
+        value_type: "xs:string"
+        value: "BC-PLA-Black-Textured"
+        semantic_id: "https://aausmartlab.org/Semantics/ModelNumber"
+
+      - type: property
+        id_short: "SerialNumber"
+        value_type: "xs:string"
+        value: "BC-001"
+        semantic_id: "https://aausmartlab.org/Semantics/SerialNumber"
+
   - type: property
     id_short: "ManufacturerName"
     value_type: "xs:string"
     value: "AAU Smart Lab"
-    semantic_id: "https://aausmartlab.com/Semantics/ManufacturerName"
+    semantic_id: "https://aausmartlab.org/Semantics/ManufacturerName"
 
   - type: property
     id_short: "ProductFamily"
     value_type: "xs:string"
     value: "VT4 Enclosure"
-    semantic_id: "https://aausmartlab.com/Semantics/ProductFamily"
+    semantic_id: "https://aausmartlab.org/Semantics/ProductFamily"
 
   - type: property
     id_short: "HardwareRevision"
     value_type: "xs:string"
     value: "1.0"
-    semantic_id: "https://aausmartlab.com/Semantics/HardwareRevision"
+    semantic_id: "https://aausmartlab.org/Semantics/HardwareRevision"

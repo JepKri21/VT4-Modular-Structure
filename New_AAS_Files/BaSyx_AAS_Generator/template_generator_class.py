@@ -424,7 +424,7 @@ if __name__ == "__main__":
 
     DrillingCapability = AASTemplateBuilder(
         "DrillingCapability",
-        "https://aausmartlab.org/SubmodelTemplate/Capability/BasicDrillingCapability/1/0"
+        "https://aausmartlab.org/Submodels/Templates/DrillingCapability"
     )
 
     root = DrillingCapability.get()

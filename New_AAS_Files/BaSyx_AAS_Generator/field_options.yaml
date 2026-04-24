@@ -66,15 +66,15 @@ operations:
   Drilling:
     id_short: "RequiredDrillingCapability"
     template_file: "drilling_capability_required"
-    template_id: "https://aausmartlab.org/SubmodelTemplate/Capability/BasicDrillingCapability/Required/1/0"
+    template_id: "https://aausmartlab.org/Submodels/Templates/DrillingCapabilityRequired"
   Assemble:
     id_short: "RequiredAssembleCapability"
     template_file: "assemble_capability"
-    template_id: "https://aausmartlab.org/SubmodelTemplate/Capability/AssembleCapability/1/0"
+    template_id: "https://aausmartlab.org/Submodels/Templates/AssembleCapability"
 
 # ── Derived field patterns ──────────────────────────────────────────────────
 # Keys are submodel template names, values map id_short → pattern string.
 # Tokens that resolve to empty are dropped along with their separator.
 derived:
-  component_properties:
+  component_documentation:
     ModelNumber: "{AssetName}-{Material}-{Color}-{Voltage_Rating}V-{Current_Rating}A-{Type}"

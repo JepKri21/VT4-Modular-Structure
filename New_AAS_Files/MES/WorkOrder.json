@@ -1,0 +1,138 @@
+{
+    "MessageType":"WorkOrder",
+    "OrderId": "WorkOrder-12345678",
+    "IssueDate": "24-04-2026",
+    "ProductType": "Bottom_Cover_Drilled",
+    "Properties":[        
+        {
+            "Bottom_Cover": [
+                {
+                    "PhysicalDimensions" : [
+                        {
+                            "Length":[
+                                {
+                                    "semanticId" : "https://aausmartlab.org/Semantics/mm",
+                                    "value": "150"
+                                }
+                            ],
+                            "Height":[
+                                {
+                                    "semanticId" : "https://aausmartlab.org/Semantics/mm",
+                                    "value": "80"
+                                }
+                            ],
+                            "Width": [
+                                {
+                                    "semanticId" : "https://aausmartlab.org/Semantics/mm",
+                                    "value": "5"
+                                }
+                            ],
+                            "Weight": [
+                                {
+                                    "semanticId" : "https://aausmartlab.org/Semantics/gram",
+                                    "value": "118"
+                                }
+                            ]
+                        }
+                    ],
+                    "MaterialProperties": [
+                        {
+                            "Material":[
+                                {
+                                    "semanticId": "https://aausmartlab.org/Semantics/Material",
+                                    "value": "PLA"
+                                }
+                            ],
+                            "Color":[
+                                {
+                                    "semanticId": "https://aausmartlab.org/Semantics/Color",
+                                    "value": "Black"
+                                }
+                            ],
+                            "Finish":[
+                                {
+                                    "semanticId": "https://aausmartlab.org/Semantics/Finish",
+                                    "value": "Matte"
+                                }
+                            ]
+                        }
+                    ]   
+                }   
+            ]
+        }
+    ],
+    "Assemblies": [
+        {
+            "Assembly1":[
+                {
+                    "ShellInstanceId":"",
+                    "AssemblyTypeId": "Bottom_Cover_Drilled",
+                    "Ingredients": [
+                        {
+                            "Ingredient1": [
+                                {
+                                    "ShellInstanceId": "",
+                                    "IngredientType": "Bottom_Cover"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "ProcessSteps": [
+        {
+            "Bottom_Cover": [
+                {
+                    "ProcessId": "1x1", 
+                    "CapabilityReference":"https://aausmartlab.org/Shells/Assembly/Bottom_Cover_Drilled-12345678/RequiredDrillingCapability",
+                    "Dependencies": [
+                        {
+                        }
+                    ],
+                    "Parameters" : [
+                        {
+                            "BitDiameter" : [
+                                {
+                                    "semanticId": "https://aausmartlab.org/Semantics/mm",
+                                    "value" : "5"
+                                }
+                            ],
+                            "DrillDepth": [
+                                {
+                                    "semanticId": "https://aausmartlab.org/Semantics/mm",
+                                    "value" : "20"
+                                }
+                            ],
+                            "SpindleSpeed" : [
+                                {
+                                    "semanticId": "https://aausmartlab.org/Semantics/RPM",
+                                    "value" : "800"
+                                }
+                            ],
+                            "SpindleFeedSpeed" :[
+                                {
+                                    "semanticId": "https://aausmartlab.org/Semantics/mm_per_s",
+                                    "value" : "20"
+                                }
+                            ],
+                            "HolePlacementX":[
+                                {
+                                   "semanticId": "https://aausmartlab.org/Semantics/mm",
+                                    "value" : "0.0" 
+                                }
+                            ],
+                            "HolePlacementY":[
+                                {
+                                    "semanticId": "https://aausmartlab.org/Semantics/mm",
+                                    "value" : "0.0"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

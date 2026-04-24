@@ -1,0 +1,254 @@
+id_short: "ResourceZones"
+id: "https://aausmartlab.org/Submodels/Templates/ResourceZones"
+description: "Defines the physical footprint and interaction zones of a production resource"
+
+elements:
+
+  - type: collection
+    id_short: "CenterPoint"
+    description: "Origin/reference point of this resource in the factory coordinate system"
+    cardinality: "One"
+    elements:
+      - type: property
+        id_short: "XPos"
+        value_type: "xs:float"
+        semantic_id: "https://aausmartlab.org/Semantics/XPos"
+        description: "X position of the resource center in mm"
+        cardinality: "One"
+      - type: property
+        id_short: "YPos"
+        value_type: "xs:float"
+        semantic_id: "https://aausmartlab.org/Semantics/YPos"
+        description: "Y position of the resource center in mm"
+        cardinality: "One"
+
+  - type: collection
+    id_short: "ResourceGeometry"
+    description: "Polygon defining the physical footprint of the resource (four corner points, clockwise)"
+    cardinality: "One"
+    elements:
+      - type: collection
+        id_short: "Point1"
+        cardinality: "One"
+        elements:
+          - type: property
+            id_short: "XPos"
+            value_type: "xs:float"
+            cardinality: "One"
+          - type: property
+            id_short: "YPos"
+            value_type: "xs:float"
+            cardinality: "One"
+      - type: collection
+        id_short: "Point2"
+        cardinality: "One"
+        elements:
+          - type: property
+            id_short: "XPos"
+            value_type: "xs:float"
+            cardinality: "One"
+          - type: property
+            id_short: "YPos"
+            value_type: "xs:float"
+            cardinality: "One"
+      - type: collection
+        id_short: "Point3"
+        cardinality: "One"
+        elements:
+          - type: property
+            id_short: "XPos"
+            value_type: "xs:float"
+            cardinality: "One"
+          - type: property
+            id_short: "YPos"
+            value_type: "xs:float"
+            cardinality: "One"
+      - type: collection
+        id_short: "Point4"
+        cardinality: "One"
+        elements:
+          - type: property
+            id_short: "XPos"
+            value_type: "xs:float"
+            cardinality: "One"
+          - type: property
+            id_short: "YPos"
+            value_type: "xs:float"
+            cardinality: "One"
+
+  - type: collection
+    id_short: "InputZones"
+    description: "Zones where this resource accepts incoming components"
+    cardinality: "ZeroToMany"
+    elements:
+      - type: collection
+        id_short: "Zone"
+        description: "A zone defined by four corner points (add one collection per zone)"
+        cardinality: "ZeroToMany"
+        elements:
+          - type: collection
+            id_short: "Point1"
+            cardinality: "One"
+            elements:
+              - type: property
+                id_short: "XPos"
+                value_type: "xs:float"
+                cardinality: "One"
+              - type: property
+                id_short: "YPos"
+                value_type: "xs:float"
+                cardinality: "One"
+          - type: collection
+            id_short: "Point2"
+            cardinality: "One"
+            elements:
+              - type: property
+                id_short: "XPos"
+                value_type: "xs:float"
+                cardinality: "One"
+              - type: property
+                id_short: "YPos"
+                value_type: "xs:float"
+                cardinality: "One"
+          - type: collection
+            id_short: "Point3"
+            cardinality: "One"
+            elements:
+              - type: property
+                id_short: "XPos"
+                value_type: "xs:float"
+                cardinality: "One"
+              - type: property
+                id_short: "YPos"
+                value_type: "xs:float"
+                cardinality: "One"
+          - type: collection
+            id_short: "Point4"
+            cardinality: "One"
+            elements:
+              - type: property
+                id_short: "XPos"
+                value_type: "xs:float"
+                cardinality: "One"
+              - type: property
+                id_short: "YPos"
+                value_type: "xs:float"
+                cardinality: "One"
+
+  - type: collection
+    id_short: "OutputZones"
+    description: "Zones where this resource presents finished components for pick-up"
+    cardinality: "ZeroToMany"
+    elements:
+      - type: collection
+        id_short: "Zone"
+        description: "A zone defined by four corner points (add one collection per zone)"
+        cardinality: "ZeroToMany"
+        elements:
+          - type: collection
+            id_short: "Point1"
+            cardinality: "One"
+            elements:
+              - type: property
+                id_short: "XPos"
+                value_type: "xs:float"
+                cardinality: "One"
+              - type: property
+                id_short: "YPos"
+                value_type: "xs:float"
+                cardinality: "One"
+          - type: collection
+            id_short: "Point2"
+            cardinality: "One"
+            elements:
+              - type: property
+                id_short: "XPos"
+                value_type: "xs:float"
+                cardinality: "One"
+              - type: property
+                id_short: "YPos"
+                value_type: "xs:float"
+                cardinality: "One"
+          - type: collection
+            id_short: "Point3"
+            cardinality: "One"
+            elements:
+              - type: property
+                id_short: "XPos"
+                value_type: "xs:float"
+                cardinality: "One"
+              - type: property
+                id_short: "YPos"
+                value_type: "xs:float"
+                cardinality: "One"
+          - type: collection
+            id_short: "Point4"
+            cardinality: "One"
+            elements:
+              - type: property
+                id_short: "XPos"
+                value_type: "xs:float"
+                cardinality: "One"
+              - type: property
+                id_short: "YPos"
+                value_type: "xs:float"
+                cardinality: "One"
+
+  - type: collection
+    id_short: "InOutputZones"
+    description: "Zones that serve as both input and output — used for component handoff"
+    cardinality: "ZeroToMany"
+    elements:
+      - type: collection
+        id_short: "Zone"
+        description: "A zone defined by four corner points (add one collection per zone)"
+        cardinality: "ZeroToMany"
+        elements:
+          - type: collection
+            id_short: "Point1"
+            cardinality: "One"
+            elements:
+              - type: property
+                id_short: "XPos"
+                value_type: "xs:float"
+                cardinality: "One"
+              - type: property
+                id_short: "YPos"
+                value_type: "xs:float"
+                cardinality: "One"
+          - type: collection
+            id_short: "Point2"
+            cardinality: "One"
+            elements:
+              - type: property
+                id_short: "XPos"
+                value_type: "xs:float"
+                cardinality: "One"
+              - type: property
+                id_short: "YPos"
+                value_type: "xs:float"
+                cardinality: "One"
+          - type: collection
+            id_short: "Point3"
+            cardinality: "One"
+            elements:
+              - type: property
+                id_short: "XPos"
+                value_type: "xs:float"
+                cardinality: "One"
+              - type: property
+                id_short: "YPos"
+                value_type: "xs:float"
+                cardinality: "One"
+          - type: collection
+            id_short: "Point4"
+            cardinality: "One"
+            elements:
+              - type: property
+                id_short: "XPos"
+                value_type: "xs:float"
+                cardinality: "One"
+              - type: property
+                id_short: "YPos"
+                value_type: "xs:float"
+                cardinality: "One"

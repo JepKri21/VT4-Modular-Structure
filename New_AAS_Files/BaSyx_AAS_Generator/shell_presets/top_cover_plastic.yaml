@@ -8,9 +8,7 @@ asset_name: "TopCover"
 asset_category: "Telefon_Component"
 
 submodels:
-  ComponentProperties:
-    ProductionIdentification:
-      ModelNumber: "TC-3DP-WHT-001"
+  Properties:
     PhysicalDimensions:
       Length: 150
       Width: 80
@@ -32,6 +30,8 @@ submodels:
         text: "3D-printed PLA top cover for FuseBox Series A enclosures"
       - language: "da"
         text: "3D-printet PLA toplåg til FuseBox Serie A kabinetter"
+    ProductionIdentification:
+      ModelNumber: "TC-3DP-WHT-001"
     ManufacturerName: "AAU SmartLab"
     ProductFamily: "FuseBox Series A"
     HardwareRevision: "v1.0"

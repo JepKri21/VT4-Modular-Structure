@@ -1,32 +1,32 @@
 id_short: "ComponentProperties"
-id: "https://aausmartlab.com/SubmodelInstance/SubAssembly/BottomCoverPCB/SA-001/Properties"
+id: "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB-SA001/ComponentProperties"
 description: "Properties submodel instance for Bottom Cover with PCB sub-assembly SA-001"
 
 elements:
   - type: collection
     id_short: "ManufacturingProperties"
-    semantic_id: "https://aausmartlab.com/Semantics/ManufacturingProperties"
+    semantic_id: "https://aausmartlab.org/Semantics/ManufacturingProperties"
     elements:
       - type: property
         id_short: "ModelNumber"
         value_type: "xs:string"
         value: "BC-PCB-V1"
-        semantic_id: "https://aausmartlab.com/Semantics/ModelNumber"
+        semantic_id: "https://aausmartlab.org/Semantics/ModelNumber"
 
       - type: property
         id_short: "SerialNumber"
         value_type: "xs:string"
         value: "SA-001"
-        semantic_id: "https://aausmartlab.com/Semantics/SerialNumber"
+        semantic_id: "https://aausmartlab.org/Semantics/SerialNumber"
 
       - type: property
         id_short: "AssemblyStatus"
         value_type: "xs:string"
         value: "Completed"
-        semantic_id: "https://aausmartlab.com/Semantics/AssemblyStatus"
+        semantic_id: "https://aausmartlab.org/Semantics/AssemblyStatus"
 
       - type: property
         id_short: "AssemblyDate"
         value_type: "xs:string"
         value: "2026-04-20"
-        semantic_id: "https://aausmartlab.com/Semantics/AssemblyDate"
+        semantic_id: "https://aausmartlab.org/Semantics/AssemblyDate"

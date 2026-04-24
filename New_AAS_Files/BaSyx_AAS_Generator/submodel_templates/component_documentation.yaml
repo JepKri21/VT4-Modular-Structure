@@ -1,49 +1,76 @@
 id_short: "Documentation"
-id: "https://aausmartlab.com/SubmodelTemplate/Component/Documentation/1/0"
+id: "https://aausmartlab.org/Submodels/Templates/ComponentDocumentation"
 description: "Documentation submodel template for manufactured components — human-readable reference information"
 
 elements:
   - type: multi_language_property
     id_short: "DisplayName"
-    semantic_id: "https://aausmartlab.com/Semantics/DisplayName"
+    semantic_id: "https://aausmartlab.org/Semantics/DisplayName"
     description: "Human-readable component name in one or more languages"
     cardinality: "One"
 
   - type: multi_language_property
     id_short: "Description"
-    semantic_id: "https://aausmartlab.com/Semantics/Description"
+    semantic_id: "https://aausmartlab.org/Semantics/Description"
     description: "Free-text description of the component and its purpose"
     cardinality: "One"
+
+  - type: collection
+    id_short: "ProductionIdentification"
+    semantic_id: "https://aausmartlab.org/Semantics/ProductionIdentification"
+    description: "Identifiers needed to route and track the component through production"
+    cardinality: "One"
+    elements:
+      - type: property
+        id_short: "ModelNumber"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.org/Semantics/ModelNumber"
+        description: "Component model number — drives process and BOM selection"
+        cardinality: "One"
+
+      - type: property
+        id_short: "SerialNumber"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.org/Semantics/SerialNumber"
+        description: "Unique serial number for this physical instance"
+        cardinality: "ZeroToOne"
+
+      - type: property
+        id_short: "BatchNumber"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.org/Semantics/BatchNumber"
+        description: "Production batch identifier for traceability"
+        cardinality: "ZeroToOne"
 
   - type: property
     id_short: "ManufacturerName"
     value_type: "xs:string"
-    semantic_id: "https://aausmartlab.com/Semantics/ManufacturerName"
+    semantic_id: "https://aausmartlab.org/Semantics/ManufacturerName"
     description: "Name of the component manufacturer"
     cardinality: "One"
 
   - type: property
     id_short: "ProductFamily"
     value_type: "xs:string"
-    semantic_id: "https://aausmartlab.com/Semantics/ProductFamily"
+    semantic_id: "https://aausmartlab.org/Semantics/ProductFamily"
     description: "Product family this component belongs to"
     cardinality: "ZeroToOne"
 
   - type: property
     id_short: "HardwareRevision"
     value_type: "xs:string"
-    semantic_id: "https://aausmartlab.com/Semantics/HardwareRevision"
+    semantic_id: "https://aausmartlab.org/Semantics/HardwareRevision"
     description: "Design revision of this component"
     cardinality: "ZeroToOne"
 
   - type: reference_element
     id_short: "DatasheetRef"
-    semantic_id: "https://aausmartlab.com/Semantics/DatasheetRef"
+    semantic_id: "https://aausmartlab.org/Semantics/DatasheetRef"
     description: "Reference to the component datasheet or technical drawing"
     cardinality: "ZeroToOne"
 
   - type: reference_element
     id_short: "CertificationRef"
-    semantic_id: "https://aausmartlab.com/Semantics/CertificationRef"
+    semantic_id: "https://aausmartlab.org/Semantics/CertificationRef"
     description: "Reference to compliance or certification documentation (e.g. CE, RoHS)"
     cardinality: "ZeroToOne"

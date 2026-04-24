@@ -1,0 +1,47 @@
+# AAS Shell template for production Resource assets.
+#
+# {ResourceType} — Drilling | Storage | Transport
+# {name}         — unique asset identifier, e.g. 12345678
+#
+# submodels[].required:
+#   true  — shell MUST reference this submodel
+#   false — shell MAY reference this submodel (optional capability)
+
+kind: "Type"
+description: "AAS shell template for production resource assets"
+
+id_pattern: "https://aausmartlab.org/Shells/Resources/{name}"
+id_short_pattern: "{name}"
+global_asset_id_pattern: "https://aausmartlab.org/Shells/Resources/{name}"
+
+submodels:
+
+  # --- Common submodels (all resource types) ---
+
+  # Discovery index — the configurator populates this with refs to every
+  # *CapabilityOffered submodel added to this shell.
+  - template_id: "https://aausmartlab.org/Submodels/Templates/CapabilitiesOffered"
+    id_short: "CapabilitiesOffered"
+    description: "Index of all offered capability submodels — single entry point for capability discovery"
+    required: true
+
+  - template_id: "https://aausmartlab.org/Submodels/Templates/Skills"
+    id_short: "Skills"
+    description: "Skill declarations for every offered capability"
+    required: true
+
+  - template_id: "https://aausmartlab.org/Submodels/Templates/ResourceZones"
+    id_short: "ResourceZones"
+    description: "Physical footprint and interaction zone definitions"
+    required: true
+
+  - template_id: "https://aausmartlab.org/Submodels/Templates/Inventory"
+    id_short: "Inventory"
+    description: "Inventory slot definitions — only for resources that store components"
+    required: false
+
+  # --- Capability submodels (added dynamically by the configurator) ---
+  # The specific *CapabilityOffered submodels are not predefined here.
+  # The configurator adds them based on the capabilities defined for this resource,
+  # using the submodel templates in submodel_templates/ (e.g. base_capability_offered.yaml).
+  # Each added capability submodel is automatically registered as a reference in CapabilitiesOffered.

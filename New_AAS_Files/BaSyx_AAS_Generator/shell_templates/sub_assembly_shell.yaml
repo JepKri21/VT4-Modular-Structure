@@ -15,27 +15,27 @@
 kind: "Type"
 description: "AAS shell template for Sub-Assembly type assets"
 
-id_pattern: "https://aausmartlab.com/AAS/SubAssembly/{category}/{name}/Instance"
-id_short_pattern: "{name}_Instance"
-global_asset_id_pattern: "https://aausmartlab.com/Assets/Product/AAU/{name}/Instance"
+id_pattern: "https://aausmartlab.org/Shells/Assembly/{name}"
+id_short_pattern: "{name}"
+global_asset_id_pattern: "https://aausmartlab.org/Shells/Assembly/{name}"
 
 submodels:
-  - template_id: "https://aausmartlab.com/SubmodelTemplate/SubAssembly/Properties/1/0"
+  - template_id: "https://aausmartlab.org/Submodels/Templates/SubAssemblyProperties"
     id_short: "ComponentProperties"
     description: "Production tracking, assembly status, and physical properties"
     required: true
 
-  - template_id: "https://aausmartlab.com/SubmodelTemplate/SubAssembly/Documentation/1/0"
+  - template_id: "https://aausmartlab.org/Submodels/Templates/SubAssemblyDocumentation"
     id_short: "Documentation"
     description: "Human-readable reference information (display name, product family)"
     required: true
 
-  - template_id: "https://aausmartlab.com/SubmodelTemplate/SubAssembly/BOM/1/0"
+  - template_id: "https://aausmartlab.org/Submodels/Templates/SubAssemblyBOM"
     id_short: "BillOfMaterials"
     description: "Bill of Materials — components and quantities required"
     required: true
 
-  - template_id: "https://aausmartlab.com/SubmodelTemplate/SubAssembly/BOP/1/0"
+  - template_id: "https://aausmartlab.org/Submodels/Templates/SubAssemblyBOP"
     id_short: "BillOfProcesses"
     description: "Bill of Processes — ordered assembly steps and required capabilities"
     required: true

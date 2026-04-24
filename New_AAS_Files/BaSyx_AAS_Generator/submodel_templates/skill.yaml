@@ -1,5 +1,5 @@
 id_short: "SkillTemplate"
-id: "https://aausmartlab.org/SubmodelTemplate/Skill/BasicSkill/1/0"
+id: "https://aausmartlab.org/Submodels/Templates/BasicSkill"
 description: "Generic skill template following Plattform I4.0 CSS model"
 
 elements:

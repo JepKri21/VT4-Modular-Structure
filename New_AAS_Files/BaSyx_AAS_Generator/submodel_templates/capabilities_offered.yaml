@@ -1,0 +1,13 @@
+id_short: "CapabilitiesOffered"
+id: "https://aausmartlab.org/Submodels/Templates/CapabilitiesOffered"
+description: "Index of all capability submodels offered by this resource — entry point for capability discovery"
+
+elements:
+
+  # One reference_element per capability submodel registered in the shell.
+  # id_short must match the id_short of the referenced capability submodel.
+  - type: reference_element
+    id_short: "CapabilityRef"
+    semantic_id: "https://aausmartlab.org/Semantics/CapabilityReference"
+    description: "Reference to an offered capability submodel on this resource shell"
+    cardinality: "OneToMany"

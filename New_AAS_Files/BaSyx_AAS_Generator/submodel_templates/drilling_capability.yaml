@@ -1,5 +1,5 @@
 id_short: "DrillingCapability"
-id: "https://aausmartlab.org/SubmodelTemplate/Capability/BasicDrillingCapability/1/0"
+id: "https://aausmartlab.org/Submodels/Templates/DrillingCapability"
 description: "Capability template for a basic drilling operation"
 
 elements:

@@ -8,9 +8,7 @@ asset_name: "Fuse_16A_SB"
 asset_category: "Electrical"
 
 submodels:
-  ComponentProperties:
-    ProductionIdentification:
-      ModelNumber: "FUSE-SB-16A-001"
+  Properties:
     PhysicalDimensions:
       Length: 30
       Width: 6
@@ -25,6 +23,10 @@ submodels:
       Type: "slow-blow"
 
   Documentation:
+    ProductionIdentification:
+      ModelNumber: "FUSE-SB-16A-001"
+      # SerialNumber: leave blank — unique per instance
+      # BatchNumber: leave blank — set at production time
     DisplayName:
       - language: "en"
         text: "Fuse – 16A Slow-Blow"

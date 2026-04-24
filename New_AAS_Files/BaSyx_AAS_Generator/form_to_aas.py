@@ -8,8 +8,8 @@ Input schema:
   "shell_type":      "component_shell",
   "name":            "FuseBox_A1",
   "category":        "Electrical",
-  "shell_id":        "https://aausmartlab.com/AAS/.../FuseBox_A1/Instance/<uuid>",
-  "global_asset_id": "https://aausmartlab.com/Assets/.../FuseBox_A1/Instance/<uuid>",
+  "shell_id":        "https://aausmartlab.org/Shells/Component/FuseBox_A1-<uuid>",
+  "global_asset_id": "https://aausmartlab.org/Shells/Component/FuseBox_A1-<uuid>",
   "submodels": [
     {
       "template_file": "component_properties",
