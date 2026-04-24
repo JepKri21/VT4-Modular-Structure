@@ -102,24 +102,37 @@ def load_shell_from_yaml(
     return shell
 
 
-def _upload_shell(json_str: str, shell_id: str, url: str) -> None:
+def upload_shell(json_str: str, shell_id: str, url: str) -> str:
+    """Upload an AAS shell JSON payload to a BaSyx server.
+
+    Returns:
+        "created" if POST created the shell,
+        "updated" if POST returned 409 and PUT succeeded.
+
+    Raises:
+        RuntimeError: If upload/update fails.
+    """
     import base64
     import requests
+    url = url.rstrip("/")
     headers = {"Content-Type": "application/json"}
     response = requests.post(f"{url}/shells", headers=headers, data=json_str.encode("utf-8"))
     if response.status_code in (200, 201):
-        print("Shell uploaded successfully!")
+        return "created"
     elif response.status_code == 409:
         encoded_id = base64.urlsafe_b64encode(shell_id.encode("utf-8")).decode("ascii")
         response = requests.put(f"{url}/shells/{encoded_id}", headers=headers, data=json_str.encode("utf-8"))
         if response.status_code in (200, 201, 204):
-            print("Shell updated successfully (PUT)!")
+            return "updated"
         else:
-            print(f"Upload failed on PUT: {response.status_code} - {response.text}", file=sys.stderr)
-            sys.exit(1)
+            raise RuntimeError(f"Upload failed on PUT: {response.status_code} - {response.text}")
     else:
-        print(f"Upload failed: {response.status_code} - {response.text}", file=sys.stderr)
-        sys.exit(1)
+        raise RuntimeError(f"Upload failed: {response.status_code} - {response.text}")
+
+
+def _upload_shell(json_str: str, shell_id: str, url: str) -> str:
+    """Backward-compatible alias for upload_shell."""
+    return upload_shell(json_str, shell_id, url)
 
 
 def main() -> None:
@@ -155,7 +168,16 @@ def main() -> None:
             print(json_str)
 
         if args.upload:
-            _upload_shell(json_str, shell.id, args.upload.rstrip("/"))
+            try:
+                result = upload_shell(json_str, shell.id, args.upload)
+            except RuntimeError as exc:
+                print(str(exc), file=sys.stderr)
+                sys.exit(1)
+
+            if result == "updated":
+                print("Shell updated successfully (PUT)!")
+            else:
+                print("Shell uploaded successfully!")
 
 
 if __name__ == "__main__":

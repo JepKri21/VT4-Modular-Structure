@@ -227,24 +227,37 @@ def load_instance_from_yaml(path: str) -> AASInstanceBuilder:
     return builder
 
 
-def _upload_submodel(json_str: str, submodel_id: str, url: str) -> None:
+def upload_submodel(json_str: str, submodel_id: str, url: str) -> str:
+    """Upload a submodel JSON payload to a BaSyx server.
+
+    Returns:
+        "created" if POST created the submodel,
+        "updated" if POST returned 409 and PUT succeeded.
+
+    Raises:
+        RuntimeError: If upload/update fails.
+    """
     import base64
     import requests
+    url = url.rstrip("/")
     headers = {"Content-Type": "application/json"}
     response = requests.post(f"{url}/submodels", headers=headers, data=json_str.encode("utf-8"))
     if response.status_code in (200, 201):
-        print("Submodel uploaded successfully!")
+        return "created"
     elif response.status_code == 409:
         encoded_id = base64.urlsafe_b64encode(submodel_id.encode("utf-8")).decode("ascii")
         response = requests.put(f"{url}/submodels/{encoded_id}", headers=headers, data=json_str.encode("utf-8"))
         if response.status_code in (200, 201, 204):
-            print("Submodel updated successfully (PUT)!")
+            return "updated"
         else:
-            print(f"Upload failed on PUT: {response.status_code} - {response.text}", file=sys.stderr)
-            sys.exit(1)
+            raise RuntimeError(f"Upload failed on PUT: {response.status_code} - {response.text}")
     else:
-        print(f"Upload failed: {response.status_code} - {response.text}", file=sys.stderr)
-        sys.exit(1)
+        raise RuntimeError(f"Upload failed: {response.status_code} - {response.text}")
+
+
+def _upload_submodel(json_str: str, submodel_id: str, url: str) -> str:
+    """Backward-compatible alias for upload_submodel."""
+    return upload_submodel(json_str, submodel_id, url)
 
 
 def main() -> None:
@@ -275,7 +288,16 @@ def main() -> None:
             print(json_str)
 
         if args.upload:
-            _upload_submodel(json_str, builder.get().id, args.upload.rstrip("/"))
+            try:
+                result = upload_submodel(json_str, builder.get().id, args.upload)
+            except RuntimeError as exc:
+                print(str(exc), file=sys.stderr)
+                sys.exit(1)
+
+            if result == "updated":
+                print("Submodel updated successfully (PUT)!")
+            else:
+                print("Submodel uploaded successfully!")
 
 
 if __name__ == "__main__":
