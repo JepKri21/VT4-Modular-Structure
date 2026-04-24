@@ -453,8 +453,23 @@ export default function AasConfiguratorPage() {
   const [generatorPath, setGeneratorPath] = useState("");
   const [pathSaveState, setPathSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
+  const loadShellTypes = useCallback(async () => {
+    setLoadingShells(true);
+    try {
+      const res = await fetch("/api/aas-configurator/shell-types", {
+        cache: "no-store",
+      });
+      const data = await res.json();
+      setShellTypes(Array.isArray(data) ? data : []);
+    } catch {
+      setShellTypes([]);
+    } finally {
+      setLoadingShells(false);
+    }
+  }, []);
+
   useEffect(() => {
-    fetch("/api/aas-configurator/config")
+    fetch("/api/aas-configurator/config", { cache: "no-store" })
       .then((r) => r.json())
       .then((d: { generatorPath?: string }) => { if (d.generatorPath) setGeneratorPath(d.generatorPath); })
       .catch(() => {});
@@ -469,6 +484,24 @@ export default function AasConfiguratorPage() {
         body: JSON.stringify({ generatorPath }),
       });
       if (!res.ok) throw new Error(await res.text());
+      const data = (await res.json()) as { generatorPath?: string };
+      if (data.generatorPath) setGeneratorPath(data.generatorPath);
+
+      // Path change invalidates any loaded shell, template, and preset data.
+      setStep({ kind: "shell-select" });
+      setSelectedShell(null);
+      setPresets([]);
+      setSelectedPreset(null);
+      setPresetApplied(false);
+      setLoadedTemplates({});
+      setSubmodelForms({});
+      setFilledSlots(new Set());
+      setAasInstances(null);
+      setExtraSlots([]);
+      setBopOperations({});
+      setCapabilityTemplates({});
+
+      await loadShellTypes();
       setPathSaveState("saved");
     } catch {
       setPathSaveState("error");
@@ -481,16 +514,10 @@ export default function AasConfiguratorPage() {
   const [uploadResults, setUploadResults] = useState<Record<number, UploadResult[]>>({});
   const [uploadState, setUploadState] = useState<Record<number, "idle" | "uploading" | "done" | "error">>({});
 
-  /* fetch shell types once */
+  /* fetch shell types on page load */
   useEffect(() => {
-    fetch("/api/aas-configurator/shell-types")
-      .then((r) => r.json())
-      .then((data) => {
-        setShellTypes(Array.isArray(data) ? data : []);
-        setLoadingShells(false);
-      })
-      .catch(() => setLoadingShells(false));
-  }, []);
+    void loadShellTypes();
+  }, [loadShellTypes]);
 
   /* fetch presets when a shell is selected */
   useEffect(() => {
@@ -498,7 +525,7 @@ export default function AasConfiguratorPage() {
     setLoadingPresets(true);
     setSelectedPreset(null);
     setPresetApplied(false);
-    fetch(`/api/aas-configurator/presets?shell=${selectedShell.name}`)
+    fetch(`/api/aas-configurator/presets?shell=${selectedShell.name}`, { cache: "no-store" })
       .then((r) => r.json())
       .then((data) => {
         setPresets(Array.isArray(data) ? data : []);
@@ -515,7 +542,8 @@ export default function AasConfiguratorPage() {
       setLoadingTemplate(true);
       try {
         const res = await fetch(
-          `/api/aas-configurator/templates/${slot.template_file}`
+          `/api/aas-configurator/templates/${slot.template_file}`,
+          { cache: "no-store" }
         );
         const data = (await res.json()) as SubmodelTemplate;
         setLoadedTemplates((prev) => ({ ...prev, [index]: data }));
@@ -574,7 +602,7 @@ export default function AasConfiguratorPage() {
       setCapabilityTemplates((prev) => {
         if (prev[cap.template_file]) return prev; // already cached
         // Fetch asynchronously and update state when done
-        fetch(`/api/aas-configurator/templates/${cap.template_file}`)
+        fetch(`/api/aas-configurator/templates/${cap.template_file}`, { cache: "no-store" })
           .then((r) => r.json())
           .then((data: SubmodelTemplate) => {
             setCapabilityTemplates((p) =>
@@ -592,7 +620,8 @@ export default function AasConfiguratorPage() {
   const applyPreset = async (presetSummary: ShellPresetSummary) => {
     if (!activeShell) return;
     const res = await fetch(
-      `/api/aas-configurator/presets/${presetSummary.filename}`
+      `/api/aas-configurator/presets/${presetSummary.filename}`,
+      { cache: "no-store" }
     );
     const preset = (await res.json()) as ShellPreset;
 
@@ -912,7 +941,7 @@ export default function AasConfiguratorPage() {
               </button>
             </div>
             {pathSaveState === "saved" && (
-              <span className="flex items-center gap-1 text-xs text-primary"><Check className="w-3.5 h-3.5" /> Saved — reload the page for changes to take effect.</span>
+              <span className="flex items-center gap-1 text-xs text-primary"><Check className="w-3.5 h-3.5" /> Saved and reloaded from the new path.</span>
             )}
             {pathSaveState === "error" && (
               <span className="text-xs text-destructive">Failed to save — check the server log.</span>
