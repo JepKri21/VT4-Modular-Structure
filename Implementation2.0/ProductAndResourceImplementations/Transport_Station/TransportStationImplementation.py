@@ -15,7 +15,7 @@ script_dir = Path(__file__).parent
 
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 
-from ClassesAndBuilderMethods.PackML.PackML_Machine_Class import StationBehavior, PackMLState,PackMLStateMachine
+from ClassesAndBuilderMethods.PackML.PackMLMachineClass import StationBehavior, PackMLState,PackMLStateMachine
 from ClassesAndBuilderMethods.BaSyx_AAS_Generator import yaml_to_instance, yaml_to_shell
 
 BROKER = "localhost"
