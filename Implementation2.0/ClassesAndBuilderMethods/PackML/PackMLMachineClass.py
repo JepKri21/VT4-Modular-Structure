@@ -1,13 +1,15 @@
 import enum
-from typing import Optional
+from typing import Optional, List
 import time
 import asyncio
 import sys
 from pathlib import Path
+import datetime 
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from MQTT.Resource_MQTT_Client import MQTT_Client_Resource
+from MQTT.ResourceMQTT import MQTTClientResource
+from InformationModels import MessageStructure as MS
 
 class PackMLState(enum.Enum):
     # Main states
@@ -52,7 +54,7 @@ class StationBehavior:
 
 
 class PackMLStateMachine:
-    def __init__(self, mqtt_info, behavior: StationBehavior):
+    def __init__(self, mqtt_info: List[str, int, str, str], behavior: StationBehavior):
         self.behavior = behavior
         self.state = PackMLState.IDLE
         self.active_alarms = []
@@ -73,7 +75,8 @@ class PackMLStateMachine:
         self.PORT = mqtt_info [1]
         self.CLIENT_ID = mqtt_info[2]
         self.BASE_TOPIC = mqtt_info[3]
-        self.mqtt_client = MQTT_Client_Resource(self.BROKER,self.PORT, self.CLIENT_ID,self.BASE_TOPIC, self)
+        self.STATE_SUFFIX = mqtt_info[4]
+        self.mqtt_client = MQTTClientResource(self.BROKER,self.PORT, self.CLIENT_ID,self.BASE_TOPIC, self)
         self.mqtt_client.start_mqtt_connection()
         try:
             self.loop = asyncio.get_running_loop()
@@ -198,46 +201,60 @@ class PackMLStateMachine:
     async def run_state(self, state):
         try:
             if state == PackMLState.IDLE:
-                self.mqtt_client.publish_state(state)
+                state_message = MS.StateMessage(datetime.now(),self.CLIENT_ID,state)
+                self.mqtt_client.publish(self.STATE_SUFFIX, state_message)
                 await self.idle_state()
             elif state == PackMLState.STARTING:
-                self.mqtt_client.publish_state(state)
+                state_message = MS.StateMessage(datetime.now(),self.CLIENT_ID,state)
+                self.mqtt_client.publish(self.STATE_SUFFIX, state_message)
                 await self.starting_state()
             elif state == PackMLState.EXECUTE:
-                self.mqtt_client.publish_state(state)
+                state_message = MS.StateMessage(datetime.now(),self.CLIENT_ID,state)
+                self.mqtt_client.publish(self.STATE_SUFFIX, state_message)
                 await self.execute_state()
             elif state == PackMLState.STOPPING:
-                self.mqtt_client.publish_state(state)
+                state_message = MS.StateMessage(datetime.now(),self.CLIENT_ID,state)
+                self.mqtt_client.publish(self.STATE_SUFFIX, state_message)
                 await self.stopping_state()
             elif state == PackMLState.HOLDING:
-                self.mqtt_client.publish_state(state)
+                state_message = MS.StateMessage(datetime.now(),self.CLIENT_ID,state)
+                self.mqtt_client.publish(self.STATE_SUFFIX, state_message)
                 await self.holding_state()
             elif state == PackMLState.UNHOLDING:
-                self.mqtt_client.publish_state(state)
+                state_message = MS.StateMessage(datetime.now(),self.CLIENT_ID,state)
+                self.mqtt_client.publish(self.STATE_SUFFIX, state_message)
                 await self.unholding_state()
             elif state == PackMLState.SUSPENDING:
-                self.mqtt_client.publish_state(state)
+                state_message = MS.StateMessage(datetime.now(),self.CLIENT_ID,state)
+                self.mqtt_client.publish(self.STATE_SUFFIX, state_message)
                 await self.suspending_state()
             elif state == PackMLState.UNSUSPENDING:
-                self.mqtt_client.publish_state(state)
+                state_message = MS.StateMessage(datetime.now(),self.CLIENT_ID,state)
+                self.mqtt_client.publish(self.STATE_SUFFIX, state_message)
                 await self.unsuspending_state()
             elif state == PackMLState.COMPLETING:
-                self.mqtt_client.publish_state(state)
+                state_message = MS.StateMessage(datetime.now(),self.CLIENT_ID,state)
+                self.mqtt_client.publish(self.STATE_SUFFIX, state_message)
                 await self.completing_state()
             elif state == PackMLState.RESETTING:
-                self.mqtt_client.publish_state(state)
+                state_message = MS.StateMessage(datetime.now(),self.CLIENT_ID,state)
+                self.mqtt_client.publish(self.STATE_SUFFIX, state_message)
                 await self.resetting_state()
             elif state == PackMLState.ABORTING:
-                self.mqtt_client.publish_state(state)
+                state_message = MS.StateMessage(datetime.now(),self.CLIENT_ID,state)
+                self.mqtt_client.publish(self.STATE_SUFFIX, state_message)
                 await self.aborting_state()
             elif state == PackMLState.CLEARING:
-                self.mqtt_client.publish_state(state)
+                state_message = MS.StateMessage(datetime.now(),self.CLIENT_ID,state)
+                self.mqtt_client.publish(self.STATE_SUFFIX, state_message)
                 await self.clearing_state()
             elif state == PackMLState.STOPPED:
-                self.mqtt_client.publish_state(state)
+                state_message = MS.StateMessage(datetime.now(),self.CLIENT_ID,state)
+                self.mqtt_client.publish(self.STATE_SUFFIX, state_message)
                 print("State: STOPPED")
             elif state == PackMLState.ABORTED:
-                self.mqtt_client.publish_state(state)
+                state_message = MS.StateMessage(datetime.now(),self.CLIENT_ID,state)
+                self.mqtt_client.publish(self.STATE_SUFFIX, state_message)
                 print("State: ABORTED")
             elif state == PackMLState.COMPLETE:
                 print("State: COMPLETE")
