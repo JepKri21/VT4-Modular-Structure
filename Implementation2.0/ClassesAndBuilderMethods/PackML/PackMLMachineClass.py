@@ -8,34 +8,10 @@ import datetime
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from MQTT.ResourceMQTT import MQTTClientResource
-from InformationModels import MessageStructure as MS
+from InformationModels.MessageStructure import PackMLState
 
-class PackMLState(enum.Enum):
-    # Main states
-    IDLE = "IDLE"
-    STARTING = "STARTING"
-    EXECUTE = "EXECUTE"
-    COMPLETING = "COMPLETING"
-    COMPLETE = "COMPLETE"
-    RESETTING = "RESETTING"
 
-    # Hold states
-    HOLDING = "HOLDING"
-    HELD = "HELD"
-    UNHOLDING = "UNHOLDING"
 
-    # Suspend states
-    SUSPENDING = "SUSPENDING"
-    SUSPENDED = "SUSPENDED"
-    UNSUSPENDING = "UNSUSPENDING"
-
-    # Stop and abort states
-    STOPPING = "STOPPING"
-    STOPPED = "STOPPED"
-    ABORTING = "ABORTING"
-    ABORTED = "ABORTED"
-    CLEARING = "CLEARING"
 
 
 class StationBehavior:
@@ -54,7 +30,7 @@ class StationBehavior:
 
 
 class PackMLStateMachine:
-    def __init__(self, mqtt_info: List[str, int, str, str], behavior: StationBehavior):
+    def __init__(self, behavior: StationBehavior):
         self.behavior = behavior
         self.state = PackMLState.IDLE
         self.active_alarms = []
@@ -69,15 +45,7 @@ class PackMLStateMachine:
         self.cycle_time_ms = None           #Updated when a job has been given
         self.job_quality = None             #Updated when a job has been given
 
-
-        #MQTT INFO:
-        self.BROKER = mqtt_info[0]
-        self.PORT = mqtt_info [1]
-        self.CLIENT_ID = mqtt_info[2]
-        self.BASE_TOPIC = mqtt_info[3]
-        self.STATE_SUFFIX = mqtt_info[4]
-        self.mqtt_client = MQTTClientResource(self.BROKER,self.PORT, self.CLIENT_ID,self.BASE_TOPIC, self)
-        self.mqtt_client.start_mqtt_connection()
+        
         try:
             self.loop = asyncio.get_running_loop()
         except RuntimeError:
@@ -86,55 +54,55 @@ class PackMLStateMachine:
             asyncio.set_event_loop(self.loop)
 
     async def state_command_callback(self, cmd):
-        if cmd == "start":
+        if cmd == MS.CommandType.START:
             if self.state == PackMLState.IDLE:
                 await self.transition_to(PackMLState.STARTING)
             else:
                 print(f"Cannot transition to state: {PackMLState.STARTING} when in state: {self.state} state!")
         
-        elif cmd == "stop":
+        elif cmd == MS.CommandType.STOP:
             if self.state not in [PackMLState.STOPPED, PackMLState.STOPPING, PackMLState.ABORTED, PackMLState.ABORTING]:
                 await self.transition_to(PackMLState.STOPPING)
             else:
                 print(f"Cannot transition to state: {PackMLState.STOPPING} when in state: {self.state} state!")    
             
-        elif cmd == "hold":
+        elif cmd == MS.CommandType.HOLD:
             if self.state == PackMLState.EXECUTE:
                 await self.transition_to(PackMLState.HOLDING)
             else:
                 print(f"Cannot transition to state: {PackMLState.HOLDING} when in state: {self.state} state!")
                 
-        elif cmd == "unhold":
+        elif cmd == MS.CommandType.UNHOLD:
             if self.state in [PackMLState.HELD, PackMLState.HOLDING]:
                 await self.transition_to(PackMLState.UNHOLDING)
             else:
                 print(f"Cannot transition to state: {PackMLState.UNHOLDING} when in state: {self.state} state!")
         
-        elif cmd == "clear":
+        elif cmd == MS.CommandType.CLEAR:
             if self.state == PackMLState.ABORTED:
                 await self.transition_to(PackMLState.CLEARING)
             else:
                 print(f"Cannot transition to state: {PackMLState.CLEARING} when in state: {self.state} state!")
 
-        elif cmd == "reset":
+        elif cmd == MS.CommandType.RESET:
             if self.state in [PackMLState.STOPPED, PackMLState.ABORTED, PackMLState.COMPLETE]:
                 await self.transition_to(PackMLState.RESETTING)
             else:
                 print(f"Cannot transition to state: {PackMLState.RESETTING} when in state: {self.state} state!")
         
-        elif cmd == "suspend":
+        elif cmd == MS.CommandType.SUSPEND:
             if self.state == PackMLState.EXECUTE:
                 await self.transition_to(PackMLState.SUSPENDING)
             else:
                 print(f"Cannot transition to state: {PackMLState.SUSPENDING} when in state: {self.state} state!")
                 
-        elif cmd == "unsuspend":
+        elif cmd == MS.CommandType.UNSUSPEND:
             if self.state in [PackMLState.SUSPENDED, PackMLState.SUSPENDING]:
                 await self.transition_to(PackMLState.UNSUSPENDING)
             else:
                 print(f"Cannot transition to state: {PackMLState.UNSUSPENDING} when in state: {self.state} state!")
         
-        elif cmd == "abort":
+        elif cmd == MS.CommandType.ABORT:
             if self.state not in [PackMLState.ABORTED, PackMLState.ABORTING]:
                 await self.transition_to(PackMLState.ABORTING)
             else:
@@ -201,60 +169,32 @@ class PackMLStateMachine:
     async def run_state(self, state):
         try:
             if state == PackMLState.IDLE:
-                state_message = MS.StateMessage(datetime.now(),self.CLIENT_ID,state)
-                self.mqtt_client.publish(self.STATE_SUFFIX, state_message)
                 await self.idle_state()
             elif state == PackMLState.STARTING:
-                state_message = MS.StateMessage(datetime.now(),self.CLIENT_ID,state)
-                self.mqtt_client.publish(self.STATE_SUFFIX, state_message)
                 await self.starting_state()
             elif state == PackMLState.EXECUTE:
-                state_message = MS.StateMessage(datetime.now(),self.CLIENT_ID,state)
-                self.mqtt_client.publish(self.STATE_SUFFIX, state_message)
                 await self.execute_state()
             elif state == PackMLState.STOPPING:
-                state_message = MS.StateMessage(datetime.now(),self.CLIENT_ID,state)
-                self.mqtt_client.publish(self.STATE_SUFFIX, state_message)
                 await self.stopping_state()
             elif state == PackMLState.HOLDING:
-                state_message = MS.StateMessage(datetime.now(),self.CLIENT_ID,state)
-                self.mqtt_client.publish(self.STATE_SUFFIX, state_message)
                 await self.holding_state()
             elif state == PackMLState.UNHOLDING:
-                state_message = MS.StateMessage(datetime.now(),self.CLIENT_ID,state)
-                self.mqtt_client.publish(self.STATE_SUFFIX, state_message)
                 await self.unholding_state()
             elif state == PackMLState.SUSPENDING:
-                state_message = MS.StateMessage(datetime.now(),self.CLIENT_ID,state)
-                self.mqtt_client.publish(self.STATE_SUFFIX, state_message)
                 await self.suspending_state()
             elif state == PackMLState.UNSUSPENDING:
-                state_message = MS.StateMessage(datetime.now(),self.CLIENT_ID,state)
-                self.mqtt_client.publish(self.STATE_SUFFIX, state_message)
                 await self.unsuspending_state()
             elif state == PackMLState.COMPLETING:
-                state_message = MS.StateMessage(datetime.now(),self.CLIENT_ID,state)
-                self.mqtt_client.publish(self.STATE_SUFFIX, state_message)
                 await self.completing_state()
             elif state == PackMLState.RESETTING:
-                state_message = MS.StateMessage(datetime.now(),self.CLIENT_ID,state)
-                self.mqtt_client.publish(self.STATE_SUFFIX, state_message)
                 await self.resetting_state()
             elif state == PackMLState.ABORTING:
-                state_message = MS.StateMessage(datetime.now(),self.CLIENT_ID,state)
-                self.mqtt_client.publish(self.STATE_SUFFIX, state_message)
                 await self.aborting_state()
             elif state == PackMLState.CLEARING:
-                state_message = MS.StateMessage(datetime.now(),self.CLIENT_ID,state)
-                self.mqtt_client.publish(self.STATE_SUFFIX, state_message)
                 await self.clearing_state()
             elif state == PackMLState.STOPPED:
-                state_message = MS.StateMessage(datetime.now(),self.CLIENT_ID,state)
-                self.mqtt_client.publish(self.STATE_SUFFIX, state_message)
                 print("State: STOPPED")
             elif state == PackMLState.ABORTED:
-                state_message = MS.StateMessage(datetime.now(),self.CLIENT_ID,state)
-                self.mqtt_client.publish(self.STATE_SUFFIX, state_message)
                 print("State: ABORTED")
             elif state == PackMLState.COMPLETE:
                 print("State: COMPLETE")

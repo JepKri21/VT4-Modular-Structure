@@ -6,32 +6,34 @@ elements:
   - type: collection
     id_short: "MQTT"
     elements:
-
       - type: collection
         id_short: "Suffixes"
         elements:
-
-        - type: property
-          id_short: "CommandSuffix"
-          value_type: "xs:string"
-          value: "CMD"
-        - type: property
-          id_short: "StateSuffix"
-          value_type: "xs:string"
-          value: "PackML_state"
-        - type: property
-          id_short: "JobResultSuffix"
-          value_type: "xs:string"
-          value: "job_result"
-        - type: property
-          id_short: "InfoRequestSuffix"
-          value_type: "xs:string"
-          value: "info_request"
-        - type: property
-          id_short: "ResourceAcknowledgementSuffix"
-          value_type: "xs:string"
-          value: "station_ack"
-        - type: property
-          id_short: "ControllerAcknowledgementSuffix"
-          value_type: "xs:string"
-          value: "controller_ack"
+          - type: property
+            id_short: "CommandSuffix"
+            value_type: "xs:string"
+            value: "CMD"
+          - type: property
+            id_short: "StateSuffix"
+            value_type: "xs:string"
+            value: "PackMLState"
+          - type: property
+            id_short: "JobResultSuffix"
+            value_type: "xs:string"
+            value: "job_result"
+          - type: property
+            id_short: "InfoRequestSuffix"
+            value_type: "xs:string"
+            value: "info_request"
+          - type: property
+            id_short: "ResourceAcknowledgementSuffix"
+            value_type: "xs:string"
+            value: "ResourceAck"
+          - type: property
+            id_short: "ControllerAcknowledgementSuffix"
+            value_type: "xs:string"
+            value: "ControllerAck"
+          - type: property
+            id_short: "InventoryLevelSuffix"
+            value_type: "xs:string"
+            value: "InventoryLevel"

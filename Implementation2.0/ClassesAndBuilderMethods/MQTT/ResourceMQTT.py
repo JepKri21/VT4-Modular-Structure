@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 import paho.mqtt.client as mqtt
 import sys
-import pathlib as Path
+from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
@@ -42,7 +42,7 @@ class MQTTClientResource:
 
         # Built-in ACK handling
         self.register_subscriber(
-            topic_suffix="controller_ack",
+            topic_suffix="ControllerAck",
             model=MS.AcknowledgementMessage,
             handler=self.handle_controller_ack,
             auto_ack=False
@@ -159,7 +159,7 @@ class MQTTClientResource:
             error_code=error_code
         )
 
-        self.publish("resource_ack", ack)
+        self.publish("ResourceAck", ack)
 
         self.controller_seq_no += 1
 
@@ -173,7 +173,7 @@ class MQTTClientResource:
             error_code=MS.AcknowledgementErrorCodes.NO_ERROR
         )
 
-        self.publish("resource_ack", ack)
+        self.publish("ResourceAck", ack)
 
     def handle_controller_ack(self, msg):
         print(f"Received controller ACK: {msg}")
