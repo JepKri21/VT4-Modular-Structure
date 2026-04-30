@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 import json
 from datetime import datetime
+from math import ceil
 import basyx.aas.adapter.json
 
 script_dir = Path(__file__).parent
@@ -165,104 +166,224 @@ class KUKAManipulatorBehavior(StationBehavior):
         # Station-specific variables live HERE
         self.mqtt_client = mqtt_client
         self.actor_name = actor_name
-        self.skill = None
-        self.component_reference = None
-        self.drill_depth = None
-        self.rpm = None
-        self.base_time_ms = None
-        self.depth_factor = None
-        self.rpm_factor = None
 
-        #Make a variable that adds the command message
         self.command_payload = None
+        self.result = None
+        self.quality = None
+        self.ideal_cycle_time = None
+        self.actual_cycle_time = None
+        
+
+    async def idle(self, machine):
+        state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=PackMLState.IDLE)
+        self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
+        print("Drill Is Idle")
 
     async def starting(self, machine):
-        #EVERY STATE SHOULD HAVE A PUBLISHING OF THE NEW STATE AS THE BEGINNING
-        state_message = MS.StateMessage(datetime.now(),CLIENT_ID, PackMLState.STARTING)
+        state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=PackMLState.STARTING)
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
-        print("Starting Drill Process")
+        self.skill = self.command_payload.skill
+        self.parameters = self.command_payload.parameters
+        print(f"Reading job {self.command_payload.job_id} for order {self.command_payload.order_id}")
+
+
+        if self.skill == "Handoff":
+            try:
+                #Loading handoff specific parameters
+                self.component_reference = self.parameters.get("ComponentReference")
+                self.target_position = self.parameters.get("TargetPosition")
+                self.XPos = self.target_position.get("XPos")
+                self.YPos = self.target_position.get("YPos")
+                print("Handoff parameters loaded:", self.parameters)
+            except Exception as e:
+                print(f"Failed to load the parameters with exception {e}")
+
+
+        elif self.skill == "Drilling":
+
+            if self.parameters is None:
+                raise ValueError("No parameters provided for Drilling skill")
+
+            try:
+                # unpack for readability
+                self.bit_diameter = self.parameters.get("BitDiameter")
+                self.drill_depth = self.parameters.get("DrillDepth")
+                self.spindle_speed = self.parameters.get("SpindleSpeed")
+                self.spindle_feed = self.parameters.get("SpindleFeed")
+                self.hole_x = self.parameters.get("HolePlacement_X")
+                self.hole_y = self.parameters.get("HolePlacement_Y")
+                self.component_reference = self.parameters.get("ComponentReference")
+
+                print("Drilling parameters loaded:", self.parameters)
+
+            except Exception as e:
+                print(f"Failed to load the parameters with exception {e}")
+
+
+        else:
+            print("Skill not available for this Actor")
+            #If we are told to do a skill we cannot, we stop the action
+            #We will then need to reset automatically, but only when stopped like this
+            await machine.transition_to(PackMLState.STOPPING)
+
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.EXECUTE)
 
     async def execute(self, machine):
-        state_message = MS.StateMessage(datetime.now(),CLIENT_ID, PackMLState.EXECUTE)
+        state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=PackMLState.EXECUTE)
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
-        print("Executing Drill Process")
-        await asyncio.sleep(2)
+
+        if self.skill == "Handoff":
+            print(f"Handing off product: {self.component_reference}")
+            print(f"At position ({self.XPos},{self.YPos})")
+            self.ideal_cycle_time = 4000+int(self.XPos)+int(self.YPos)
+            self.actual_cycle_time = self.ideal_cycle_time + random.randint(200,800)
+            await asyncio.sleep(self.actual_cycle_time/1000)
+
+            self.result = MS.Result.COMPLETE
+            self.quality = MS.Quality.GOOD
+
+            
+        elif self.skill == "Drilling":
+            print(f"Executing drillling with these parameters: Bit Diameter: {self.bit_diameter}, Drill Depth: {self.drill_depth}, Spindle Speed: { self.spindle_speed}, Spindle Feed: {self.spindle_feed}, Hole X: {self.hole_x}, Hole Y: {self.hole_y}, Component Reference: {self.component_reference}")
+            
+            #Generating cycle times based on parameters
+            self.ideal_cycle_time = (self.drill_depth/self.spindle_feed)
+            self.actual_cycle_time = self.ideal_cycle_time + random.randint(200,1500)
+            await asyncio.sleep(self.actual_cycle_time/1000)
+
+            #Generating result and quality randomly
+            if random.randint(1,10) > 1:
+                self.result = MS.Result.COMPLETE
+                if random.randint(1,10) > 1:
+                    self.quality = MS.Quality.GOOD
+                else:
+                    self.quality = MS.Quality.BAD
+            else:
+                self.result = MS.Result.INCOMPLETE
+                self.quality = MS.Quality.NA
+            
+
+        else:
+            print("How did you even get here?")
+            await machine.transition_to(PackMLState.STOPPING)
+        
         await machine.transition_to(PackMLState.COMPLETING)
 
     async def completing(self, machine):
-        state_message = MS.StateMessage(datetime.now(),CLIENT_ID, PackMLState.COMPLETING)
+        state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=PackMLState.COMPLETING)
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
-        print("Completing Drill Process")
+        print("Finalizing Process and sending result")
+
+        job_result_message = MS.JobResultMessage(
+            timestamp=datetime.now(),
+            resource_id=CLIENT_ID, 
+            order_id=self.command_payload.order_id, 
+            job_id=self.command_payload.job_id, 
+            ideal_cycle_time_ms=self.ideal_cycle_time,
+            actual_cycle_time_ms=self.actual_cycle_time,
+            result=self.result,
+            quality=self.quality
+        )
+        self.mqtt_client.publish(f"{job_result_suffix}/{self.actor_name}",job_result_message)
+
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.COMPLETE)
 
     async def resetting(self, machine):
-        state_message = MS.StateMessage(datetime.now(),CLIENT_ID, PackMLState.RESETTING)
+        state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=PackMLState.RESETTING)
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
         print("Resetting Drill")
+
+        self.command_payload = None
+        self.result = None
+        self.quality = None
+        self.ideal_cycle_time = None
+        self.actual_cycle_time = None
+
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.IDLE)
 
     async def stopping(self, machine):
-        state_message = MS.StateMessage(datetime.now(),CLIENT_ID, PackMLState.STOPPING)
+        state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=PackMLState.STOPPING)
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
         print("Stopping Drill")
+
+        #Stop command, should maybe just wait like 2 seconds
+        
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.STOPPED)
         
     async def holding(self, machine): 
-        state_message = MS.StateMessage(datetime.now(),CLIENT_ID, PackMLState.HOLDING)
+        state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=PackMLState.HOLDING)
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
         print("Holding Drill")
+
+        # Why holding? Maybe not relevant at the moment
+
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.HELD)
     
     async def unholding(self, machine): 
-        state_message = MS.StateMessage(datetime.now(),CLIENT_ID, PackMLState.UNHOLDING)
+        state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=PackMLState.UNHOLDING)
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
         print("Unholding Drill")
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.EXECUTE)
 
     async def suspending(self, machine):
-        state_message = MS.StateMessage(datetime.now(),CLIENT_ID, PackMLState.SUSPENDING)
+        state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=PackMLState.SUSPENDING)
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
         print("Suspending Drill")
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.SUSPENDED)
 
     async def unsuspending(self, machine):
-        state_message = MS.StateMessage(datetime.now(),CLIENT_ID, PackMLState.UNSUSPENDING)
+        state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=PackMLState.UNSUSPENDING)
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
         print("Unsuspending Drill")
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.EXECUTE)
 
     async def aborting(self, machine): 
-        state_message = MS.StateMessage(datetime.now(),CLIENT_ID, PackMLState.ABORTING)
+        state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=PackMLState.ABORTING)
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
         print("Aborting Drill")
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.ABORTED)
 
     async def clearing(self, machine): 
-        state_message = MS.StateMessage(datetime.now(),CLIENT_ID, PackMLState.CLEARING)
+        state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=PackMLState.CLEARING)
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
         print("Clearing Drill")
+
+        self.command_payload = None
+        self.result = None
+        self.quality = None
+        self.ideal_cycle_time = None
+        self.actual_cycle_time = None
+
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.STOPPED)
 
 
+#=============
+# Generating Actors from their behavior
+#=============
 
 kuka_manipulator_behavior = KUKAManipulatorBehavior(Actor,mqtt_client)
 KUKAManipulator = PackMLStateMachine(kuka_manipulator_behavior)
 
 
 
+main_loop: asyncio.AbstractEventLoop | None = None
+
+#=============
+#Creating handlers for subscribers 
+#=============
+
 def handle_command(msg: MS.CommandMessage):
-    print(f"Received command: {msg.command_type}")
+    print(f"Received trigger: {msg.skill_trigger}")
     print(f"Skill: {msg.skill}")
     print(f"Actor: {msg.actor_name}")
     print(f"Order ID: {msg.order_id}")
@@ -270,7 +391,13 @@ def handle_command(msg: MS.CommandMessage):
 
     if msg.actor_name == Actor:
         KUKAManipulator.behavior.command_payload = msg
-        KUKAManipulator.state_command_callback(msg.skill_trigger)
+        if main_loop is None:
+            print("Event loop not ready; dropping command")
+            return
+        asyncio.run_coroutine_threadsafe(
+            KUKAManipulator.state_command_callback(msg.skill_trigger),
+            main_loop,
+        )
 
 
 #ProductionLine1/Transport-12345678/Data/State/Shuttle1/value
@@ -289,7 +416,7 @@ def handle_request(msg: MS.RequestMessage):
             print(f"Requested actor: {actor_name}")
 
             if actor_name == "KUKAManipulator":
-                state_message = MS.StateMessage(datetime.now(),CLIENT_ID, KUKAManipulator.state)
+                state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=KUKAManipulator.state)
                 mqtt_client.publish(f"{state_suffix}/{KUKAManipulator.behavior.actor_name}", state_message)
 
             else:
@@ -299,10 +426,22 @@ def handle_request(msg: MS.RequestMessage):
     else:
         print("State suffix not found in topic")
 
-
+#=============
+#Registering those handlers to specific topics
+#=============
 
 mqtt_client.register_subscriber(command_suffix, MS.CommandMessage,handle_command)
 mqtt_client.register_subscriber(info_request_suffix, MS.RequestMessage,handle_request)
+
+params = {
+    "BitDiameter": 5.0,
+    "DrillDepth": 50.0,
+    "SpindleSpeed": 800.0,
+    "SpindleFeed": 20.0,
+    "HolePlacement_X": 10.0,
+    "HolePlacement_Y": -5.0,
+    "ComponentReference": "BottomCover_ALU"
+}
 
 test_command = MS.CommandMessage(
     timestamp=datetime.now(),
@@ -312,13 +451,18 @@ test_command = MS.CommandMessage(
     skill_trigger=MS.CommandType.START,
     order_id=None,
     job_id=None,
-    parameters=None,
+    parameters=params
 )
 
 print("Test Command: ", test_command.model_dump_json(indent=2))
 
+#=============
+#Main loop where the full machine runs
+#=============
+
 async def main():
-    
+    global main_loop
+    main_loop = asyncio.get_running_loop()
 
     mqtt_client.start_mqtt_connection()
     

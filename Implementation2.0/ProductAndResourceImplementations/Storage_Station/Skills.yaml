@@ -12,7 +12,7 @@ elements:
       - type: reference_element
         id_short: "CapabilityReference"
         value: "https://aausmartlab.org/Shells/Resources/Storage-12345678/RetrieveCapabilityOffered"
-      
+
       - type: list
         id_short: "SkillTriggers"
         semantic_id: "https://aausmartlab.org/Semantics/SkillTriggers"
@@ -37,8 +37,7 @@ elements:
         element_type: "property"
         value_type: "xs:string"
         items:
-          - "KUKAManipulator"
-
+          - "UR5"
 
   - type: collection
     id_short: "Handoff"
@@ -49,7 +48,7 @@ elements:
       - type: reference_element
         id_short: "CapabilityReference"
         value: "https://aausmartlab.org/Shells/Resources/Storage-12345678/HandoffCapabilityOffered"
-      
+
       - type: list
         id_short: "SkillTriggers"
         semantic_id: "https://aausmartlab.org/Semantics/SkillTriggers"
@@ -74,7 +73,7 @@ elements:
         element_type: "property"
         value_type: "xs:string"
         items:
-          - "KUKAManipulator"
+          - "UR5"
 
   - type: collection
     id_short: "Store"
@@ -85,7 +84,7 @@ elements:
       - type: reference_element
         id_short: "CapabilityReference"
         value: "https://aausmartlab.org/Shells/Resources/Storage-12345678/StoreCapabilityOffered"
-      
+
       - type: list
         id_short: "SkillTriggers"
         semantic_id: "https://aausmartlab.org/Semantics/SkillTriggers"
@@ -110,4 +109,4 @@ elements:
         element_type: "property"
         value_type: "xs:string"
         items:
-          - "KUKAManipulator"
+          - "UR5"

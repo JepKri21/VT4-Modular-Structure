@@ -6,9 +6,11 @@ import sys
 from pathlib import Path
 import datetime 
 
-sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from InformationModels.MessageStructure import PackMLState
+sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
+
+from ClassesAndBuilderMethods.InformationModels.MessageStructure import PackMLState
+from ClassesAndBuilderMethods.InformationModels import MessageStructure as MS
 
 
 
@@ -202,6 +204,11 @@ class PackMLStateMachine:
 
         except asyncio.CancelledError:
             print(f"{state} cancelled")
+            raise
+        except Exception as e:
+            import traceback
+            print(f"!!! Exception in run_state({state}): {e!r}")
+            traceback.print_exc()
             raise
 
     

@@ -108,7 +108,7 @@ class MQTTClientResource:
             parsed_message = model(**payload)
 
             # Automatic ACK handling
-            if auto_ack and hasattr(parsed_message, "seq_no"):
+            if auto_ack and getattr(parsed_message, "seq_no", None) is not None:
                 self.publish_acknowledgement(parsed_message.seq_no)
 
             # Custom business logic
@@ -124,7 +124,7 @@ class MQTTClientResource:
     def publish(self, topic_suffix, message_model):
         topic = f"{self.base_topic}/{self.client_id}/{topic_suffix}"
 
-        data = message_model.model_dump()
+        data = message_model.model_dump(mode="json")
 
         # Inject seq_no ONLY if model has it
         if hasattr(message_model, "seq_no"):
@@ -176,6 +176,8 @@ class MQTTClientResource:
         self.publish("ResourceAck", ack)
 
     def handle_controller_ack(self, msg):
+        #We need to be able to make a list of acknowledgements or a queue that we ensure are acknowledged within some time
+        #We may also have to limit which messages send acknowledges, since it will be a lot of messages
         print(f"Received controller ACK: {msg}")
 
         if msg.seq_no == 0:

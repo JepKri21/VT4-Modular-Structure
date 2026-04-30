@@ -20,11 +20,11 @@ elements:
           - type: property
             id_short: "JobResultSuffix"
             value_type: "xs:string"
-            value: "job_result"
+            value: "JobResult"
           - type: property
             id_short: "InfoRequestSuffix"
             value_type: "xs:string"
-            value: "info_request"
+            value: "InfoRequest"
           - type: property
             id_short: "ResourceAcknowledgementSuffix"
             value_type: "xs:string"

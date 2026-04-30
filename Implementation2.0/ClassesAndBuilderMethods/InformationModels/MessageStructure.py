@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import List, Dict
 import sys
 from pathlib import Path
+import time
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
@@ -34,7 +35,7 @@ class CommandMessage(BaseModel):
     skill_trigger: CommandType
     order_id: str | None
     job_id: str | None
-    parameters: Dict[str, str | int | float] | None
+    parameters: Dict[str, str | int | float | Dict] | None
     seq_no: int | None = None
 
 
@@ -88,6 +89,7 @@ class Result(enum.Enum):
 class Quality(enum.Enum):
     GOOD = "GOOD"
     BAD = "BAD"
+    NA = "NA"
 
 class JobResultMessage(BaseModel):
     timestamp: datetime
@@ -98,6 +100,7 @@ class JobResultMessage(BaseModel):
     actual_cycle_time_ms: int
     result: Result
     quality: Quality
+    output_parameters: Dict[str, str | int | float | Dict] | None = None
     seq_no: int | None = None
 
 #=============================================================================
@@ -134,11 +137,21 @@ class AlarmsMessage(BaseModel):
 #============================== Inventory Level ==============================
 #=============================================================================
 
+class ComponentLevel(BaseModel):
+    ComponentReference: str
+    Amount: int
+
 
 class InventoryLevelMessage(BaseModel):
     timestamp: datetime
     resource_id: str
-    inventory: Dict[str, Dict[str,int]] # [Resource, [Component Type, Amount] 
+    
+    # Inventory name → list of component summaries
+    inventory: Dict[str, List[ComponentLevel]]
+    
+    # Flat list of all item URLs
+    AllItems: List[str]
+    
     seq_no: int | None = None
     
 

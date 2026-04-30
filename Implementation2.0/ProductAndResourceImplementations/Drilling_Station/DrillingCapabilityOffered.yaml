@@ -65,6 +65,13 @@ elements:
         min: -50.0
         max: 50.0
 
+      - type: property
+        id_short: "ComponentReference"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.org/Semantics/mm"
+        description: "Minimum and maximum drill depth in mm"
+        value: ""
+
       - type: multi_language_property
         id_short: "OperationLabel"
         semantic_id: "https://aausmartlab.org/Semantics/OperationLabel"
