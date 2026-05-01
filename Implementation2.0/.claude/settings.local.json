@@ -7,7 +7,8 @@
       "Bash(python3 -c \"import yaml; print\\('pyyaml OK'\\)\")",
       "Bash(py -c \"import yaml; print\\('pyyaml OK'\\)\")",
       "Bash(py -c \"import inspect; from basyx.aas import model; print\\('MLP:', inspect.signature\\(model.MultiLanguageProperty.__init__\\)\\); print\\('RE:', inspect.signature\\(model.ReferenceElement.__init__\\)\\)\")",
-      "Bash(py -c \"import inspect; from basyx.aas import model; print\\('SubmodelElementList:', inspect.signature\\(model.SubmodelElementList.__init__\\)\\)\")"
+      "Bash(py -c \"import inspect; from basyx.aas import model; print\\('SubmodelElementList:', inspect.signature\\(model.SubmodelElementList.__init__\\)\\)\")",
+      "Bash(xargs grep *)"
     ]
   }
 }

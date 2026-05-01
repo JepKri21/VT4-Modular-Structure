@@ -286,3 +286,4 @@ next-env.d.ts
 *.tmp
 *.log
 *.cache
+Implementation2.0/.claude/settings.local.json
