@@ -81,38 +81,41 @@ tracked per step.
 ## 3. Repository layout
 
 ```
-line_controller/
-├── __init__.py
-├── main.py                  # entrypoint: starts MQTT client, MES poll loop, scheduler
-├── config.py                # loads env / config files; no logic
-├── aas/
-│   ├── __init__.py
-│   ├── client.py            # thin wrapper over BaSyx Python SDK; returns dicts
-│   └── line_config.py       # loads the Line Controller's own AAS (resources + connection points)
-├── order_handler.py         # pulls orders, extracts BoP, produces ProductOrder objects
-├── resource_manager.py      # discovers resources, tracks liveness + capabilities + actor states
-├── capability_matcher.py    # matches BoP steps to (resource, actor) candidates by semanticId + params
-├── transport_planner.py     # expands "part needs to move from A to B" into concrete steps
-├── process_checklist.py     # the checklist data structure + persistence + completion tracking
-├── handshake.py             # implements the handoff handshake state machine
-├── scheduler.py             # the main "what's next" decision loop
-├── mqtt/
-│   ├── __init__.py
-│   ├── client.py            # connect, subscribe, publish, LWT
-│   ├── topics.py            # topic builders + parsers (single source of truth)
-│   └── messages.py          # message schemas (pydantic models)
-├── packml.py                # PackML state enum + transition validation
-└── logging_config.py        # structured logging setup
+Implementation2.0/Line_Controller/   # this directory; only these files exist so far
+├── CLAUDE.md
+├── WorkorderExample.json            # example order payload; reference for the order schema
+└── line_controller/                 # Python package (planned; not yet started)
+    ├── __init__.py
+    ├── main.py                  # entrypoint: starts MQTT client, MES poll loop, scheduler
+    ├── config.py                # loads env / config files; no logic
+    ├── aas/
+    │   ├── __init__.py
+    │   ├── client.py            # thin wrapper over the BaSyx REST API; returns dicts
+    │   └── line_config.py       # loads the Line Controller's own AAS (resources + connection points)
+    ├── order_handler.py         # pulls orders, extracts BoP, produces ProductOrder objects
+    ├── resource_manager.py      # discovers resources, tracks liveness + capabilities + actor states
+    ├── capability_matcher.py    # matches BoP steps to (resource, actor) candidates by semanticId + params
+    ├── transport_planner.py     # expands "part needs to move from A to B" into concrete steps
+    ├── process_checklist.py     # the checklist data structure + persistence + completion tracking
+    ├── handshake.py             # implements the handoff handshake state machine
+    ├── scheduler.py             # the main "what's next" decision loop
+    ├── mqtt/
+    │   ├── __init__.py
+    │   ├── client.py            # connect, subscribe, publish, LWT
+    │   ├── topics.py            # topic builders + parsers (single source of truth)
+    │   └── messages.py          # message schemas (pydantic models)
+    ├── packml.py                # PackML state enum + transition validation
+    └── logging_config.py        # structured logging setup
 
 tests/
-└── ...                      # mirror the package layout
+└── ...                              # mirror the package layout
 ```
 
 A few rules about this layout:
 
-- `aas/client.py` is the **only** module that imports BaSyx. Everything else
-  consumes plain Python dicts or pydantic models. This keeps BaSyx upgrades
-  contained and makes testing trivial.
+- `aas/client.py` is the **only** module that calls the BaSyx REST API.
+  Everything else consumes plain Python dicts or pydantic models. This keeps
+  the HTTP layer contained and makes testing trivial.
 - `mqtt/topics.py` is the **only** place topic strings are constructed. Never
   hand-format a topic elsewhere.
 - `scheduler.py` does not parse AAS, does not parse MQTT, does not plan
@@ -135,14 +138,15 @@ A few rules about this layout:
 
 ### 4.2 BaSyx access
 
-Use `aas/client.py`. It wraps the BaSyx Python SDK and converts AAS objects to
+Use `aas/client.py`. It wraps the BaSyx REST API and converts AAS responses to
 plain dicts before returning. Reasons:
 
-1. The rest of the codebase doesn't need to know about BaSyx model classes.
+1. The rest of the codebase doesn't need to know about BaSyx response shapes.
 2. Snapshots are easy to log and diff.
 3. Tests can stub the client with hand-written dicts.
 
-If you find yourself importing `basyx` outside `aas/`, stop and refactor.
+If you find yourself calling the BaSyx REST API outside `aas/`, stop and
+refactor.
 
 ### 4.3 Capability declaration (resource side)
 
@@ -458,16 +462,40 @@ These exist as known gaps. Don't paper over them; surface them.
   Default to `true` with a warning when absent.
 - **Recovery from handshake failure.** Currently: log and halt. A real
   recovery path is needed.
+- **MQTT layer** (`mqtt/client.py`, `mqtt/topics.py`, `mqtt/messages.py`). The
+  broker connection, topic builders, and pydantic message schemas described in
+  §5 are not yet implemented.
+- **`config.py`.** Environment and config-file loading is currently inline in
+  `line_controller.py`.
+- **`capability_matcher.py`.** Capability-matching logic described in §4.4
+  currently lives inside `Resource_Manager/resource_manager.py`
+  (`check_skill_and_component`, `_find_resources_with_skill`,
+  `_resource_matches_parameters`). Splitting it out is follow-up work.
+- **`transport_planner.py`.** Transport-routing logic described in §9
+  currently lives inside `Resource_Manager/resource_manager.py`
+  (`find_resource_connection_points`, `build_complete_execution_plan`).
+  Splitting it out is follow-up work.
+- **`process_checklist.py`.** The checklist data structure described in §8 is
+  not yet implemented.
+- **`handshake.py`.** The handoff handshake state machine described in §6 is
+  not yet implemented.
+- **`scheduler.py`.** The main scheduling loop is not yet implemented.
+- **`packml.py`.** PackML state enum and transition validation described in §7
+  are not yet implemented.
+- **`logging_config.py`.** Structured logging via `structlog` described in §10
+  is not yet set up.
+- **`tests/`.** No test suite exists yet.
 
 ---
 
 ## 14. When in doubt
 
 - Reading something? Go through `aas/client.py` (for AAS) or
-  `mqtt/messages.py` (for MQTT). Don't parse raw.
-- Building a topic? `mqtt/topics.py`. Never hand-format.
+  `mqtt/messages.py` (for MQTT; not yet built — see §13). Don't parse raw.
+- Building a topic? `mqtt/topics.py` (not yet built — see §13). Never
+  hand-format.
 - Adding logic to the scheduler? First check whether it belongs in
-  `capability_matcher`, `transport_planner`, or `process_checklist`. The
-  scheduler should be boring.
+  `capability_matcher`, `transport_planner`, or `process_checklist` (none yet
+  built — see §13). The scheduler should be boring.
 - Tempted to special-case a specific resource or capability in code? Stop.
   The data model should carry that, not the code.
