@@ -24,7 +24,7 @@ from ClassesAndBuilderMethods.BaSyx_AAS_Generator import yaml_to_instance, yaml_
 
 BROKER = "localhost"
 MQTT_PORT = 1883
-BASE_TOPIC = "AAUSmartLab/ProductionLine1"
+BASE_TOPIC = "AAUSmartLab/ProductionLine1" 
 
 AAS_PORT = "8081"
 SERVER_BASE = f"http://{BROKER}:{AAS_PORT}"  # your server base URL
