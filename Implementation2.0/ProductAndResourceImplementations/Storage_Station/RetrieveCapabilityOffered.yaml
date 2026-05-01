@@ -1,8 +1,15 @@
 id_short: "RetrieveCapabilityOffered"
 id: "https://aausmartlab.org/Shells/Resources/Storage-12345678/RetrieveCapabilityOffered"
 description: "Offered capability template for a retrieve capability — parameters expressed as ranges defining the operational envelope"
+semantic_id: "https://aausmartlab.org/Submodels/Capability/Retrieve"
 
 elements:
+  - type: property
+    id_short: "CapabilityCategory"
+    semantic_id: "https://aausmartlab.org/Semantics/CapabilityCategory"
+    description: "Describes the category of cabaility, whether it is offered by a resource or required by a product"
+    value: "Offered"
+
   - type: collection
     id_short: "Parameters"
     semantic_id: "https://aausmartlab.org/Semantics/Parameters"

@@ -96,7 +96,7 @@ Implementation2.0/
 │   ├── MES/
 │   │   └── WorkOrder.json           # MES work order example / schema reference
 │   ├── MQTT/
-│   │   ├── Resource_MQTT.py         # base MQTT behavior used by stations
+│   │   ├── ResourceMQTT.py          # base MQTT behavior used by stations
 │   │   └── Resource_MQTT_Client.py  # MQTT client wrapper (the Line Controller reuses this)
 │   └── PackML/
 │       ├── PackMLMachineClass.py    # PackML state machine (Line Controller imports the enum/validation)
