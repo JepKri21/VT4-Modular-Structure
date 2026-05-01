@@ -1,0 +1,65 @@
+{
+  "OrderId": "ORD-001",
+  "Priority": 0,
+  "IssueDate": "2026-05-01T10:22:37.995604",
+  "ProductReference": "Bottom_Cover_Drilled-BCD002",
+  "Properties": [
+    {
+      "Ingredient_1": [
+        {
+          "MaterialProperties": [
+            {
+              "Color": "Black",
+              "Material": "PLA",
+              "Finish": "Textured"
+            }
+          ],
+          "PhysicalDimensions": [
+            {
+              "Length": 150,
+              "Width": 75,
+              "Height": 5
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "Assemblies": [
+    {
+      "Bottom_Cover_Drilled-BCD002": [
+        {
+          "ComponentReference": "https://aausmartlab.org/Shells/Assembly/Bottom_Cover_Drilled/Bottom_Cover_Drilled-BCD001",
+          "Ingredients": [
+            {
+              "Ingredient_1": [
+                {
+                  "ComponentReference": "https://aausmartlab.org/Shells/Component/Bottom_Cover"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "ProcessSteps": [
+    {
+      "Bottom_Cover_Drilled-BCD002": [
+        {
+          "Ingredient_1": [
+            {
+              "ProcessStep1": [
+                {
+                  "CapabilityReference": "https://aausmartlab.org/Submodels/Capability/Drilling",
+                  "ProcessStepId": "1x1",
+                  "Dependencies": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

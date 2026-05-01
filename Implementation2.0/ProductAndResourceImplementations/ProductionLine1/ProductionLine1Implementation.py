@@ -49,7 +49,10 @@ CLIENT_ID = json_shell["idShort"]
 
 
 with open(f"{script_dir}/LineConfiguration.json") as f:
-    json_str = json.load(f)
+    data = json.load(f)   # <-- Python dict
+
+json_str = json.dumps(data, indent=2, ensure_ascii=False)
+
 
 result = yaml_to_instance.upload_submodel(json_str, SERVER_BASE)
 print(result)  # "created" or "updated"
