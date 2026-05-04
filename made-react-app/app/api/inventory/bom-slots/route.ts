@@ -195,24 +195,76 @@ async function tryFetchBomSubmodel(base: string, shellId: string): Promise<BomSl
 
 // ── local YAML fallback ───────────────────────────────────────────────────
 
+type YamlDoc = Record<string, unknown>;
+
+function loadAllPresets(presetsDir: string): YamlDoc[] {
+  return fs
+    .readdirSync(presetsDir)
+    .filter((f) => f.endsWith(".yaml") || f.endsWith(".yml"))
+    .map((f) => {
+      try {
+        return yaml.load(fs.readFileSync(path.join(presetsDir, f), "utf-8")) as YamlDoc;
+      } catch {
+        return null;
+      }
+    })
+    .filter((d): d is YamlDoc => d !== null);
+}
+
+function findPresetByAssetName(presets: YamlDoc[], assetName: string): YamlDoc | null {
+  return presets.find((d) => d.asset_name === assetName) ?? null;
+}
+
+/** Recursively collect raw-component BOM entries from a preset and all sub-assembly presets. */
+function collectRawEntries(
+  doc: YamlDoc,
+  allPresets: YamlDoc[],
+  visited = new Set<string>(),
+): RawBomEntry[] {
+  const assetName = doc.asset_name as string | undefined;
+  if (assetName) {
+    if (visited.has(assetName)) return [];
+    visited.add(assetName);
+  }
+
+  const entries = (
+    (doc as Record<string, Record<string, Record<string, unknown>>>)
+      ?.submodels?.BillOfMaterials?.BOMEntries ?? []
+  ) as RawBomEntry[];
+
+  const result: RawBomEntry[] = [];
+
+  for (const entry of entries) {
+    if (!entry.ProductFamilyRef) continue;
+
+    if (entry.ProductFamilyRef.includes("/Shells/Assembly/")) {
+      // Sub-assembly: find the matching preset by asset_name (last IRI segment) and recurse
+      const subAssetName = entry.ProductFamilyRef.split("/").pop() ?? "";
+      const subPreset = findPresetByAssetName(allPresets, subAssetName);
+      if (subPreset) {
+        result.push(...collectRawEntries(subPreset, allPresets, visited));
+      }
+    } else {
+      // Raw component: customer-selectable
+      result.push(entry);
+    }
+  }
+
+  return result;
+}
+
 function slotsFromLocalYaml(): BomSlotDef[] | null {
   try {
     const presetsDir = path.join(getGeneratorPath(), "shell_presets");
-    const files = fs
-      .readdirSync(presetsDir)
-      .filter((f) => f.startsWith("final_product") && (f.endsWith(".yaml") || f.endsWith(".yml")))
-      .sort();
+    const allPresets = loadAllPresets(presetsDir);
 
-    if (!files.length) return null;
+    // Find the final product preset
+    const finalPreset = allPresets.find((d) => d.shell === "final_product_shell");
+    if (!finalPreset) return null;
 
-    const raw = fs.readFileSync(path.join(presetsDir, files[0]), "utf-8");
-    const doc = yaml.load(raw) as Record<string, unknown>;
-    const entries = (
-      (doc as Record<string, Record<string, Record<string, unknown>>>)
-        ?.submodels?.BillOfMaterials?.BOMEntries ?? []
-    ) as RawBomEntry[];
-
-    return entries.length ? slotsFromEntries(entries) : null;
+    // Recursively collect all raw component BOM entries from the full hierarchy
+    const rawEntries = collectRawEntries(finalPreset, allPresets);
+    return rawEntries.length ? slotsFromEntries(rawEntries) : null;
   } catch {
     return null;
   }

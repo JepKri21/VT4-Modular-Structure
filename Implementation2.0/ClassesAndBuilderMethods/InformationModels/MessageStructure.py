@@ -216,6 +216,45 @@ class RequestMessage(BaseModel):
 
 
 
+#=============================================================================
+#============================== MES WorkOrder ================================
+#=============================================================================
+
+class WorkOrderStatus(str, enum.Enum):
+    ACCEPTED    = "ACCEPTED"
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETE    = "COMPLETE"
+    FAILED      = "FAILED"
+    REJECTED    = "REJECTED"
+    PENDING     = "PENDING"
+
+
+class WorkOrderMessage(BaseModel):
+    timestamp: datetime
+    order_id: str
+    priority: int
+    issue_date: datetime
+    product_reference: str          # AAS IRI of the uploaded final product instance shell
+    ingredients: Dict[str, Dict]    # flat: Ingredient_N -> { ComponentReference: <IRI> }
+    properties: Dict[str, Dict]     # flat: Ingredient_N -> { MaterialProperties, PhysicalDimensions }
+    assemblies: Dict[str, Dict]     # flat: Ingredient_N -> { Ingredients: [dep1, dep2] }
+    process_steps: Dict[str, Dict]  # flat: Ingredient_N -> { StepName: { CapabilityReference, ... } }
+    seq_no: int | None = None
+
+
+class WorkOrderStatusMessage(BaseModel):
+    timestamp: datetime
+    order_id: str
+    line_id: str
+    status: WorkOrderStatus
+    message: str | None = None
+    seq_no: int | None = None
+
+
+#=============================================================================
+#============================== Helpers ======================================
+#=============================================================================
+
 #A small helper function to read the json strings:
 def find_by_idshort(elements, target):
     for element in elements:

@@ -1,0 +1,60 @@
+# SA2 Sub-Assembly: Bottom Cover PCB Fuse Assembly
+# Inputs: SA1 (Bottom Cover PCB) + Fuse 1 + Fuse 2
+# Output: Bottom Cover with PCB and two fuses mounted
+# ProcessType "Assemble" is used by the MES workorder_builder to create an Assemblies entry.
+# IsSubAssembly flags are MES-specific — ignored by form_to_aas.py template processing.
+
+shell: "sub_assembly_shell"
+label: "Bottom Cover PCB Fuse Sub-Assembly"
+description: "Sub-assembly in which two fuses are mounted onto the PCB inside the bottom cover."
+
+asset_type: "Bottom_Cover_PCB_Fuse"
+asset_name: "BottomCoverPCBFuse_SA"
+asset_category: "Electrical"
+
+submodels:
+  Properties:
+    PhysicalDimensions:
+      Weight_g: 240.0
+
+  Documentation:
+    ProductionIdentification:
+      ModelNumber: "SA-BCPF-001"
+      HardwareRevision: "v1.0"
+    DisplayName:
+      - language: "en"
+        text: "Bottom Cover PCB Fuse Sub-Assembly"
+      - language: "da"
+        text: "Bundlåg PCB Sikring Samleenhed"
+    Description:
+      - language: "en"
+        text: "Sub-assembly: bottom cover PCB assembly with two fuses mounted on the PCB"
+      - language: "da"
+        text: "Samleenhed: bundlåg PCB samleenhed med to sikringer monteret på PCB"
+    ProductFamily: "FuseBox Series A"
+
+  BillOfMaterials:
+    BOMEntries:
+      - Description: "Bottom Cover PCB Sub-Assembly"
+        Quantity: 1
+        IsSubAssembly: true
+        ProductFamilyRef: "https://aausmartlab.org/Shells/Assembly/Bottom_Cover_PCB/BottomCoverPCB_SA"
+      - Description: "Fuse 1 – 16A Slow-Blow"
+        Quantity: 1
+        IsSubAssembly: false
+        ProductFamilyRef: "https://aausmartlab.org/Shells/Component/Fuse/Fuse_16A_SB"
+      - Description: "Fuse 2 – 16A Slow-Blow"
+        Quantity: 1
+        IsSubAssembly: false
+        ProductFamilyRef: "https://aausmartlab.org/Shells/Component/Fuse/Fuse_16A_SB"
+
+  BillOfProcesses:
+    ProcessSteps:
+      - Operation: "Assemble Fuses"
+        ProcessType: "Assemble"
+        RequiredComponents:
+          - "BottomCoverPCB_SA"
+          - "Fuse_16A_SB"
+        StepConstraints:
+          MaxDuration_s: 90
+          RequiresInspection: false

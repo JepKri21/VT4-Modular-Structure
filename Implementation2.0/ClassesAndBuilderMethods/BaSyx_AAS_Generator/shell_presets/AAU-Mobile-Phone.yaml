@@ -1,0 +1,50 @@
+shell: "final_product_shell"
+label: "Final Product – AAU Mobile Phone (Example)"
+description: "Preset that models the AAU Mobile Phone: BOM entries and a simple BOP to mirror the dummy phone example."
+
+asset_type: "Mobile_Phone"
+asset_name: "AAU_Mobile_Phone_v1"
+asset_category: "Electrical"
+
+submodels:
+  Properties:
+    PhysicalDimensions:
+      Length: 140
+      Width: 70
+      Height: 12
+      Weight_g: 180.0
+    MaterialProperties:
+      Material: "ABS"
+      Color: "Black"
+
+  Documentation:
+    ProductionIdentification:
+      ModelNumber: "AAU-MP-001"
+      HardwareRevision: "v1.0"
+    DisplayName:
+      - language: "en"
+        text: "AAU Mobile Phone"
+      - language: "da"
+        text: "AAU Mobiltelefon"
+
+  BillOfMaterials:
+    BOMEntries:
+      - Description: "Bottom Cover PCB Fuse Sub-Assembly"
+        Quantity: 1
+        IsSubAssembly: true
+        ProductFamilyRef: "https://aausmartlab.org/Shells/Assembly/Bottom_Cover_PCB_Fuse/BottomCoverPCBFuse_SA"
+      - Description: "Top Cover"
+        Quantity: 1
+        IsSubAssembly: false
+        ProductFamilyRef: "https://aausmartlab.org/Shells/Component/Top_Cover/TopCover"
+
+  BillOfProcesses:
+    ProcessSteps:
+      - Operation: "Assemble Top Cover"
+        ProcessType: "Assemble"
+        RequiredComponents:
+          - "BottomCoverPCBFuse_SA"
+          - "TopCover"
+        StepConstraints:
+          MaxDuration_s: 120
+

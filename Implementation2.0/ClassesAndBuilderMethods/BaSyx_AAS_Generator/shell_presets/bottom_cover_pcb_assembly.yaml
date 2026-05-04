@@ -1,0 +1,56 @@
+# SA1 Sub-Assembly: Bottom Cover PCB Assembly
+# Inputs: Drilled Bottom Cover (from drilling sub-assembly) + PCB Board
+# Output: Bottom Cover with PCB mounted inside
+# ProcessType "Assemble" is used by the MES workorder_builder to create an Assemblies entry.
+# IsSubAssembly flags are MES-specific — ignored by form_to_aas.py template processing.
+
+shell: "sub_assembly_shell"
+label: "Bottom Cover PCB Sub-Assembly"
+description: "Sub-assembly in which a drilled bottom cover has a PCB board mounted inside it."
+
+asset_type: "Bottom_Cover_PCB"
+asset_name: "BottomCoverPCB_SA"
+asset_category: "Electrical"
+
+submodels:
+  Properties:
+    PhysicalDimensions:
+      Weight_g: 175.0
+
+  Documentation:
+    ProductionIdentification:
+      ModelNumber: "SA-BCP-001"
+      HardwareRevision: "v1.0"
+    DisplayName:
+      - language: "en"
+        text: "Bottom Cover PCB Sub-Assembly"
+      - language: "da"
+        text: "Bundlåg PCB Samleenhed"
+    Description:
+      - language: "en"
+        text: "Sub-assembly: drilled aluminium bottom cover with PCB board mounted"
+      - language: "da"
+        text: "Samleenhed: boret aluminiums bundlåg med monteret PCB"
+    ProductFamily: "FuseBox Series A"
+
+  BillOfMaterials:
+    BOMEntries:
+      - Description: "Drilled Bottom Cover"
+        Quantity: 1
+        IsSubAssembly: true
+        ProductFamilyRef: "https://aausmartlab.org/Shells/Assembly/Bottom_Cover/BottomCoverDrilling_SA"
+      - Description: "PCB Board"
+        Quantity: 1
+        IsSubAssembly: false
+        ProductFamilyRef: "https://aausmartlab.org/Shells/Component/PCB/PCB_FuseBoxA"
+
+  BillOfProcesses:
+    ProcessSteps:
+      - Operation: "Assemble PCB"
+        ProcessType: "Assemble"
+        RequiredComponents:
+          - "BottomCoverDrilling_SA"
+          - "PCB_FuseBoxA"
+        StepConstraints:
+          MaxDuration_s: 120
+          RequiresInspection: false

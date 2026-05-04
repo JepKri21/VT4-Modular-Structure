@@ -6,9 +6,11 @@ import {
   CREATE_ORDERS_TABLE_SQL,
   CREATE_ORDER_ITEMS_TABLE_SQL,
   MIGRATE_COMPONENT_TYPES_SQL,
+  MIGRATE_ORDERS_SQL,
   rowToComponentType,
   rowToOrder,
   rowToOrderItem,
+  type OrderStatus,
   type PlacedOrder,
 } from "@/lib/inventory";
 import { randomUUID } from "crypto";
@@ -21,6 +23,9 @@ async function ensureTables() {
   for (const sql of MIGRATE_COMPONENT_TYPES_SQL) {
     await pool.query(sql);
   }
+  for (const sql of MIGRATE_ORDERS_SQL) {
+    await pool.query(sql);
+  }
 }
 
 // List all placed orders with their line items and component details
@@ -30,6 +35,7 @@ export async function GET() {
   const res = await pool.query(`
     SELECT
       o.order_id, o.placed_at, o.cancelled_at, o.reserved_session,
+      o.status, o.started_at, o.fulfilled_at,
       oi.order_item_id, oi.component_type_id, oi.quantity, oi.added_at,
       ct.id, ct.category, ct.material, ct.color, ct.version, ct.name, ct.description, ct.created_at
     FROM aas_orders o
@@ -49,8 +55,11 @@ export async function GET() {
       grouped[orderId] = {
         orderId,
         placedAt: row.placed_at instanceof Date ? row.placed_at.toISOString() : row.placed_at,
-        cancelledAt: row.cancelled_at instanceof Date ? row.cancelled_at.toISOString() : row.cancelled_at ?? null,
+        cancelledAt: row.cancelled_at instanceof Date ? row.cancelled_at.toISOString() : (row.cancelled_at ?? null),
         reserved_session: row.reserved_session ?? null,
+        status: (row.status ?? "pending") as OrderStatus,
+        startedAt: row.started_at instanceof Date ? row.started_at.toISOString() : (row.started_at ?? null),
+        fulfilledAt: row.fulfilled_at instanceof Date ? row.fulfilled_at.toISOString() : (row.fulfilled_at ?? null),
         items: [],
       };
     }
@@ -69,6 +78,52 @@ export async function GET() {
   }
 
   return NextResponse.json(Object.values(grouped));
+}
+
+const VALID_STATUS_TRANSITIONS: Record<string, OrderStatus[]> = {
+  pending: ["in_production"],
+  in_production: ["fulfilled"],
+};
+
+// Update order status (pending → in_production → fulfilled)
+export async function PATCH(req: NextRequest) {
+  const { orderId, status } = (await req.json()) as { orderId?: string; status?: OrderStatus };
+
+  if (!orderId || !status) {
+    return NextResponse.json({ error: "orderId and status are required" }, { status: 400 });
+  }
+
+  await ensureTables();
+
+  const orderRes = await pool.query(
+    `SELECT status FROM aas_orders WHERE order_id = $1 AND cancelled_at IS NULL`,
+    [orderId]
+  );
+
+  if (orderRes.rows.length === 0) {
+    return NextResponse.json({ error: "Order not found or already cancelled" }, { status: 404 });
+  }
+
+  const current = orderRes.rows[0].status as OrderStatus;
+  const allowed = VALID_STATUS_TRANSITIONS[current] ?? [];
+
+  if (!allowed.includes(status)) {
+    return NextResponse.json(
+      { error: `Cannot transition from '${current}' to '${status}'` },
+      { status: 400 }
+    );
+  }
+
+  const timestampField =
+    status === "in_production" ? ", started_at = NOW()" :
+    status === "fulfilled"     ? ", fulfilled_at = NOW()" : "";
+
+  await pool.query(
+    `UPDATE aas_orders SET status = $1${timestampField} WHERE order_id = $2`,
+    [status, orderId]
+  );
+
+  return NextResponse.json({ ok: true, orderId, status });
 }
 
 // Place an order: create order with line items and reserve inventory
@@ -165,7 +220,7 @@ export async function POST(req: NextRequest) {
     Array.from(allTypeIds).map(async (id) => {
       const row = (
         await pool.query(
-          `SELECT category, material, color, finish, current_rating, voltage_rating, version
+          `SELECT category, material, color, finish, current_rating, voltage_rating, version, aas_type_iri
            FROM component_types WHERE id = $1`,
           [id]
         )
@@ -181,6 +236,7 @@ export async function POST(req: NextRequest) {
         slot: item.slotLabel,
         componentTypeId: item.componentTypeId,
         category: row?.category ?? item.componentTypeId,
+        aasTypeIri: row?.aas_type_iri ?? null,
         quantity: item.quantity,
         properties: {
           material: row?.material ?? null,
@@ -218,6 +274,13 @@ export async function POST(req: NextRequest) {
     products,
   };
 
+  // Fire-and-forget: notify MES (do not await — webshop does not block on this)
+  fetch("http://localhost:8000/api/v1/orders", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(mesPayload),
+  }).catch((err) => console.warn("[order POST] MES notification failed:", err));
+
   return NextResponse.json({ ok: true, orderId, mesPayload });
 }
 
@@ -253,7 +316,7 @@ export async function DELETE(req: NextRequest) {
 
     // Mark order as cancelled
     await client.query(
-      `UPDATE aas_orders SET cancelled_at = NOW() WHERE order_id = $1`,
+      `UPDATE aas_orders SET cancelled_at = NOW(), status = 'cancelled' WHERE order_id = $1`,
       [orderId]
     );
 

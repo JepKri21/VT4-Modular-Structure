@@ -1,0 +1,342 @@
+MES SYSTEM PLAN
+===============
+
+CONTEXT
+-------
+The virtual store places orders with a customer-chosen configuration (material, color, fuse type, etc.).
+A shell preset (final_product_example.yaml) defines the product structure -- BOM, BOP, capability references.
+The MES injects customer values into the preset, uploads ALL required instance shells to BaSyx (final product
++ all 3 sub-assembly levels), builds a WorkOrder dynamically by recursively traversing the BOP/BOM hierarchy,
+finds the right line, and publishes the WorkOrder to MQTT so the Line Controller can pick it up when ready.
+
+Scope: MES only. Line Controller is not touched.
+
+
+SUB-ASSEMBLY HIERARCHY
+----------------------
+The AAU Mobile Phone is built through 3 sequential sub-assemblies, each building on the previous.
+A drilling pre-process on the Bottom Cover happens before it enters SA1.
+
+  Raw: Bottom_Cover  --[Drill]------------------------------------------+
+  Raw: PCB_Board  --------------------------------------------------------+--[Assemble PCB]---> SA1 (Bottom_Cover_PCB)
+                                                                          |                          |
+  Raw: Fuse_1  -----------------------------------------------------------+                         +--[Assemble Fuses]--> SA2 (Bottom_Cover_PCB_Fuse)
+  Raw: Fuse_2  -----------------------------------------------------------+                         |                          |
+                                                                          |                          |                          |
+  Raw: Top_Cover  -------------------------------------------------------+--------------------------+--------------------------+--[Assemble Top]--> Final Phone
+
+Each level is a separate AAS shell with its own BOM and BOP.
+
+Shell                        | Preset file                              | Status             | Inputs
+-----------------------------|------------------------------------------|--------------------|------------------------------------
+Drilling pre-process         | bottom_cover_drilling_assembly.yaml      | EXISTS             | Bottom_Cover
+SA1: Bottom_Cover_PCB        | bottom_cover_pcb_assembly.yaml           | NEEDS CREATING     | Drilled_Bottom_Cover + PCB
+SA2: Bottom_Cover_PCB_Fuse   | bottom_cover_pcb_fuse_assembly.yaml      | NEEDS CREATING     | SA1 + Fuse_1 + Fuse_2
+Final: AAU_Mobile_Phone      | final_product_example.yaml               | EXISTS, needs fix  | SA2 + Top_Cover
+
+
+WORKORDER INGREDIENTS AND ASSEMBLY CHAIN
+-----------------------------------------
+Ingredient_1:  Bottom_Cover           (raw, customer: material/color)
+Ingredient_2:  PCB_Board              (raw)
+Ingredient_3:  Fuse_1                 (raw, customer: type/rating)
+Ingredient_4:  Fuse_2                 (raw, customer: type/rating)
+Ingredient_5:  Top_Cover              (raw, customer: material/color)
+Ingredient_6:  Bottom_Cover_Drilled   (drilling pre-process output of Ingredient_1)
+Ingredient_7:  Bottom_Cover_PCB       (SA1 output: Ingredient_6 + Ingredient_2)
+Ingredient_8:  Bottom_Cover_PCB_Fuse  (SA2 output: Ingredient_7 + Ingredient_3 + Ingredient_4)
+Ingredient_9:  AAU_Mobile_Phone       (final: Ingredient_8 + Ingredient_5)
+
+WorkOrder Assemblies:
+  Ingredient_6: { Ingredients: ["Ingredient_1"] }
+  Ingredient_7: { Ingredients: ["Ingredient_6", "Ingredient_2"] }
+  Ingredient_8: { Ingredients: ["Ingredient_7", "Ingredient_3", "Ingredient_4"] }
+  Ingredient_9: { Ingredients: ["Ingredient_8", "Ingredient_5"] }
+
+WorkOrder ProcessSteps:
+  Ingredient_1:
+    ProcessStep1: { CapabilityReference: ".../Capability/Drilling", ProcessStepId: "1x1",
+                    Dependencies: [], Parameters: { BitDiameter: {semantic_id:.., value:5.0}, ... } }
+  Ingredient_7:
+    ProcessStep1: { CapabilityReference: ".../Capability/Assemble", ProcessStepId: "2x1",
+                    Dependencies: ["1x1"], Parameters: { InputComponents: ["Ingredient_6","Ingredient_2"] } }
+  Ingredient_8:
+    ProcessStep1: { CapabilityReference: ".../Capability/Assemble", ProcessStepId: "3x1",
+                    Dependencies: ["2x1"], Parameters: { InputComponents: ["Ingredient_3","Ingredient_4"] } }
+  Ingredient_9:
+    ProcessStep1: { CapabilityReference: ".../Capability/Assemble", ProcessStepId: "4x1",
+                    Dependencies: ["3x1"], Parameters: { InputComponents: ["Ingredient_5"] } }
+
+
+WORKORDER FORMAT (must match WorkOrderExampleComplex.json exactly)
+------------------------------------------------------------------
+workorder_handler.py in the Line Controller reads this structure verbatim.
+
+{
+  "OrderId": "ORD-001",
+  "Priority": 0,
+  "IssueDate": "2026-05-01T10:22:37.995604",
+  "ProductReference": "<uploaded instance shell IRI>",
+
+  "Ingredients": {
+    "Ingredient_1": { "ComponentReference": "<AAS IRI of raw component>" },
+    "Ingredient_6": { "ComponentReference": "<AAS IRI of sub-assembly output>" }
+  },
+
+  "Properties": {
+    "Ingredient_1": {
+      "MaterialProperties": {
+        "Color":    { "semanticId": "https://aausmartlab.org/Semantics/Color",    "value": "Black" },
+        "Material": { "semanticId": "https://aausmartlab.org/Semantics/Material", "value": "PLA"   }
+      },
+      "PhysicalDimensions": {
+        "Length": { "semanticId": "https://aausmartlab.org/Semantics/mm", "value": "150" }
+      }
+    }
+  },
+
+  "Assemblies": {
+    "Ingredient_6": { "Ingredients": ["Ingredient_1"] },
+    "Ingredient_7": { "Ingredients": ["Ingredient_6", "Ingredient_2"] }
+  },
+
+  "ProcessSteps": {
+    "Ingredient_1": {
+      "ProcessStep1": {
+        "CapabilityReference": "https://aausmartlab.org/Submodels/Capability/Drilling",
+        "ProcessStepId": "1x1",
+        "Dependencies": [],
+        "Parameters": {
+          "BitDiameter":  { "semantic_id": "https://aausmartlab.org/Semantics/mm",       "value": 5.0  },
+          "DrillDepth":   { "semantic_id": "https://aausmartlab.org/Semantics/mm",       "value": 50.0 },
+          "SpindleSpeed": { "semantic_id": "https://aausmartlab.org/Semantics/RPM",      "value": 800.0 },
+          "SpindleFeed":  { "semantic_id": "https://aausmartlab.org/Semantics/mm_per_s", "value": 20.0  }
+        }
+      }
+    }
+  }
+}
+
+Format Rules:
+- Ingredients: flat dict -- includes BOTH raw parts AND sub-assembly outputs
+  each entry: { "ComponentReference": "<IRI>" }
+- Properties: flat dict keyed by ingredient; property values { "semanticId": "...", "value": "..." }
+  NOTE: capital S in semanticId (matches the format in Properties)
+- Assemblies: flat dict; value is { "Ingredients": ["dep1", "dep2"] } -- sub-assembly outputs only
+- ProcessSteps: flat dict keyed by ingredient; params { "semantic_id": "...", "value": <num|str> }
+  NOTE: lowercase s in semantic_id (matches the format in Parameters)
+- ProductReference: IRI of the uploaded final product instance shell
+  (workorder_handler._find_final_ingredient uses endswith(target) to match it)
+
+
+MQTT INTERFACE (MES SIDE ONLY)
+-------------------------------
+
+New message types added to MessageStructure.py:
+
+  WorkOrderMessage
+    - timestamp, order_id, priority, issue_date
+    - product_reference (AAS IRI of uploaded product shell)
+    - ingredients, properties, assemblies, process_steps (all dicts, matching WorkOrder format above)
+    - seq_no (optional)
+
+  WorkOrderStatus (enum)
+    - ACCEPTED, IN_PROGRESS, COMPLETE, FAILED, REJECTED
+
+  WorkOrderStatusMessage
+    - timestamp, order_id, line_id, status, message (optional), seq_no (optional)
+
+MQTT Topics:
+  AAUSmartLab/<line_id>/MES/WorkOrder      MES -> LC    retained=True   new work order
+  AAUSmartLab/<line_id>/LC/WorkOrderStatus LC -> MES    not retained     status updates
+
+
+FILES TO CREATE / MODIFY
+------------------------
+
+NEW PRESET FILES (create first -- MES depends on these):
+
+  ClassesAndBuilderMethods/BaSyx_AAS_Generator/shell_presets/bottom_cover_pcb_assembly.yaml
+    SA1 preset:
+      shell: sub_assembly_shell
+      BOM: [Drilled Bottom Cover (IsSubAssembly:true, -> BottomCoverDrilling_SA), PCB Board]
+      BOP: [Assemble PCB step]
+
+  ClassesAndBuilderMethods/BaSyx_AAS_Generator/shell_presets/bottom_cover_pcb_fuse_assembly.yaml
+    SA2 preset:
+      shell: sub_assembly_shell
+      BOM: [Bottom_Cover_PCB (IsSubAssembly:true, -> BottomCoverPCB_SA), Fuse_1, Fuse_2]
+      BOP: [Assemble Fuses step]
+
+MODIFIED PRESET FILES:
+
+  ClassesAndBuilderMethods/BaSyx_AAS_Generator/shell_presets/final_product_example.yaml
+    Fix BOM: sub-assembly entry must point to SA2 IRI (BottomCoverPCBFuse_SA)
+    Fix BOP: single "Assemble Top Cover" step (SA2 + TopCover -> Final)
+
+NEW MES PYTHON FILES (all in ClassesAndBuilderMethods/MES/):
+
+  mes_api.py
+    FastAPI server.
+    POST /api/v1/orders  -- receives mesPayload from Next.js webshop, returns 202, runs pipeline in background.
+    GET  /api/v1/orders  -- returns internal order list with status.
+
+  order_processor.py
+    Orchestrates all pipeline steps (Steps 2-6).
+
+  preset_loader.py
+    Loads final_product_example.yaml (or other preset based on product name).
+    Merges customer configuration:
+      - material, color, finish -> Properties submodel fields
+      - componentTypeId per slot -> ProductFamilyRef (resolved to BaSyx AAS IRI)
+      - orderNumber -> Documentation ModelNumber
+    BOP is NEVER modified -- comes entirely from the preset.
+
+  shell_uploader.py
+    Calls form_to_aas.build_environment() with merged preset.
+    form_to_aas.py auto-derives ServiceRequired from BOP (final_product_shell type only).
+    Also generates and uploads all 3 sub-assembly instance shells.
+    Uploads all shells + submodels to BaSyx. Returns final product instance IRI.
+    BaSyx REST endpoints used:
+      POST /shells             -- upload shell
+      POST /submodels          -- upload submodel
+      GET  /submodels/<b64id>/submodel   -- fetch submodel
+      GET  /shells?idShort=<n> -- resolve ProductFamilyRef by idShort
+
+  workorder_builder.py
+    Reads BOP + BOM from the uploaded instance shells in BaSyx.
+    Recursively traverses the assembly hierarchy to build WorkOrderMessage.
+    Algorithm: see PIPELINE STEPS section.
+
+  basyx_client.py
+    BaSyx REST client wrapper around all endpoints above.
+
+  line_selector.py
+    Reads ServiceRequired from uploaded final product shell.
+    Queries BaSyx for all line controller AAS shells.
+    Collects offered capability semanticIds per line.
+    Returns first line_id that covers all required capabilities.
+
+  mqtt_client.py
+    paho-mqtt wrapper.
+    Publish WorkOrderMessage (retained=True) to AAUSmartLab/<line_id>/MES/WorkOrder.
+    Subscribe to AAUSmartLab/+/LC/WorkOrderStatus.
+    On receipt: parse WorkOrderStatusMessage, update order_store.
+
+  order_store.py
+    In-memory + JSON file order registry.
+    Tracks order_id, line_id, status, timestamps.
+    Updated from incoming MQTT WorkOrderStatusMessage.
+
+MODIFIED FILES:
+
+  ClassesAndBuilderMethods/InformationModels/MessageStructure.py
+    Add WorkOrderMessage, WorkOrderStatus enum, WorkOrderStatusMessage.
+
+  made-react-app/app/api/inventory/order/route.ts
+    After DB commit: fire-and-forget POST to MES:
+      fetch("http://localhost:8000/api/v1/orders", {
+        method: "POST",
+        body: JSON.stringify(mesPayload)
+      })
+
+
+PIPELINE STEPS
+--------------
+
+Step 1 - Receive Order (mes_api.py)
+  Accept mesPayload from Next.js. Return 202 Accepted. Start pipeline as background async task.
+
+  mesPayload structure:
+  {
+    "orderNumber": "ORD-XXXXXXXX",
+    "placedAt": "...",
+    "products": [
+      {
+        "name": "AAU Mobile Phone",
+        "configuration": [
+          { "slot": "Bottom Cover", "componentTypeId": "bottom_cover_pla_black_v1",
+            "properties": { "material": "PLA", "color": "Black", "finish": "Textured" } },
+          { "slot": "Top Cover",   "componentTypeId": "top_cover_plastic_v1",
+            "properties": { "material": "ABS" } },
+          { "slot": "Fuse 1",      "componentTypeId": "fuse_standard_16a",
+            "properties": { "currentRating": "16A", "type": "slow-blow" } },
+          { "slot": "PCB Board",   "componentTypeId": "pcb_board_v1",
+            "properties": {} }
+        ]
+      }
+    ]
+  }
+
+Step 2 - Load and Merge Preset (preset_loader.py)
+  Map product.name -> preset file: "AAU Mobile Phone" -> final_product_example.yaml
+  Override only customer-configurable fields. BOP is never changed.
+
+Step 3 - Generate and Upload Shells (shell_uploader.py)
+  Call form_to_aas.build_environment() with merged preset.
+  ServiceRequired is auto-derived from BOP by form_to_aas.py.
+  Generate and upload all 3 sub-assembly instance shells.
+  Return final product instance IRI.
+
+Step 4 - Build WorkOrder (workorder_builder.py)
+  Recursive algorithm:
+    ingredient_counter = 0
+
+    def resolve(shell_iri):
+        fetch BOM and BOP from BaSyx for this shell
+        for each BOM entry:
+            if IsSubAssembly: false:
+                Ingredient_N = ComponentReference
+                add to Ingredients; add Properties from order config
+            if IsSubAssembly: true:
+                resolve(ProductFamilyRef)    <- recursive call
+                Ingredient_N = sub-assembly output
+                add to Assemblies with input ingredients from recursive result
+
+        for each non-Assemble BOP step:
+            add to ProcessSteps[ingredient_id]
+            CapabilityReference = RequiredCapabilityRef from BOP
+            Parameters = CapabilityParams as { semantic_id, value }
+            ProcessStepId = sequential (1x1, 2x1, ...)
+            Dependencies = previous step IDs
+
+        for each Assemble BOP step:
+            add to ProcessSteps[output_ingredient_id]
+            Parameters include InputComponents list
+
+    resolve(final_product_shell_iri)
+    return WorkOrderMessage(...)
+
+Step 5 - Select Line (line_selector.py)
+  Read ServiceRequired from final product shell in BaSyx.
+  Find first line_id whose resources cover all required capability semanticIds.
+
+Step 6 - Publish WorkOrder (mqtt_client.py)
+  Publish WorkOrderMessage (retained=True) to AAUSmartLab/<line_id>/MES/WorkOrder.
+  Subscribe to status topic. Save to order_store with status PENDING.
+
+
+EXISTING CODE TO REUSE
+-----------------------
+  form_to_aas.build_environment()    ClassesAndBuilderMethods/BaSyx_AAS_Generator/form_to_aas.py
+  Final product preset               ClassesAndBuilderMethods/BaSyx_AAS_Generator/shell_presets/final_product_example.yaml
+  Drilling sub-assembly preset       ClassesAndBuilderMethods/BaSyx_AAS_Generator/shell_presets/bottom_cover_drilling_assembly.yaml
+  Fuse module preset                 ClassesAndBuilderMethods/BaSyx_AAS_Generator/shell_presets/fuse_module_assembly.yaml
+  WorkOrder structure reference      Line_Controller/WorkOrderExampleComplex.json
+  LC parser (understand the format)  Line_Controller/workorder_handler.py
+  Existing MQTT message types        ClassesAndBuilderMethods/InformationModels/MessageStructure.py
+
+
+VERIFICATION
+------------
+1. Start MQTT broker and BaSyx (localhost:8081).
+2. Register all type shells in BaSyx: drilling, SA1, SA2, component types.
+3. Start MES: uvicorn mes_api:app --port 8000
+4. Place an order in the virtual store.
+5. Verify in BaSyx: final product + all 3 sub-assembly instance shells uploaded.
+6. Subscribe to AAUSmartLab/# with MQTTX and verify WorkOrderMessage was published.
+7. Verify WorkOrderMessage.ingredients contains both raw AND sub-assembly output ingredients (9 total).
+8. Verify WorkOrderMessage.assemblies shows all 4 assembly levels correctly.
+9. Verify WorkOrderMessage.process_steps has 4 steps (1 drilling + 3 assemble) with correct format.
+10. Verify JSON structure matches WorkOrderExampleComplex.json (flat dicts, correct semantic_id casing).
+11. Verify GET http://localhost:8000/api/v1/orders shows the order with status PENDING.

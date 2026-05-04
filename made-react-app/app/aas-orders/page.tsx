@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowLeft, CalendarClock, Package, RefreshCw, ShoppingBag, Trash2 } from "lucide-react";
-import type { PlacedOrder } from "@/lib/inventory";
+import { ArrowLeft, CalendarClock, CheckCircle2, Factory, Package, RefreshCw, ShoppingBag, Trash2 } from "lucide-react";
+import type { OrderStatus, PlacedOrder } from "@/lib/inventory";
 
 function formatPlacedAt(value: string | null): string {
   if (!value) return "Unknown time";
@@ -29,12 +29,29 @@ function typeLabel(component: { material?: string; color?: string; finish?: stri
   return parts.length > 0 ? parts.join(" · ") : "Standard";
 }
 
+const STATUS_CONFIG: Record<OrderStatus, { label: string; className: string }> = {
+  pending:       { label: "Pending",       className: "border-yellow-300 bg-yellow-50 text-yellow-700 dark:border-yellow-700 dark:bg-yellow-950 dark:text-yellow-300" },
+  in_production: { label: "In production", className: "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-950 dark:text-blue-300" },
+  fulfilled:     { label: "Fulfilled",     className: "border-green-300 bg-green-50 text-green-700 dark:border-green-700 dark:bg-green-950 dark:text-green-300" },
+  cancelled:     { label: "Cancelled",     className: "border-destructive/30 bg-destructive/10 text-destructive" },
+};
+
+function StatusBadge({ status }: { status: OrderStatus }) {
+  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.pending;
+  return (
+    <span className={`rounded-full border px-3 py-1 text-xs font-medium ${cfg.className}`}>
+      {cfg.label}
+    </span>
+  );
+}
+
 export default function AasOrdersPage() {
   const [orders, setOrders] = useState<PlacedOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState<string | null>(null);
+  const [advancing, setAdvancing] = useState<string | null>(null);
 
   const loadOrders = async () => {
     setError(null);
@@ -62,6 +79,26 @@ export default function AasOrdersPage() {
       setError(err instanceof Error ? err.message : "Could not load orders");
     } finally {
       setRefreshing(false);
+    }
+  };
+
+  const handleAdvanceStatus = async (orderId: string, nextStatus: OrderStatus) => {
+    setAdvancing(orderId);
+    try {
+      const res = await fetch("/api/inventory/order", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, status: nextStatus }),
+      });
+      if (!res.ok) {
+        const data = (await res.json()) as { error?: string };
+        throw new Error(data.error ?? "Failed to update status");
+      }
+      await loadOrders();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update status");
+    } finally {
+      setAdvancing(null);
     }
   };
 
@@ -157,28 +194,35 @@ export default function AasOrdersPage() {
               <article
                 key={order.orderId}
                 className={`rounded-2xl border bg-card p-5 shadow-sm transition-opacity ${
-                  order.cancelledAt ? "opacity-60 border-muted-foreground/30" : "border-border"
+                  order.status === "cancelled" ? "opacity-60 border-muted-foreground/30" :
+                  order.status === "fulfilled" ? "border-green-300 dark:border-green-800" : "border-border"
                 }`}
               >
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-medium ${
-                          order.cancelledAt
-                            ? "border border-destructive/30 bg-destructive/10 text-destructive"
-                            : "border border-primary/20 bg-primary/10 text-primary"
-                        }`}
-                      >
-                        {order.cancelledAt ? "Cancelled" : "Order"} {shortOrderId(order.orderId)}
-                      </span>
+                      <StatusBadge status={order.status} />
                       <span className="text-xs text-muted-foreground font-mono break-all">
                         {order.orderId}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <CalendarClock className="h-4 w-4" />
-                      Placed {formatPlacedAt(order.placedAt)}
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                      <span className="flex items-center gap-1.5">
+                        <CalendarClock className="h-4 w-4" />
+                        Placed {formatPlacedAt(order.placedAt)}
+                      </span>
+                      {order.startedAt && (
+                        <span className="flex items-center gap-1.5">
+                          <Factory className="h-4 w-4" />
+                          Started {formatPlacedAt(order.startedAt)}
+                        </span>
+                      )}
+                      {order.fulfilledAt && (
+                        <span className="flex items-center gap-1.5">
+                          <CheckCircle2 className="h-4 w-4 text-green-600" />
+                          Fulfilled {formatPlacedAt(order.fulfilledAt)}
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -189,7 +233,29 @@ export default function AasOrdersPage() {
                       </div>
                       <div className="mt-1 text-lg font-semibold">{order.items.length}</div>
                     </div>
-                    {!order.cancelledAt && (
+                    {order.status === "pending" && (
+                      <button
+                        type="button"
+                        onClick={() => handleAdvanceStatus(order.orderId, "in_production")}
+                        disabled={advancing === order.orderId}
+                        className="inline-flex items-center gap-2 rounded-xl border border-blue-300 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 disabled:opacity-50 transition-colors dark:border-blue-700 dark:bg-blue-950 dark:text-blue-300 dark:hover:bg-blue-900"
+                      >
+                        {advancing === order.orderId ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Factory className="h-4 w-4" />}
+                        {advancing === order.orderId ? "Updating…" : "Start production"}
+                      </button>
+                    )}
+                    {order.status === "in_production" && (
+                      <button
+                        type="button"
+                        onClick={() => handleAdvanceStatus(order.orderId, "fulfilled")}
+                        disabled={advancing === order.orderId}
+                        className="inline-flex items-center gap-2 rounded-xl border border-green-300 bg-green-50 px-4 py-2 text-sm font-medium text-green-700 hover:bg-green-100 disabled:opacity-50 transition-colors dark:border-green-700 dark:bg-green-950 dark:text-green-300 dark:hover:bg-green-900"
+                      >
+                        {advancing === order.orderId ? <RefreshCw className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                        {advancing === order.orderId ? "Updating…" : "Mark fulfilled"}
+                      </button>
+                    )}
+                    {order.status !== "fulfilled" && !order.cancelledAt && (
                       <button
                         type="button"
                         onClick={() => handleCancelOrder(order.orderId)}

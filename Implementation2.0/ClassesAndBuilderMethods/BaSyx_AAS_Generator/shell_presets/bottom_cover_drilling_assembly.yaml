@@ -38,7 +38,8 @@ submodels:
     BOMEntries:
       - Description: "Bottom Cover – PLA"
         Quantity: 1
-        ProductFamilyRef: "https://aausmartlab.org/Shells/Component/BottomCover"
+        IsSubAssembly: false
+        ProductFamilyRef: "https://aausmartlab.org/Shells/Component/Bottom_Cover/BottomCover_3DP"
 
   BillOfProcesses:
     ProcessTracking:

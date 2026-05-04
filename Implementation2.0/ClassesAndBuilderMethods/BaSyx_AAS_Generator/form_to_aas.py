@@ -333,6 +333,84 @@ def main() -> None:
     print(json.dumps(env, ensure_ascii=False))
 
 
+def build_environment(preset: dict, instance_suffix: str = "") -> tuple[dict, str]:
+    """
+    Build an AAS environment JSON dict from a shell preset YAML dict.
+
+    Used by the MES shell_uploader to generate shells without going through the
+    Next.js configurator UI.
+
+    Returns (env_dict, shell_iri).
+    """
+    shell_type = preset["shell"]
+    asset_type = preset.get("asset_type", "")
+    asset_name = preset.get("asset_name", "")
+
+    shell_cfg = _load_yaml(SHELL_TEMPLATES_DIR / f"{shell_type}.yaml")
+
+    def _resolve_pattern(pattern: str) -> str:
+        return (
+            pattern
+            .replace("{asset_type}", asset_type)
+            .replace("{asset_name}", asset_name)
+            .replace("{name}", asset_name)
+            .replace("{category}", preset.get("asset_category", ""))
+        )
+
+    base_iri = _resolve_pattern(shell_cfg["id_pattern"])
+    shell_id = f"{base_iri}-{instance_suffix}" if instance_suffix else base_iri
+    id_short = asset_name
+    global_asset_id = shell_id
+
+    SM_TEMPLATE_MAP = {
+        "Properties":      "product_properties",
+        "Documentation":   "product_documentation",
+        "BillOfMaterials": "bill_of_materials",
+        "BillOfProcesses": "bill_of_processes",
+        "ServiceRequired": "service_required",
+    }
+
+    shell = model.AssetAdministrationShell(
+        id_=shell_id,
+        id_short=id_short,
+        asset_information=model.AssetInformation(
+            asset_kind=model.AssetKind.INSTANCE,
+            global_asset_id=global_asset_id,
+        ),
+        submodel=set(),
+    )
+    if desc := shell_cfg.get("description"):
+        shell.description = model.MultiLanguageTextType({"en": desc})
+
+    submodels = []
+    preset_submodels = preset.get("submodels", {})
+
+    for sm_id_short, form_data in preset_submodels.items():
+        template_file = SM_TEMPLATE_MAP.get(sm_id_short)
+        if not template_file or not form_data:
+            continue
+        sm_iri = f"{shell_id}/Submodels/{sm_id_short}"
+        sm = build_submodel(template_file, sm_iri, sm_id_short, form_data)
+        submodels.append(sm)
+        shell.submodel.add(_sm_ref(sm_iri))
+
+    # Auto-derive ServiceRequired for final product shells
+    if shell_type == "final_product_shell" and "ServiceRequired" not in preset_submodels:
+        bop_data = preset_submodels.get("BillOfProcesses", {})
+        derived = _derive_service_required(shell_id, bop_data)
+        if derived:
+            sr_sm, sr_id = derived
+            submodels.append(sr_sm)
+            shell.submodel.add(_sm_ref(sr_id))
+
+    env = {
+        "assetAdministrationShells": [_to_json(shell)],
+        "submodels": [_to_json(sm) for sm in submodels],
+        "conceptDescriptions": [],
+    }
+    return env, shell_id
+
+
 if __name__ == "__main__":
     try:
         main()

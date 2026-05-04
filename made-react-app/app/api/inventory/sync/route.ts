@@ -148,10 +148,15 @@ export async function POST(req: NextRequest) {
     for (const [componentTypeId, info] of Object.entries(typeCounts)) {
       const properties = await fetchComponentProperties(base, info.shellId);
 
+      // Store the full shell IRI (including UUID) — this is the actual BaSyx address
+      // used for property lookups. The WorkOrder ComponentReference uses the type
+      // portion (without UUID), derived at WorkOrder build time.
+      const typeIri = info.shellId;
+
       // Ensure component type exists and keep the live properties in sync
       const typeRes = await pool.query(
-        `INSERT INTO component_types (id, category, material, color, finish, current_rating, voltage_rating, version, name, description, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+        `INSERT INTO component_types (id, category, material, color, finish, current_rating, voltage_rating, version, aas_type_iri, name, description, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
          ON CONFLICT (id) DO UPDATE SET
            category = EXCLUDED.category,
            material = EXCLUDED.material,
@@ -160,6 +165,7 @@ export async function POST(req: NextRequest) {
            current_rating = EXCLUDED.current_rating,
            voltage_rating = EXCLUDED.voltage_rating,
            version = EXCLUDED.version,
+           aas_type_iri = EXCLUDED.aas_type_iri,
            name = EXCLUDED.name,
            description = EXCLUDED.description
          RETURNING id`,
@@ -168,6 +174,7 @@ export async function POST(req: NextRequest) {
           properties.material ?? null, properties.color ?? null,
           properties.finish ?? null, properties.currentRating ?? null, properties.voltageRating ?? null,
           properties.version ?? null,
+          typeIri,
           info.name, `Synced from ${base}`,
         ]
       );
