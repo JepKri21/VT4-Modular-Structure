@@ -7,6 +7,7 @@ shell: "sub_assembly_shell"
 label: "Fuse Module – Standard Assembly"
 description: "Fuse module consisting of a 3D-printed bottom cover holding a PCB with a mounted fuse, closed by a 3D-printed top cover. Update serial/batch numbers per instance."
 
+asset_type: "Fuse_Module"
 asset_name: "FuseModule_A"
 asset_category: "Electrical"
 

@@ -1,0 +1,36 @@
+shell: "component_shell"
+label: "Top Cover – PETG, Gray, Matte"
+description: "3D-printed PETG top cover, gray matte finish. Better chemical and heat resistance than PLA. Change SerialNumber and BatchNumber per instance."
+
+asset_name: "TopCover_PETG_Gray"
+asset_category: "Mechanical"
+asset_type: "Top_Cover"
+
+submodels:
+  Properties:
+    PhysicalDimensions:
+      Length: 150
+      Width: 80
+      Height: 8
+      Weight_g: 56.5
+    MaterialProperties:
+      Material: "PETG"
+      Color: "Gray"
+      Finish: "Matte"
+
+  Documentation:
+    DisplayName:
+      - language: "en"
+        text: "Top Cover – PETG Gray Matte"
+      - language: "da"
+        text: "Toplåg – PETG Grå Mat"
+    Description:
+      - language: "en"
+        text: "3D-printed PETG top cover, gray matte finish with improved chemical resistance"
+      - language: "da"
+        text: "3D-printet PETG toplåg, grå mat finish med forbedret kemisk modstandsdygtighed"
+    ProductionIdentification:
+      ModelNumber: "TC-PETG-GRY-001"
+    ManufacturerName: "AAU SmartLab"
+    ProductFamily: "FuseBox Series A"
+    HardwareRevision: "v1.0"

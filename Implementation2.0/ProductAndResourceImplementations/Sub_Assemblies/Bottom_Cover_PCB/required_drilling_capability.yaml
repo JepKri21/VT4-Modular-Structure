@@ -1,8 +1,14 @@
 id_short: "DrillingCapability"
 id: "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB-SA001/DrillingCapabilityRequired"
 description: "Required drilling capability parameters for the Bottom Cover PCB drilling step"
+semantic_id: "https://aausmartlab.org/Submodels/Capability/Drilling"
 
 elements:
+  - type: property
+    id_short: "CapabilityCategory"
+    semantic_id: "https://aausmartlab.org/Semantics/CapabilityCategory"
+    description: "Describes whether this capability is Required or Offered"
+    value: "Required"
   - type: collection
     id_short: "DrillingParameters"
     semantic_id: "https://aausmartlab.org/Semantics/DrillingParameters"

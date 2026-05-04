@@ -15,9 +15,9 @@
 kind: "Type"
 description: "AAS shell template for manufactured Component type assets"
 
-id_pattern: "https://aausmartlab.org/Shells/Component/{name}"
-id_short_pattern: "{name}"
-global_asset_id_pattern: "https://aausmartlab.org/Shells/Component/{name}"
+id_pattern: "https://aausmartlab.org/Shells/Component/{asset_type}/{asset_name}"
+id_short_pattern: "{asset_name}"
+global_asset_id_pattern: "https://aausmartlab.org/Shells/Component/{asset_type}/{asset_name}"
 
 submodels:
   - template_id: "https://aausmartlab.org/Submodels/Templates/ProductProperties"
@@ -25,7 +25,7 @@ submodels:
     description: "Production-relevant physical and material properties"
     required: true
 
-  - template_id: "https://aausmartlab.org/Submodels/Templates/ComponentDocumentation"
+  - template_id: "https://aausmartlab.org/Submodels/Templates/ProductDocumentation"
     id_short: "Documentation"
     description: "Human-readable reference information (display name, manufacturer, revision)"
     required: true

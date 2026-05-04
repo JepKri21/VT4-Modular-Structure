@@ -1,0 +1,35 @@
+# AAS Shell template for Final Product type assets.
+# Similar to Sub-Assembly shells but represents top-level finished products.
+
+kind: "Type"
+description: "AAS shell template for Final Product type assets"
+
+id_pattern: "https://aausmartlab.org/Shells/Configuration/{asset_type}/{asset_name}"
+id_short_pattern: "{asset_name}"
+global_asset_id_pattern: "https://aausmartlab.org/Shells/Configuration/{asset_type}/{asset_name}"
+
+submodels:
+  - template_id: "https://aausmartlab.org/Submodels/Templates/ProductProperties"
+    id_short: "Properties"
+    description: "Physical and material properties for the final product"
+    required: true
+
+  - template_id: "https://aausmartlab.org/Submodels/Templates/ProductDocumentation"
+    id_short: "Documentation"
+    description: "Human-readable reference information (display name, product family)"
+    required: true
+
+  - template_id: "https://aausmartlab.org/Submodels/Templates/BillOfMaterials"
+    id_short: "BillOfMaterials"
+    description: "Bill of Materials — components and quantities required for the final product"
+    required: true
+
+  - template_id: "https://aausmartlab.org/Submodels/Templates/BillOfProcesses"
+    id_short: "BillOfProcesses"
+    description: "Bill of Processes — ordered assembly steps and required capabilities for final product assembly"
+    required: true
+
+  - template_id: "https://aausmartlab.org/Submodels/Templates/ServiceRequired"
+    id_short: "ServiceRequired"
+    description: "Aggregated list of all capability types required to manufacture this product — used for production line matching"
+    required: true

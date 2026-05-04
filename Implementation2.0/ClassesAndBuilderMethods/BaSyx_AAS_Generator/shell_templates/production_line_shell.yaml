@@ -1,0 +1,34 @@
+# AAS Shell template for Production Line assets.
+#
+# A production line is a composite resource — an ordered set of stations
+# (individual resources) that together can fulfil a product's full ServiceRequired.
+#
+# Key difference from resource_shell:
+#   - Capabilities are NOT declared per station here; each station has its own
+#     resource shell with CapabilitiesOffered.
+#   - ServiceOffered aggregates the line's total capability set in one submodel
+#     so an orchestrator can match it against a product's ServiceRequired without
+#     traversing every station shell.
+
+kind: "Type"
+description: "AAS shell template for a production line — composite resource used for product-to-line matchmaking via ServiceOffered"
+
+id_pattern: "https://aausmartlab.org/Shells/ProductionLine/{name}"
+id_short_pattern: "{name}"
+global_asset_id_pattern: "https://aausmartlab.org/Shells/ProductionLine/{name}"
+
+submodels:
+
+  # Entry point for matchmaking — aggregates all capability types the line can
+  # fulfil across its constituent stations, with pointers to the station shells
+  # and their specific OfferedCapability submodels.
+  - template_id: "https://aausmartlab.org/Submodels/Templates/ServiceOffered"
+    id_short: "ServiceOffered"
+    description: "Aggregated service offering — all capability types available across this line's stations"
+    required: true
+
+  # Layout and constituent resources of this production line.
+  - template_id: "https://aausmartlab.org/Submodels/Templates/LineConfiguration"
+    id_short: "LineConfiguration"
+    description: "Physical layout and ordered list of constituent resource stations"
+    required: true

@@ -133,6 +133,35 @@ function PropertyField({ element, value, onChange, path, context }: FieldProps) 
     );
   }
 
+  // Special rendering for CapabilityCategory properties
+  if (
+    element.id_short === "CapabilityCategory" ||
+    element.semantic_id === "https://aausmartlab.org/Semantics/CapabilityCategory"
+  ) {
+    const options = ["Offered", "Required"];
+    return (
+      <div className="flex flex-col gap-1">
+        <label htmlFor={id} className="text-sm font-medium">
+          {labelFor(element.id_short)}
+          {element.description && (
+            <span className="text-xs text-muted-foreground ml-1">— {element.description}</span>
+          )}
+        </label>
+        <select
+          id={id}
+          className={inputClass()}
+          value={String(val ?? "")}
+          onChange={(e) => onChange(e.target.value || null)}
+        >
+          <option value="">— select —</option>
+          {options.map((o) => (
+            <option key={o} value={o}>{o}</option>
+          ))}
+        </select>
+      </div>
+    );
+  }
+
   // Default: xs:string / xs:anyURI / etc.
   return (
     <div className="flex flex-col gap-1">

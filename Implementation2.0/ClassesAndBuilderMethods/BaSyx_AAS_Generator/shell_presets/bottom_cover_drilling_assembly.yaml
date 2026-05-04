@@ -9,6 +9,7 @@ shell: "sub_assembly_shell"
 label: "Bottom Cover – Drilling Sub-Assembly"
 description: "Sub-assembly in which a bottom cover component is drilled to specification. Requires a station that offers the matching drilling capability."
 
+asset_type: "Bottom_Cover"
 asset_name: "BottomCoverDrilling_SA"
 asset_category: "Telefon"
 

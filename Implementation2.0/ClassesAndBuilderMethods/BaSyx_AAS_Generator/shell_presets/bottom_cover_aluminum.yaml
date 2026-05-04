@@ -8,6 +8,7 @@ description: "3D-printed PLA bottom cover for FuseBox Series A. Change SerialNum
 
 asset_name: "BottomCover_3DP"
 asset_category: "Mechanical"
+asset_type: "Bottom_Cover"
 
 submodels:
   Properties:

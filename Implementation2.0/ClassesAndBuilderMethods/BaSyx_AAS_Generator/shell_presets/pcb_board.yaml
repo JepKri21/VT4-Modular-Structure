@@ -4,6 +4,7 @@ shell: "component_shell"
 label: "PCB Board – FuseBox Series A"
 description: "Printed circuit board for FuseBox Series A. Change SerialNumber and BatchNumber per instance."
 
+asset_type: "PCB"
 asset_name: "PCB_FuseBoxA"
 asset_category: "Electrical"
 

@@ -343,6 +343,7 @@ TOP-LEVEL STRUCTURE:
 
   asset_name: "MyComponent"
   asset_category: "Mechanical"
+  asset_type: "Bottom_Cover"      # short type identifier used in shell URLs
 
   submodels:
     SubmodelIdShort:               # must match id_short in the shell template
@@ -374,7 +375,7 @@ LISTS OF STRINGS:
 BOP CAPABILITY PARAMS:
 ───────────────────────
   The configurator auto-generates a RequiredCapability submodel from this.
-  Structure mirrors the capability submodel template:
+  Structure mirrors the generic BillOfProcesses template:
 
   BillOfProcesses:
     ProcessSteps:
@@ -404,6 +405,7 @@ FULL PRESET EXAMPLE:
 
   asset_name: "BottomCover_3DP"
   asset_category: "Mechanical"
+  asset_type: "Bottom_Cover"
 
   submodels:
     Properties:
@@ -450,9 +452,9 @@ SHELL TEMPLATE STRUCTURE  (kind: "Type"):
   kind: "Type"
   description: "..."
 
-  id_pattern: "https://aausmartlab.org/Shells/Component/{name}"
-  id_short_pattern: "{name}"
-  global_asset_id_pattern: "https://aausmartlab.org/Shells/Component/{name}"
+  id_pattern: "https://aausmartlab.org/Shells/Component/{asset_type}/{asset_name}"
+  id_short_pattern: "{asset_name}"
+  global_asset_id_pattern: "https://aausmartlab.org/Shells/Component/{asset_type}/{asset_name}"
 
   submodels:
     - template_id: "https://aausmartlab.org/Submodels/Templates/ProductProperties"
@@ -460,10 +462,15 @@ SHELL TEMPLATE STRUCTURE  (kind: "Type"):
       description: "Physical and material properties"
       required: true              # true = must exist | false = optional
 
-    - template_id: "https://aausmartlab.org/Submodels/Templates/ComponentDocumentation"
+    - template_id: "https://aausmartlab.org/Submodels/Templates/ProductDocumentation"
       id_short: "Documentation"
       description: "Human-readable reference information"
       required: true
+
+  Shared generic templates used by sub-assemblies and final products:
+    - "https://aausmartlab.org/Submodels/Templates/ProductDocumentation"
+    - "https://aausmartlab.org/Submodels/Templates/BillOfMaterials"
+    - "https://aausmartlab.org/Submodels/Templates/BillOfProcesses"
 
 SHELL INSTANCE DESCRIPTOR  (kind: "Instance"):
 ───────────────────────────────────────────────

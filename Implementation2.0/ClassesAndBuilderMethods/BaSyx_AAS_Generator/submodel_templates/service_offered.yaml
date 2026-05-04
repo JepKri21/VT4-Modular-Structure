@@ -1,0 +1,55 @@
+id_short: "ServiceOffered"
+id: "https://aausmartlab.org/Submodels/Templates/ServiceOffered"
+description: "Service offering submodel for a production line — aggregates all capability types offered across its constituent resources into a single discoverable list. Used by an orchestrator to match production lines against product service requirements."
+
+elements:
+
+  - type: multi_language_property
+    id_short: "ServiceLabel"
+    semantic_id: "https://aausmartlab.org/Semantics/ServiceLabel"
+    description: "Human-readable name for this service offering"
+    cardinality: "One"
+
+  # One entry per capability type the production line can fulfill.
+  # Each entry points to the specific resource and its OfferedCapability submodel.
+  - type: collection
+    id_short: "OfferedCapabilities"
+    semantic_id: "https://aausmartlab.org/Semantics/OfferedCapabilities"
+    description: "All capability types this production line can fulfill — one entry per capability"
+    cardinality: "OneToMany"
+    extensible: true
+    entry_template: "{CapabilityType}_{N}"
+    elements:
+      - type: collection
+        id_short: "CapabilityEntry"
+        semantic_id: "https://aausmartlab.org/Semantics/CapabilityEntry"
+        description: "One offered capability type, the resource that provides it, and the specific submodel reference"
+        cardinality: "OneToMany"
+        elements:
+
+          - type: property
+            id_short: "CapabilityType"
+            value_type: "xs:string"
+            semantic_id: "https://aausmartlab.org/Semantics/CapabilityType"
+            description: "Capability type identifier — must match the CapabilityType values used in ServiceRequired (e.g. Drilling, Transport, Store, Handoff, Retrieve)"
+            cardinality: "One"
+
+          - type: reference_element
+            id_short: "ResourceRef"
+            semantic_id: "https://aausmartlab.org/Semantics/ResourceReference"
+            description: "Reference to the AAS shell of the resource within this production line that provides this capability"
+            cardinality: "One"
+
+          - type: reference_element
+            id_short: "CapabilityRef"
+            semantic_id: "https://aausmartlab.org/Semantics/CapabilityReference"
+            description: "Reference to the specific OfferedCapability submodel on that resource"
+            cardinality: "One"
+
+          - type: list
+            id_short: "SupportedComponents"
+            semantic_id: "https://aausmartlab.org/Semantics/SupportedComponents"
+            description: "Component types this capability entry can process — used for fine-grained matching"
+            element_type: "property"
+            value_type: "xs:string"
+            cardinality: "ZeroToMany"

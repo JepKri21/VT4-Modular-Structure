@@ -1,6 +1,6 @@
 id_short: "BillOfProcesses"
-id: "https://aausmartlab.org/Submodels/Templates/SubAssemblyBOP"
-description: "Bill of Process submodel template for sub-assemblies — add one ProcessStep collection per manufacturing step"
+id: "https://aausmartlab.org/Submodels/Templates/BillOfProcesses"
+description: "Bill of Processes submodel template — generic process definition and tracking for assemblies and final products"
 
 elements:
   - type: collection
@@ -51,7 +51,6 @@ elements:
             semantic_id: "https://aausmartlab.org/Semantics/CompletionTime"
             description: "ISO 8601 timestamp when this step completed"
             cardinality: "ZeroToOne"
-
 
   - type: collection
     id_short: "ProcessSteps"

@@ -146,7 +146,7 @@ def build_elements_from_form(
                         entry if isinstance(entry, dict) else {},
                     )
             else:
-                if not isinstance(val, dict):
+                if not isinstance(val, dict) or not val:
                     continue
                 col = builder.add_collection(parent, id_short, sem_id)
                 build_elements_from_form(builder, col, elem.get("elements", []), val)
@@ -217,6 +217,36 @@ def build_elements_from_form(
                 lst.value.append(prop)
 
 
+# ──────────────────── service required derivation ─────────────────────────
+
+def _derive_service_required(shell_id: str, bop_form_data: dict):
+    """
+    Auto-derive ServiceRequired from BOP ProcessSteps for a final product.
+    Returns (submodel, submodel_id) or None if no ProcessType entries found.
+    Only called when the user has not already provided a ServiceRequired submodel
+    with entries.
+    """
+    steps = bop_form_data.get("ProcessSteps", [])
+    entries = []
+    for i, step in enumerate(steps):
+        cap_type = (step.get("ProcessType") or "").strip()
+        if not cap_type:
+            continue
+        op = step.get("Operation") or f"Step_{i + 1}"
+        sanitized = re.sub(r"[^A-Za-z0-9]", "_", op)
+        raw = f"{sanitized}_{i + 1}"
+        step_ref = re.sub(r"_+", "_", raw).strip("_")
+        if not step_ref or not step_ref[0].isalpha():
+            step_ref = f"Step{i + 1}"
+        entries.append({"CapabilityType": cap_type, "ProcessStepRef": step_ref})
+    if not entries:
+        return None
+    sm_id = f"{shell_id}/ServiceRequired"
+    sm = build_submodel("service_required", sm_id, "ServiceRequired",
+                        {"RequiredCapabilities": entries})
+    return sm, sm_id
+
+
 # ───────────────────────────── submodel builder ───────────────────────────
 
 def build_submodel(
@@ -270,6 +300,29 @@ def main() -> None:
         )
         for sm in submodel_inputs
     ]
+
+    # Auto-derive ServiceRequired from BOP for final products, but only if the
+    # user has not already provided a ServiceRequired submodel with entries.
+    if shell_type == "final_product_shell":
+        sr_input = next(
+            (sm for sm in submodel_inputs if sm.get("template_file") == "service_required"),
+            None,
+        )
+        sr_has_entries = bool(
+            sr_input
+            and sr_input.get("form_data", {}).get("RequiredCapabilities")
+        )
+        if not sr_has_entries:
+            bop_input = next(
+                (sm for sm in submodel_inputs if sm.get("template_file") == "bill_of_processes"),
+                None,
+            )
+            if bop_input:
+                derived = _derive_service_required(shell_id, bop_input.get("form_data", {}))
+                if derived:
+                    sr_submodel, sr_id = derived
+                    submodels.append(sr_submodel)
+                    shell.submodel.add(_sm_ref(sr_id))
 
     env = {
         "assetAdministrationShells": [_to_json(shell)],

@@ -1,8 +1,14 @@
 id_short: "HandoffCapabilityOffered"
 id: "https://aausmartlab.org/Shells/Resources/Drilling-12345678/HandoffCapabilityOffered"
 description: "Offered capability template for a handoff capability — parameters expressed as ranges defining the operational envelope"
+semantic_id: "https://aausmartlab.org/Submodels/Capability/Handoff"
 
 elements:
+  - type: property
+    id_short: "CapabilityCategory"
+    semantic_id: "https://aausmartlab.org/Semantics/CapabilityCategory"
+    description: "Describes whether this capability is Offered or Required"
+    value: "Offered"
   - type: collection
     id_short: "Parameters"
     semantic_id: "https://aausmartlab.org/Semantics/Parameters"

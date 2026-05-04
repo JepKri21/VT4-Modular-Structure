@@ -24,11 +24,14 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
+  ChevronDown,
   ChevronRight,
   Download,
   FileJson,
   Layers,
+  PackagePlus,
   RefreshCw,
+  ShoppingCart,
   Sparkles,
   PlusCircle,
   Upload,
@@ -46,7 +49,9 @@ function inputClass() {
 function applyPattern(pattern: string, name: string, category: string) {
   return pattern
     .replace(/\{name\}/g, name || "MyAsset")
-    .replace(/\{category\}/g, category || "General");
+    .replace(/\{asset_name\}/g, name || "MyAsset")
+    .replace(/\{category\}/g, category || "General")
+    .replace(/\{asset_type\}/g, category || "General");
 }
 
 function buildSubmodelId(instanceShellId: string, slot: ShellSubmodelSlot, index: number) {
@@ -59,6 +64,16 @@ type CapabilitySubmodelInput = {
   id_short: string;
   id: string;
   form_data: FormData;
+};
+
+type BatchResult = {
+  presetFilename: string;
+  presetLabel: string;
+  shellLabel: string;
+  quantity: number;
+  succeeded: number;
+  ok: boolean;
+  errors: string[];
 };
 
 function resolveBopForGeneration(
@@ -448,6 +463,15 @@ export default function AasConfiguratorPage() {
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
 
+  // Batch generator
+  const [batchOpen, setBatchOpen] = useState(false);
+  const [allPresets, setAllPresets] = useState<Record<string, ShellPresetSummary[]>>({});
+  const [allPresetsLoading, setAllPresetsLoading] = useState(false);
+  const [batchQuantities, setBatchQuantities] = useState<Record<string, number>>({});
+  const [batchGenerating, setBatchGenerating] = useState(false);
+  const [batchResults, setBatchResults] = useState<BatchResult[]>([]);
+  const [batchServerUrl, setBatchServerUrl] = useState("http://localhost:8081");
+
   // Settings
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [generatorPath, setGeneratorPath] = useState("");
@@ -506,6 +530,25 @@ export default function AasConfiguratorPage() {
       })
       .catch(() => setLoadingPresets(false));
   }, [selectedShell]);
+
+  /* load all presets for all shell types when the batch panel is opened (cached) */
+  useEffect(() => {
+    if (!batchOpen || shellTypes.length === 0 || Object.keys(allPresets).length > 0) return;
+    setAllPresetsLoading(true);
+    Promise.all(
+      shellTypes.map((shell) =>
+        fetch(`/api/aas-configurator/presets?shell=${shell.name}`)
+          .then((r) => r.json())
+          .then((data: ShellPresetSummary[]) => ({ shellName: shell.name, presets: Array.isArray(data) ? data : [] }))
+          .catch(() => ({ shellName: shell.name, presets: [] as ShellPresetSummary[] }))
+      )
+    ).then((results) => {
+      const map: Record<string, ShellPresetSummary[]> = {};
+      results.forEach(({ shellName, presets }) => { if (presets.length > 0) map[shellName] = presets; });
+      setAllPresets(map);
+      setAllPresetsLoading(false);
+    });
+  }, [batchOpen, shellTypes, allPresets]);
 
   /* load submodel template by slot index (cached) */
   const loadTemplateForSlot = useCallback(
@@ -834,11 +877,178 @@ export default function AasConfiguratorPage() {
       });
       const data = await res.json() as { results: UploadResult[] };
       setUploadResults((prev) => ({ ...prev, [idx]: data.results }));
-      setUploadState((prev) => ({ ...prev, [idx]: data.results.every((r) => r.ok) ? "done" : "error" }));
+      const allOk = data.results.every((r) => r.ok);
+      setUploadState((prev) => ({ ...prev, [idx]: allOk ? "done" : "error" }));
+      if (allOk) {
+        const assetInfo = (shell.assetInformation ?? {}) as Record<string, unknown>;
+        fetch("/api/inventory", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: shell.id,
+            globalAssetId: (assetInfo.globalAssetId as string) ?? "",
+            name: assetName,
+            category: assetCategory,
+            shellTypeName: selectedShell!.name,
+            serverUrl,
+          }),
+        }).catch(() => {});
+      }
     } catch (err) {
       setUploadResults((prev) => ({ ...prev, [idx]: [{ type: "request", id: "—", status: 0, ok: false, error: String(err) }] }));
       setUploadState((prev) => ({ ...prev, [idx]: "error" }));
     }
+  };
+
+  const generateBatch = async () => {
+    setBatchGenerating(true);
+    setBatchResults([]);
+    const results: BatchResult[] = [];
+
+    for (const shell of shellTypes) {
+      const shellPresets = allPresets[shell.name] ?? [];
+      for (const presetSummary of shellPresets) {
+        const qty = batchQuantities[presetSummary.filename] ?? 0;
+        if (qty <= 0) continue;
+
+        // Steps 1-3 happen once per preset (templates/form data are shared across instances)
+        let preset: ShellPreset;
+        let templateMap: Record<number, SubmodelTemplate>;
+        let freshOperations: Record<string, OperationCapability>;
+        let formDataMap: Record<number, FormData>;
+        let assetNameVal: string;
+        let assetCategoryVal: string;
+
+        try {
+          // 1. Fetch full preset data
+          const presetRes = await fetch(`/api/aas-configurator/presets/${presetSummary.filename}`);
+          if (!presetRes.ok) throw new Error(`Failed to fetch preset (${presetRes.status})`);
+          preset = await presetRes.json() as ShellPreset;
+
+          // 2. Load templates for every slot
+          const templateResults = await Promise.all(
+            shell.submodels.map((slot) =>
+              slot.template_file
+                ? fetch(`/api/aas-configurator/templates/${slot.template_file}`)
+                    .then((r) => r.json() as Promise<SubmodelTemplate>)
+                    .catch(() => null)
+                : Promise.resolve(null)
+            )
+          );
+          templateMap = {};
+          freshOperations = {};
+          templateResults.forEach((t, i) => {
+            if (!t) return;
+            templateMap[i] = t;
+            if (t.operations) Object.assign(freshOperations, t.operations);
+          });
+
+          // 3. Merge preset data into form state per slot
+          formDataMap = {};
+          shell.submodels.forEach((slot, i) => {
+            const presetSlotData = preset.submodels?.[slot.id_short] as Record<string, unknown> | undefined;
+            if (presetSlotData) formDataMap[i] = mergePresetIntoForm({}, presetSlotData);
+          });
+
+          assetNameVal = preset.asset_name ?? presetSummary.label;
+          // asset_type drives the {asset_type} token in the IRI pattern; fall back to asset_category
+          assetCategoryVal = (preset as unknown as Record<string, unknown>).asset_type as string ?? preset.asset_category ?? "";
+        } catch (err) {
+          results.push({ presetFilename: presetSummary.filename, presetLabel: presetSummary.label, shellLabel: shell.label, quantity: qty, succeeded: 0, ok: false, errors: [String(err)] });
+          continue;
+        }
+
+        // Steps 4-6 repeat once per instance — each gets a unique UUID
+        let succeeded = 0;
+        const errors: string[] = [];
+
+        for (let n = 0; n < qty; n++) {
+          try {
+            const uuid = crypto.randomUUID();
+            const instanceShellId = `${applyPattern(shell.id_pattern, assetNameVal, assetCategoryVal)}/${uuid}`;
+            const instanceGlobalAssetId = `${applyPattern(shell.global_asset_id_pattern, assetNameVal, assetCategoryVal)}/${uuid}`;
+
+            const bomSlotIdx = shell.submodels.findIndex((s) => s.id_short === "BillOfMaterials");
+            const bomSubmodelId = bomSlotIdx >= 0
+              ? buildSubmodelId(instanceShellId, shell.submodels[bomSlotIdx], bomSlotIdx)
+              : undefined;
+
+            let capabilitySubmodelInputs: CapabilitySubmodelInput[] = [];
+            const baseSubmodelInputs = shell.submodels
+              .map((slot, i) => {
+                const template = templateMap[i];
+                if (!template) return null;
+                const rawForm = formDataMap[i] ?? {};
+                const derivedCtx = { AssetName: assetNameVal, AssetCategory: assetCategoryVal, ...flattenFormData(rawForm) };
+                const withDerived = applyDerivedFields(template.elements, rawForm, derivedCtx);
+                let formDataFinal = withDerived;
+                if (slot.template_file === "sub_assembly_bop") {
+                  const result = resolveBopForGeneration(withDerived, freshOperations, instanceShellId, shell.submodels.length, bomSubmodelId);
+                  formDataFinal = result.bopData;
+                  capabilitySubmodelInputs = result.capabilitySubmodels;
+                }
+                return { template_file: slot.template_file, id_short: slot.id_short, id: buildSubmodelId(instanceShellId, slot, i), form_data: formDataFinal };
+              })
+              .filter(Boolean);
+
+            // 4. Generate
+            const genRes = await fetch("/api/aas-configurator/generate", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                shell_type: shell.name,
+                name: assetNameVal,
+                category: assetCategoryVal,
+                shell_id: instanceShellId,
+                global_asset_id: instanceGlobalAssetId,
+                submodels: [...baseSubmodelInputs, ...capabilitySubmodelInputs],
+              }),
+            });
+            if (!genRes.ok) {
+              const err = await genRes.json() as { error?: string };
+              throw new Error(err.error ?? `Generation failed (${genRes.status})`);
+            }
+            const env = await genRes.json() as Record<string, unknown>;
+            const shellObj = (env.assetAdministrationShells as Record<string, unknown>[])[0];
+            const envSubmodels = env.submodels as Record<string, unknown>[];
+
+            // 5. Upload to BaSyx
+            const uploadRes = await fetch("/api/aas-configurator/upload", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ serverUrl: batchServerUrl, shell: shellObj, submodels: envSubmodels }),
+            });
+            const uploadData = await uploadRes.json() as { results: UploadResult[] };
+            const firstFail = uploadData.results.find((r) => !r.ok);
+            if (firstFail) throw new Error(firstFail.error ?? `Upload failed (${firstFail.status})`);
+
+            // 6. Register in local inventory
+            const assetInfo = (shellObj.assetInformation ?? {}) as Record<string, unknown>;
+            await fetch("/api/inventory", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                id: shellObj.id,
+                globalAssetId: (assetInfo.globalAssetId as string) ?? "",
+                name: assetNameVal,
+                category: assetCategoryVal,
+                shellTypeName: shell.name,
+                serverUrl: batchServerUrl,
+              }),
+            });
+
+            succeeded++;
+          } catch (err) {
+            errors.push(`Instance ${n + 1}: ${String(err)}`);
+          }
+        }
+
+        results.push({ presetFilename: presetSummary.filename, presetLabel: presetSummary.label, shellLabel: shell.label, quantity: qty, succeeded, ok: errors.length === 0, errors });
+      }
+    }
+
+    setBatchResults(results);
+    setBatchGenerating(false);
   };
 
   const reset = () => {
@@ -1469,6 +1679,200 @@ export default function AasConfiguratorPage() {
             </>)}
           </div>
         )}
+        {/* ── BATCH / SHOPPING LIST ── */}
+        <div className="mt-10 pt-8 border-t border-border">
+          <button
+            type="button"
+            onClick={() => setBatchOpen((o) => !o)}
+            className="flex items-center gap-2 w-full text-left"
+          >
+            <ShoppingCart className="w-5 h-5 text-primary" />
+            <span className="font-semibold text-base flex-1">Test Batch Generator</span>
+            <span className="text-xs text-muted-foreground mr-2 hidden sm:block">
+              Generate &amp; upload a full set of presets in one click
+            </span>
+            {batchOpen
+              ? <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+          </button>
+
+          {batchOpen && (
+            <div className="mt-4 flex flex-col gap-5">
+              {/* Server URL */}
+              <div className="flex gap-2 items-center rounded-xl border border-border bg-card p-4">
+                <Upload className="w-4 h-4 text-muted-foreground shrink-0" />
+                <input
+                  type="text"
+                  className={inputClass()}
+                  value={batchServerUrl}
+                  onChange={(e) => { setBatchServerUrl(e.target.value); setBatchResults([]); }}
+                  placeholder="http://localhost:8081"
+                />
+              </div>
+
+              {/* Preset checklist */}
+              {allPresetsLoading ? (
+                <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                  <RefreshCw className="w-4 h-4 animate-spin" /> Loading presets…
+                </div>
+              ) : Object.keys(allPresets).length === 0 ? (
+                <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
+                  No presets found. Add YAML files to <span className="font-mono">shell_presets/</span> to get started.
+                </div>
+              ) : (() => {
+                const totalInstances = Object.values(batchQuantities).reduce((s, q) => s + Math.max(0, q), 0);
+                const selectedCount = Object.values(batchQuantities).filter((q) => q > 0).length;
+                return (
+                  <div className="flex flex-col gap-4">
+                    <div className="flex gap-3 items-center">
+                      <button
+                        type="button"
+                        onClick={() => setBatchQuantities(Object.fromEntries(Object.values(allPresets).flat().map((p) => [p.filename, 1])))}
+                        className="text-xs text-primary underline"
+                      >
+                        Select all
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBatchQuantities({})}
+                        className="text-xs text-muted-foreground underline"
+                      >
+                        Deselect all
+                      </button>
+                      <span className="text-xs text-muted-foreground ml-auto">
+                        {selectedCount} preset{selectedCount !== 1 ? "s" : ""} — {totalInstances} instance{totalInstances !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+
+                    {Object.entries(allPresets).map(([shellName, presets]) => {
+                      const shellDef = shellTypes.find((s) => s.name === shellName);
+                      return (
+                        <div key={shellName} className="flex flex-col gap-2">
+                          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            {shellDef?.label ?? shellName}
+                          </span>
+                          {presets.map((p) => {
+                            const qty = batchQuantities[p.filename] ?? 0;
+                            const checked = qty > 0;
+                            return (
+                              <div
+                                key={p.filename}
+                                className="flex items-center gap-3 rounded-lg border border-border p-3 hover:bg-muted/30 transition-colors"
+                              >
+                                <input
+                                  type="checkbox"
+                                  id={`batch-${p.filename}`}
+                                  className="shrink-0 accent-primary cursor-pointer"
+                                  checked={checked}
+                                  onChange={(e) =>
+                                    setBatchQuantities((prev) => ({
+                                      ...prev,
+                                      [p.filename]: e.target.checked ? 1 : 0,
+                                    }))
+                                  }
+                                />
+                                <label htmlFor={`batch-${p.filename}`} className="flex flex-col gap-0.5 min-w-0 flex-1 cursor-pointer">
+                                  <span className="text-sm font-medium">{p.label}</span>
+                                  {p.description && (
+                                    <span className="text-xs text-muted-foreground">{p.description}</span>
+                                  )}
+                                  <div className="flex gap-1.5 mt-0.5 flex-wrap">
+                                    {p.asset_name && (
+                                      <span className="text-xs font-mono bg-muted rounded px-1.5 py-0.5 text-muted-foreground">
+                                        {p.asset_name}
+                                      </span>
+                                    )}
+                                    {p.asset_category && (
+                                      <span className="text-xs bg-muted rounded px-1.5 py-0.5 text-muted-foreground">
+                                        {p.asset_category}
+                                      </span>
+                                    )}
+                                  </div>
+                                </label>
+                                {checked && (
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    max={99}
+                                    value={qty}
+                                    onChange={(e) =>
+                                      setBatchQuantities((prev) => ({
+                                        ...prev,
+                                        [p.filename]: Math.max(1, parseInt(e.target.value) || 1),
+                                      }))
+                                    }
+                                    className="w-16 rounded-md border border-border bg-background px-2 py-1 text-sm text-center focus:outline-none focus:ring-2 focus:ring-primary shrink-0"
+                                  />
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+
+              {/* Generate button + result summary */}
+              {(() => {
+                const totalInstances = Object.values(batchQuantities).reduce((s, q) => s + Math.max(0, q), 0);
+                return (
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <button
+                      type="button"
+                      disabled={totalInstances === 0 || batchGenerating || !batchServerUrl.trim()}
+                      onClick={generateBatch}
+                      className="flex items-center gap-2 rounded-lg bg-primary text-primary-foreground px-5 py-2.5 text-sm font-semibold disabled:opacity-40 hover:opacity-90"
+                    >
+                      {batchGenerating ? (
+                        <><RefreshCw className="w-4 h-4 animate-spin" /> Generating…</>
+                      ) : (
+                        <><PackagePlus className="w-4 h-4" /> Generate &amp; Upload ({totalInstances} instance{totalInstances !== 1 ? "s" : ""})</>
+                      )}
+                    </button>
+                    {batchResults.length > 0 && !batchGenerating && (
+                      <span className="text-xs text-muted-foreground">
+                        {batchResults.reduce((s, r) => s + r.succeeded, 0)}/{batchResults.reduce((s, r) => s + r.quantity, 0)} instances uploaded
+                      </span>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Per-preset results */}
+              {batchResults.length > 0 && (
+                <div className="flex flex-col gap-1.5">
+                  {batchResults.map((r, i) => (
+                    <div
+                      key={i}
+                      className={`flex flex-col gap-1 rounded-md px-3 py-2 text-xs ${
+                        r.ok
+                          ? "bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400"
+                          : "bg-destructive/10 text-destructive"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        {r.ok
+                          ? <Check className="w-3.5 h-3.5 shrink-0" />
+                          : <AlertCircle className="w-3.5 h-3.5 shrink-0" />}
+                        <span className="font-medium shrink-0">{r.presetLabel}</span>
+                        <span className="text-muted-foreground shrink-0">({r.shellLabel})</span>
+                        <span className="shrink-0">
+                          → {r.succeeded}/{r.quantity} instance{r.quantity !== 1 ? "s" : ""} uploaded
+                        </span>
+                      </div>
+                      {r.errors.map((e, ei) => (
+                        <span key={ei} className="pl-5 break-all opacity-80">{e}</span>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
       </div>
     </div>
   );

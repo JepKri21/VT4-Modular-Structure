@@ -55,14 +55,22 @@ ASSET_KIND_MAP = {
 }
 
 
-def _resolve(pattern: str, name: str, category: str) -> str:
-    return pattern.replace("{name}", name).replace("{category}", category)
+def _resolve(pattern: str, name: str, category: str, asset_type: str, asset_name: str) -> str:
+    out = pattern
+    # backward-compatible replacements
+    out = out.replace("{name}", name).replace("{category}", category)
+    # new tokens
+    out = out.replace("{asset_type}", asset_type)
+    out = out.replace("{asset_name}", asset_name)
+    return out
 
 
 def load_shell_from_yaml(
     path: str,
     name: str = "",
     category: str = "",
+    asset_type: str = "",
+    asset_name: str = "",
 ) -> model.AssetAdministrationShell:
     with open(path, encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
@@ -76,9 +84,15 @@ def load_shell_from_yaml(
     if asset_kind is None:
         raise ValueError(f"Unknown kind '{cfg['kind']}' — expected 'Type' or 'Instance'")
 
-    shell_id       = _resolve(cfg["id_pattern"],            name, category)
-    id_short       = _resolve(cfg["id_short_pattern"],      name, category)
-    global_asset_id = _resolve(cfg["global_asset_id_pattern"], name, category)
+    # asset_name and asset_type default to name/category for backward compatibility
+    asset_name_val = asset_name or name
+    asset_type_val = asset_type or category
+
+    shell_id = _resolve(cfg["id_pattern"], name, category, asset_type_val, asset_name_val)
+    id_short = _resolve(cfg["id_short_pattern"], name, category, asset_type_val, asset_name_val)
+    global_asset_id = _resolve(
+        cfg["global_asset_id_pattern"], name, category, asset_type_val, asset_name_val
+    )
 
     submodel_refs: set[model.ModelReference] = set()
     for sm in cfg.get("submodels", []):
@@ -141,6 +155,8 @@ def main() -> None:
     parser.add_argument("yaml_file",   nargs="*", help="Path(s) to shell template YAML(s); omit to use built-in SHELLS list")
     parser.add_argument("--name",      default="", help="Asset name for {name} placeholder")
     parser.add_argument("--category",  default="", help="Asset category for {category} placeholder")
+    parser.add_argument("--asset-name", default="", help="Asset name for {asset_name} placeholder")
+    parser.add_argument("--asset-type", default="", help="Asset type for {asset_type} placeholder")
     parser.add_argument("--output",    "-o",       help="Write JSON to this file (single file only; ignored for multiple inputs)")
     parser.add_argument("--upload",    "-u", metavar="URL",
                         help="POST JSON to <URL>/shells")
@@ -153,7 +169,9 @@ def main() -> None:
         if multi:
             print(f"\n--- {yaml_path} ---")
         try:
-            shell = load_shell_from_yaml(str(yaml_path), args.name, args.category)
+            shell = load_shell_from_yaml(
+                str(yaml_path), args.name, args.category, args.asset_type, args.asset_name
+            )
         except (KeyError, ValueError, FileNotFoundError) as exc:
             print(f"Error ({yaml_path}): {exc}", file=sys.stderr)
             sys.exit(1)

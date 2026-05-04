@@ -1,0 +1,36 @@
+shell: "component_shell"
+label: "Top Cover – ABS, Black, Glossy"
+description: "Injection-moulded ABS top cover, black glossy finish. Higher impact resistance than PLA. Change SerialNumber and BatchNumber per instance."
+
+asset_name: "TopCover_ABS_Black"
+asset_category: "Mechanical"
+asset_type: "Top_Cover"
+
+submodels:
+  Properties:
+    PhysicalDimensions:
+      Length: 150
+      Width: 80
+      Height: 8
+      Weight_g: 59.0
+    MaterialProperties:
+      Material: "ABS"
+      Color: "Black"
+      Finish: "Glossy"
+
+  Documentation:
+    DisplayName:
+      - language: "en"
+        text: "Top Cover – ABS Black Glossy"
+      - language: "da"
+        text: "Toplåg – ABS Sort Blank"
+    Description:
+      - language: "en"
+        text: "Injection-moulded ABS top cover, black high-gloss finish"
+      - language: "da"
+        text: "Sprøjtestøbt ABS toplåg, sort højglans overflade"
+    ProductionIdentification:
+      ModelNumber: "TC-ABS-BLK-001"
+    ManufacturerName: "AAU SmartLab"
+    ProductFamily: "FuseBox Series A"
+    HardwareRevision: "v1.0"

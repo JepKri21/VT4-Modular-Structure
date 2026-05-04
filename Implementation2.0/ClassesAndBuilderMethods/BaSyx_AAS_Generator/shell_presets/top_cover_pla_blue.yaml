@@ -1,0 +1,36 @@
+shell: "component_shell"
+label: "Top Cover – PLA, Blue, Textured"
+description: "3D-printed PLA top cover, blue textured finish. Change SerialNumber and BatchNumber per instance."
+
+asset_name: "TopCover_PLA_Blue"
+asset_category: "Mechanical"
+asset_type: "Top_Cover"
+
+submodels:
+  Properties:
+    PhysicalDimensions:
+      Length: 150
+      Width: 80
+      Height: 8
+      Weight_g: 54.5
+    MaterialProperties:
+      Material: "PLA"
+      Color: "Blue"
+      Finish: "Textured"
+
+  Documentation:
+    DisplayName:
+      - language: "en"
+        text: "Top Cover – PLA Blue Textured"
+      - language: "da"
+        text: "Toplåg – PLA Blå Struktureret"
+    Description:
+      - language: "en"
+        text: "3D-printed PLA top cover, blue textured surface finish"
+      - language: "da"
+        text: "3D-printet PLA toplåg, blå struktureret overflade"
+    ProductionIdentification:
+      ModelNumber: "TC-PLA-BLU-001"
+    ManufacturerName: "AAU SmartLab"
+    ProductFamily: "FuseBox Series A"
+    HardwareRevision: "v1.0"

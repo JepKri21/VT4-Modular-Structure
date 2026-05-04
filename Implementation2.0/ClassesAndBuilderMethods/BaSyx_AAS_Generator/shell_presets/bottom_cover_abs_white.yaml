@@ -1,0 +1,36 @@
+shell: "component_shell"
+label: "Bottom Cover – ABS, White, Glossy"
+description: "Injection-moulded ABS bottom cover, white glossy finish. Change SerialNumber and BatchNumber per instance."
+
+asset_name: "BottomCover_ABS_White"
+asset_category: "Mechanical"
+asset_type: "Bottom_Cover"
+
+submodels:
+  Properties:
+    PhysicalDimensions:
+      Length: 150
+      Width: 80
+      Height: 5
+      Weight_g: 130.0
+    MaterialProperties:
+      Material: "ABS"
+      Color: "White"
+      Finish: "Glossy"
+
+  Documentation:
+    DisplayName:
+      - language: "en"
+        text: "Bottom Cover – ABS White Glossy"
+      - language: "da"
+        text: "Bundlåg – ABS Hvid Blank"
+    Description:
+      - language: "en"
+        text: "Injection-moulded ABS bottom cover, white high-gloss finish"
+      - language: "da"
+        text: "Sprøjtestøbt ABS bundlåg, hvid højglans overflade"
+    ProductionIdentification:
+      ModelNumber: "BC-ABS-WHT-001"
+    ManufacturerName: "AAU SmartLab"
+    ProductFamily: "FuseBox Series A"
+    HardwareRevision: "v1.0"

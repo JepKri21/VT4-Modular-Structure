@@ -468,12 +468,12 @@ def type_url_component(name: str, category: str = "") -> str:
     return f"{BASE_NS}/Shells/Component/{name}"
 
 
-def type_url_sub_assembly(name: str, category: str = "") -> str:
-    return f"{BASE_NS}/Shells/Assembly/{name}"
+def type_url_sub_assembly(asset_type: str, asset_name: str, category: str = "") -> str:
+    return f"{BASE_NS}/Shells/Assembly/{asset_type}/{asset_name}"
 
 
-def type_url_final_product(name: str, family: str = "") -> str:
-    return f"{BASE_NS}/Shells/Configuration/{name}"
+def type_url_final_product(asset_type: str, asset_name: str, family: str = "") -> str:
+    return f"{BASE_NS}/Shells/Configuration/{asset_type}/{asset_name}"
 
 
 def global_asset_id(name: str) -> str:

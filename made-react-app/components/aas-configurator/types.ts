@@ -82,7 +82,8 @@ export function applyDerivedFields(
         if (computed) result[el.id_short] = computed;
       }
     } else if (el.type === "collection" && el.elements && !el.extensible) {
-      const colData = (result[el.id_short] ?? {}) as FormData;
+      if (!(el.id_short in result)) continue;
+      const colData = result[el.id_short] as FormData;
       result[el.id_short] = applyDerivedFields(el.elements, colData, ctx);
     }
   }

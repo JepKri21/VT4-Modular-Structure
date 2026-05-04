@@ -8,7 +8,12 @@
       "Bash(py -c \"import yaml; print\\('pyyaml OK'\\)\")",
       "Bash(py -c \"import inspect; from basyx.aas import model; print\\('MLP:', inspect.signature\\(model.MultiLanguageProperty.__init__\\)\\); print\\('RE:', inspect.signature\\(model.ReferenceElement.__init__\\)\\)\")",
       "Bash(py -c \"import inspect; from basyx.aas import model; print\\('SubmodelElementList:', inspect.signature\\(model.SubmodelElementList.__init__\\)\\)\")",
-      "Bash(xargs grep *)"
+      "Bash(xargs grep *)",
+      "Bash(Remove-Item \"c:\\\\Users\\\\jeppe\\\\OneDrive\\\\Dokumenter\\\\GitHub\\\\VT4-Modular-Structure\\\\made-react-app\\\\state\\\\inventorySlice.ts\")",
+      "Bash(Get-ChildItem \"c:\\\\Users\\\\jeppe\\\\OneDrive\\\\Dokumenter\\\\GitHub\\\\VT4-Modular-Structure\\\\Implementation2.0\\\\ClassesAndBuilderMethods\\\\BaSyx_AAS_Generator\" -Recurse -Filter \"*.yaml\")",
+      "Bash(Select-Object FullName)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\jeppe\\\\OneDrive\\\\Dokumenter\\\\GitHub\\\\VT4-Modular-Structure\\\\made-react-app\" -Directory)",
+      "Bash(Select-Object Name)"
     ]
   }
 }

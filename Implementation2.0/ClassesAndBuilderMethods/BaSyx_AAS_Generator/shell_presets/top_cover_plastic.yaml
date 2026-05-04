@@ -6,6 +6,7 @@ description: "3D-printed PLA top cover, white. Change SerialNumber and BatchNumb
 
 asset_name: "TopCover"
 asset_category: "Telefon_Component"
+asset_type: "Top_Cover"
 
 submodels:
   Properties:

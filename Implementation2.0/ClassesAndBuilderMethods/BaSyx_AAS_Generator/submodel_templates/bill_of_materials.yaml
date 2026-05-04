@@ -1,6 +1,6 @@
 id_short: "BillOfMaterials"
-id: "https://aausmartlab.org/Submodels/Templates/SubAssemblyBOM"
-description: "Bill of Materials submodel template for sub-assemblies — add one BOMEntry collection per required component or sub-assembly"
+id: "https://aausmartlab.org/Submodels/Templates/BillOfMaterials"
+description: "Bill of Materials submodel template — generic for components, sub-assemblies and final products"
 
 elements:
   - type: collection
@@ -36,11 +36,10 @@ elements:
                 value: 1
                 kind: "TEMPLATE_QUALIFIER"
 
-
           - type: reference_element
             id_short: "ProductFamilyRef"
             semantic_id: "https://aausmartlab.org/Semantics/ProductFamilyRef"
-            description: "Reference to the product family this component belongs to — enables searching across all variants (e.g. all BottomCovers regardless of material)"
+            description: "Reference to the product family this component belongs to"
             cardinality: "One"
 
           - type: reference_element
