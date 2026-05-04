@@ -7,8 +7,17 @@ elements:
   - type: property
     id_short: "CapabilityCategory"
     semantic_id: "https://aausmartlab.org/Semantics/CapabilityCategory"
-    description: "Describes whether this capability is Offered or Required"
+    description: "Describes the category of cabaility, whether it is offered by a resource or required by a product"
+    value_type: "xs:string"
     value: "Offered"
+
+  - type: property
+    id_short: "CapabilityReference"
+    semantic_id: "https://aausmartlab.org/Semantics/CapabilityReference"
+    description: "Describes the specific cabaility offered by a resource or required by a product"
+    value_type: "xs:string"
+    value: "https://aausmartlab.org/Submodels/Capability/Store"
+
   - type: collection
     id_short: "Parameters"
     semantic_id: "https://aausmartlab.org/Semantics/Parameters"

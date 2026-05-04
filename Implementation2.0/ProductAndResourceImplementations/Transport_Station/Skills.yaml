@@ -10,7 +10,7 @@ elements:
 
     elements:
       - type: reference_element
-        id_short: "CapabilityReference"
+        id_short: "CapabilitySubmodelReference"
         value: "https://aausmartlab.org/Shells/Resources/Transport-12345678/TransportCapabilityOffered"
       
       - type: list
