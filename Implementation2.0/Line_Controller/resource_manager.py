@@ -1,11 +1,14 @@
 import json
 from datetime import datetime
 from pathlib import Path
-import enum
+import sys
 import requests
 import base64
 from typing import Dict, List, Tuple
 
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
+from ClassesAndBuilderMethods.InformationModels import MessageStructure as MS
 
 
 class ResourceManager:
@@ -64,6 +67,68 @@ class ResourceManager:
                 result = self.find_by_idshort(item, target)
                 if result:
                     return result
+
+        return None
+
+    def parse_element(self, element):
+        model_type = element.get("modelType")
+
+        if model_type == "Range":
+            return self.parse_range(element)
+
+        elif model_type == "Property":
+            return self.parse_property(element)
+
+        elif model_type == "SubmodelElementCollection":
+            return self.parse_collection(element)
+
+        else:
+            # Ignore unsupported types (MultiLanguageProperty etc.)
+            return None
+    
+    def parse_range(self, element):
+        id_short = element.get("idShort")
+        min_value = element.get("min")
+        max_value = element.get("max")
+
+        semantic_id = None
+        if element.get("semanticId"):
+            semantic_id = element["semanticId"]["keys"][0]["value"]
+
+        if id_short:
+            return MS.RangeElement(id_short=id_short, min=min_value, max=max_value, semantic_id=semantic_id)
+
+        return None
+
+    def parse_property(self, element):
+        id_short = element.get("idShort")
+        value = element.get("value")
+
+        semantic_id = None
+        if element.get("semanticId"):
+            semantic_id = element["semanticId"]["keys"][0]["value"]
+
+        if id_short:
+            return MS.PropertyElement(id_short=id_short, value=value, semantic_id=semantic_id)
+
+        return None
+
+    def parse_collection(self, element):
+        id_short = element.get("idShort")
+
+        semantic_id = None
+        if element.get("semanticId"):
+            semantic_id = element["semanticId"]["keys"][0]["value"]
+
+        collection_elements = []
+
+        for child in element.get("value", []):
+            parsed = self.parse_element(child)
+            if parsed:
+                collection_elements.append(parsed)
+
+        if id_short:
+            return MS.CollectionElement(id_short=id_short, elements=collection_elements, semantic_id=semantic_id)
 
         return None
 
@@ -180,6 +245,7 @@ class ResourceManager:
         else:
             #There was a problem finding the id or bad connection
             print(f"There was a problem retrieving the Skills submodel: Response Status Code {response.status_code}")
+
         #If there are skills, then we look at their capabilities
         if len(result) == 0:
             return result
@@ -251,11 +317,8 @@ class ResourceManager:
     def get_capability_parameters(self,capability_submodel_reference:str):
         #Should read the capability submodel and extract the parameters, the supported components and the allowed materials
         #Return them as seperate variables
-        
-        #Not sure how to structure the parameters, when they are ranges and properties
-        parameters = {}
-        #supported components and allowed materials are easy
-        #Should just be a list, with the semantic IDs and types
+
+        parameters = []
         supported_components = []
         allowed_materials = []
 
@@ -264,22 +327,83 @@ class ResourceManager:
                             "https://aausmartlab.org/Materials/ABS"]
         supported_components = ["https://aausmartlab.org/Shells/Component/Bottom_Cover,
                                 "https://aausmartlab.org/Shells/Component/Top_Cover]
+        parameters = [PropertyElement, RangeElement, RangeElement, CollectionElement]
         """
 
+        encoded_resource_submodel_id = self.base64encode(f"{capability_submodel_reference}")
+        response = requests.get(f"{self.SUBMODEL_ENDPOINT}/{encoded_resource_submodel_id}")
+
+        #We are reading the capability submodel (that is the data), we want Parameters, AllowedMaterials and SupportedComponents
+        #We could create smaller helper functions and then use those in here. 
+        # That would significantly reduce the size of this method
+        if response.ok:
+            data = response.json()
+            parameters_node = self.find_by_idshort(data, "Parameters")
+
+            #If there are parameters, we continue looking deeper
+            if parameters_node:
+                for element in parameters_node.get("value",[]):
+                    parameter = self.parse_element(element)
+                    if parameter:
+                        parameters.append(parameter)
+                        
+            else:
+                print("Parameters is None for some reason")
+
+            allowed_materials_node = self.find_by_idshort(data, "AllowedMaterials")
+            if allowed_materials_node:
+                for element in allowed_materials_node.get("value"):
+                    allowed_materials.append(element.get("value"))
+
+            else:
+                print("AllowedMaterials is None for some reason")
+
+            supported_components_node = self.find_by_idshort(data, "SupportedComponents")
+            if supported_components_node:
+                for element in supported_components_node.get("value"):
+                    supported_components.append(element.get("value"))
+
+            else:
+                print("SupportedComponents is None for some reason")
 
 
 
+            if parameters is not None:
+                if supported_components is not None:
+                    if allowed_materials is not None:
+                        return parameters, supported_components, allowed_materials
+                    else:
+                        print("No 'AllowedMaterials' present in the capability submodel")
+                        return None
+                else:
+                    print("No 'SupportedComponents' present in the capability submodel")
+                    return None
+            else:
+                print("No 'Parameters' present in the capability submodel")
+                return None
+        
+        if not response.ok:
+            raise Exception(f"Failed to fetch Capability submodel: {response.status_code}")
 
-    #What if we had a function in the resource manager that would find all the resources from the server
-    #Right now it is done the the main script, but should it really be done there? 
-    # Also it might be smart only to store the resource IDs in here. 
-    # And then we just call the server every time we want to look at different submodels
-    #That way we can update the shells on the fly, and we won't have to directly store them in here, which could be a mess.
+    #The get_capability_parameters method works pretty well. 
+    # We just need to figure out how to handle empty spots in value of parameters
+    # Specifically with the handoff capability. How we say we want a target position
+        # We could probably even remove the Component Reference and just use supported components
+        # But the problem is still there for the target position
+        # Maybe we could just use ranges, and just kinda use the input/output zone to define the ranges.
 
-    #Second, we will need a function that looks at the communication submodel to see where to send commands
-    #This function could also be combined with the ability to send commands.
-    #So you would write something like, I need to send this package, to this resource, this actor and the message is a command.
-    #Then the function only needs to find the communication submodel of the resource, find the command suffix, and then it can send
+#What if we had a function in the resource manager that would find all the resources from the server
+#Right now it is done the the main script, but should it really be done there? 
+# Also it might be smart only to store the resource IDs in here. 
+# And then we just call the server every time we want to look at different submodels
+#That way we can update the shells on the fly, and we won't have to directly store them in here, which could be a mess.
+
+#Second, we will need a function that looks at the communication submodel to see where to send commands
+#This function could also be combined with the ability to send commands.
+#So you would write something like, I need to send this package, to this resource, this actor and the message is a command.
+#Then the function only needs to find the communication submodel of the resource, find the command suffix, and then it can send
+
+
 
     
 
@@ -299,17 +423,18 @@ Resources = rm.get_all_resource_readiness()
 
 Resource_ids = list(Resources.keys())
 
-print(Resource_ids)
+#print(Resource_ids)
 
-print(rm.get_resource_MQTT_suffixes(Resource_ids[0]))
+#print(rm.get_resource_MQTT_suffixes(Resource_ids[0]))
 
 resource_skills = rm.get_resource_skills(Resource_ids[0])
 
 resource_skill_names = list(resource_skills.keys())
 
-print(resource_skills)
+#print(resource_skills)
 
 for skill_name in resource_skill_names:
-    actors, skill_triggers = rm.get_skill_information(Resource_ids[0],skill_name)
-    print(actors)
-    print(skill_triggers)
+#    actors, skill_triggers = rm.get_skill_information(Resource_ids[0],skill_name)
+#    print(actors)
+#    print(skill_triggers)
+    print(rm.get_capability_parameters(resource_skills[skill_name].get("CapabilitySubmodelReference")))

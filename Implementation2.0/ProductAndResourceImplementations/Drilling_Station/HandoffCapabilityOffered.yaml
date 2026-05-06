@@ -59,8 +59,8 @@ elements:
     element_type: "property"
     value_type: "xs:string"
     items:
-      - "BottomCover_ALU"
-      - "TopCover_ALU"
+      - "https://aausmartlab.org/Shells/Component/Bottom_Cover"
+      - "https://aausmartlab.org/Shells/Component/Top_Cover"
 
   - type: list
     id_short: "AllowedMaterials"
@@ -69,8 +69,8 @@ elements:
     element_type: "property"
     value_type: "xs:string"
     items:
-      - "PLA"
-      - "ABS"
+      - "https://aausmartlab.org/Materials/PLA"
+      - "https://aausmartlab.org/Materials/ABS"
 
   - type: reference_element
     id_short: "ResourceReference"

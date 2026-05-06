@@ -53,7 +53,7 @@ elements:
         semantic_id: "https://aausmartlab.org/Semantics/RPM"
         description: "Spindle speed range in RPM"
         min: 0.0
-        max: 1200.0
+        max: 1200.0 
 
       - type: range
         id_short: "SpindleFeed"
@@ -63,21 +63,23 @@ elements:
         min: 0.0
         max: 50.0
 
-      - type: range
-        id_short: "HolePlacement_X"
-        value_type: "xs:float"
-        semantic_id: "https://aausmartlab.org/Semantics/mm"
-        description: "Possible range of X-coordinate position of hole relative to product placement point"
-        min: -50.0
-        max: 50.0
-
-      - type: range
-        id_short: "HolePlacement_Y"
-        value_type: "xs:float"
-        semantic_id: "https://aausmartlab.org/Semantics/mm"
-        description: "Possible range of Y-coordinate position of hole relative to product placement point"
-        min: -50.0
-        max: 50.0
+      - type: collection
+        id_short: "TargetPosition"
+        elements:
+          - type: range
+            id_short: "XPos"
+            value_type: "xs:float"
+            semantic_id: "https://aausmartlab.org/Semantics/mm"
+            description: "Possible range of X-coordinate position of hole relative to product placement point"
+            min: -50.0
+            max: 50.0
+          - type: range
+            id_short: "YPos"
+            value_type: "xs:float"
+            semantic_id: "https://aausmartlab.org/Semantics/mm"
+            description: "Possible range of Y-coordinate position of hole relative to product placement point"
+            min: -50.0
+            max: 50.0
 
       - type: property
         id_short: "ComponentReference"
@@ -111,8 +113,8 @@ elements:
     element_type: "property"
     value_type: "xs:string"
     items:
-      - "PLA"
-      - "ABS"
+      - "https://aausmartlab.org/Materials/PLA"
+      - "https://aausmartlab.org/Materials/ABS"
 
   - type: reference_element
     id_short: "ResourceReference"

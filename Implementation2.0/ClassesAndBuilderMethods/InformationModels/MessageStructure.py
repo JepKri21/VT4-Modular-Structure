@@ -77,6 +77,26 @@ class StateMessage(BaseModel):
     state: PackMLState
     seq_no: int | None = None
 
+#=============================================================================
+#=================================== Submodel Elements =======================
+#=============================================================================
+
+class PropertyElement(BaseModel):
+    id_short: str
+    value: int | str | float | None
+    semantic_id: str | None = None
+
+class RangeElement(BaseModel):
+    id_short: str
+    min: int | str | float | None
+    max: int | str | float | None
+    semantic_id: str | None = None
+
+class CollectionElement(BaseModel):
+    id_short: str
+    elements: List[PropertyElement | RangeElement]
+    semantic_id: str | None = None
+
 
 #=============================================================================
 #=================================== Job Result ==============================

@@ -438,8 +438,7 @@ params = {
     "DrillDepth": 50.0,
     "SpindleSpeed": 800.0,
     "SpindleFeed": 20.0,
-    "HolePlacement_X": 10.0,
-    "HolePlacement_Y": -5.0,
+    "TargetPosition": {"XPos": 20.0, "YPos": 10.0},
     "ComponentReference": "BottomCover_ALU"
 }
 
