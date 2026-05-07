@@ -134,7 +134,7 @@ Line_Controller/
 ├── config.py                       # planned — loads env / config; no logic
 ├── aas_client.py                   # planned — thin BaSyx SDK wrapper; returns dicts
 ├── line_config.py                  # planned — loads Line Controller AAS (resources + connection points)
-├── order_handler.py                # planned — pulls orders, extracts BoP into ProductOrder objects
+├── workorder_handler.py                # planned — pulls orders, extracts BoP into ProductOrder objects
 ├── resource_manager.py             # planned — discovers resources via MQTT Status, tracks liveness
 ├── capability_matcher.py           # planned — matches BoP steps to (resource, actor) candidates
 ├── transport_planner.py            # planned — expands "part A → part B" into transport + handoff steps

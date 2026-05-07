@@ -5,7 +5,7 @@ description: "Submodel of skills and capabilities provided by this resource"
 elements:
   - type: collection
     id_short: "Drilling"
-    semantic_id: "https://aausmartlab.org/Semantics/Capability"
+    semantic_id: "https://aausmartlab.org/Semantics/Skill"
     description: "Name of skill offered by this resource"
 
     elements:

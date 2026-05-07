@@ -403,9 +403,27 @@ class ResourceManager:
 #So you would write something like, I need to send this package, to this resource, this actor and the message is a command.
 #Then the function only needs to find the communication submodel of the resource, find the command suffix, and then it can send
 
+    #ControllerMQTTClient class
+        #dynamic on_message Method that automatically listens to all resource topics that are NOT CMD, InfoRequest and ControllerAcknowledgementSuffix cycletime, alarms, quality, throughput and publishes to DB for Data Analytics Layer
+        #Method for requesting inventory levels from all resources with an InventoryLevelSuffix
+        #Method that reads the state and continuously updates whether they are active or inactive based on response (if state is frequently updated it can assume that it is still active, if no update has been made in a while, it sends a state request)
 
+#There is a MAJOR problem with how the skills and capabilities are defined. 
+    # First problem: If two resources both have a drilling capability, but they have slightly different parameters for it (which is probably common)
+    # How do we make sure that a product can go through both? How do we tell it what parameters to use for each of them. Unless we make it very specific to one specific type of resource
+        # We think that a solution could be achieved by defining required and optional parameters both on the product and the capability
+        #That way, you can define even custom parameters as requried in the product and that way you ONLY go to the specific resources with the required parameters
+        #But you can also define
+        #Resource with a specific capability like Drilling should ALWAYS have the same required parameters, but you can add as many optional as you want
+        #Either that OR the resourece will ALWAYS have the same required parameters, BUT you can also add custom required parameters as well as optional
+        # The resource should be able to perform drilling, even without the optional parameters
+        #NOTE: IF two actors on the same resource have the same capability just with different parameters then they should likely still have unique capability submodels
 
-    
+    #Second problem: If there are two actors on the same resource that have the same capability, but NOT the same skilltriggers availble, then how do you tell them apart?
+    # And then we just assume that EVERY resource runs PackML or at least uses the PackML triggers. Does not make sense to allow different names here, like it would the suffixes
+        #If we simply switch the skill around to look a bit more like how we structured it the first time around
+        #So it would be skillName -> ActorName -> SkillTriggers and CapabilitySubmodelReference.
+        #This does take up more space, but it allows actors to have different skilltriggers and reference unique capability submodels, even if they are for the same skill
 
 AAS_BROKER = "localhost"
 MQTT_PORT = 1883
