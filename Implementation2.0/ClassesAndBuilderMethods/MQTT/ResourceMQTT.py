@@ -92,7 +92,7 @@ class MQTTClientResource:
             topic = msg.topic
             payload = json.loads(msg.payload.decode())
 
-            print(f"Received on {topic}: {payload}")
+            #print(f"Received on {topic}: {payload}")
 
             topic_suffix = topic.split("/")[-1]
 
@@ -178,7 +178,7 @@ class MQTTClientResource:
     def handle_controller_ack(self, msg):
         #We need to be able to make a list of acknowledgements or a queue that we ensure are acknowledged within some time
         #We may also have to limit which messages send acknowledges, since it will be a lot of messages
-        print(f"Received controller ACK: {msg}")
+        #print(f"Received controller ACK: {msg}")
 
         if msg.seq_no == 0:
             print("Reset ACK received")
@@ -189,7 +189,7 @@ class MQTTClientResource:
             MS.AcknowledgementErrorCodes.SEQ_TOO_LOW,
             MS.AcknowledgementErrorCodes.SEQ_TOO_HIGH
         ]:
-            print("Controller requested ACK reset")
+            #print("Controller requested ACK reset")
             self.publish_reset_acknowledgement()
 
     # =========================================================

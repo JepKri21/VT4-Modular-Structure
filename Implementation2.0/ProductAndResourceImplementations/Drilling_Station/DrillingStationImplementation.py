@@ -249,7 +249,7 @@ class KUKAManipulatorBehavior(StationBehavior):
             print(f"Executing drillling with these parameters: Bit Diameter: {self.bit_diameter}, Drill Depth: {self.drill_depth}, Spindle Speed: { self.spindle_speed}, Spindle Feed: {self.spindle_feed}, Hole X: {self.hole_x}, Hole Y: {self.hole_y}, Component Reference: {self.component_reference}")
             
             #Generating cycle times based on parameters
-            self.ideal_cycle_time = (self.drill_depth/self.spindle_feed)
+            self.ideal_cycle_time = int((self.drill_depth/self.spindle_feed)*1000)
             self.actual_cycle_time = self.ideal_cycle_time + random.randint(200,1500)
             await asyncio.sleep(self.actual_cycle_time/1000)
 
@@ -287,6 +287,7 @@ class KUKAManipulatorBehavior(StationBehavior):
             quality=self.quality
         )
         self.mqtt_client.publish(f"{job_result_suffix}/{self.actor_name}",job_result_message)
+        print(f"JobResult Payload published {job_result_message}")
 
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.COMPLETE)

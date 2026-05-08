@@ -566,16 +566,31 @@ controller_mqtt = MQTTClientController(BROKER,MQTT_PORT,CLIENT_ID,BASE_TOPIC,rm)
 
 
 
+params = {
+    "BitDiameter": 5.0,
+    "DrillDepth": 50.0,
+    "SpindleSpeed": 800.0,
+    "SpindleFeed": 20.0,
+    "TargetPosition": {
+      "XPos": 20.0,
+      "YPos": 10.0
+    },
+    "ComponentReference": "BottomCover_ALU"
+}
 
 
 
-
+command = MS.CommandMessage(timestamp=datetime.now(), resource_id="Drilling_12345678",actor_name="KUKAManipulator", skill="Drilling", skill_trigger="START", order_id="asudyg1123", job_id="job_XDDD", parameters=params, seq_no=5)
 async def main():
     global main_loop
     main_loop = asyncio.get_running_loop()
 
     controller_mqtt.start_mqtt_connection()
     
+ 
+    controller_mqtt.publish_message(controller_mqtt.mqtt_to_aas_id("Drilling_12345678"),command)
+
+
     #machine.active_alarms = [51,62]
     # Keep machine alive forever
     await asyncio.Event().wait()
