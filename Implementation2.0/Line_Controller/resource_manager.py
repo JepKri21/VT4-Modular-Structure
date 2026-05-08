@@ -33,12 +33,35 @@ class ResourceManager:
 
 
 
-    def find_by_capability(self, capability_id):
-        for cap in self.capabilities:
-            if cap["id"] == capability_id:
-                return cap["ResourceReference"]["keys"][0]["value"]
+    def find_by_capability(self, capability_semantic_id):
+        """
+        Walk every known resource shell, inspect its Skills submodel, and
+        return all (resource, skill) pairs whose CapabilityReference matches
+        the requested capability semanticId.
 
-        return None
+        Returns a list of dicts:
+            {
+                "resource_id": <shell_id>,
+                "skill_name": <skill idShort>,
+                "capability_submodel_reference": <submodel id of the capability>,
+            }
+        """
+        candidates = []
+
+        for shell_id, status in self.resource_shell_ids.items():
+            if status != "Active":
+                continue
+
+            skills = self.get_resource_skills(shell_id)
+            for skill_name, skill_data in skills.items():
+                if skill_data.get("CapabilityReference") == capability_semantic_id:
+                    candidates.append({
+                        "resource_id": shell_id,
+                        "skill_name": skill_name,
+                        "capability_submodel_reference": skill_data.get("CapabilitySubmodelReference"),
+                    })
+
+        return candidates
     
     #===========
     #Helper methods
@@ -425,34 +448,35 @@ class ResourceManager:
         #So it would be skillName -> ActorName -> SkillTriggers and CapabilitySubmodelReference.
         #This does take up more space, but it allows actors to have different skilltriggers and reference unique capability submodels, even if they are for the same skill
 
-AAS_BROKER = "localhost"
-MQTT_PORT = 1883
-BASE_TOPIC = "AAUSmartLab/ProductionLine1"
-AAS_PORT = "8081"
-resources_url = "https://aausmartlab.org/Shells/Resources"
+if __name__ == "__main__":
+    AAS_BROKER = "localhost"
+    MQTT_PORT = 1883
+    BASE_TOPIC = "AAUSmartLab/ProductionLine1"
+    AAS_PORT = "8081"
+    resources_url = "https://aausmartlab.org/Shells/Resources"
 
-rm = ResourceManager(MQTT_PORT,BASE_TOPIC,AAS_BROKER,AAS_PORT,resources_url)
+    rm = ResourceManager(MQTT_PORT, BASE_TOPIC, AAS_BROKER, AAS_PORT, resources_url)
 
-#Updating the list of resource based on the AAS server
-rm.update_resource_availablility()
+    #Updating the list of resource based on the AAS server
+    rm.update_resource_availablility()
 
-#A function that should update whether the resources are active or not and return the full list of resources
-Resources = rm.get_all_resource_readiness()
+    #A function that should update whether the resources are active or not and return the full list of resources
+    Resources = rm.get_all_resource_readiness()
 
-Resource_ids = list(Resources.keys())
+    Resource_ids = list(Resources.keys())
 
-#print(Resource_ids)
+    #print(Resource_ids)
 
-#print(rm.get_resource_MQTT_suffixes(Resource_ids[0]))
+    #print(rm.get_resource_MQTT_suffixes(Resource_ids[0]))
 
-resource_skills = rm.get_resource_skills(Resource_ids[0])
+    resource_skills = rm.get_resource_skills(Resource_ids[0])
 
-resource_skill_names = list(resource_skills.keys())
+    resource_skill_names = list(resource_skills.keys())
 
-#print(resource_skills)
+    #print(resource_skills)
 
-for skill_name in resource_skill_names:
-#    actors, skill_triggers = rm.get_skill_information(Resource_ids[0],skill_name)
-#    print(actors)
-#    print(skill_triggers)
-    print(rm.get_capability_parameters(resource_skills[skill_name].get("CapabilitySubmodelReference")))
+    for skill_name in resource_skill_names:
+    #    actors, skill_triggers = rm.get_skill_information(Resource_ids[0],skill_name)
+    #    print(actors)
+    #    print(skill_triggers)
+        print(rm.get_capability_parameters(resource_skills[skill_name].get("CapabilitySubmodelReference")))
