@@ -88,6 +88,7 @@ class WorkOrderHandler:
 
                     "required_capability": step_data["CapabilityReference"],
                     "parameters": step_data.get("Parameters", {}),
+                    "dependencies": step_data.get("Dependencies", []),
 
                     "precedence": precedence_map.get(ingredient, 0),
 
@@ -123,20 +124,56 @@ class WorkOrderHandler:
             if step["state"] != StepStates.PENDING:
                 continue
 
-            ingredient = step["ingredient"]
-            dependencies = graph.get(ingredient, [])
+            # Sub-ingredients of this step's ingredient must be fully complete
+            # (recursively, through the assembly graph).
+            sub_ingredients = graph.get(step["ingredient"], [])
+            if not all(self._is_ingredient_complete(dep) for dep in sub_ingredients):
+                continue
 
-            # check if all dependencies are completed
-            if all(self._is_ingredient_complete(dep) for dep in dependencies):
-                ready_steps.append(step)
+            # Per-step dependencies (other step_ids that must be done first).
+            if not self._dependencies_complete(step.get("dependencies", [])):
+                continue
+
+            ready_steps.append(step)
 
         return ready_steps
 
     def _is_ingredient_complete(self, ingredient):
-        for step in self.execution_plan["steps"]:
-            if step["ingredient"] == ingredient:
-                return step["state"] == StepStates.COMPLETED
-        return True  # no process = already "ready"
+        """
+        An ingredient is complete when:
+          - every sub-ingredient (assembly child) is complete, recursively, and
+          - every process step that targets this ingredient is COMPLETED.
+        Leaf ingredients with no steps and no sub-ingredients are considered
+        raw inputs — they are always "complete" as far as the process graph
+        is concerned (sourcing is the resource manager's problem, not the
+        workorder's).
+        """
+        graph = self._build_dependency_graph()
+
+        for child in graph.get(ingredient, []):
+            if not self._is_ingredient_complete(child):
+                return False
+
+        own_steps = [s for s in self.execution_plan["steps"] if s["ingredient"] == ingredient]
+        if not own_steps:
+            # No transformation defined for this ingredient — it is either a
+            # raw component or a pure aggregator whose readiness is decided
+            # entirely by its children (already checked above).
+            return True
+
+        return all(s["state"] == StepStates.COMPLETED for s in own_steps)
+
+    def _dependencies_complete(self, dependency_step_ids):
+        if not dependency_step_ids:
+            return True
+        for dep_id in dependency_step_ids:
+            try:
+                dep_step = self._find_step(dep_id)
+            except ValueError:
+                return False
+            if dep_step["state"] != StepStates.COMPLETED:
+                return False
+        return True
 
     # =============================
     # UPDATE STEP STATE
@@ -216,10 +253,24 @@ class WorkOrderHandler:
 
     def get_step_execution_info(self, step_id):
         step = self._find_step(step_id)
-        return{
+        ingredient_name = step["ingredient"]
+
+        ingredients = self.workorder.get("Ingredients", {})
+        properties = self.workorder.get("Properties", {})
+
+        component_reference = ingredients.get(ingredient_name, {}).get("ComponentReference")
+
+        material = None
+        material_block = properties.get(ingredient_name, {}).get("MaterialProperties", {})
+        if isinstance(material_block, dict):
+            material = material_block.get("Material", {}).get("value")
+
+        return {
             "CapabilityReference": step["required_capability"],
             "Parameters": step["parameters"],
-            "Ingredient": step["ingredient"]
+            "Ingredient": ingredient_name,
+            "ComponentReference": component_reference,
+            "Material": material,
         }
     
 
