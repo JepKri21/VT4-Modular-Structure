@@ -147,17 +147,18 @@ class ResourceManager:
                     print(f"Updating list of resource with: {resoruce_shell_id}")
                     #Right now I directly set them to active, but in reality, it should ping the resource first
                     #This could be its own seperate method that you just call at the end of this method, passing the resources to check 
-                    self.resource_shell_ids[resoruce_shell_id] = "Active"
+                    self.resource_shell_ids[resoruce_shell_id] = MS.ResourceReachability.UNREACHABLE
                 else:
                     print("Resource is already known")
         #It should be able to check if an older resource might not be on the server anymore?
         #Maybe better, each resource can be shown as active or inactive. 
         #So when we update we might also send a ping to the actual resource to make sure that it is active, 
         # otherwise we mark it as inactive
+        return self.resource_shell_ids  
 
-    def get_all_resource_readiness(self):
-        #Call the same method that pings the resources to check if they are active
-        return self.resource_shell_ids   
+    #def get_all_resource_readiness(self):
+    #    #Call the same method that pings the resources to check if they are active
+    #    return self.resource_shell_ids   
 
     #===========
     #Methods to read the Communication submodel
@@ -425,6 +426,8 @@ class ResourceManager:
         #So it would be skillName -> ActorName -> SkillTriggers and CapabilitySubmodelReference.
         #This does take up more space, but it allows actors to have different skilltriggers and reference unique capability submodels, even if they are for the same skill
 
+
+"""
 AAS_BROKER = "localhost"
 MQTT_PORT = 1883
 BASE_TOPIC = "AAUSmartLab/ProductionLine1"
@@ -434,10 +437,7 @@ resources_url = "https://aausmartlab.org/Shells/Resources"
 rm = ResourceManager(MQTT_PORT,BASE_TOPIC,AAS_BROKER,AAS_PORT,resources_url)
 
 #Updating the list of resource based on the AAS server
-rm.update_resource_availablility()
-
-#A function that should update whether the resources are active or not and return the full list of resources
-Resources = rm.get_all_resource_readiness()
+Resources = rm.update_resource_availablility()
 
 Resource_ids = list(Resources.keys())
 
@@ -456,3 +456,5 @@ for skill_name in resource_skill_names:
 #    print(actors)
 #    print(skill_triggers)
     print(rm.get_capability_parameters(resource_skills[skill_name].get("CapabilitySubmodelReference")))
+
+"""

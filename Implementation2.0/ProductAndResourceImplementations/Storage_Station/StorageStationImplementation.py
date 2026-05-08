@@ -619,25 +619,11 @@ def handle_request(msg: MS.RequestMessage):
 
     #Checking if the request is for the state
     if state_suffix in elements:
-        state_index = elements.index(state_suffix)
 
-        # Make sure there is something after "state"
-        if len(elements) > state_index + 1:
-            actor_name = elements[state_index + 1]
-
-            print(f"Requested actor: {actor_name}")
-            actor_found = False
-
-            for StateMachine in StateMachines:
-                if StateMachine.behavior.actor_name == actor_name:
-                    state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=StateMachine.state)
-                    mqtt_client.publish(f"{state_suffix}/{StateMachine.behavior.actor_name}", state_message)
-                    actor_found = True
+        for StateMachine in StateMachines:
+            state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=StateMachine.state)
+            mqtt_client.publish(f"{state_suffix}/{StateMachine.behavior.actor_name}", state_message)
             
-            if not actor_found:
-                print(f"Unknown actor: {actor_name}")
-        else:
-            print("No actor specified after state suffix")
 
     #Checking if the request is for the inventory level
     elif inventory_suffix in elements:

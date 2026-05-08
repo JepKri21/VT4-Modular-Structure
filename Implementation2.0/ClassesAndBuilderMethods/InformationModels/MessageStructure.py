@@ -272,6 +272,15 @@ class WorkOrderStatusMessage(BaseModel):
 
 
 #=============================================================================
+#============================== Resource Heartbeat ===========================
+#=============================================================================
+
+class ResourceReachability(enum.Enum):
+    UNREACHABLE = "UNREACHABLE"
+    ACTIVE = "ACTIVE"
+    INACTIVE = "INACTIVE"
+
+#=============================================================================
 #============================== Helpers ======================================
 #=============================================================================
 
@@ -281,3 +290,4 @@ def find_by_idshort(elements, target):
         if element.get("idShort") == target:
             return element
     return None
+

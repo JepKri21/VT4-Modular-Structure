@@ -104,11 +104,12 @@ Contoller subscribes to ProductionLine1/Transport-12345678/Data/State/+/value
 #COMMAND
 #========
 
+(We are not using this one:)
 ProductionLine1/Transport-12345678/Data/CMD/Shuttle1/value
 ProductionLine1/Transport-12345678/Data/CMD/Shuttle2/value
 Resoruce subscribes to ProductionLine1/Transport-12345678/Data/CMD/+/value
 
-OR MAYBE IT IS BETTER TO:
+OR MAYBE IT IS BETTER TO (We are unsing the one below):
 
 ProductionLine1/Transport-12345678/Data/CMD/value           #CMD message specifies the actor
 Resoruce subscribes to ProductionLine1/Transport-12345678/Data/CMD/value
@@ -407,22 +408,11 @@ def handle_request(msg: MS.RequestMessage):
     elements = msg.requested_topic_update.split("/")
 
     if state_suffix in elements:
-        state_index = elements.index(state_suffix)
+        #Here it should just print all the states for all the actors, we don't want to specify which actor we want the state from
+        state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=KUKAManipulator.state)
+        mqtt_client.publish(f"{state_suffix}/{KUKAManipulator.behavior.actor_name}", state_message)
 
-        # Make sure there is something after "state"
-        if len(elements) > state_index + 1:
-            actor_name = elements[state_index + 1]
 
-            print(f"Requested actor: {actor_name}")
-
-            if actor_name == "KUKAManipulator":
-                state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=KUKAManipulator.state)
-                mqtt_client.publish(f"{state_suffix}/{KUKAManipulator.behavior.actor_name}", state_message)
-
-            else:
-                print(f"Unknown actor: {actor_name}")
-        else:
-            print("No actor specified after state suffix")
     else:
         print("State suffix not found in topic")
 
