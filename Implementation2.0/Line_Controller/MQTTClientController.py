@@ -371,12 +371,9 @@ class MQTTClientController:
             f"{topic_suffix}"
             )
             
-
-
         #If the topic suffix is equal to {'ResourceAcknowledgementSuffix': 'ResourceAck', 'ControllerAcknowledgementSuffix': 'ControllerAck'}
         # It should only pick the one used for "ControllerAcknowledgementSuffix"
         
-
         data = message.model_dump(mode="json")
 
 

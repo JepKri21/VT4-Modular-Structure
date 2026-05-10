@@ -1,5 +1,5 @@
 id_short: "HandoffCapabilityOffered"
-id: "https://aausmartlab.org/Shells/Resources/Storage-12345678/HandoffCapabilityOffered"
+id: "https://aausmartlab.org/Shells/Resources/Storage_12345678/HandoffCapabilityOffered"
 description: "Offered capability template for a handoff capability — parameters expressed as ranges defining the operational envelope"
 
 elements:

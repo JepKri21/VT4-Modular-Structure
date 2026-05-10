@@ -1,5 +1,5 @@
 id_short: "Communication"
-id: "https://aausmartlab.org/Shells/Resources/Transport-12345678/Communication"
+id: "https://aausmartlab.org/Shells/Resources/Transport_12345678/Communication"
 description: "Communication submodel for the transport station"
 
 elements:
