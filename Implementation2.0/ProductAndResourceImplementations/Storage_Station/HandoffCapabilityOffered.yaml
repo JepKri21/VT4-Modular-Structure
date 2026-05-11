@@ -22,12 +22,6 @@ elements:
     semantic_id: "https://aausmartlab.org/Semantics/Parameters"
     description: "Parameters defining the capability envelope"
     elements:
-      - type: property
-        id_short: "ComponentReference"
-        value_type: "xs:string"
-        semantic_id: "https://aausmartlab.org/Semantics/mm"
-        description: "Minimum and maximum drill depth in mm"
-        value: ""
 
       - type: collection
         id_short: "TargetPosition"

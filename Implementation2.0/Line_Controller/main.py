@@ -5,6 +5,15 @@ from capability_matcher import CapabilityMatcher
 import json
 from pathlib import Path
 
+#NOTE IMPORTANT:
+#I et multi agent system skulle man have public occupation of resources, hvor med en enkelt controller behøver man ikke, det kan være internt I controlleren. 
+#Orchestrator keeps track of occupancy, but shares occupancy status on MQTT. 
+#Hvis ingen af resourcerne har handoff (like shuttels and drilling) then we can say that the transport actor HAS to be occupied during the process.
+#Then only resources that are able to pick up a product will have the handoff capability.
+#If no resources of the two have a handoff, both will be occupied until the process is done
+#If one resource has a handoff, that resource will perform the handoff
+#If both resources have a haveoff, run the handoff first on the resource with the product, then after, run handoff on the one that does not have the product
+
 
 AAS_BROKER = "localhost"
 AAS_PORT = "8081"

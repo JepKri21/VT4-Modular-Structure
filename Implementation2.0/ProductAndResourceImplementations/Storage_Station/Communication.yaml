@@ -37,3 +37,7 @@ elements:
             id_short: "InventoryLevelSuffix"
             value_type: "xs:string"
             value: "InventoryLevel"
+          - type: property
+            id_short: "OccupancySuffix"
+            value_type: "xs:string"
+            value: "Occupy"

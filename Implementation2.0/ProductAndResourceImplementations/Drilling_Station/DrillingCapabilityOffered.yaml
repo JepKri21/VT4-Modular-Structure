@@ -24,7 +24,7 @@ elements:
 
     elements:
       - type: property
-        id_short: "BitDiameter"
+        id_short: "HoleDiameter"
         value_type: "xs:float"
         semantic_id: "https://aausmartlab.org/Semantics/mm"
         description: "Drill bit diameter in mm"
@@ -47,22 +47,6 @@ elements:
         min: 0.0
         max: 200.0
 
-      - type: range
-        id_short: "SpindleSpeed"
-        value_type: "xs:float"
-        semantic_id: "https://aausmartlab.org/Semantics/RPM"
-        description: "Spindle speed range in RPM"
-        min: 0.0
-        max: 1200.0 
-
-      - type: range
-        id_short: "SpindleFeed"
-        value_type: "xs:float"
-        semantic_id: "https://aausmartlab.org/Semantics/mm_per_s"
-        description: "Spindle feed rate range in mm/s"
-        min: 0.0
-        max: 50.0
-
       - type: collection
         id_short: "TargetPosition"
         elements:
@@ -80,13 +64,6 @@ elements:
             description: "Possible range of Y-coordinate position of hole relative to product placement point"
             min: -50.0
             max: 50.0
-
-      - type: property
-        id_short: "ComponentReference"
-        value_type: "xs:string"
-        semantic_id: "https://aausmartlab.org/Semantics/mm"
-        description: "Minimum and maximum drill depth in mm"
-        value: ""
 
       - type: multi_language_property
         id_short: "OperationLabel"

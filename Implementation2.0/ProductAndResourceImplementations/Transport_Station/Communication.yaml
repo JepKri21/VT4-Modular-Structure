@@ -33,3 +33,7 @@ elements:
             id_short: "ControllerAcknowledgementSuffix"
             value_type: "xs:string"
             value: "ControllerAck"
+          - type: property
+            id_short: "OccupancySuffix"
+            value_type: "xs:string"
+            value: "Occupy"

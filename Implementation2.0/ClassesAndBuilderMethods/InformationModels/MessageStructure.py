@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 import time
 
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 #Different between "seq_no: int | None = None" and "seq_no: int | None" is that the first has None as the default, while the second only allows it as a value for the field
@@ -35,6 +36,7 @@ class CommandMessage(BaseModel):
     skill_trigger: CommandType
     order_id: str | None
     job_id: str | None
+    component_reference: str| List[str] | None = None
     parameters: Dict[str, str | int | float | Dict] | None
     seq_no: int | None = None
 
@@ -120,6 +122,7 @@ class JobResultMessage(BaseModel):
     actual_cycle_time_ms: int
     result: Result
     quality: Quality
+    component_reference: str | None = None
     output_parameters: Dict[str, str | int | float | Dict] | None = None
     seq_no: int | None = None
 
@@ -279,6 +282,15 @@ class ResourceReachability(enum.Enum):
     UNREACHABLE = "UNREACHABLE"
     ACTIVE = "ACTIVE"
     INACTIVE = "INACTIVE"
+
+class OccupancyMessage(BaseModel):
+    timestamp: datetime
+    job_id: str
+    occupied: bool
+    resource_id: str
+    seq_no: int | None = None
+
+
 
 #=============================================================================
 #============================== Helpers ======================================
