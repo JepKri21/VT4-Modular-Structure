@@ -160,23 +160,34 @@ class AlarmsMessage(BaseModel):
 #============================== Inventory Level ==============================
 #=============================================================================
 
-class ComponentLevel(BaseModel):
-    ComponentReference: str
-    Amount: int
+#class ComponentLevel(BaseModel):
+#    ComponentReference: str
+#    Amount: int
+#
+#
+#class InventoryLevelMessage(BaseModel):
+#    timestamp: datetime
+#    resource_id: str
+#    # Inventory name → list of components
+#    inventory: Dict[str, List[str]]
+#    # Flat list of all item URLs
+#    #AllItems: List[str]
+#    seq_no: int | None = None
+    
+class InventorySlot(BaseModel):
+    component_id: str | None
 
+class InventoryData(BaseModel):
+    inventory_size: int
+    supported_components: list[str]
+    accessible_actors: list[str]
+    storage: dict[str, InventorySlot]
 
 class InventoryLevelMessage(BaseModel):
     timestamp: datetime
     resource_id: str
-    
-    # Inventory name → list of component summaries
-    inventory: Dict[str, List[ComponentLevel]]
-    
-    # Flat list of all item URLs
-    AllItems: List[str]
-    
+    inventory: dict[str, InventoryData]
     seq_no: int | None = None
-    
 
 #=============================================================================
 #============================== Response and Request =========================
