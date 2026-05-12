@@ -50,7 +50,7 @@ from ClassesAndBuilderMethods.InformationModels import MessageStructure as MS
 from workorder_handler import WorkOrderHandler
 from resource_manager import ResourceManager, make_state_handler
 from capability_matcher import CapabilityMatcher
-from MQTTClientController_Simple import MQTTClientController
+from MQTTClientControllerV2 import MQTTClientController
 from transport_planner import TransportPlanner, load_line_config_from_file
 from pre_process_planner import PreProcessPlanner
 from job_tracker import JobTracker

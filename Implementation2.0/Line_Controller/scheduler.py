@@ -39,7 +39,7 @@ from pre_process_planner import (
     NoShuttleAvailable,
 )
 from transport_planner import TransportPlanner
-from MQTTClientController_Simple import MQTTClientController
+from MQTTClientControllerV2 import MQTTClientController
 import aas_writer
 
 
