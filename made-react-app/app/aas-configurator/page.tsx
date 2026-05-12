@@ -8,6 +8,7 @@ import {
   FormValue,
   OperationCapability,
   ProcessStepEntry,
+  ShellCategory,
   ShellPreset,
   ShellPresetSummary,
   ShellSubmodelSlot,
@@ -209,48 +210,79 @@ function StepBar({
 function ShellCard({
   shell,
   selected,
+  selectedCategory,
   onClick,
+  onCategorySelect,
 }: {
   shell: ShellType;
   selected: boolean;
+  selectedCategory: ShellCategory | null;
   onClick: () => void;
+  onCategorySelect: (cat: ShellCategory | null) => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`text-left w-full rounded-xl border-2 p-4 transition-all
-        ${selected ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 bg-card"}`}
+    <div
+      className={`rounded-xl border-2 transition-all
+        ${selected ? "border-primary bg-primary/5" : "border-border bg-card"}`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-sm">{shell.label}</span>
-            <span className="text-xs rounded-full bg-muted px-2 py-0.5 text-muted-foreground">
-              {shell.kind}
-            </span>
-          </div>
-          {shell.description && (
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              {shell.description}
-            </p>
-          )}
-          <div className="flex flex-wrap gap-1 mt-1">
-            {shell.submodels.map((sm) => (
-              <span
-                key={sm.template_id}
-                className={`text-xs rounded-full px-2 py-0.5 font-mono
-                  ${sm.required ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}
-                title={sm.required ? "required" : "optional"}
-              >
-                {sm.id_short}
+      <button
+        type="button"
+        onClick={onClick}
+        className="text-left w-full p-4"
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-sm">{shell.label}</span>
+              <span className="text-xs rounded-full bg-muted px-2 py-0.5 text-muted-foreground">
+                {shell.kind}
               </span>
+            </div>
+            {shell.description && (
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {shell.description}
+              </p>
+            )}
+            <div className="flex flex-wrap gap-1 mt-1">
+              {shell.submodels.map((sm) => (
+                <span
+                  key={sm.template_id}
+                  className={`text-xs rounded-full px-2 py-0.5 font-mono
+                    ${sm.required ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}
+                  title={sm.required ? "required" : "optional"}
+                >
+                  {sm.id_short}
+                </span>
+              ))}
+            </div>
+          </div>
+          {selected && <Check className="w-4 h-4 text-primary shrink-0 mt-1" />}
+        </div>
+      </button>
+
+      {/* category picker — expands inline when this shell is selected and has categories */}
+      {selected && shell.categories.length > 0 && (
+        <div className="border-t border-primary/20 px-4 py-3 flex flex-col gap-2">
+          <p className="text-xs text-muted-foreground font-medium">Choose a category</p>
+          <div className="flex flex-wrap gap-2">
+            {shell.categories.map((cat) => (
+              <button
+                key={cat.name}
+                type="button"
+                onClick={() => onCategorySelect(selectedCategory?.name === cat.name ? null : cat)}
+                className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                  selectedCategory?.name === cat.name
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-background hover:bg-muted"
+                }`}
+              >
+                {cat.label}
+              </button>
             ))}
           </div>
         </div>
-        {selected && <Check className="w-4 h-4 text-primary shrink-0 mt-1" />}
-      </div>
-    </button>
+      )}
+    </div>
   );
 }
 
@@ -423,7 +455,9 @@ export default function AasConfiguratorPage() {
   const [loadingPresets, setLoadingPresets] = useState(false);
   const [selectedPreset, setSelectedPreset] =
     useState<ShellPresetSummary | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<ShellCategory | null>(null);
   const [presetApplied, setPresetApplied] = useState(false);
+  const [presetIncludes, setPresetIncludes] = useState<Record<string, string[]> | null>(null);
 
   // Instance info
   const [assetName, setAssetName] = useState("");
@@ -516,20 +550,21 @@ export default function AasConfiguratorPage() {
       .catch(() => setLoadingShells(false));
   }, []);
 
-  /* fetch presets when a shell is selected */
+  /* fetch presets when a shell or category is selected */
   useEffect(() => {
     if (!selectedShell) return;
     setLoadingPresets(true);
     setSelectedPreset(null);
     setPresetApplied(false);
-    fetch(`/api/aas-configurator/presets?shell=${selectedShell.name}`)
+    const filter = selectedCategory ? selectedCategory.name : selectedShell.name;
+    fetch(`/api/aas-configurator/presets?shell=${filter}`)
       .then((r) => r.json())
       .then((data) => {
         setPresets(Array.isArray(data) ? data : []);
         setLoadingPresets(false);
       })
       .catch(() => setLoadingPresets(false));
-  }, [selectedShell]);
+  }, [selectedShell, selectedCategory]);
 
   /* load all presets for all shell types when the batch panel is opened (cached) */
   useEffect(() => {
@@ -658,6 +693,7 @@ export default function AasConfiguratorPage() {
         return next;
       });
     }
+    setPresetIncludes((preset.include as Record<string, string[]>) ?? null);
     setPresetApplied(true);
   };
 
@@ -1158,13 +1194,21 @@ export default function AasConfiguratorPage() {
                       key={s.name}
                       shell={s}
                       selected={selectedShell?.name === s.name}
+                      selectedCategory={selectedShell?.name === s.name ? selectedCategory : null}
                       onClick={() => {
                         setSelectedShell(s);
+                        setSelectedCategory(null);
                         setLoadedTemplates({});
                         setSubmodelForms({});
                         setFilledSlots(new Set());
                         setPresetApplied(false);
                         setSelectedPreset(null);
+                      }}
+                      onCategorySelect={(cat) => {
+                        setSelectedCategory(cat);
+                        setSelectedPreset(null);
+                        setPresetApplied(false);
+                        setPresetIncludes(null);
                       }}
                     />
                   ))}
@@ -1193,7 +1237,11 @@ export default function AasConfiguratorPage() {
                   need to change.
                 </p>
 
-                {loadingPresets ? (
+                {selectedShell.categories.length > 0 && !selectedCategory ? (
+                  <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
+                    Select a category above to see available presets.
+                  </div>
+                ) : loadingPresets ? (
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <RefreshCw className="w-4 h-4 animate-spin" />
                     Loading presets…
@@ -1201,12 +1249,7 @@ export default function AasConfiguratorPage() {
                 ) : presets.length === 0 ? (
                   <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground flex items-center gap-2">
                     <PlusCircle className="w-4 h-4 shrink-0" />
-                    No presets for this shell type yet. Add a YAML file to{" "}
-                    <span className="font-mono">shell_presets/</span> with{" "}
-                    <span className="font-mono">
-                      shell: {selectedShell.name}
-                    </span>
-                    .
+                    No presets for this category yet.
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2">
@@ -1230,6 +1273,7 @@ export default function AasConfiguratorPage() {
                           setSubmodelForms({});
                           setAssetName("");
                           setAssetCategory("");
+                          setPresetIncludes(null);
                         }}
                         className="text-xs text-muted-foreground hover:text-foreground underline w-fit"
                       >
@@ -1426,7 +1470,12 @@ export default function AasConfiguratorPage() {
               </div>
             ) : currentTemplate ? (
               <div className="flex flex-col gap-4">
-                {currentTemplate.elements.map((el) => (
+                {(presetIncludes?.[currentSlot.id_short]
+                  ? currentTemplate.elements.filter(el =>
+                      presetIncludes![currentSlot.id_short].includes(el.id_short)
+                    )
+                  : currentTemplate.elements
+                ).map((el) => (
                   <FieldRenderer
                     key={el.id_short}
                     element={el}

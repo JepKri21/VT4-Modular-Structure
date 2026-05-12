@@ -1,0 +1,108 @@
+id_short: "LineConfiguration"
+id: "https://aausmartlab.org/Submodels/Templates/LineConfiguration"
+description: "Physical layout and connection topology of a production line — resource positions and connection points"
+
+elements:
+
+  - type: collection
+    id_short: "ResourceLocations"
+    description: "Global positions of every resource station in the line"
+    cardinality: "One"
+    elements:
+      - type: collection
+        id_short: "Resource"
+        description: "One entry per resource station (duplicate this collection for each station)"
+        cardinality: "OneToMany"
+        elements:
+          - type: property
+            id_short: "ResourceReference"
+            value_type: "xs:string"
+            semantic_id: "https://aausmartlab.org/Semantics/ResourceReference"
+            description: "IRI of the resource shell"
+            cardinality: "One"
+          - type: collection
+            id_short: "GlobalLocation"
+            description: "Position of the resource in the factory coordinate system"
+            cardinality: "One"
+            elements:
+              - type: property
+                id_short: "XPos"
+                value_type: "xs:float"
+                semantic_id: "https://aausmartlab.org/Semantics/XPos"
+                description: "X position in mm"
+                cardinality: "One"
+              - type: property
+                id_short: "YPos"
+                value_type: "xs:float"
+                semantic_id: "https://aausmartlab.org/Semantics/YPos"
+                description: "Y position in mm"
+                cardinality: "One"
+              - type: property
+                id_short: "ThetaAngle"
+                value_type: "xs:integer"
+                semantic_id: "https://aausmartlab.org/Semantics/ThetaAngle"
+                description: "Rotation angle in degrees"
+                cardinality: "One"
+
+  - type: collection
+    id_short: "ConnectionPoints"
+    description: "Handoff points where two or more resources exchange components"
+    cardinality: "One"
+    elements:
+      - type: collection
+        id_short: "ConnectionPoint"
+        description: "One entry per connection point (duplicate this collection for each point)"
+        cardinality: "OneToMany"
+        elements:
+          - type: collection
+            id_short: "GlobalLocation"
+            description: "Position of the connection point in the factory coordinate system"
+            cardinality: "One"
+            elements:
+              - type: property
+                id_short: "XPos"
+                value_type: "xs:float"
+                semantic_id: "https://aausmartlab.org/Semantics/XPos"
+                cardinality: "One"
+              - type: property
+                id_short: "YPos"
+                value_type: "xs:float"
+                semantic_id: "https://aausmartlab.org/Semantics/YPos"
+                cardinality: "One"
+          - type: collection
+            id_short: "ConnectedResources"
+            description: "Resources that share this connection point"
+            cardinality: "One"
+            elements:
+              - type: collection
+                id_short: "Resource"
+                description: "One entry per connected resource (duplicate this collection for each resource)"
+                cardinality: "OneToMany"
+                elements:
+                  - type: property
+                    id_short: "ResourceReference"
+                    value_type: "xs:string"
+                    semantic_id: "https://aausmartlab.org/Semantics/ResourceReference"
+                    description: "IRI of the connected resource shell"
+                    cardinality: "One"
+                  - type: property
+                    id_short: "ZoneType"
+                    value_type: "xs:string"
+                    semantic_id: "https://aausmartlab.org/Semantics/ZoneType"
+                    description: "Zone role at this connection point (e.g. in_outfeed)"
+                    cardinality: "One"
+                  - type: collection
+                    id_short: "LocalLocation"
+                    description: "Position of the connection point in the resource's local coordinate system"
+                    cardinality: "One"
+                    elements:
+                      - type: property
+                        id_short: "XPos"
+                        value_type: "xs:float"
+                        semantic_id: "https://aausmartlab.org/Semantics/XPos"
+                        cardinality: "One"
+                      - type: property
+                        id_short: "YPos"
+                        value_type: "xs:float"
+                        semantic_id: "https://aausmartlab.org/Semantics/YPos"
+                        cardinality: "One"

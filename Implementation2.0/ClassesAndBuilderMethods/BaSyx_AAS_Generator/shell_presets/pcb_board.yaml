@@ -1,26 +1,18 @@
 # Preset for the PCB board component.
 
-shell: "component_shell"
+type: "pcb"
 label: "PCB Board – FuseBox Series A"
 description: "Printed circuit board for FuseBox Series A. Change SerialNumber and BatchNumber per instance."
 
-asset_type: "PCB"
 asset_name: "PCB_FuseBoxA"
-asset_category: "Electrical"
 
 submodels:
   Properties:
     PhysicalDimensions:
-      Length: 140
-      Width: 70
-      Height: 2
       Weight_g: 45.0
     MaterialProperties:
       Material: "FR4"
       Color: "Green"
-    ElectricalProperties:
-      Voltage_Rating: 250
-      Current_Rating: 16.0
 
   Documentation:
     ProductionIdentification:
@@ -37,6 +29,3 @@ submodels:
         text: "Printed circuit board for FuseBox Series A enclosures"
       - language: "da"
         text: "Printkort til FuseBox Serie A kabinetter"
-    ManufacturerName: "AAU SmartLab"
-    ProductFamily: "FuseBox Series A"
-    HardwareRevision: "v1.0"

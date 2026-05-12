@@ -53,35 +53,58 @@ export async function GET() {
       .readdirSync(SHELL_DIR)
       .filter((f) => f.endsWith(".yaml") || f.endsWith(".yml"));
 
-    const shells = shellFiles.map((file) => {
-      const raw = fs.readFileSync(path.join(SHELL_DIR, file), "utf-8");
-      const doc = yaml.load(raw) as RawShell;
-      const name = path.basename(file, path.extname(file));
+    // Pass 1: separate abstract blueprints from category type shells
+    interface BlueprintEntry { name: string; doc: Record<string, unknown>; }
+    interface CategoryEntry  { name: string; label: string; description: string; blueprintRef: string; }
 
-      // Human-readable label from filename: "sub_assembly_shell" → "Sub Assembly Shell"
+    const blueprints: BlueprintEntry[] = [];
+    const typeShells: CategoryEntry[]  = [];
+
+    for (const file of shellFiles) {
+      const raw = fs.readFileSync(path.join(SHELL_DIR, file), "utf-8");
+      const doc = yaml.load(raw) as Record<string, unknown>;
+      const name = path.basename(file, path.extname(file));
       const label = name
         .replace(/_shell$/, "")
         .replace(/_/g, " ")
         .replace(/\b\w/g, (c) => c.toUpperCase());
 
-      const submodels = (doc.submodels ?? []).map((sm) => ({
+      if (Array.isArray(doc.submodels)) {
+        blueprints.push({ name, doc });
+      } else if (typeof doc.shell === "string") {
+        typeShells.push({ name, label, description: String(doc.description ?? ""), blueprintRef: doc.shell });
+      }
+    }
+
+    // Pass 2: build each blueprint entry with its matching categories attached
+    const shells = blueprints.map(({ name, doc }) => {
+      const label = name
+        .replace(/_shell$/, "")
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+
+      const submodels = (doc.submodels as RawShellSubmodel[]).map((sm) => ({
         template_id: sm.template_id,
         id_short: sm.id_short,
         description: sm.description,
         required: sm.required ?? true,
-        // resolved filename so the frontend can fetch the template
         template_file: submodelIndex[sm.template_id] ?? null,
       }));
+
+      const categories = typeShells
+        .filter((ts) => ts.blueprintRef === name)
+        .map(({ name: n, label: l, description: d }) => ({ name: n, label: l, description: d }));
 
       return {
         name,
         label,
-        description: doc.description ?? "",
-        kind: doc.kind ?? "Type",
-        id_pattern: doc.id_pattern ?? "",
-        id_short_pattern: doc.id_short_pattern ?? "",
-        global_asset_id_pattern: doc.global_asset_id_pattern ?? "",
+        description: String(doc.description ?? ""),
+        kind: String(doc.kind ?? "Type"),
+        id_pattern: String(doc.id_pattern ?? ""),
+        id_short_pattern: String(doc.id_short_pattern ?? ""),
+        global_asset_id_pattern: String(doc.global_asset_id_pattern ?? ""),
         submodels,
+        categories,
       };
     });
 

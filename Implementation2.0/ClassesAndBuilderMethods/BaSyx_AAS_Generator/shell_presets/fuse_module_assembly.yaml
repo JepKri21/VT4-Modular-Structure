@@ -3,13 +3,11 @@
 # closed by a 3D-printed top cover.
 # Change SerialNumber, BatchNumber, AssemblyDate and AssemblyStation at production time.
 
-shell: "sub_assembly_shell"
+type: "fuse_module"
 label: "Fuse Module – Standard Assembly"
 description: "Fuse module consisting of a 3D-printed bottom cover holding a PCB with a mounted fuse, closed by a 3D-printed top cover. Update serial/batch numbers per instance."
 
-asset_type: "Fuse_Module"
 asset_name: "FuseModule_A"
-asset_category: "Electrical"
 
 submodels:
   Properties:
@@ -19,7 +17,6 @@ submodels:
   Documentation:
     ProductionIdentification:
       ModelNumber: "FM-A-001"
-      HardwareRevision: "v1.0"
     DisplayName:
       - language: "en"
         text: "Fuse Module Series A"
@@ -30,7 +27,6 @@ submodels:
         text: "Fuse module — 3D-printed bottom cover holding a PCB with mounted fuse, closed by a 3D-printed top cover"
       - language: "da"
         text: "Sikringsmodul — 3D-printet bundlåg med PCB og monteret sikring, lukket af 3D-printet toplåg"
-    ProductFamily: "Fuse Module Series A"
 
   BillOfMaterials:
     BOMEntries:

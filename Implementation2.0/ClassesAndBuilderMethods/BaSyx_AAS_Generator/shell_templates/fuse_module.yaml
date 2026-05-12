@@ -1,0 +1,31 @@
+kind: "Type"
+shell: "sub_assembly_shell"
+asset_type: "Fuse_Module"
+asset_category: "Electrical"
+id: "https://aausmartlab.org/Shells/Assembly/FuseModule"
+
+submodel_templates:
+  Properties:       "https://aausmartlab.org/Submodels/Templates/ProductProperties"
+  Documentation:    "https://aausmartlab.org/Submodels/Templates/ProductDocumentation"
+  BillOfMaterials:  "https://aausmartlab.org/Submodels/Templates/BillOfMaterials"
+  BillOfProcesses:  "https://aausmartlab.org/Submodels/Templates/BillOfProcesses"
+
+include:
+  Properties:
+    - PhysicalDimensions
+  Documentation:
+    - ProductionIdentification
+    - DisplayName
+    - Description
+    - ProductFamily
+  BillOfMaterials:
+    - BOMEntries
+  BillOfProcesses:
+    - ProcessTracking
+    - ProcessSteps
+
+submodels:
+  Documentation:
+    ProductionIdentification:
+      HardwareRevision: "v1.0"
+    ProductFamily: "Fuse Module Series A"

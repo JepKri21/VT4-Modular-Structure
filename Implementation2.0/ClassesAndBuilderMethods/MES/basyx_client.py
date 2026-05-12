@@ -69,10 +69,10 @@ def upload_environment(env: dict, basyx_url: str = BASYX_URL) -> None:
 
 def fetch_submodel(submodel_iri: str, basyx_url: str = BASYX_URL) -> Optional[dict]:
     url = basyx_url.rstrip("/")
-    r = requests.get(f"{url}/submodels/{_b64(submodel_iri)}/submodel")
+    r = requests.get(f"{url}/submodels/{_b64(submodel_iri)}")
     if r.status_code == 200:
         return r.json()
-    log.warning("fetch_submodel %s → %s", submodel_iri, r.status_code)
+    log.debug("fetch_submodel %s → %s", submodel_iri, r.status_code)
     return None
 
 

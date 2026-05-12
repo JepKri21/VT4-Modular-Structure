@@ -1,36 +1,14 @@
-shell: "component_shell"
+type: "top_cover"
 label: "Top Cover – PLA, Red, Textured"
 description: "3D-printed PLA top cover, red textured finish. Change SerialNumber and BatchNumber per instance."
 
 asset_name: "TopCover_PLA_Red"
-asset_category: "Mechanical"
-asset_type: "Top_Cover"
 
 submodels:
   Properties:
     PhysicalDimensions:
-      Length: 150
-      Width: 80
-      Height: 8
       Weight_g: 54.0
     MaterialProperties:
       Material: "PLA"
       Color: "Red"
       Finish: "Textured"
-
-  Documentation:
-    DisplayName:
-      - language: "en"
-        text: "Top Cover – PLA Red Textured"
-      - language: "da"
-        text: "Toplåg – PLA Rød Struktureret"
-    Description:
-      - language: "en"
-        text: "3D-printed PLA top cover, red textured surface finish"
-      - language: "da"
-        text: "3D-printet PLA toplåg, rød struktureret overflade"
-    ProductionIdentification:
-      ModelNumber: "TC-PLA-RED-001"
-    ManufacturerName: "AAU SmartLab"
-    ProductFamily: "FuseBox Series A"
-    HardwareRevision: "v1.0"
