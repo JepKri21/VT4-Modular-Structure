@@ -110,7 +110,7 @@
         "ProcessStepId": "1x1",
         "Dependencies": [],
         "Parameters": {
-          "BitDiameter": {
+          "HoleDiameter": {
             "semantic_id": "https://aausmartlab.org/Semantics/mm",
             "value": 5.0
           },
@@ -118,21 +118,15 @@
             "semantic_id": "https://aausmartlab.org/Semantics/mm",
             "value": 50.0
           },
-          "SpindleSpeed": {
-            "semantic_id": "https://aausmartlab.org/Semantics/RPM",
-            "value": 800.0
-          },
-          "SpindleFeed": {
-            "semantic_id": "https://aausmartlab.org/Semantics/mm_per_s",
-            "value": 20.0
-          },
-          "HolePlacement_X": {
-            "semantic_id": "https://aausmartlab.org/Semantics/mm",
-            "value": 10.0
-          },
-          "HolePlacement_Y": {
-            "semantic_id": "https://aausmartlab.org/Semantics/mm",
-            "value": 20.0
+          "TargetPosition": {
+            "XPos": {
+              "semantic_id": "https://aausmartlab.org/Semantics/mm",
+              "value": 10.0
+            },
+            "YPos": {
+              "semantic_id": "https://aausmartlab.org/Semantics/mm",
+              "value": 20.0
+            }
           }
         }
       }

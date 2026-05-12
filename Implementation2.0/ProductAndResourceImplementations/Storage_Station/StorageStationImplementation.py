@@ -526,7 +526,7 @@ class UR5ManipulatorBehavior(StationBehavior):
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
         print("Finalizing Process and sending result")
 
-        if self.skill == "Retrive":
+        if self.skill == "Retrieve":
             job_result_message = MS.JobResultMessage(
                 timestamp=datetime.now(),
                 resource_id=CLIENT_ID, 

@@ -1,6 +1,7 @@
 id_short: "DrillingCapabilityOffered"
 id: "https://aausmartlab.org/Shells/Resources/Drilling_12345678/DrillingCapabilityOffered"
 description: "Offered capability template for a drilling capability — parameters expressed as ranges defining the operational envelope"
+semantic_id: "https://aausmartlab.org/Submodels/Capability/Drilling"
 
 elements:
   - type: property

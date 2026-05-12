@@ -186,11 +186,11 @@ class WorkOrderHandler:
         if resource:
             step["assigned_resource"] = resource
 
-        if state == "assigned":
+        if state == StepStates.ASSIGNED:
             step["timestamps"][StepStates.ASSIGNED] = datetime.now()
-        elif state == "in_progress":
+        elif state == StepStates.IN_PROGRESS:
             step["timestamps"][StepStates.IN_PROGRESS] = datetime.now()
-        elif state == "complete":
+        elif state == StepStates.COMPLETED:
             step["timestamps"][StepStates.COMPLETED] = datetime.now()
 
         self._update_workorder_state()
