@@ -5,9 +5,6 @@ import yaml from "js-yaml";
 
 import { getGeneratorPath } from "@/lib/aas-config";
 
-const TEMPLATES_DIR = path.join(getGeneratorPath(), "submodel_templates");
-const OPTIONS_FILE = path.join(getGeneratorPath(), "field_options.yaml");
-
 type OptionsMap = Record<string, string[]>;
 type DerivedMap = Record<string, string>;
 type OperationsMap = Record<string, { id_short: string; template_file: string; template_id: string }>;
@@ -19,9 +16,9 @@ interface FieldOptionsFile {
   [templateName: string]: OptionsMap | Record<string, DerivedMap> | OperationsMap | undefined;
 }
 
-function loadFieldOptions(templateName: string): { options: OptionsMap; derived: DerivedMap; operations: OperationsMap } {
+function loadFieldOptions(optionsFile: string, templateName: string): { options: OptionsMap; derived: DerivedMap; operations: OperationsMap } {
   try {
-    const raw = fs.readFileSync(OPTIONS_FILE, "utf-8");
+    const raw = fs.readFileSync(optionsFile, "utf-8");
     const doc = yaml.load(raw) as FieldOptionsFile;
 
     const globalOpts = (doc.global ?? {}) as OptionsMap;
@@ -60,6 +57,9 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ name: string }> }
 ) {
+  const generatorPath = getGeneratorPath();
+  const TEMPLATES_DIR = path.join(generatorPath, "submodel_templates");
+  const OPTIONS_FILE = path.join(generatorPath, "field_options.yaml");
   const { name } = await params;
   const candidates = [`${name}.yaml`, `${name}.yml`];
 
@@ -68,7 +68,7 @@ export async function GET(
     if (fs.existsSync(filePath)) {
       const raw = fs.readFileSync(filePath, "utf-8");
       const doc = yaml.load(raw) as Record<string, unknown>;
-      const { options, derived, operations } = loadFieldOptions(name);
+      const { options, derived, operations } = loadFieldOptions(OPTIONS_FILE, name);
       const operationKeys = Object.keys(operations);
       if (operationKeys.length > 0) options["Operation"] = operationKeys;
       if (Array.isArray(doc.elements)) {

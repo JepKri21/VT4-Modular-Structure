@@ -5,9 +5,6 @@ import yaml from "js-yaml";
 
 import { getGeneratorPath } from "@/lib/aas-config";
 
-const SHELL_DIR = path.join(getGeneratorPath(), "shell_templates");
-const SUBMODEL_DIR = path.join(getGeneratorPath(), "submodel_templates");
-
 interface RawShellSubmodel {
   template_id: string;
   id_short: string;
@@ -25,15 +22,15 @@ interface RawShell {
 }
 
 // Build an index: template id URI → submodel filename (without extension)
-function buildSubmodelIndex(): Record<string, string> {
+function buildSubmodelIndex(submodelDir: string): Record<string, string> {
   const index: Record<string, string> = {};
   const files = fs
-    .readdirSync(SUBMODEL_DIR)
+    .readdirSync(submodelDir)
     .filter((f) => f.endsWith(".yaml") || f.endsWith(".yml"));
 
   for (const file of files) {
     try {
-      const raw = fs.readFileSync(path.join(SUBMODEL_DIR, file), "utf-8");
+      const raw = fs.readFileSync(path.join(submodelDir, file), "utf-8");
       const doc = yaml.load(raw) as Record<string, unknown>;
       if (doc?.id) {
         index[String(doc.id)] = path.basename(file, path.extname(file));
@@ -46,8 +43,11 @@ function buildSubmodelIndex(): Record<string, string> {
 }
 
 export async function GET() {
+  const generatorPath = getGeneratorPath();
+  const SHELL_DIR = path.join(generatorPath, "shell_templates");
+  const SUBMODEL_DIR = path.join(generatorPath, "submodel_templates");
   try {
-    const submodelIndex = buildSubmodelIndex();
+    const submodelIndex = buildSubmodelIndex(SUBMODEL_DIR);
 
     const shellFiles = fs
       .readdirSync(SHELL_DIR)
