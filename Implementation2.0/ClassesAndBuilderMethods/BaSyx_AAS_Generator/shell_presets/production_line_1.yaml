@@ -1,0 +1,73 @@
+shell: "production_line_shell"
+label: "Production Line 1 – AAU Smart Lab"
+description: "AAU Smart Lab production line comprising Transport, Storage, and Drilling stations"
+
+asset_name: "ProductionLine_1"
+
+submodels:
+  ServiceOffered:
+    ServiceLabel:
+      - language: "en"
+        text: "AAU Smart Lab Production Line"
+      - language: "da"
+        text: "AAU Smart Lab Produktionslinje"
+    OfferedCapabilities:
+      - CapabilityType: "Drilling"
+        ResourceRef: "https://aausmartlab.org/Shells/Resources/Drilling-12345678"
+        CapabilityRef: "https://aausmartlab.org/Shells/Resources/Drilling-12345678/DrillingCapabilityOffered"
+        SupportedComponents:
+          - "https://aausmartlab.org/Shells/Component/Bottom_Cover"
+          - "https://aausmartlab.org/Shells/Component/Top_Cover"
+      - CapabilityType: "Handoff"
+        ResourceRef: "https://aausmartlab.org/Shells/Resources/Drilling-12345678"
+        CapabilityRef: "https://aausmartlab.org/Shells/Resources/Drilling-12345678/HandoffCapabilityOffered"
+        SupportedComponents:
+          - "https://aausmartlab.org/Shells/Component/Bottom_Cover"
+          - "https://aausmartlab.org/Shells/Component/Top_Cover"
+      - CapabilityType: "Transport"
+        ResourceRef: "https://aausmartlab.org/Shells/Resources/Transport-12345678"
+        CapabilityRef: "https://aausmartlab.org/Shells/Resources/Transport-12345678/TransportCapabilityOffered"
+        SupportedComponents:
+          - "BottomCover_ALU"
+          - "TopCover_ALU"
+          - "Bottom_Cover_Drilled"
+      - CapabilityType: "Store"
+        ResourceRef: "https://aausmartlab.org/Shells/Resources/Storage-12345678"
+        CapabilityRef: "https://aausmartlab.org/Shells/Resources/Storage-12345678/StoreCapabilityOffered"
+        SupportedComponents:
+          - "BottomCover_ALU"
+          - "TopCover_ALU"
+          - "Bottom_Cover_Drilled"
+      - CapabilityType: "Retrieve"
+        ResourceRef: "https://aausmartlab.org/Shells/Resources/Storage-12345678"
+        CapabilityRef: "https://aausmartlab.org/Shells/Resources/Storage-12345678/RetrieveCapabilityOffered"
+        SupportedComponents:
+          - "BottomCover_ALU"
+          - "TopCover_ALU"
+          - "Bottom_Cover_Drilled"
+
+  LineConfiguration:
+    ResourceLocations:
+      - ResourceReference: "https://aausmartlab.org/Shells/Resources/Transport-12345678"
+        GlobalLocation: { XPos: -0.36, YPos: 0.0, ThetaAngle: 0 }
+      - ResourceReference: "https://aausmartlab.org/Shells/Resources/Storage-12345678"
+        GlobalLocation: { XPos: 640.0, YPos: -55.0, ThetaAngle: 0 }
+      - ResourceReference: "https://aausmartlab.org/Shells/Resources/Drilling-12345678"
+        GlobalLocation: { XPos: 774.467, YPos: 443.309, ThetaAngle: 90 }
+    ConnectionPoints:
+      - GlobalLocation: { XPos: 625.277, YPos: 33.173 }
+        ConnectedResources:
+          - ResourceReference: "https://aausmartlab.org/Shells/Resources/Transport-12345678"
+            ZoneType: "in_outfeed"
+            LocalLocation: { XPos: 625.637, YPos: 33.173 }
+          - ResourceReference: "https://aausmartlab.org/Shells/Resources/Storage-12345678"
+            ZoneType: "in_outfeed"
+            LocalLocation: { XPos: -14.363, YPos: 88.173 }
+      - GlobalLocation: { XPos: 653.597, YPos: 440.0 }
+        ConnectedResources:
+          - ResourceReference: "https://aausmartlab.org/Shells/Resources/Transport-12345678"
+            ZoneType: "in_outfeed"
+            LocalLocation: { XPos: 653.957, YPos: 440.0 }
+          - ResourceReference: "https://aausmartlab.org/Shells/Resources/Drilling-12345678"
+            ZoneType: "in_outfeed"
+            LocalLocation: { XPos: -3.309, YPos: 124.467 }

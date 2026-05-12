@@ -7,9 +7,13 @@ BOP structure is never modified — it comes entirely from the preset.
 
 import copy
 import logging
+import sys
 from pathlib import Path
 
 import yaml
+
+sys.path.insert(0, str(Path(__file__).parent.parent / "BaSyx_AAS_Generator"))
+from shell_type_utils import resolve_type
 
 log = logging.getLogger(__name__)
 
@@ -37,7 +41,8 @@ SLOT_PROPERTY_MAP: dict[str, dict] = {
 def _load_preset(preset_name: str) -> dict:
     path = PRESETS_DIR / f"{preset_name}.yaml"
     with open(path, encoding="utf-8") as f:
-        return yaml.safe_load(f)
+        raw = yaml.safe_load(f)
+    return resolve_type(raw)
 
 
 def load_and_merge(product_name: str, configuration: list[dict], order_number: str) -> dict:

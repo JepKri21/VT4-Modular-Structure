@@ -1,42 +1,17 @@
 # Preset for the standard 3D-printed bottom cover component.
 # Fills in all fixed design properties — only SerialNumber and BatchNumber
 # need to be changed per physical instance.
-
-shell: "component_shell"
+type: "bottom_cover"
 label: "Bottom Cover – 3D Print, Black"
 description: "3D-printed PLA bottom cover for FuseBox Series A. Change SerialNumber and BatchNumber per instance."
 
 asset_name: "BottomCover_3DP"
-asset_category: "Mechanical"
-asset_type: "Bottom_Cover"
 
 submodels:
   Properties:
     PhysicalDimensions:
-      Length: 150
-      Width: 80
-      Height: 5
       Weight_g: 118.5
     MaterialProperties:
       Material: "PLA"
       Color: "Black"
       Finish: "Textured"
-
-  Documentation:
-    DisplayName:
-      - language: "en"
-        text: "Bottom Cover – 3D Print Black"
-      - language: "da"
-        text: "Bundlåg – 3D Print Sort"
-    Description:
-      - language: "en"
-        text: "3D-printed PLA bottom cover for FuseBox Series A enclosures"
-      - language: "da"
-        text: "3D-printet PLA bundlåg til FuseBox Serie A kabinetter"
-    ProductionIdentification:
-      ModelNumber: "BC-3DP-BLK-001"
-      # SerialNumber: leave blank — unique per instance
-      # BatchNumber: leave blank — set at production time
-    ManufacturerName: "AAU SmartLab"
-    ProductFamily: "FuseBox Series A"
-    HardwareRevision: "v1.0"

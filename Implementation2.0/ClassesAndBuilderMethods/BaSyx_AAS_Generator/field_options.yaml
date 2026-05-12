@@ -69,8 +69,8 @@ operations:
     template_id: "https://aausmartlab.org/Submodels/Templates/DrillingCapabilityRequired"
   Assemble:
     id_short: "RequiredAssembleCapability"
-    template_file: "assemble_capability"
-    template_id: "https://aausmartlab.org/Submodels/Templates/AssembleCapability"
+    template_file: "assemble_capability_required"
+    template_id: "https://aausmartlab.org/Submodels/Templates/AssembleCapabilityRequired"
 
 # ── Derived field patterns ──────────────────────────────────────────────────
 # Keys are submodel template names, values map id_short → pattern string.

@@ -11,27 +11,47 @@ When we add or change something non-obvious — a new file type, a new YAML fiel
 
 ---
 
-## Four file types and what they do
+## Five file types and what they do
 
 | File type | Folder | Purpose |
 |---|---|---|
-| Shell template | `shell_templates/*.yaml` | Declares which submodels a shell type must/may contain. Referenced by presets via `shell:`. Rarely needs a new file. |
+| Shell template | `shell_templates/*.yaml` | Abstract structural blueprint — declares which submodels a shell type must/may contain. No `shell:` field, no `id:`, no values. Referenced by presets via `shell:` and by type shells via `shell:`. |
+| Category type shell | `shell_templates/*.yaml` | Category-level AAS Type definition. Has `kind: "Type"`, its own AAS IRI, `submodel_templates:` (IRI refs), `include:` (which optional collections apply), `submodels:` (static defaults shared by all variants), and `derived:` (patterns for ModelNumber/DisplayName/Description). Referenced by presets via `type:`. Defines its parent blueprint via `shell:`. |
 | Submodel template | `submodel_templates/*.yaml` | Defines the field schema for one submodel. Consumed by the configurator UI to render forms. No concrete values here. |
-| Shell preset | `shell_presets/*.yaml` | Pre-fills an entire shell (all submodels) with concrete default values. Consumed by the configurator generator. Can also be saved from the UI Review step. |
+| Shell preset | `shell_presets/*.yaml` | Contains only the configurable/variable delta for one specific variant. Uses `type:` to inherit static values from a category type shell, or `shell:` directly for single-item categories. Consumed by the configurator generator. |
 | Shell instance | `shell_templates/` (`kind: Instance`) | A specific physical asset's shell descriptor. Not the same as a preset. |
+
+`shell_templates/` now contains two kinds of YAML:
+- **Abstract blueprints** (`component_shell.yaml`, `sub_assembly_shell.yaml`) — no `shell:` field, no `id:`, no `submodels:` values; only declare which submodels are required/optional.
+- **Category type shells** (`bottom_cover.yaml`, `top_cover.yaml`, etc.) — have `shell:`, `id:`, `submodel_templates:`, `include:`, `submodels:` with defaults, and `derived:` patterns. Referenced by presets via `type:`.
+
+Key fields on category type shells:
+- `submodel_templates:` — IRI refs to submodel templates; designed for future AAS server fetching
+- `include:` — which optional collections apply; used by configurator UI; generator ignores it
+- `derived:` — token patterns for ModelNumber/DisplayName/Description resolved from MaterialProperties; stripped after resolution
+- `submodels:` — static default values shared by all variants in this category
+
+Presets use either `shell:` (old style, direct — for single-item categories) or `type:` (new style — for multi-variant categories). `type:` auto-supplies `shell:`, `include:`, static values, and `derived:` patterns via `resolve_type()` / `resolvePresetType()`.
 
 Do NOT mix formats between types — see `YAML_FORMAT_GUIDE.txt` for the exact structure of each.
 
 ---
 
-## How the three layers connect
+## How the layers connect
 
 ```
-shell_template  ──references──▶  submodel_templates  (via template_id URI)
-     ▲
-     │  shell: "sub_assembly_shell"
-shell_preset  ──fills values──▶  submodels: { SubmodelIdShort: { ... } }
+shell_template (abstract)  ──references──▶  submodel_templates  (via template_id URI)
+        ▲
+        │  shell: "component_shell"
+category_type_shell  ──static defaults + derived patterns──▶  submodels: { ... }
+        ▲
+        │  type: "bottom_cover"
+shell_preset  ──configurable delta──▶  submodels: { Weight_g, Material, Color, Finish }
 ```
+
+Resolution: `resolve_type()` (Python) / `resolvePresetType()` (TypeScript) deep-merges the preset delta on top of the type shell's `submodels:`, then resolves `derived:` patterns using `MaterialProperties` values as tokens. Result is identical to an old-style fully-inlined preset.
+
+Presets without `type:` (using `shell:` directly) bypass this resolution entirely — they remain fully inlined.
 
 The link between a shell template and a submodel template is the `template_id` URI. If this URI doesn't match the `id` field in the submodel template file, the configurator will show a warning and render no fields.
 

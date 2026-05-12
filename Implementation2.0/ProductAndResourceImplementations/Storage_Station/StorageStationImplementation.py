@@ -87,6 +87,8 @@ json_str = json.dumps(builder.get(),cls=basyx.aas.adapter.json.AASToJsonEncoder,
 result = yaml_to_instance.upload_submodel(json_str, SERVER_BASE)
 print(result)  # "created" or "updated"
 
+Actor = "UR5"
+
 resource_inventories = {
     "Inventory1": 
     {
@@ -96,6 +98,7 @@ resource_inventories = {
            "https://aausmartlab.org/Shells/Component/Bottom_Cover", 
            "https://aausmartlab.org/Shells/Component/Top_Cover"
         ],
+        "AccessibleActors" : [Actor],
         "Storage" : 
         {
             "position1": "https://aausmartlab.org/Shells/Component/Bottom_Cover/Bottom_Cover-BC001",
@@ -117,6 +120,7 @@ resource_inventories = {
         [
             "https://aausmartlab.org/Shells/Assembly/Bottom_Cover_Drilled"
         ],   
+        "AccessibleActors" : [Actor],
         "Storage": 
         {
             "position1" : "https://aausmartlab.org/Shells/Assembly/Bottom_Cover_Drilled/Bottom_Cover_Drilled-BCD001",
@@ -128,38 +132,92 @@ resource_inventories = {
     }
 }
 
+def build_inventory(resource_inventories):
 
-def summarize_inventories(inventories):
-    result = {}
-    all_items = []
+    inventory_models = {}
 
-    for inv_name, inv_data in inventories.items():
-        storage = inv_data.get("Storage", {})
-        counts = {}
+    for inventory_name, inventory_data in (
+        resource_inventories.items()
+    ):
 
-        for item in storage.values():
-            if not item:
-                continue
-            
-            # Collect full item list
-            all_items.append(item)
-            
-            # Remove unique ID (last part of URL)
-            base = item.rsplit("/", 1)[0]
-            
-            # Count per type
-            counts[base] = counts.get(base, 0) + 1
+        # =====================================
+        # Convert storage slots
+        # =====================================
+        storage_models = {}
 
-        # Convert counts to list of dicts
-        result[inv_name] = [
-            {
-                "ComponentReference": ref,
-                "Amount": amt
-            }
-            for ref, amt in counts.items()
-        ]
+        for position, component_id in (
+            inventory_data["Storage"].items()
+        ):
 
-    return result, all_items
+            if component_id == "":
+                component_id = None
+
+            storage_models[position] = (
+                MS.InventorySlot(
+                    component_id=component_id
+                )
+            )
+
+        # =====================================
+        # Build InventoryData model
+        # =====================================
+        inventory_models[inventory_name] = (
+            MS.InventoryData(
+                inventory_size=inventory_data[
+                    "InventorySize"
+                ],
+
+                supported_components=inventory_data[
+                    "SupportedComponents"
+                ],
+
+                accessible_actors=inventory_data[
+                    "AccessibleActors"
+                ],
+
+                storage=storage_models
+            )
+        )
+
+    # =========================================
+    # Build final InventoryLevelMessage
+    # =========================================
+    return inventory_models
+
+
+#WE NEED TO CHANGE THIS TO MATCH THE NEW INVENTORY LEVEL MESSAGE TYPE
+#AS WELL AS WHERE WE PUBLISH THE MESSAGE
+#def summarize_inventories(inventories):
+#    result = {}
+#    all_items = []
+#
+#    for inv_name, inv_data in inventories.items():
+#        storage = inv_data.get("Storage", {})
+#        counts = {}
+#
+#        for item in storage.values():
+#            if not item:
+#                continue
+#            
+#            # Collect full item list
+#            all_items.append(item)
+#            
+#            # Remove unique ID (last part of URL)
+#            base = item.rsplit("/", 1)[0]
+#            
+#            # Count per type
+#            counts[base] = counts.get(base, 0) + 1
+#
+#        # Convert counts to list of dicts
+#        result[inv_name] = [
+#            {
+#                "ComponentReference": ref,
+#                "Amount": amt
+#            }
+#            for ref, amt in counts.items()
+#        ]
+#
+#    return result, all_items
 
 
 def find_positions(inventories, query):
@@ -230,6 +288,7 @@ def place_item(inventories, item_url):
     for inv_name, positions in slots.items():
         pos = positions[0]  # take first free slot
         inventories[inv_name]["Storage"][pos] = item_url
+
         return {
             "inventory": inv_name,
             "position": pos
@@ -238,7 +297,7 @@ def place_item(inventories, item_url):
     return None  # no space available
 
 
-Actor = "UR5"
+
 
 mqtt_client = MQTTClientResource(BROKER, MQTT_PORT, CLIENT_ID, BASE_TOPIC)
 
@@ -475,9 +534,10 @@ class UR5ManipulatorBehavior(StationBehavior):
                 job_id=self.command_payload.job_id, 
                 ideal_cycle_time_ms=self.ideal_cycle_time,
                 actual_cycle_time_ms=self.actual_cycle_time,
+                component_reference= self.component_reference,
                 result=self.result,
                 quality=self.quality,
-                output_parameters={"ComponentReference": self.retrieved_item_component}
+                output_parameters={}
             )
 
         elif self.skill == "Store" or self.skill == "Handoff":
@@ -488,13 +548,17 @@ class UR5ManipulatorBehavior(StationBehavior):
                 job_id=self.command_payload.job_id, 
                 ideal_cycle_time_ms=self.ideal_cycle_time,
                 actual_cycle_time_ms=self.actual_cycle_time,
+                component_reference= self.component_reference,
                 result=self.result,
                 quality=self.quality,
-                output_parameters={"ComponentReference": self.component_reference}
+                output_parameters={}
             )
         
 
         self.mqtt_client.publish(f"{job_result_suffix}/{self.actor_name}",job_result_message)
+        inventory_build = build_inventory(resource_inventories)
+        inventory_message = MS.InventoryLevelMessage(timestamp=datetime.now(), resource_id=CLIENT_ID,inventory=inventory_build)
+        mqtt_client.publish(f"{inventory_suffix}", inventory_message)
 
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.COMPLETE)
@@ -628,8 +692,8 @@ def handle_request(msg: MS.RequestMessage):
     #Checking if the request is for the inventory level
     elif inventory_suffix in elements:
         #We could also send a list of all unique ids in the storage, allowing the controller to at least see and choose a specific one
-        inventory_data, all_items = summarize_inventories(resource_inventories)
-        inventory_message = MS.InventoryLevelMessage(timestamp=datetime.now(), resource_id=CLIENT_ID,inventory=inventory_data,AllItems=all_items)
+        inventory_build = build_inventory(resource_inventories)
+        inventory_message = MS.InventoryLevelMessage(timestamp=datetime.now(), resource_id=CLIENT_ID,inventory=inventory_build)
         mqtt_client.publish(f"{inventory_suffix}", inventory_message)
         
 

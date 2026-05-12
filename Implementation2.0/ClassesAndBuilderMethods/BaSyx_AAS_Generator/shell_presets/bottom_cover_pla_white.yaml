@@ -1,36 +1,14 @@
-shell: "component_shell"
+type: "bottom_cover"
 label: "Bottom Cover – PLA, White, Matte"
 description: "3D-printed PLA bottom cover, white matte finish. Change SerialNumber and BatchNumber per instance."
 
 asset_name: "BottomCover_PLA_White"
-asset_category: "Mechanical"
-asset_type: "Bottom_Cover"
 
 submodels:
   Properties:
     PhysicalDimensions:
-      Length: 150
-      Width: 80
-      Height: 5
       Weight_g: 118.0
     MaterialProperties:
       Material: "PLA"
       Color: "White"
       Finish: "Matte"
-
-  Documentation:
-    DisplayName:
-      - language: "en"
-        text: "Bottom Cover – PLA White Matte"
-      - language: "da"
-        text: "Bundlåg – PLA Hvid Mat"
-    Description:
-      - language: "en"
-        text: "3D-printed PLA bottom cover, white matte surface finish"
-      - language: "da"
-        text: "3D-printet PLA bundlåg, hvid mat overflade"
-    ProductionIdentification:
-      ModelNumber: "BC-PLA-WHT-001"
-    ManufacturerName: "AAU SmartLab"
-    ProductFamily: "FuseBox Series A"
-    HardwareRevision: "v1.0"

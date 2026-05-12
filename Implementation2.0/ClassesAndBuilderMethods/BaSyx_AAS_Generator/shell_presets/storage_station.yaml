@@ -1,0 +1,97 @@
+shell: "resource_shell"
+label: "Storage Station – AAU Lab (Storage_12345678)"
+description: "UR5 storage station with store, retrieve, and handoff capabilities"
+
+asset_name: "Storage_12345678"
+
+submodels:
+  StoreCapabilityOffered:
+    CapabilityCategory: "Offered"
+    CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Store"
+    SupportedComponents:
+      - "BottomCover_ALU"
+      - "TopCover_ALU"
+      - "Bottom_Cover_Drilled"
+    AllowedMaterials:
+      - "PLA"
+      - "ABS"
+
+  RetrieveCapabilityOffered:
+    CapabilityCategory: "Offered"
+    CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Retrieve"
+    SupportedComponents:
+      - "BottomCover_ALU"
+      - "TopCover_ALU"
+      - "Bottom_Cover_Drilled"
+    AllowedMaterials:
+      - "PLA"
+      - "ABS"
+
+  HandoffCapabilityOffered:
+    CapabilityCategory: "Offered"
+    CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Handoff"
+    SupportedComponents:
+      - "BottomCover_ALU"
+      - "TopCover_ALU"
+      - "Bottom_Cover_Drilled"
+    AllowedMaterials:
+      - "PLA"
+      - "ABS"
+    Parameters:
+      TargetPosition:
+        XPos: ""
+        YPos: ""
+
+  Skills:
+    Retrieve:
+      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage-12345678/RetrieveCapabilityOffered"
+      Actors:
+        - "UR5"
+    Handoff:
+      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage-12345678/HandoffCapabilityOffered"
+      Actors:
+        - "UR5"
+    Store:
+      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage-12345678/StoreCapabilityOffered"
+      Actors:
+        - "UR5"
+
+  Inventory:
+    Inventories:
+      - Specifications:
+          InventorySize: 10
+        SupportedComponents:
+          - "Bottom_Cover"
+          - "Top_Cover"
+      - Specifications:
+          InventorySize: 5
+        SupportedComponents:
+          - "Bottom_Cover_Drilled"
+
+  ResourceZones:
+    CenterPoint:
+      XPos: 0.0
+      YPos: 0.0
+    ResourceGeometry:
+      Point1: { XPos: -50.0, YPos: -50.0 }
+      Point2: { XPos:  50.0, YPos: -50.0 }
+      Point3: { XPos:  50.0, YPos:  50.0 }
+      Point4: { XPos: -50.0, YPos:  50.0 }
+    InOutputZones:
+      Zone1:
+        Point1: { XPos: -40.0, YPos:  50.0 }
+        Point2: { XPos:  40.0, YPos:  50.0 }
+        Point3: { XPos:  40.0, YPos: 130.0 }
+        Point4: { XPos: -40.0, YPos: 130.0 }
+
+  Communication:
+    MQTT:
+      Suffixes:
+        CommandSuffix: "CMD"
+        StateSuffix: "PackMLState"
+        JobResultSuffix: "JobResult"
+        InfoRequestSuffix: "InfoRequest"
+        ResourceAcknowledgementSuffix: "ResourceAck"
+        ControllerAcknowledgementSuffix: "ControllerAck"
+        OccupancySuffix: "Occupy"
+        InventoryLevelSuffix: "InventoryLevel"

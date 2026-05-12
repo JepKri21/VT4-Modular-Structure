@@ -1,36 +1,14 @@
-shell: "component_shell"
+type: "top_cover"
 label: "Top Cover – ABS, White, Glossy"
 description: "Injection-moulded ABS top cover, white glossy finish. Change SerialNumber and BatchNumber per instance."
 
 asset_name: "TopCover_ABS_White"
-asset_category: "Mechanical"
-asset_type: "Top_Cover"
 
 submodels:
   Properties:
     PhysicalDimensions:
-      Length: 150
-      Width: 80
-      Height: 8
       Weight_g: 58.0
     MaterialProperties:
       Material: "ABS"
       Color: "White"
       Finish: "Glossy"
-
-  Documentation:
-    DisplayName:
-      - language: "en"
-        text: "Top Cover – ABS White Glossy"
-      - language: "da"
-        text: "Toplåg – ABS Hvid Blank"
-    Description:
-      - language: "en"
-        text: "Injection-moulded ABS top cover, white high-gloss finish"
-      - language: "da"
-        text: "Sprøjtestøbt ABS toplåg, hvid højglans overflade"
-    ProductionIdentification:
-      ModelNumber: "TC-ABS-WHT-001"
-    ManufacturerName: "AAU SmartLab"
-    ProductFamily: "FuseBox Series A"
-    HardwareRevision: "v1.0"

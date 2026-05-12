@@ -1,0 +1,76 @@
+shell: "resource_shell"
+label: "Drilling Station – AAU Lab (Drilling_12345678)"
+description: "KUKA Manipulator drilling station with drilling and handoff capabilities"
+
+asset_name: "Drilling_12345678"
+
+submodels:
+  DrillingCapabilityOffered:
+    CapabilityCategory: "Offered"
+    CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Drilling"
+    SupportedComponents:
+      - "https://aausmartlab.org/Shells/Component/Bottom_Cover"
+      - "https://aausmartlab.org/Shells/Component/Top_Cover"
+    AllowedMaterials:
+      - "https://aausmartlab.org/Materials/PLA"
+      - "https://aausmartlab.org/Materials/ABS"
+    Parameters:
+      HoleDiameter:
+        min: 1.0
+        max: 20.0
+      DrillDepth:
+        min: 0.0
+        max: 200.0
+      TargetPosition:
+        XPos: { min: -50.0, max: 50.0 }
+        YPos: { min: -50.0, max: 50.0 }
+
+  HandoffCapabilityOffered:
+    CapabilityCategory: "Offered"
+    CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Handoff"
+    SupportedComponents:
+      - "https://aausmartlab.org/Shells/Component/Bottom_Cover"
+      - "https://aausmartlab.org/Shells/Component/Top_Cover"
+    AllowedMaterials:
+      - "https://aausmartlab.org/Materials/PLA"
+      - "https://aausmartlab.org/Materials/ABS"
+    Parameters:
+      TargetPosition:
+        XPos: ""
+        YPos: ""
+
+  Skills:
+    Drilling:
+      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Drilling-12345678/DrillingCapabilityOffered"
+      Actors:
+        - "KUKAManipulator"
+    Handoff:
+      Actors:
+        - "KUKAManipulator"
+
+  ResourceZones:
+    CenterPoint:
+      XPos: 0.0
+      YPos: 0.0
+    ResourceGeometry:
+      Point1: { XPos: -50.0, YPos: -50.0 }
+      Point2: { XPos:  50.0, YPos: -50.0 }
+      Point3: { XPos:  50.0, YPos:  50.0 }
+      Point4: { XPos: -50.0, YPos:  50.0 }
+    InOutputZones:
+      Zone1:
+        Point1: { XPos: -40.0, YPos:  50.0 }
+        Point2: { XPos:  40.0, YPos:  50.0 }
+        Point3: { XPos:  40.0, YPos: 130.0 }
+        Point4: { XPos: -40.0, YPos: 130.0 }
+
+  Communication:
+    MQTT:
+      Suffixes:
+        CommandSuffix: "CMD"
+        StateSuffix: "PackMLState"
+        JobResultSuffix: "JobResult"
+        InfoRequestSuffix: "InfoRequest"
+        ResourceAcknowledgementSuffix: "ResourceAck"
+        ControllerAcknowledgementSuffix: "ControllerAck"
+        OccupancySuffix: "Occupy"

@@ -1,0 +1,33 @@
+kind: "Type"
+shell: "component_shell"
+asset_type: "Fuse"
+asset_category: "Electrical"
+id: "https://aausmartlab.org/Shells/Component/Fuse"
+
+submodel_templates:
+  Properties:    "https://aausmartlab.org/Submodels/Templates/ProductProperties"
+  Documentation: "https://aausmartlab.org/Submodels/Templates/ProductDocumentation"
+
+include:
+  Properties:
+    - PhysicalDimensions
+    - MaterialProperties
+    - ElectricalProperties
+  Documentation:
+    - ProductionIdentification
+    - DisplayName
+    - Description
+    - ManufacturerName
+    - ProductFamily
+    - HardwareRevision
+
+submodels:
+  Properties:
+    PhysicalDimensions:
+      Length: 30
+      Width: 6
+      Height: 6
+  Documentation:
+    ManufacturerName: "AAU SmartLab"
+    ProductFamily: "FuseBox Series A"
+    HardwareRevision: "v1.0"

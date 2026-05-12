@@ -492,6 +492,43 @@ function BomRefListField({ element, value, onChange, bomEntries = [] }: FieldPro
   );
 }
 
+/* ──────────────────────────────── BOM component picker (single-select) ── */
+
+function BomComponentField({ element, value, onChange, path, bomEntries = [] }: FieldProps) {
+  const id = `${path}-${element.id_short}`;
+  const strVal = (value ?? "") as string;
+
+  return (
+    <div className="flex flex-col gap-1">
+      <label htmlFor={id} className="text-sm font-medium">
+        {labelFor(element.id_short)}
+        {element.description && (
+          <span className="text-xs text-muted-foreground ml-1">— {element.description}</span>
+        )}
+      </label>
+      {bomEntries.length === 0 ? (
+        <p className="text-xs text-muted-foreground italic px-1">
+          No BOM entries available — fill the BillOfMaterials step first.
+        </p>
+      ) : (
+        <select
+          id={id}
+          className={inputClass()}
+          value={strVal}
+          onChange={(e) => onChange(e.target.value || null)}
+        >
+          <option value="">— select component —</option>
+          {bomEntries.map((e) => (
+            <option key={e.idShort} value={e.idShort}>
+              {e.description}
+            </option>
+          ))}
+        </select>
+      )}
+    </div>
+  );
+}
+
 /* ──────────────────────────────── process step ref ── */
 
 function ProcessStepRefField({ element, value, onChange, path, processStepEntries = [] }: FieldProps) {
@@ -543,7 +580,13 @@ function CollectionField({ element, value, onChange, path, context, inlineCapabi
 
   // Extensible: array of FormData entries
   if (element.extensible) {
-    const entries: FormData[] = Array.isArray(value) ? (value as FormData[]) : [];
+    const minEntries = element.min_entries ?? 0;
+    const rawValue = Array.isArray(value) ? (value as FormData[]) : [];
+    // Pre-fill to min_entries on first render
+    const entries: FormData[] =
+      rawValue.length < minEntries
+        ? [...rawValue, ...Array.from({ length: minEntries - rawValue.length }, () => ({} as FormData))]
+        : rawValue;
 
     // If the only child is a non-extensible collection wrapper (e.g. BOMEntry inside
     // BOMEntries, ProcessStep inside ProcessSteps), render its children directly so
@@ -598,13 +641,15 @@ function CollectionField({ element, value, onChange, path, context, inlineCapabi
                   key={i}
                   className="border border-dashed border-border rounded-md p-3 flex flex-col gap-3 relative"
                 >
-                  <button
-                    type="button"
-                    onClick={() => removeEntry(i)}
-                    className="absolute top-2 right-2 text-muted-foreground hover:text-destructive"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {i >= minEntries && (
+                    <button
+                      type="button"
+                      onClick={() => removeEntry(i)}
+                      className="absolute top-2 right-2 text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                   <span className="text-xs text-muted-foreground font-mono">
                     Entry {i + 1}
                   </span>
@@ -792,6 +837,22 @@ export function FieldRenderer({ element, value, onChange, path, context, inlineC
         onChange={onChange}
         path={path}
         processStepEntries={processStepEntries}
+      />
+    );
+  }
+
+  if (
+    element.type === "property" &&
+    (element.id_short === "ComponentTypeRef" ||
+      element.semantic_id === "https://aausmartlab.org/Semantics/ComponentTypeRef")
+  ) {
+    return wrap(
+      <BomComponentField
+        element={element}
+        value={value}
+        onChange={onChange}
+        path={path}
+        bomEntries={bomEntries}
       />
     );
   }

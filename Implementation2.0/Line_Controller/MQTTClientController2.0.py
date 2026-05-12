@@ -133,6 +133,20 @@ class MQTTClientController:
         }
         """
 
+        self.shared_handler_variable = {}
+        """
+        This variable is where the handlers can write their data and make it accesible to the controller
+        It is just an empty dict, but the controller will define what the handlers write to
+        So a handler for the state messages will write to a key called "state" or whatever they want
+        It could look something like this:
+        self.shared_handler_variable = {
+            "state": {resource_shell_id: {actor_name : "PackMLState.Idle"}},
+            "inventory": {resource_shell_id: InventoryLevelMessage,
+            "inventory": {resource_shell_id: {inventory_name: {"InventorySize": int, "SupportedComponents": list[str], AccesibleActors: list[str], Storage: }}},
+            "job_result": {resource_shell_id: {actor_name : JobResultMessage}}
+            }
+        """
+
         self.client = mqtt.Client(
             client_id=self.client_id,
             callback_api_version=mqtt.CallbackAPIVersion.VERSION1
@@ -145,6 +159,124 @@ class MQTTClientController:
         )
         self.watchdog_thread.start()
 
+    #=================
+    #Helper functions
+    #=================
+
+    def parse_topic(self, topic: str):
+
+        parts = topic.split("/")
+
+        resource_suffix = None
+        suffix = None
+
+        # Find resource ID dynamically
+        for part in parts:
+            if part in self.topic_to_shell_id:
+                resource_suffix = part
+                break
+
+        if resource_suffix is None:
+            raise ValueError(f"[PARSE_TOPIC ERROR] Unknown resource in topic: {topic}")
+
+        # Find suffix dynamically
+        reverse_map = self.reverse_topic_maps.get(resource_suffix, {})
+
+        for part in parts:
+            if part in reverse_map:
+                suffix = part
+                break
+
+        if suffix is None:
+            raise ValueError(f"[PARSE_TOPIC ERROR] Unknown suffix in topic: {topic}")
+
+        # Optional actor ID:
+        actor_id = None
+
+        suffix_index = parts.index(suffix)
+
+        if suffix_index + 1 < len(parts):
+            actor_id = parts[suffix_index + 1]
+
+        return {
+            "resource_suffix": resource_suffix,
+            "topic_suffix": suffix,
+            "actor_id": actor_id,
+            "full_topic": topic
+        }
+
+    def register_handler(self, message_type, handler):
+        self.handlers[message_type] = handler
+
+    def classify_reachability(self, state_message):
+    
+        inactive_states = {
+            MS.PackMLState.ABORTED,
+            MS.PackMLState.ABORTING,
+            MS.PackMLState.CLEARING,
+            MS.PackMLState.STOPPING,
+            MS.PackMLState.STOPPED
+        }
+    
+        if state_message.state in inactive_states:
+            return MS.ResourceReachability.INACTIVE
+    
+        return MS.ResourceReachability.ACTIVE
+
+    def _request_resource_data(self,resource_suffix: str,message_type):
+
+        try:
+            topic_map = self.topic_maps.get(resource_suffix)
+            if topic_map is None:
+                print(f"[REQUEST_MESSAGE ERROR] No topic map for {resource_suffix}")
+                return
+
+            # =====================================
+            # Determine requested topic suffix
+            # =====================================
+            requested_suffix = topic_map.get(message_type)
+
+            if requested_suffix is None:
+                print(f"[REQUEST_MESSAGE ERROR] {resource_suffix} does not support "f"{message_type}")
+                return
+
+            # =====================================
+            # Determine request topic suffix
+            # =====================================
+            request_suffix = topic_map.get(MS.RequestMessage)
+
+            if request_suffix is None:
+                print(f"[REQUEST_MESSAGE ERROR] {resource_suffix} has no RequestMessage topic")
+                return
+
+            # =====================================
+            # Construct requested topic
+            # =====================================
+            requested_topic = (f"{self.base_topic}/"f"{resource_suffix}/"f"{requested_suffix}")
+
+            # =====================================
+            # Build request message
+            # =====================================
+            resource_shell_id = self.topic_to_shell_id[resource_suffix]
+            request_message = MS.RequestMessage(
+                timestamp=datetime.now(),
+                requested_topic_update=requested_topic,
+                resource_id=resource_shell_id
+            )
+
+            # =====================================
+            # Publish request
+            # =====================================
+            self.publish_message(resource_shell_id,request_message)
+
+            print(f"[REQUEST_MESSAGE] Requested {message_type.__name__} "f"from {resource_suffix}")
+
+        except Exception as e:
+            print(f"[REQUEST_MESSAGE ERROR] Request failed: {e}")
+
+    #=====================
+    #Controller functions
+    #=====================
 
     def update_information(self):
         #This method should update self.reverse_topic_maps, self.topic_maps, self.shell_id_to_topic and self.topic_to_shell_id
@@ -201,65 +333,36 @@ class MQTTClientController:
 
             self.reverse_topic_maps[resource_suffix] = reverse
 
-    def parse_topic(self, topic: str):
-
-        parts = topic.split("/")
-
+    def request_data(self,message_type,resource_shell_id: str | None = None):
         resource_suffix = None
-        suffix = None
+        # =====================================
+        # CASE 1:
+        # Single specific resource
+        # =====================================
+        if resource_shell_id is not None:
+            resource_suffix = self.shell_id_to_topic[resource_shell_id]
+            if resource_suffix is not None:
+                self._request_resource_data(resource_suffix,message_type)
+                return
 
-        # Find resource ID dynamically
-        for part in parts:
-            if part in self.topic_to_shell_id:
-                resource_suffix = part
-                break
+        
+        # =====================================
+        # CASE 2:
+        # Request from all compatible resources
+        # =====================================
+        else:
+            for resource_suffix, topic_map in self.topic_maps.items():
 
-        if resource_suffix is None:
-            raise ValueError(f"Unknown resource in topic: {topic}")
+                # Skip resources without this topic
+                if message_type not in topic_map:
+                    continue
 
-        # Find suffix dynamically
-        reverse_map = self.reverse_topic_maps.get(resource_suffix, {})
+                topic_suffix = topic_map.get(message_type)
 
-        for part in parts:
-            if part in reverse_map:
-                suffix = part
-                break
+                if topic_suffix is None:
+                    continue
 
-        if suffix is None:
-            raise ValueError(f"Unknown suffix in topic: {topic}")
-
-        # Optional actor ID:
-        actor_id = None
-
-        suffix_index = parts.index(suffix)
-
-        if suffix_index + 1 < len(parts):
-            actor_id = parts[suffix_index + 1]
-
-        return {
-            "resource_suffix": resource_suffix,
-            "topic_suffix": suffix,
-            "actor_id": actor_id,
-            "full_topic": topic
-        }
-
-    def register_handler(self, message_type, handler):
-        self.handlers[message_type] = handler
-
-    def classify_reachability(self, state_message):
-    
-        inactive_states = {
-            MS.PackMLState.ABORTED,
-            MS.PackMLState.ABORTING,
-            MS.PackMLState.CLEARING,
-            MS.PackMLState.STOPPING,
-            MS.PackMLState.STOPPED
-        }
-    
-        if state_message.state in inactive_states:
-            return MS.ResourceReachability.INACTIVE
-    
-        return MS.ResourceReachability.ACTIVE
+                self._request_resource_data(resource_suffix,message_type)
 
     def publish_message(self,resource_shell_id: str,message):
         
@@ -273,7 +376,7 @@ class MQTTClientController:
 
             if topic_map is None:
                 raise ValueError(
-                    f"No topic map found for resource: {resource_suffix}"
+                    f"[PUBLISH_MESSAGE ERROR] No topic map found for resource: {resource_suffix}"
                 )
 
             # ==========================
@@ -283,7 +386,7 @@ class MQTTClientController:
 
             if topic_suffix is None:
                 raise ValueError(
-                    f"No topic suffix for message type "
+                    f"[PUBLISH_MESSAGE ERROR] No topic suffix for message type "
                     f"{type(message)} on resource {resource_suffix}"
                 )
 
@@ -298,7 +401,7 @@ class MQTTClientController:
 
                 if topic_suffix is None:
                     raise ValueError(
-                        f"No ControllerAcknowledgementSuffix "
+                        f"[PUBLISH_MESSAGE ERROR] No ControllerAcknowledgementSuffix "
                         f"defined for resource {resource_suffix}"
                     )
 
@@ -325,18 +428,22 @@ class MQTTClientController:
                 json.dumps(payload)
             )
 
-            print(f"Published to {topic}")
+            print(f"[PUBLISH_MESSAGE] Published to {topic}")
 
         except Exception as e:
-            print(f"Failed to publish message: {e}")
+            print(f"[PUBLISH_MESSAGE ERROR] Failed to publish message: {e}")
+
+    #========================
+    #MQTT functions
+    #========================
 
     def on_connect(self, client, userdata, flags, rc):
 
         if rc == 0:
-            print(f"Connected to MQTT broker: {self.broker}:{self.port}")
+            print(f"[ON_CONNECT] Connected to MQTT broker: {self.broker}:{self.port}")
 
         else:
-            print(f"Failed to connect to MQTT broker. Return code: {rc}")
+            print(f"[ON_CONNECT ERROR] Failed to connect to MQTT broker. Return code: {rc}")
             return
 
         # Refresh all topic/resource mappings
@@ -350,7 +457,7 @@ class MQTTClientController:
 
             client.subscribe(topic)
 
-            print(f"Subscribed to: {topic}")
+            print(f"[ON_CONNECT] Subscribed to: {topic}")
 
     def on_message(self, client, userdata, msg):
 
@@ -372,7 +479,7 @@ class MQTTClientController:
             message_type = reverse_map.get(topic_suffix)
 
             if message_type is None:
-                print(f"No message type mapping for suffix: {topic_suffix}")
+                print(f"[ON_MESSAGE ERROR] No message type mapping for suffix: {topic_suffix}")
                 return
 
             # ==========================
@@ -399,13 +506,13 @@ class MQTTClientController:
                 handler(self, parsed_message, topic_info)
 
             else:
-                print(f"No handler registered for {message_type}")
+                print(f"[ON_MESSAGE] No handler registered for {message_type}")
 
         except json.JSONDecodeError as e:
-            print(f"JSON decode error: {e}")
+            print(f"[ON_MESSAGE ERROR] JSON decode error: {e}")
 
         except Exception as e:
-            print(f"MQTT message handling failed: {e}")
+            print(f"[ON_MESSAGE ERROR] MQTT message handling failed: {e}")
 
     def start_mqtt_connection(self):
         self.client.on_connect = self.on_connect
@@ -461,7 +568,7 @@ class MQTTClientController:
             request_topic = self.topic_maps[resource_suffix].get(MS.RequestMessage)
 
             if request_topic is None:
-                print(f"No request suffix for {resource_suffix}")
+                print(f"[WATCHDOG ERROR] No request suffix for {resource_suffix}")
                 return
 
             full_topic_update = (
@@ -495,69 +602,84 @@ class MQTTClientController:
             print(f"[WATCHDOG ERROR] {e}")
 
 #=========================
-#Defining message handlers
+#Defining message handlers (should be done in the controller, but we do it here to test)
 #=========================
 
-def handle_job_result_message(controller, message, topic_info):
+
+def handle_job_result_message(controller: MQTTClientController,message,topic_info):
 
     resource_suffix = topic_info["resource_suffix"]
-    actor_id = topic_info.get("actor_id")
 
-    print(
-        f"Received JobResultMessage from "
-        f"{resource_suffix}"
-        f"{f' ({actor_id})' if actor_id else ''}"
-    )
+    actor_id = topic_info.get("actor_id","default")
 
-    # ====================================
-    # TODO:
-    # Process completed job result
-    # ====================================
+    # =====================================
+    # Convert MQTT suffix -> shell id
+    # =====================================
+    resource_shell_id = (controller.topic_to_shell_id[resource_suffix])
 
-    # Example:
-    # self.completed_jobs.append(message)
+    # =====================================
+    # Creating or updating the job_result data structure with the job_result from the actor
+    # =====================================
+    job_store = (controller.shared_handler_variable.setdefault("job_result", {}))
 
-    pass
+    resource_jobs = job_store.setdefault(resource_shell_id,{})
 
-def handle_inventory_level_message(controller, message, topic_info):
+    resource_jobs[actor_id] = message
 
-    resource_id = topic_info["resource_id"]
-    actor_id = topic_info.get("actor_id")
+    print(f"[JOB RESULT] "f"{resource_suffix}/{actor_id}")
 
-    print(
-        f"Received InventoryLevelMessage from "
-        f"{resource_id}"
-        f"{f' ({actor_id})' if actor_id else ''}"
-    )
+def handle_inventory_level_message(controller: MQTTClientController,message,topic_info):
 
-    # ====================================
-    # TODO:
-    # Update inventory tracking
-    # ====================================
+    resource_suffix = topic_info["resource_suffix"]
 
-    # Example:
-    # self.inventory_levels[resource_id] = message.inventory_level
+    # =====================================
+    # Convert MQTT suffix -> shell id
+    # =====================================
+    resource_shell_id = (controller.topic_to_shell_id[resource_suffix])
 
-    pass
+    # =====================================
+    # Directly inserting the message into the data structure
+    # =====================================
+    controller.shared_handler_variable.setdefault("inventory",{})
+    controller.shared_handler_variable["inventory"][resource_shell_id] = message.inventory
 
+    print(f"[INVENTORY] "f"{resource_suffix} "f"updated inventory "f"{message.inventory}")
 
-def handle_state_message(controller, message, topic_info):
+def handle_state_message(controller: MQTTClientController, message, topic_info):
 
-    resource_id = topic_info["resource_suffix"]
+    resource_suffix = topic_info["resource_suffix"]
+    actor_id = topic_info.get("actor_id", "default")
 
-    # classify reachability
+    # =====================================
+    # Convert MQTT suffix -> shell id
+    # =====================================
+    resource_shell_id = (controller.topic_to_shell_id[resource_suffix])
+
+    # =====================================
+    # Classify reachability
+    # =====================================
     reachability = controller.classify_reachability(message)
 
-    full_resource_id = controller.topic_to_shell_id[resource_id]
+    controller.RM.resource_shell_ids[resource_shell_id] = reachability
 
-    controller.RM.resource_shell_ids[full_resource_id] = reachability
+    # =====================================
+    # Update last_seen
+    # =====================================
+    controller.last_seen[resource_suffix] = (datetime.now())
 
-    # always update last_seen
-    controller.last_seen[resource_id] = datetime.now()
+    # =====================================
+    # Initialize shared state namespace
+    # =====================================
+    state_store = (controller.shared_handler_variable.setdefault("state", {}))
 
-    print(
-        f"[STATE] {resource_id} → {reachability}"
-    )
+    resource_store = state_store.setdefault(resource_shell_id,{})
+
+    # =====================================
+    # Store actor state
+    # =====================================
+    resource_store[actor_id] = message.state
+
+    print(f"[STATE] "f"{resource_suffix}/{actor_id} "f"→ {message.state}")
 
 BROKER = "localhost"
 MQTT_PORT = 1883
@@ -572,6 +694,10 @@ resources_url = "https://aausmartlab.org/Shells/Resources"
 rm = RM(MQTT_PORT,BASE_TOPIC,AAS_BROKER,AAS_PORT,resources_url)
 
 controller_mqtt = MQTTClientController(BROKER,MQTT_PORT,CLIENT_ID,BASE_TOPIC,rm)
+
+controller_mqtt.register_handler(MS.StateMessage, handle_state_message)
+controller_mqtt.register_handler(MS.JobResultMessage, handle_job_result_message)
+controller_mqtt.register_handler(MS.InventoryLevelMessage,handle_inventory_level_message)
 
 params = {
     "BitDiameter": 5.0,
@@ -593,7 +719,6 @@ command = MS.CommandMessage(timestamp=datetime.now(), resource_id="Drilling_1234
 async def main():
     global main_loop
     main_loop = asyncio.get_running_loop()
-
     controller_mqtt.start_mqtt_connection()
     controller_mqtt.update_information()
     #print("============================================================================")
@@ -607,6 +732,12 @@ async def main():
     #print("============================================================================")
 
     controller_mqtt.publish_message(controller_mqtt.topic_to_shell_id["Drilling_12345678"],command)
+    controller_mqtt.request_data(MS.InventoryLevelMessage)
+    i = 0
+    while i < 120:
+        i = i+1
+        print(controller_mqtt.shared_handler_variable)
+        time.sleep(5)
     
     # Keep machine alive forever
     await asyncio.Event().wait()

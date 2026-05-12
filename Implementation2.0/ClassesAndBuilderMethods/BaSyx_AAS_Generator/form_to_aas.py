@@ -33,15 +33,34 @@ from pathlib import Path
 import yaml
 from basyx.aas import model
 
+import basyx.aas.adapter.json
 sys.path.insert(0, str(Path(__file__).parent))
 
-import basyx.aas.adapter.json
 from builders import XS_TYPE_MAP, _convert_value, _sm_ref
 from instance_generator_class import AASInstanceBuilder
+from shell_type_utils import resolve_type
 
 BASE_DIR = Path(__file__).parent
 SHELL_TEMPLATES_DIR = BASE_DIR / "shell_templates"
 SUBMODEL_TEMPLATES_DIR = BASE_DIR / "submodel_templates"
+
+
+def _build_template_map() -> dict[str, str]:
+    """Scan submodel_templates/ and map each template's id_short to its filename stem."""
+    result = {}
+    for path in SUBMODEL_TEMPLATES_DIR.glob("*.yaml"):
+        try:
+            with open(path, encoding="utf-8") as f:
+                data = yaml.safe_load(f)
+            id_short = data.get("id_short")
+            if id_short:
+                result[id_short] = path.stem
+        except Exception:
+            pass
+    return result
+
+
+SM_TEMPLATE_MAP: dict[str, str] = _build_template_map()
 
 
 # ─────────────────────────────── helpers ──────────────────────────────────
@@ -342,6 +361,7 @@ def build_environment(preset: dict, instance_suffix: str = "") -> tuple[dict, st
 
     Returns (env_dict, shell_iri).
     """
+    preset = resolve_type(preset)
     shell_type = preset["shell"]
     asset_type = preset.get("asset_type", "")
     asset_name = preset.get("asset_name", "")
@@ -362,13 +382,6 @@ def build_environment(preset: dict, instance_suffix: str = "") -> tuple[dict, st
     id_short = asset_name
     global_asset_id = shell_id
 
-    SM_TEMPLATE_MAP = {
-        "Properties":      "product_properties",
-        "Documentation":   "product_documentation",
-        "BillOfMaterials": "bill_of_materials",
-        "BillOfProcesses": "bill_of_processes",
-        "ServiceRequired": "service_required",
-    }
 
     shell = model.AssetAdministrationShell(
         id_=shell_id,

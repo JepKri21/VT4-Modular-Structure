@@ -21,6 +21,7 @@ export interface TemplateElement {
   element_type?: string;
   extensible?: boolean;
   entry_template?: string;
+  min_entries?: number;
   elements?: TemplateElement[];
   qualifiers?: Qualifier[];
   options?: string[];
@@ -134,7 +135,8 @@ export interface LangEntry {
 
 export interface ShellPresetSummary {
   filename: string;
-  shell: string; // matches ShellType.name
+  shell: string; // resolved abstract blueprint name, e.g. "component_shell"
+  type: string;  // original category template name, e.g. "bottom_cover" (empty if none)
   label: string;
   description: string;
   asset_name: string;
@@ -144,6 +146,7 @@ export interface ShellPresetSummary {
 export interface ShellPreset extends ShellPresetSummary {
   // submodels keyed by slot id_short → nested FormData-compatible object
   submodels: Record<string, unknown>;
+  include?: Record<string, string[]>;
 }
 
 /**
@@ -193,6 +196,12 @@ export interface ShellSubmodelSlot {
   template_file: string | null; // submodel template filename without extension
 }
 
+export interface ShellCategory {
+  name: string;        // e.g. "bottom_cover"
+  label: string;       // e.g. "Bottom Cover"
+  description: string;
+}
+
 export interface ShellType {
   name: string; // filename without extension, e.g. "component_shell"
   label: string; // human-readable, e.g. "Component Shell"
@@ -202,6 +211,7 @@ export interface ShellType {
   id_short_pattern: string;
   global_asset_id_pattern: string;
   submodels: ShellSubmodelSlot[];
+  categories: ShellCategory[]; // category type shells that reference this blueprint
 }
 
 export function isMany(cardinality?: string): boolean {

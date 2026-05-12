@@ -1,0 +1,41 @@
+id_short: "Inventory"
+id: "https://aausmartlab.org/Submodels/Templates/Inventory"
+description: "Inventory submodel for a storage resource — one entry per physical storage slot or rack"
+
+elements:
+
+  - type: collection
+    id_short: "Inventories"
+    semantic_id: "https://aausmartlab.org/Semantics/Inventories"
+    description: "All physical inventory slots or racks on this resource"
+    cardinality: "One"
+    elements:
+
+      - type: collection
+        id_short: "Inventory"
+        semantic_id: "https://aausmartlab.org/Semantics/Inventory"
+        description: "One entry per physical inventory slot or rack (duplicate this collection for each)"
+        cardinality: "OneToMany"
+        elements:
+
+          - type: collection
+            id_short: "Specifications"
+            semantic_id: "https://aausmartlab.org/Semantics/Parameters"
+            description: "Physical specifications of this inventory slot"
+            cardinality: "One"
+            elements:
+
+              - type: property
+                id_short: "InventorySize"
+                value_type: "xs:integer"
+                semantic_id: "https://aausmartlab.org/Semantics/InventorySize"
+                description: "Maximum number of components this slot can hold"
+                cardinality: "One"
+
+          - type: list
+            id_short: "SupportedComponents"
+            semantic_id: "https://aausmartlab.org/Semantics/SupportedComponents"
+            description: "Component types that can be stored in this inventory slot"
+            element_type: "property"
+            value_type: "xs:string"
+            cardinality: "OneToMany"

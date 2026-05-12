@@ -112,15 +112,12 @@ def _fetch_aas_properties(shell_iri: str, basyx_url: str) -> dict:
             return empty
         actual_iri = shell.get("id", shell_iri)
         sm_iris = basyx_client.get_submodel_refs_for_shell(actual_iri, basyx_url)
-        props_iri = next(
-            (iri for iri in sm_iris if "Properties" in iri.split("/")[-1] or iri.endswith("/Properties")),
-            None,
-        )
+        props_iri = next((iri for iri in sm_iris if "/Properties" in iri), None)
         if not props_iri:
-            # Fallback: try both IRI conventions
+            # Fallback: try both IRI conventions against the resolved IRI
             for candidate in (
-                f"{shell_iri}/Submodels/Properties",
-                f"{shell_iri}/Submodel/Properties/0",
+                f"{actual_iri}/Submodels/Properties",
+                f"{actual_iri}/Submodel/Properties/0",
             ):
                 sm = basyx_client.fetch_submodel(candidate, basyx_url)
                 if sm:

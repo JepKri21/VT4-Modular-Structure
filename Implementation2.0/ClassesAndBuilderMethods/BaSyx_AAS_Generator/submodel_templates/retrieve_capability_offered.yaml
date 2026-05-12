@@ -1,6 +1,6 @@
-id_short: "HandoffCapabilityOffered"
-id: "https://aausmartlab.org/Submodels/Templates/HandoffCapabilityOffered"
-description: "Offered capability template for a handoff operation — shared by Drilling and Storage resources"
+id_short: "RetrieveCapabilityOffered"
+id: "https://aausmartlab.org/Submodels/Templates/RetrieveCapabilityOffered"
+description: "Offered retrieve capability — used by storage-type resources to declare what they can pick and present"
 
 elements:
 
@@ -15,31 +15,15 @@ elements:
     id_short: "CapabilityReference"
     value_type: "xs:string"
     semantic_id: "https://aausmartlab.org/Semantics/CapabilityReference"
-    description: "Semantic IRI identifying this as a Handoff capability"
+    description: "Semantic IRI identifying this as a Retrieve capability"
     cardinality: "One"
 
   - type: collection
     id_short: "Parameters"
     semantic_id: "https://aausmartlab.org/Semantics/Parameters"
-    description: "Parameters defining the handoff capability envelope"
+    description: "Parameters defining the retrieve capability envelope"
     cardinality: "One"
     elements:
-
-      - type: collection
-        id_short: "TargetPosition"
-        description: "Position where the component is handed off"
-        cardinality: "One"
-        elements:
-          - type: property
-            id_short: "XPos"
-            value_type: "xs:float"
-            semantic_id: "https://aausmartlab.org/Semantics/mm"
-            cardinality: "One"
-          - type: property
-            id_short: "YPos"
-            value_type: "xs:float"
-            semantic_id: "https://aausmartlab.org/Semantics/mm"
-            cardinality: "One"
 
       - type: multi_language_property
         id_short: "OperationLabel"
@@ -50,7 +34,7 @@ elements:
   - type: list
     id_short: "SupportedComponents"
     semantic_id: "https://aausmartlab.org/Semantics/SupportedComponents"
-    description: "Component types this resource can hand off"
+    description: "Component types this resource can retrieve"
     element_type: "property"
     value_type: "xs:string"
     cardinality: "OneToMany"
@@ -58,7 +42,7 @@ elements:
   - type: list
     id_short: "AllowedMaterials"
     semantic_id: "https://aausmartlab.org/Semantics/AllowedMaterials"
-    description: "Materials compatible with this handoff capability"
+    description: "Materials compatible with this retrieve capability"
     element_type: "property"
     value_type: "xs:string"
     cardinality: "OneToMany"

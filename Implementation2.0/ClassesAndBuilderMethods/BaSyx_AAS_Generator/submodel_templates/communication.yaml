@@ -1,0 +1,73 @@
+id_short: "Communication"
+id: "https://aausmartlab.org/Submodels/Templates/Communication"
+description: "MQTT communication parameters for a resource station — defines topic suffixes for the standard PackML messaging protocol"
+
+elements:
+
+  - type: collection
+    id_short: "MQTT"
+    description: "MQTT configuration for this resource"
+    cardinality: "One"
+    elements:
+
+      - type: collection
+        id_short: "Suffixes"
+        description: "Topic suffix definitions — full topic is <BaseTopic>/<ResourceID>/<Suffix>"
+        cardinality: "One"
+        elements:
+
+          - type: property
+            id_short: "CommandSuffix"
+            value_type: "xs:string"
+            semantic_id: "https://aausmartlab.org/Semantics/CommandSuffix"
+            description: "Suffix for command topics — controller sends PackML commands here"
+            cardinality: "One"
+
+          - type: property
+            id_short: "StateSuffix"
+            value_type: "xs:string"
+            semantic_id: "https://aausmartlab.org/Semantics/StateSuffix"
+            description: "Suffix for state topics — resource publishes PackML state changes here"
+            cardinality: "One"
+
+          - type: property
+            id_short: "JobResultSuffix"
+            value_type: "xs:string"
+            semantic_id: "https://aausmartlab.org/Semantics/JobResultSuffix"
+            description: "Suffix for job result topics — resource publishes job outcomes here"
+            cardinality: "One"
+
+          - type: property
+            id_short: "InfoRequestSuffix"
+            value_type: "xs:string"
+            semantic_id: "https://aausmartlab.org/Semantics/InfoRequestSuffix"
+            description: "Suffix for info request topics — controller requests state republish here"
+            cardinality: "One"
+
+          - type: property
+            id_short: "ResourceAcknowledgementSuffix"
+            value_type: "xs:string"
+            semantic_id: "https://aausmartlab.org/Semantics/ResourceAcknowledgementSuffix"
+            description: "Suffix for resource acknowledgement topics — resource confirms receipt of commands"
+            cardinality: "One"
+
+          - type: property
+            id_short: "ControllerAcknowledgementSuffix"
+            value_type: "xs:string"
+            semantic_id: "https://aausmartlab.org/Semantics/ControllerAcknowledgementSuffix"
+            description: "Suffix for controller acknowledgement topics — controller confirms receipt of results"
+            cardinality: "One"
+
+          - type: property
+            id_short: "OccupancySuffix"
+            value_type: "xs:string"
+            semantic_id: "https://aausmartlab.org/Semantics/OccupancySuffix"
+            description: "Suffix for occupancy topics — resource reports whether its work zone is occupied"
+            cardinality: "One"
+
+          - type: property
+            id_short: "InventoryLevelSuffix"
+            value_type: "xs:string"
+            semantic_id: "https://aausmartlab.org/Semantics/InventoryLevelSuffix"
+            description: "Suffix for inventory level topics — only required for storage-type resources"
+            cardinality: "ZeroToOne"

@@ -38,50 +38,41 @@ def _extract_required_capabilities(workorder: WorkOrderMessage) -> set[str]:
 
 def _get_offered_capabilities_for_line(line_id: str, basyx_url: str) -> set[str]:
     """
-    Collect all offered capability semanticIds from resource shells that belong
-    to a given line.
+    Read the ServiceOffered submodel from the ProductionLine shell and return
+    the set of capability IRIs it advertises.
 
-    Heuristic: shells whose idShort contains the line_id prefix or whose IRI
-    matches the line_id pattern are considered resources of that line.
-    A more robust approach would use the LineConfiguration submodel.
+    The ProductionLine shell is pre-created externally; the MES only reads it.
+    If the shell or submodel is absent, returns an empty set and the caller's
+    fallback warning fires — same observable behaviour as before.
     """
-    all_shells = basyx_client.list_shells(basyx_url)
+    line_iri = f"https://aausmartlab.org/Shells/ProductionLine/{line_id}"
+    sm_iris = basyx_client.get_submodel_refs_for_shell(line_iri, basyx_url)
+    service_iri = next((iri for iri in sm_iris if "/ServiceOffered" in iri), None)
+    if not service_iri:
+        log.debug(
+            "No ServiceOffered submodel found for line %s — is the shell in BaSyx?", line_id
+        )
+        return set()
+
+    sm = basyx_client.fetch_submodel(service_iri, basyx_url)
+    if not sm:
+        return set()
+
     offered = set()
+    cap_offered = basyx_client.find_element_by_idshort(
+        sm.get("submodelElements", []), "OfferedCapabilities"
+    )
+    if not cap_offered or not isinstance(cap_offered.get("value"), list):
+        return offered
 
-    for shell in all_shells:
-        shell_id = shell.get("id", "")
-        id_short = shell.get("idShort", "")
-
-        # Only look at resource shells associated with this line
-        if line_id not in shell_id and line_id not in id_short:
-            continue
-
-        # Fetch submodels for this shell
-        submodel_refs = basyx_client.get_submodel_refs_for_shell(shell_id, basyx_url)
-        for sm_iri in submodel_refs:
-            if "Capability" not in sm_iri and "Offered" not in sm_iri:
-                continue
-            sm = basyx_client.fetch_submodel(sm_iri, basyx_url)
-            if not sm:
-                continue
-            # Collect semanticId values from capability elements
-            _collect_semantic_ids(sm.get("submodelElements", []), offered)
+    for entry in cap_offered["value"]:
+        children = entry.get("value") if isinstance(entry.get("value"), list) else []
+        cap_type_elem = basyx_client.find_element_by_idshort(children, "CapabilityType")
+        cap_type = cap_type_elem.get("value") if cap_type_elem else None
+        if cap_type:
+            offered.add(f"https://aausmartlab.org/Submodels/Capability/{cap_type}")
 
     return offered
-
-
-def _collect_semantic_ids(elements: list, result: set) -> None:
-    for elem in elements:
-        sem = elem.get("semanticId")
-        if sem:
-            keys = sem.get("keys", [])
-            for k in keys:
-                val = k.get("value", "")
-                if val:
-                    result.add(val)
-        children = elem.get("value", [])
-        if isinstance(children, list):
-            _collect_semantic_ids(children, result)
 
 
 def select_line(
