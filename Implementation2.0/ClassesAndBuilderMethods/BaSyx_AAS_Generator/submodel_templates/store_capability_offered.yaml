@@ -4,6 +4,20 @@ description: "Offered store capability — used by storage-type resources to dec
 
 elements:
 
+  - type: property
+    id_short: "CapabilityCategory"
+    value_type: "xs:string"
+    semantic_id: "https://aausmartlab.org/Semantics/CapabilityCategory"
+    description: "Always 'Offered' for this template"
+    cardinality: "One"
+
+  - type: property
+    id_short: "CapabilityReference"
+    value_type: "xs:string"
+    semantic_id: "https://aausmartlab.org/Semantics/CapabilityReference"
+    description: "Semantic IRI identifying this as a Store capability"
+    cardinality: "One"
+
   - type: collection
     id_short: "Parameters"
     semantic_id: "https://aausmartlab.org/Semantics/Parameters"

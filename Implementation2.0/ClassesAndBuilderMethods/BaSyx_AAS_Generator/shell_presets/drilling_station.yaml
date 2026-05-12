@@ -6,6 +6,8 @@ asset_name: "Drilling_12345678"
 
 submodels:
   DrillingCapabilityOffered:
+    CapabilityCategory: "Offered"
+    CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Drilling"
     SupportedComponents:
       - "https://aausmartlab.org/Shells/Component/Bottom_Cover"
       - "https://aausmartlab.org/Shells/Component/Top_Cover"
@@ -24,12 +26,18 @@ submodels:
         YPos: { min: -50.0, max: 50.0 }
 
   HandoffCapabilityOffered:
+    CapabilityCategory: "Offered"
+    CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Handoff"
     SupportedComponents:
       - "https://aausmartlab.org/Shells/Component/Bottom_Cover"
       - "https://aausmartlab.org/Shells/Component/Top_Cover"
     AllowedMaterials:
       - "https://aausmartlab.org/Materials/PLA"
       - "https://aausmartlab.org/Materials/ABS"
+    Parameters:
+      TargetPosition:
+        XPos: ""
+        YPos: ""
 
   Skills:
     Drilling:

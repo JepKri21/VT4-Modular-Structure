@@ -16,9 +16,20 @@ def _deep_merge(base: dict, override: dict) -> dict:
 
 
 def _build_token_context(merged: dict) -> dict:
+    """Collect all scalar leaf values from submodels as token candidates.
+    Last-writer wins on key collisions, which is acceptable for pattern substitution."""
     ctx = {}
-    mat_props = merged.get("submodels", {}).get("Properties", {}).get("MaterialProperties", {})
-    ctx.update(mat_props)
+
+    def _collect(d: dict) -> None:
+        for k, v in d.items():
+            if isinstance(v, dict):
+                _collect(v)
+            elif isinstance(v, (str, int, float)) and not isinstance(v, bool):
+                ctx[k] = str(v)
+
+    _collect(merged.get("submodels", {}))
+    if asset_name := merged.get("asset_name"):
+        ctx["asset_name"] = str(asset_name)
     return ctx
 
 
