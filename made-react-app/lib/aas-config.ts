@@ -6,7 +6,8 @@ const CONFIG_FILE = path.join(process.cwd(), "aas-config.json");
 const DEFAULT_PATH = path.join(
   process.cwd(),
   "..",
-  "New_AAS_Files",
+  "Implementation2.0",
+  "ClassesAndBuilderMethods",
   "BaSyx_AAS_Generator"
 );
 

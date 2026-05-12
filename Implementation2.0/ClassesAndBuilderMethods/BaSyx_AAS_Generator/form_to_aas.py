@@ -45,6 +45,24 @@ SHELL_TEMPLATES_DIR = BASE_DIR / "shell_templates"
 SUBMODEL_TEMPLATES_DIR = BASE_DIR / "submodel_templates"
 
 
+def _build_template_map() -> dict[str, str]:
+    """Scan submodel_templates/ and map each template's id_short to its filename stem."""
+    result = {}
+    for path in SUBMODEL_TEMPLATES_DIR.glob("*.yaml"):
+        try:
+            with open(path, encoding="utf-8") as f:
+                data = yaml.safe_load(f)
+            id_short = data.get("id_short")
+            if id_short:
+                result[id_short] = path.stem
+        except Exception:
+            pass
+    return result
+
+
+SM_TEMPLATE_MAP: dict[str, str] = _build_template_map()
+
+
 # ─────────────────────────────── helpers ──────────────────────────────────
 
 def _ext_ref(url: str) -> model.ExternalReference:
@@ -364,13 +382,6 @@ def build_environment(preset: dict, instance_suffix: str = "") -> tuple[dict, st
     id_short = asset_name
     global_asset_id = shell_id
 
-    SM_TEMPLATE_MAP = {
-        "Properties":      "product_properties",
-        "Documentation":   "product_documentation",
-        "BillOfMaterials": "bill_of_materials",
-        "BillOfProcesses": "bill_of_processes",
-        "ServiceRequired": "service_required",
-    }
 
     shell = model.AssetAdministrationShell(
         id_=shell_id,

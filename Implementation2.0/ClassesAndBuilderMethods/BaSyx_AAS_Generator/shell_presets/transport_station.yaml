@@ -6,6 +6,8 @@ asset_name: "Transport_12345678"
 
 submodels:
   TransportCapabilityOffered:
+    CapabilityCategory: "Offered"
+    CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Transport"
     SupportedComponents:
       - "BottomCover_ALU"
       - "TopCover_ALU"

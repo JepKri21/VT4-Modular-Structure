@@ -21,6 +21,7 @@ export interface TemplateElement {
   element_type?: string;
   extensible?: boolean;
   entry_template?: string;
+  min_entries?: number;
   elements?: TemplateElement[];
   qualifiers?: Qualifier[];
   options?: string[];

@@ -6,6 +6,8 @@ asset_name: "Storage_12345678"
 
 submodels:
   StoreCapabilityOffered:
+    CapabilityCategory: "Offered"
+    CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Store"
     SupportedComponents:
       - "BottomCover_ALU"
       - "TopCover_ALU"
@@ -15,6 +17,8 @@ submodels:
       - "ABS"
 
   RetrieveCapabilityOffered:
+    CapabilityCategory: "Offered"
+    CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Retrieve"
     SupportedComponents:
       - "BottomCover_ALU"
       - "TopCover_ALU"
@@ -24,6 +28,8 @@ submodels:
       - "ABS"
 
   HandoffCapabilityOffered:
+    CapabilityCategory: "Offered"
+    CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Handoff"
     SupportedComponents:
       - "BottomCover_ALU"
       - "TopCover_ALU"
@@ -31,6 +37,10 @@ submodels:
     AllowedMaterials:
       - "PLA"
       - "ABS"
+    Parameters:
+      TargetPosition:
+        XPos: ""
+        YPos: ""
 
   Skills:
     Retrieve:
