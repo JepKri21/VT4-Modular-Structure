@@ -288,6 +288,7 @@ def place_item(inventories, item_url):
     for inv_name, positions in slots.items():
         pos = positions[0]  # take first free slot
         inventories[inv_name]["Storage"][pos] = item_url
+
         return {
             "inventory": inv_name,
             "position": pos
@@ -533,9 +534,10 @@ class UR5ManipulatorBehavior(StationBehavior):
                 job_id=self.command_payload.job_id, 
                 ideal_cycle_time_ms=self.ideal_cycle_time,
                 actual_cycle_time_ms=self.actual_cycle_time,
+                component_reference= self.component_reference,
                 result=self.result,
                 quality=self.quality,
-                output_parameters={"ComponentReference": self.retrieved_item_component}
+                output_parameters={}
             )
 
         elif self.skill == "Store" or self.skill == "Handoff":
@@ -546,13 +548,17 @@ class UR5ManipulatorBehavior(StationBehavior):
                 job_id=self.command_payload.job_id, 
                 ideal_cycle_time_ms=self.ideal_cycle_time,
                 actual_cycle_time_ms=self.actual_cycle_time,
+                component_reference= self.component_reference,
                 result=self.result,
                 quality=self.quality,
-                output_parameters={"ComponentReference": self.component_reference}
+                output_parameters={}
             )
         
 
         self.mqtt_client.publish(f"{job_result_suffix}/{self.actor_name}",job_result_message)
+        inventory_build = build_inventory(resource_inventories)
+        inventory_message = MS.InventoryLevelMessage(timestamp=datetime.now(), resource_id=CLIENT_ID,inventory=inventory_build)
+        mqtt_client.publish(f"{inventory_suffix}", inventory_message)
 
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.COMPLETE)
