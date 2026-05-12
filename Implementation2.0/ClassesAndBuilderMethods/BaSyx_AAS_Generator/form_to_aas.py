@@ -33,11 +33,12 @@ from pathlib import Path
 import yaml
 from basyx.aas import model
 
+import basyx.aas.adapter.json
 sys.path.insert(0, str(Path(__file__).parent))
 
-import basyx.aas.adapter.json
 from builders import XS_TYPE_MAP, _convert_value, _sm_ref
 from instance_generator_class import AASInstanceBuilder
+from shell_type_utils import resolve_type
 
 BASE_DIR = Path(__file__).parent
 SHELL_TEMPLATES_DIR = BASE_DIR / "shell_templates"
@@ -342,6 +343,7 @@ def build_environment(preset: dict, instance_suffix: str = "") -> tuple[dict, st
 
     Returns (env_dict, shell_iri).
     """
+    preset = resolve_type(preset)
     shell_type = preset["shell"]
     asset_type = preset.get("asset_type", "")
     asset_name = preset.get("asset_name", "")

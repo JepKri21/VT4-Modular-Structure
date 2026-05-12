@@ -4,7 +4,7 @@
 # ProcessType "Assemble" is used by the MES workorder_builder to create an Assemblies entry.
 # IsSubAssembly flags are MES-specific — ignored by form_to_aas.py template processing.
 
-shell: "sub_assembly_shell"
+type: "bottom_cover_assembly_chain"
 label: "Bottom Cover PCB Fuse Sub-Assembly"
 description: "Sub-assembly in which two fuses are mounted onto the PCB inside the bottom cover."
 
@@ -20,7 +20,6 @@ submodels:
   Documentation:
     ProductionIdentification:
       ModelNumber: "SA-BCPF-001"
-      HardwareRevision: "v1.0"
     DisplayName:
       - language: "en"
         text: "Bottom Cover PCB Fuse Sub-Assembly"
@@ -31,7 +30,6 @@ submodels:
         text: "Sub-assembly: bottom cover PCB assembly with two fuses mounted on the PCB"
       - language: "da"
         text: "Samleenhed: bundlåg PCB samleenhed med to sikringer monteret på PCB"
-    ProductFamily: "FuseBox Series A"
 
   BillOfMaterials:
     BOMEntries:

@@ -1,5 +1,5 @@
 id_short: "ResourceZones"
-id: "https://aausmartlab.org/Shells/Resources/Storage-12345678/ResourceZones"
+id: "https://aausmartlab.org/Shells/Resources/Storage_12345678/ResourceZones"
 description: "Resource zones submodel for the drilling station"
 
 elements:

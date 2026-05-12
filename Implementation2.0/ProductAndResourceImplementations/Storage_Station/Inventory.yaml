@@ -1,5 +1,5 @@
 id_short: "Inventory"
-id: "https://aausmartlab.org/Shells/Resources/Storage-12345678/Inventory"
+id: "https://aausmartlab.org/Shells/Resources/Storage_12345678/Inventory"
 description: "Submodel describing the inventory of a resource"
 
 elements:

@@ -4,6 +4,7 @@ import path from "path";
 import yaml from "js-yaml";
 
 import { getGeneratorPath } from "@/lib/aas-config";
+import { resolvePresetType } from "@/lib/shell-type-utils";
 
 const PRESETS_DIR = path.join(getGeneratorPath(), "shell_presets");
 
@@ -50,16 +51,19 @@ export async function GET(req: Request) {
       .map((file) => {
         const raw = fs.readFileSync(path.join(PRESETS_DIR, file), "utf-8");
         const doc = yaml.load(raw) as Record<string, unknown>;
+        const originalType = String(doc.type ?? "");
+        const resolved = resolvePresetType(doc);
         return {
           filename: path.basename(file, path.extname(file)),
-          shell: String(doc.shell ?? ""),
-          label: String(doc.label ?? file),
-          description: String(doc.description ?? ""),
-          asset_name: String(doc.asset_name ?? ""),
-          asset_category: String(doc.asset_category ?? ""),
+          shell: String(resolved.shell ?? ""),
+          type: originalType,
+          label: String(resolved.label ?? file),
+          description: String(resolved.description ?? ""),
+          asset_name: String(resolved.asset_name ?? ""),
+          asset_category: String(resolved.asset_category ?? ""),
         };
       })
-      .filter((p) => !shellFilter || p.shell === shellFilter);
+      .filter((p) => !shellFilter || p.shell === shellFilter || p.type === shellFilter);
 
     return NextResponse.json(presets);
   } catch (err) {

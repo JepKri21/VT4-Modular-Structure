@@ -5,6 +5,15 @@ from capability_matcher import CapabilityMatcher
 import json
 from pathlib import Path
 
+#NOTE IMPORTANT:
+#I et multi agent system skulle man have public occupation of resources, hvor med en enkelt controller behøver man ikke, det kan være internt I controlleren. 
+#Orchestrator keeps track of occupancy, but shares occupancy status on MQTT. 
+#Hvis ingen af resourcerne har handoff (like shuttels and drilling) then we can say that the transport actor HAS to be occupied during the process.
+#Then only resources that are able to pick up a product will have the handoff capability.
+#If no resources of the two have a handoff, both will be occupied until the process is done
+#If one resource has a handoff, that resource will perform the handoff
+#If both resources have a haveoff, run the handoff first on the resource with the product, then after, run handoff on the one that does not have the product
+
 
 AAS_BROKER = "localhost"
 AAS_PORT = "8081"
@@ -59,34 +68,24 @@ def main():
         handler.update_step(step["step_id"], "ASSIGNED", resource=chosen["resource_id"])
         print(f"  >> Assigned to: {chosen['resource_id']}")
 
+    """
+    What happens when the process step is assigned to a resource?
+        1. Depending on the resource, the step requires multiple extra steps, that does not provide value to the final product, but are necessary to perform process. This can be something like:
+            - Move shuttle to storage
+            - Retrieve from storage (wait for response over MQTT)
+            - Handover to shuttle
+            - Move shuttle to capable resource
+            - Handover (if it should be handed over)
+            - And finally the process can be performed.
+        2. Where should this be handled? Should it be a function or a class?
+
+    """
+
     # Simulate a step to be complete
     handler.update_step("1x1", StepStates.COMPLETED)
 
     # Read the new and updated step
     ready_steps = handler.get_ready_steps()
-
-    for step in ready_steps:
-
-        info = handler.get_step_execution_info(step["step_id"])
-
-        print(f"\nStep: {step['step_id']}")
-        print(f"  Capability:     {info['CapabilityReference']}")
-        print(f"  Component:      {info['ComponentReference']}")
-        print(f"  Material:       {info['Material']}")
-
-        candidates = matcher.match(info)
-
-        if not candidates:
-            print("  -> No matching resource")
-            continue
-
-        for c in candidates:
-            print(f"  -> Candidate: {c['resource_id']}  (skill: {c['skill_name']})")
-
-        # First-match scheduling for now; will move into scheduler.py later.
-        chosen = candidates[0]
-        handler.update_step(step["step_id"], "ASSIGNED", resource=chosen["resource_id"])
-        print(f"  >> Assigned to: {chosen['resource_id']}")
 
 if __name__ == "__main__":
     main()

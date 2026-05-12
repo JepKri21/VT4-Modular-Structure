@@ -1,5 +1,5 @@
 id_short: "StoreCapabilityOffered"
-id: "https://aausmartlab.org/Shells/Resources/Storage-12345678/StoreCapabilityOffered"
+id: "https://aausmartlab.org/Shells/Resources/Storage_12345678/StoreCapabilityOffered"
 description: "Offered capability template for a store capability — parameters expressed as ranges defining the operational envelope"
 semantic_id: "https://aausmartlab.org/Submodels/Capability/Store"
 
@@ -23,12 +23,6 @@ elements:
     semantic_id: "https://aausmartlab.org/Semantics/Parameters"
     description: "Parameters defining the capability envelope"
     elements:
-      - type: property
-        id_short: "ComponentReference"
-        value_type: "xs:string"
-        semantic_id: "https://aausmartlab.org/Semantics/mm"
-        description: "Minimum and maximum drill depth in mm"
-        value: ""
 
       - type: multi_language_property
         id_short: "OperationLabel"

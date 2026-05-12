@@ -1,0 +1,36 @@
+kind: "Type"
+shell: "component_shell"
+asset_type: "PCB"
+asset_category: "Electrical"
+id: "https://aausmartlab.org/Shells/Component/PCB"
+
+submodel_templates:
+  Properties:    "https://aausmartlab.org/Submodels/Templates/ProductProperties"
+  Documentation: "https://aausmartlab.org/Submodels/Templates/ProductDocumentation"
+
+include:
+  Properties:
+    - PhysicalDimensions
+    - MaterialProperties
+    - ElectricalProperties
+  Documentation:
+    - ProductionIdentification
+    - DisplayName
+    - Description
+    - ManufacturerName
+    - ProductFamily
+    - HardwareRevision
+
+submodels:
+  Properties:
+    PhysicalDimensions:
+      Length: 140
+      Width: 70
+      Height: 2
+    ElectricalProperties:
+      Voltage_Rating: 250
+      Current_Rating: 16.0
+  Documentation:
+    ManufacturerName: "AAU SmartLab"
+    ProductFamily: "FuseBox Series A"
+    HardwareRevision: "v1.0"

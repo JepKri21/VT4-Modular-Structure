@@ -1,0 +1,43 @@
+kind: "Type"
+shell: "component_shell"
+asset_type: "Top_Cover"
+asset_category: "Mechanical"
+id: "https://aausmartlab.org/Shells/Component/Top_Cover"
+
+submodel_templates:
+  Properties:    "https://aausmartlab.org/Submodels/Templates/ProductProperties"
+  Documentation: "https://aausmartlab.org/Submodels/Templates/ProductDocumentation"
+
+include:
+  Properties:
+    - PhysicalDimensions
+    - MaterialProperties
+  Documentation:
+    - ProductionIdentification
+    - DisplayName
+    - Description
+    - ProductFamily
+    - ManufacturerName
+
+submodels:
+  Properties:
+    PhysicalDimensions:
+      Length: 150
+      Width: 80
+      Height: 8
+      # Weight_g omitted - varies by material, belongs in preset
+  Documentation:
+    ManufacturerName: "AAU SmartLab"
+    ProductFamily: "FuseBox Series A"
+    HardwareRevision: "v1.0"
+
+derived:
+  Documentation:
+    ProductionIdentification:
+      ModelNumber: "TC-{Material}-{Color}-{Finish}"
+    DisplayName:
+      en: "Top Cover - {Material} {Color} {Finish}"
+      da: "Toplag - {Material} {Color} {Finish}"
+    Description:
+      en: "Top Cover, {Material}, {Color}, {Finish} finish"
+      da: "Toplag, {Material}, {Color}, {Finish} overflade"

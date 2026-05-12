@@ -1,0 +1,58 @@
+id_short: "TransportCapabilityOffered"
+id: "https://aausmartlab.org/Submodels/Templates/TransportCapabilityOffered"
+description: "Offered transport capability — defines the reachable target area and supported components"
+
+elements:
+
+  - type: collection
+    id_short: "Parameters"
+    semantic_id: "https://aausmartlab.org/Semantics/Parameters"
+    description: "Parameters defining the transport capability envelope"
+    cardinality: "One"
+    elements:
+
+      - type: collection
+        id_short: "TargetPosition"
+        description: "Reachable area the transport system can deliver to"
+        cardinality: "One"
+        elements:
+          - type: range
+            id_short: "XPos"
+            value_type: "xs:float"
+            semantic_id: "https://aausmartlab.org/Semantics/mm"
+            description: "Reachable X range in mm"
+            cardinality: "One"
+          - type: range
+            id_short: "YPos"
+            value_type: "xs:float"
+            semantic_id: "https://aausmartlab.org/Semantics/mm"
+            description: "Reachable Y range in mm"
+            cardinality: "One"
+
+      - type: multi_language_property
+        id_short: "OperationLabel"
+        semantic_id: "https://aausmartlab.org/Semantics/OperationLabel"
+        description: "Human-readable operation label in multiple languages"
+        cardinality: "One"
+
+  - type: list
+    id_short: "SupportedComponents"
+    semantic_id: "https://aausmartlab.org/Semantics/SupportedComponents"
+    description: "Component types this transport system can carry"
+    element_type: "property"
+    value_type: "xs:string"
+    cardinality: "OneToMany"
+
+  - type: list
+    id_short: "AllowedMaterials"
+    semantic_id: "https://aausmartlab.org/Semantics/AllowedMaterials"
+    description: "Materials compatible with this transport capability"
+    element_type: "property"
+    value_type: "xs:string"
+    cardinality: "OneToMany"
+
+  - type: reference_element
+    id_short: "ResourceReference"
+    semantic_id: "https://aausmartlab.org/Semantics/ResourceReference"
+    description: "Reference to the AAS shell of the resource realizing this capability"
+    cardinality: "One"
