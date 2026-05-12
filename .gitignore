@@ -207,6 +207,10 @@ marimo/_lsp/
 __marimo__/ 
 
 
+# Accidental root-level Node.js files (breaks Turbopack workspace detection)
+/package.json
+/package-lock.json
+
 # For made-react-app
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
