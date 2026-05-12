@@ -15,6 +15,7 @@ downloads/
 eggs/
 .eggs/
 lib/
+!lib/shell-type-utils/
 lib64/
 # Un-ignore Next.js lib folder (the lib/ rule above is for Python build artifacts)
 !made-react-app/lib/
