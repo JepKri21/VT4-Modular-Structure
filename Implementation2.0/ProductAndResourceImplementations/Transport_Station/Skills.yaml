@@ -11,7 +11,7 @@ elements:
     elements:
       - type: reference_element
         id_short: "CapabilitySubmodelReference"
-        value: "https://aausmartlab.org/Shells/Resources/Transport-12345678/TransportCapabilityOffered"
+        value: "https://aausmartlab.org/Shells/Resources/Transport_12345678/TransportCapabilityOffered"
       
       - type: list
         id_short: "SkillTriggers"

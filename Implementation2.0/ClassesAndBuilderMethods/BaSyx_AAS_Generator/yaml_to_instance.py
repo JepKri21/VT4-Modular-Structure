@@ -223,6 +223,14 @@ def load_instance_from_yaml(path: str) -> AASInstanceBuilder:
     if desc := cfg.get("description"):
         builder.submodel.description = model.MultiLanguageTextType({"en": desc})
 
+    # Top-level `semantic_id` identifies the submodel itself (e.g. which
+    # Capability it is). Without this, the BaSyx server returns the submodel
+    # with semanticId: None and consumers can't tell what capability it is.
+    if semantic_id := cfg.get("semantic_id"):
+        builder.submodel.semantic_id = model.ExternalReference(
+            key=(model.Key(type_=model.KeyTypes.GLOBAL_REFERENCE, value=semantic_id),)
+        )
+
     _build_elements(builder, builder.get(), cfg.get("elements") or [])
     return builder
 

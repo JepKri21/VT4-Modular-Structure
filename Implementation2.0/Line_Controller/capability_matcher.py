@@ -25,11 +25,17 @@ class CapabilityMatcher:
         """
         capability_semantic_id = step_info.get("CapabilityReference")
         if not capability_semantic_id:
+            print("[match] no CapabilityReference on step_info — rejecting")
             return []
 
+        print(f"[match] looking for resources offering: {capability_semantic_id}")
         candidates = self.resource_manager.find_by_capability(capability_semantic_id)
         if not candidates:
+            print("[match] no resources advertise that capability semanticId")
             return []
+        print(f"[match] {len(candidates)} initial candidate(s):")
+        for c in candidates:
+            print(f"          - {c['resource_id']}  (skill={c['skill_name']})")
 
         params = step_info.get("Parameters", {})
         component = step_info.get("ComponentReference")
@@ -37,23 +43,40 @@ class CapabilityMatcher:
 
         viable = []
         for cand in candidates:
+            tag = f"{cand['resource_id']}/{cand['skill_name']}"
             cap_ref = cand.get("capability_submodel_reference")
             if not cap_ref:
+                print(f"[match] [{tag}] rejected: no CapabilitySubmodelReference")
                 continue
 
             cap_data = self.resource_manager.get_capability_parameters(cap_ref)
             if not cap_data:
+                print(f"[match] [{tag}] rejected: capability submodel had no parameters")
                 continue
 
             cap_parameters, supported_components, allowed_materials = cap_data
 
             if not self._check_parameters(params, cap_parameters):
+                print(
+                    f"[match] [{tag}] rejected: parameter check failed "
+                    f"(work-order params={list(params)}, "
+                    f"capability leaves={list(self._flatten_cap_parameters(cap_parameters))})"
+                )
                 continue
             if not self._check_component(component, supported_components):
+                print(
+                    f"[match] [{tag}] rejected: component '{component}' not in "
+                    f"supported list {supported_components}"
+                )
                 continue
             if not self._check_material(material, allowed_materials):
+                print(
+                    f"[match] [{tag}] rejected: material '{material}' not in "
+                    f"allowed list {allowed_materials}"
+                )
                 continue
 
+            print(f"[match] [{tag}] accepted")
             viable.append(cand)
 
         return viable
@@ -70,18 +93,18 @@ class CapabilityMatcher:
 
     def _check_parameters(self, step_params, cap_parameters):
         """
-        Validate every workorder parameter against the capability. Capability
-        parameters are flattened (collections walked recursively) so nested
-        leaves like TargetPosition.XPos are reachable by idShort. If the
-        capability declares a Range for a leaf, the workorder value must fall
-        inside it. Property declarations are accepted as-is. Unknown
-        parameters on the workorder are rejected.
+        Validate every workorder parameter against the capability. Both sides
+        are flattened to leaf id_shorts, so nested structures (e.g.
+        TargetPosition.XPos in the work order matched against the capability's
+        Parameters.TargetPosition.XPos) compare cleanly. If the capability
+        declares a Range for a leaf, the workorder value must fall inside it.
+        Property declarations are accepted as-is. Unknown parameters on the
+        workorder are rejected.
         """
         cap_by_name = self._flatten_cap_parameters(cap_parameters)
+        step_by_name = self._flatten_step_params(step_params)
 
-        for name, entry in (step_params or {}).items():
-            value = entry.get("value") if isinstance(entry, dict) else entry
-
+        for name, value in step_by_name.items():
             cap_param = cap_by_name.get(name)
             if cap_param is None:
                 aliased = self.PARAMETER_ALIASES.get(name)
@@ -102,6 +125,34 @@ class CapabilityMatcher:
                     return False
 
         return True
+
+    def _flatten_step_params(self, step_params):
+        """Walk the work-order parameter tree, returning {leaf_idShort: value}.
+
+        Treats any dict containing a 'value' key (with either 'semanticId' or
+        'semantic_id' alongside it, or just 'value' on its own) as a leaf.
+        Other dicts are recursed into. Bare scalar values pass through.
+        """
+        flat = {}
+
+        def is_leaf_wrapper(node):
+            return isinstance(node, dict) and "value" in node and (
+                "semanticId" in node or "semantic_id" in node or len(node) <= 2
+            )
+
+        def walk(node):
+            if not isinstance(node, dict):
+                return
+            for name, body in node.items():
+                if is_leaf_wrapper(body):
+                    flat[name] = body["value"]
+                elif isinstance(body, dict):
+                    walk(body)
+                else:
+                    flat[name] = body
+
+        walk(step_params or {})
+        return flat
 
     def _flatten_cap_parameters(self, cap_parameters):
         flat = {}

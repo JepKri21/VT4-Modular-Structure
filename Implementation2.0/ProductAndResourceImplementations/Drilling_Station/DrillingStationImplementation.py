@@ -206,14 +206,19 @@ class KUKAManipulatorBehavior(StationBehavior):
                 raise ValueError("No parameters provided for Drilling skill")
 
             try:
-                # unpack for readability
-                self.bit_diameter = self.parameters.get("BitDiameter")
+                # Parameters the work order is allowed to set, per the
+                # DrillingCapabilityOffered contract.
+                self.hole_diameter = self.parameters.get("HoleDiameter")
                 self.drill_depth = self.parameters.get("DrillDepth")
-                self.spindle_speed = self.parameters.get("SpindleSpeed")
-                self.spindle_feed = self.parameters.get("SpindleFeed")
-                self.hole_x = self.parameters.get("HolePlacement_X")
-                self.hole_y = self.parameters.get("HolePlacement_Y")
+                target_position = self.parameters.get("TargetPosition") or {}
+                self.hole_x = target_position.get("XPos")
+                self.hole_y = target_position.get("YPos")
                 self.component_reference = self.parameters.get("ComponentReference")
+
+                # Internal resource settings — not in the capability, the
+                # resource decides its own best feed/speed for the given bit.
+                self.spindle_speed = 800.0   # RPM
+                self.spindle_feed = 20.0     # mm/s
 
                 print("Drilling parameters loaded:", self.parameters)
 
@@ -246,7 +251,7 @@ class KUKAManipulatorBehavior(StationBehavior):
 
             
         elif self.skill == "Drilling":
-            print(f"Executing drillling with these parameters: Bit Diameter: {self.bit_diameter}, Drill Depth: {self.drill_depth}, Spindle Speed: { self.spindle_speed}, Spindle Feed: {self.spindle_feed}, Hole X: {self.hole_x}, Hole Y: {self.hole_y}, Component Reference: {self.component_reference}")
+            print(f"Executing drilling with these parameters: Hole Diameter: {self.hole_diameter}, Drill Depth: {self.drill_depth}, Spindle Speed: {self.spindle_speed}, Spindle Feed: {self.spindle_feed}, Hole X: {self.hole_x}, Hole Y: {self.hole_y}, Component Reference: {self.component_reference}")
             
             #Generating cycle times based on parameters
             self.ideal_cycle_time = int((self.drill_depth/self.spindle_feed)*1000)

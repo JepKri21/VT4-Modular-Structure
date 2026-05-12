@@ -1,3 +1,4 @@
+import asyncio
 import json
 from datetime import datetime
 from pathlib import Path
@@ -25,11 +26,90 @@ class ResourceManager:
         self.AAS_PORT = AAS_PORT
         self.RESOURCE_URL = RESOURCE_URL
 
-        self.AAS_SERVER_BASE = f"http://{self.AAS_BROKER}:{self.AAS_PORT}" 
+        self.AAS_SERVER_BASE = f"http://{self.AAS_BROKER}:{self.AAS_PORT}"
         self.SUBMODEL_ENDPOINT = f"{self.AAS_SERVER_BASE}/submodels"
         self.SHELL_ENDPOINT = f"{self.AAS_SERVER_BASE}/shells"
 
         self.resource_shell_ids = {}
+
+        # Runtime per-(resource_topic, actor) PackML state, populated by
+        # state messages observed on MQTT. Keyed by (resource_id_short, actor).
+        self.actor_states: Dict[Tuple[str, str], MS.PackMLState] = {}
+
+    # =========================================================================
+    # Runtime state — populated by the MQTT layer
+    # =========================================================================
+
+    @staticmethod
+    def topic_id_for_iri(iri: str) -> str:
+        """Last URI segment of a shell IRI — the resource_id used in MQTT topics."""
+        return iri.rstrip("/").split("/")[-1]
+
+    def mark_actor_state(
+        self, resource_id_short: str, actor: str, state: MS.PackMLState
+    ) -> None:
+        self.actor_states[(resource_id_short, actor)] = state
+
+    def actor_state(
+        self, resource_id_short: str, actor: str
+    ) -> MS.PackMLState | None:
+        return self.actor_states.get((resource_id_short, actor))
+
+    async def wait_for_idle(
+        self,
+        resource_id_short: str,
+        actor: str,
+        timeout: float = 15.0,
+        poll: float = 0.2,
+    ) -> bool:
+        """Wait until (resource, actor) reports IDLE. False on timeout.
+
+        Stations only publish State after their first PackML transition, so on
+        the very first command of a run we may never see IDLE. Callers can
+        treat False as "send the command anyway and trust the resource is idle".
+        """
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + timeout
+        while loop.time() < deadline:
+            if self.actor_state(resource_id_short, actor) == MS.PackMLState.IDLE:
+                return True
+            await asyncio.sleep(poll)
+        return False
+
+    # =========================================================================
+    # Convenience queries on the AAS data
+    # =========================================================================
+
+    def has_handoff(self, shell_iri: str) -> bool:
+        """True if this resource declares any skill whose capability is Handoff."""
+        cap_handoff = "https://aausmartlab.org/Submodels/Capability/Handoff"
+        for skill_data in self.get_resource_skills(shell_iri).values():
+            if skill_data.get("CapabilityReference") == cap_handoff:
+                return True
+        return False
+
+    def actors_for_skill(self, shell_iri: str, skill_name: str) -> List[str]:
+        """All actor names that can perform `skill_name` on `shell_iri`."""
+        actors, _ = self.get_skill_information(shell_iri, skill_name)
+        return actors or []
+
+    def find_skill_offering(
+        self, skill_name: str
+    ) -> List[Tuple[str, str, List[str]]]:
+        """All resources offering a skill by idShort.
+
+        Returns:
+            [(shell_iri, topic_id, actors), ...].
+        """
+        out = []
+        for iri in self.resource_shell_ids:
+            skills = self.get_resource_skills(iri)
+            if skill_name not in skills:
+                continue
+            actors = self.actors_for_skill(iri, skill_name)
+            if actors:
+                out.append((iri, self.topic_id_for_iri(iri), actors))
+        return out
 
 
 
@@ -49,7 +129,12 @@ class ResourceManager:
         candidates = []
 
         for shell_id, status in self.resource_shell_ids.items():
-            if status != "Active":
+            # if status != "Active": #<- This was the before
+            # Skip only resources we know are dead. UNREACHABLE-by-default
+            # (the state assigned when the shell is first discovered) still
+            # passes through — the scheduler will find out it's offline when
+            # the CMD doesn't get answered.
+            if status == MS.ResourceReachability.INACTIVE:
                 continue
 
             skills = self.get_resource_skills(shell_id)
@@ -287,15 +372,18 @@ class ResourceManager:
             encoded_resource_submodel_id = self.base64encode(f"{capability_submodel_reference}")
             response = requests.get(f"{self.SUBMODEL_ENDPOINT}/{encoded_resource_submodel_id}")
 
-            #If we then get the capability submodel, all we want to do is read the CapabilityReference
-            #Which is directly below the top level
+            # The capability's identity is the submodel's top-level semanticId,
+            # not an inner element. Read it directly from the response.
             if response.ok:
                 data = response.json()
-                capability_reference= self.find_by_idshort(data, "CapabilityReference")
-                if capability_reference:
-                    result[skill_name]["CapabilityReference"] = capability_reference.get("value")
+                semantic_keys = (data.get("semanticId") or {}).get("keys", [])
+                if semantic_keys:
+                    result[skill_name]["CapabilityReference"] = semantic_keys[0].get("value")
                 else:
-                    print("CapabilityReference is None for some reason")
+                    print(
+                        f"No semanticId on capability submodel for skill "
+                        f"'{skill_name}' ({capability_submodel_reference})"
+                    )
             else:
                 #There was a problem finding the id or bad connection
                 print(f"There was a problem retrieving the Capability submodel: Response Status Code {response.status_code}")
@@ -448,6 +536,60 @@ class ResourceManager:
         #If we simply switch the skill around to look a bit more like how we structured it the first time around
         #So it would be skillName -> ActorName -> SkillTriggers and CapabilitySubmodelReference.
         #This does take up more space, but it allows actors to have different skilltriggers and reference unique capability submodels, even if they are for the same skill
+
+# =============================================================================
+# Free-function helpers used as MQTT handlers
+# =============================================================================
+
+def make_state_handler(rm: ResourceManager):
+    """Build the MQTT StateMessage handler that updates the ResourceManager.
+
+    Register with controller.register_handler(MS.StateMessage, make_state_handler(rm)).
+    """
+    def handle(controller, message: MS.StateMessage, topic_info) -> None:
+        resource_suffix = topic_info.get("resource_suffix")
+        actor = topic_info.get("actor_id")
+        if not (actor and resource_suffix):
+            return
+
+        rm.mark_actor_state(resource_suffix, actor, message.state)
+
+        # Keep reachability in sync — without this, every shell stays
+        # UNREACHABLE for the whole run and find_by_capability would still
+        # work (we only reject INACTIVE) but reachability becomes meaningless.
+        shell_iri = controller.topic_to_shell_id.get(resource_suffix)
+        if shell_iri is not None:
+            rm.resource_shell_ids[shell_iri] = controller.classify_reachability(message)
+
+        state_str = (
+            message.state.value if hasattr(message.state, "value") else str(message.state)
+        )
+        print(f"[state]     {resource_suffix}/{actor} -> {state_str}")
+    return handle
+
+
+def request_state_update(controller, shell_iri: str) -> None:
+    """Ask a resource to publish its current State.
+
+    Stations don't publish State on startup, only after a PackML transition.
+    Sending this InfoRequest forces them to emit it right away, so
+    `wait_for_idle` works on the very first command.
+    """
+    resource_suffix = ResourceManager.topic_id_for_iri(shell_iri)
+    topic_map = controller.topic_maps.get(resource_suffix, {})
+    state_suffix = topic_map.get(MS.StateMessage)
+    if not state_suffix:
+        print(f"[warn] no StateSuffix known for {resource_suffix}; skipping InfoRequest")
+        return
+    msg = MS.RequestMessage(
+        timestamp=datetime.now(),
+        requested_topic_update=f"{controller.base_topic}/{resource_suffix}/{state_suffix}",
+        resource_id=resource_suffix,
+        seq_no=None,
+    )
+    controller.publish_message(shell_iri, msg)
+    print(f"[init] requested State update from {resource_suffix}")
+
 
 if __name__ == "__main__":
     AAS_BROKER = "localhost"
