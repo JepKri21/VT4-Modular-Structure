@@ -1,91 +1,13 @@
-from pydantic import BaseModel
 from typing import Dict, List, Optional, Any
 import base64
 import requests
+import sys
+from pathlib import Path
 
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-# ============================================================
-# Indexed Runtime Component
-# ============================================================
+from ClassesAndBuilderMethods.InformationModels import MessageStructure as MS
 
-class IndexedComponent(BaseModel):
-    component_id: str
-
-    component_category: str
-    component_type: str
-    component_instance: str
-
-    component_type_reference: str
-
-    resource_shell_id: str
-    inventory_name: str
-    slot_id: str
-
-    accessible_actors: List[str]
-
-    reserved: bool = False
-
-# ============================================================
-# Normalizing property submodel
-# ============================================================
-class NormalizedProperty(BaseModel):
-    name: str
-    semantic_id: str | None
-    value: Any
-    value_type: str | None
-    unit: str | None = None
-
-
-class PropertyCollection(BaseModel):
-    name: str
-    semantic_id: str | None
-    properties: dict[str, NormalizedProperty]
-
-
-class ComponentProperties(BaseModel):
-    component_id: str
-    collections: dict[str, PropertyCollection]
-
-# ============================================================
-# Normalizing Requested Properties from Order
-# ============================================================
-
-class RequestedProperty(BaseModel):
-    name: str
-    semantic_id: str | None
-    value: Any
-
-class RequestedCollection(BaseModel):
-    name: str
-    properties: dict[str, RequestedProperty]
-
-class RequestedConstraints(BaseModel):
-    ingredient_id: str
-    collections: dict[str, RequestedCollection]
-
-# ============================================================
-# The Result Of A Property Matching
-# ============================================================
-
-class PropertyMatchFailure(BaseModel):
-    collection_name: str
-    property_name: str
-    reason: str
-    requested_value: Any | None = None
-    actual_value: Any | None = None
-
-class ConstraintMatchResult(BaseModel):
-    matches: bool
-    matched_properties: list[str]
-    failed_properties: list[PropertyMatchFailure]
-    missing_properties: list[PropertyMatchFailure]
-
-class ComponentLocation(BaseModel):
-    component_id: str
-    resource_shell_id: str
-    inventory_name: str
-    slot_id: str
-    actor_names: List[str] | None = None
 
 # ============================================================
 # Inventory Indexer
@@ -96,13 +18,13 @@ class InventoryIndexer:
     def __init__(self):
 
         # Flat searchable component list
-        self.indexed_components: List[IndexedComponent] = []
+        self.indexed_components: List[MS.IndexedComponent] = []
 
         # Fast exact lookup
-        self.component_id_index: Dict[str, IndexedComponent] = {}
+        self.component_id_index: Dict[str, MS.IndexedComponent] = {}
 
         # Fast type lookup
-        self.component_type_index: Dict[str, List[IndexedComponent]] = {}
+        self.component_type_index: Dict[str, List[MS.IndexedComponent]] = {}
 
     # ========================================================
     # Public API
@@ -143,21 +65,15 @@ class InventoryIndexer:
         #print("[COMPONENT ID INDEX]",self.component_id_index)
         #print("[COMPONENT TYPE INDEX]",self.component_type_index)
 
-    def find_by_component_id(
-        self,
-        component_id: str
-    ) -> Optional[IndexedComponent]:
+    def find_by_component_id(self,component_id: str) -> Optional[MS.IndexedComponent]:
 
         return self.component_id_index.get(component_id)
 
-    def find_by_component_type(
-        self,
-        component_type: str
-    ) -> List[IndexedComponent]:
+    def find_by_component_type(self,component_type: str) -> List[MS.IndexedComponent]:
 
         return self.component_type_index.get(component_type, [])
 
-    def get_all_components(self) -> List[IndexedComponent]:
+    def get_all_components(self) -> List[MS.IndexedComponent]:
 
         return self.indexed_components
 
@@ -172,11 +88,11 @@ class InventoryIndexer:
         inventory_name: str,
         slot_id: str,
         accessible_actors: List[str]
-    ) -> IndexedComponent:
+    ) -> MS.IndexedComponent:
 
         parsed = self._parse_component_reference(component_id)
 
-        return IndexedComponent(
+        return MS.IndexedComponent(
             component_id=component_id,
 
             component_category=parsed["component_category"],
@@ -192,10 +108,7 @@ class InventoryIndexer:
             accessible_actors=accessible_actors
         )
 
-    def _add_to_indexes(
-        self,
-        indexed_component: IndexedComponent
-    ):
+    def _add_to_indexes(self,indexed_component: MS.IndexedComponent):
 
         # Flat list
         self.indexed_components.append(indexed_component)
@@ -215,10 +128,7 @@ class InventoryIndexer:
             indexed_component
         )
 
-    def _parse_component_reference(
-        self,
-        component_reference: str
-    ) -> Dict[str, str]:
+    def _parse_component_reference(self,component_reference: str) -> Dict[str, str]:
 
         """
         Example input:
@@ -336,7 +246,7 @@ class AASPropertyResolver:
     #Public Methods
     #===============
 
-    def get_component_properties(self,component_id: str) -> ComponentProperties | None:
+    def get_component_properties(self,component_id: str) -> MS.ComponentProperties | None:
 
         # Previously failed
         if component_id in self.failed_components:
@@ -366,7 +276,7 @@ class AASPropertyResolver:
     #Private Methods
     #=================
 
-    def _retrieve_properties_submodel(self,component_id: str) -> ComponentProperties:
+    def _retrieve_properties_submodel(self,component_id: str) -> MS.ComponentProperties:
 
         shell_data = self._retrieve_shell(component_id)
 
@@ -376,7 +286,7 @@ class AASPropertyResolver:
 
         return self._normalize_properties(component_id,submodel_data)
     
-    def _normalize_properties(self,component_id: str,submodel_data: dict) -> ComponentProperties:
+    def _normalize_properties(self,component_id: str,submodel_data: dict) -> MS.ComponentProperties:
 
         collections = {}
 
@@ -389,9 +299,9 @@ class AASPropertyResolver:
 
             collections[collection.name] = collection
 
-        return ComponentProperties(component_id=component_id,collections=collections)
+        return MS.ComponentProperties(component_id=component_id,collections=collections)
     
-    def _parse_collection(self,collection_data: dict) -> PropertyCollection:
+    def _parse_collection(self,collection_data: dict) -> MS.PropertyCollection:
 
         collection_name = collection_data.get("idShort")
 
@@ -408,9 +318,9 @@ class AASPropertyResolver:
 
             properties[prop.name] = prop
 
-        return PropertyCollection(name=collection_name,semantic_id=semantic_id,properties=properties)
+        return MS.PropertyCollection(name=collection_name,semantic_id=semantic_id,properties=properties)
     
-    def _parse_property(self,property_data: dict) -> NormalizedProperty:
+    def _parse_property(self,property_data: dict) -> MS.NormalizedProperty:
 
         name = property_data.get("idShort")
 
@@ -422,7 +332,7 @@ class AASPropertyResolver:
 
         unit = self._extract_unit(property_data)
 
-        return NormalizedProperty(
+        return MS.NormalizedProperty(
             name=name,
             semantic_id=semantic_id,
             value=value,
@@ -487,7 +397,7 @@ class ConstraintEvaluator:
     # PUBLIC API
     # =====================================================
 
-    def evaluate_constraints(self,requested_constraints: RequestedConstraints,actual_properties) -> ConstraintMatchResult:
+    def evaluate_constraints(self,requested_constraints: MS.RequestedConstraints,actual_properties) -> MS.ConstraintMatchResult:
 
         matched_properties = []
 
@@ -506,7 +416,7 @@ class ConstraintEvaluator:
                 for property_name in (requested_collection.properties):
 
                     missing_properties.append(
-                        PropertyMatchFailure(
+                        MS.PropertyMatchFailure(
                             collection_name=collection_name,
                             property_name=property_name,
                             reason="Collection missing"
@@ -525,7 +435,7 @@ class ConstraintEvaluator:
                 if actual_property is None:
 
                     missing_properties.append(
-                        PropertyMatchFailure(
+                        MS.PropertyMatchFailure(
                             collection_name=collection_name,
                             property_name=property_name,
                             reason="Property missing"
@@ -538,7 +448,7 @@ class ConstraintEvaluator:
                 if (requested_property.semantic_id!= actual_property.semantic_id):
 
                     failed_properties.append(
-                        PropertyMatchFailure(
+                        MS.PropertyMatchFailure(
                             collection_name=collection_name,
                             property_name=property_name,
                             reason="Semantic ID mismatch",
@@ -553,7 +463,7 @@ class ConstraintEvaluator:
                 if (requested_property.value!= actual_property.value):
 
                     failed_properties.append(
-                        PropertyMatchFailure(
+                        MS.PropertyMatchFailure(
                             collection_name=collection_name,
                             property_name=property_name,
                             reason="Value mismatch",
@@ -569,7 +479,7 @@ class ConstraintEvaluator:
 
         matches = (len(failed_properties) == 0 and len(missing_properties) == 0)
 
-        return ConstraintMatchResult(
+        return MS.ConstraintMatchResult(
             matches=matches,
             matched_properties=matched_properties,
             failed_properties=failed_properties,
@@ -580,7 +490,7 @@ class ConstraintEvaluator:
     # ORDER NORMALIZATION
     # =====================================================
 
-    def build_requested_constraints(self,ingredient_id: str,order_properties: dict) -> RequestedConstraints:
+    def build_requested_constraints(self,ingredient_id: str,order_properties: dict) -> MS.RequestedConstraints:
 
         collections = {}
 
@@ -591,7 +501,7 @@ class ConstraintEvaluator:
             for (property_name,property_data) in collection_data.items():
 
                 properties[property_name] = (
-                    RequestedProperty(
+                    MS.RequestedProperty(
                         name=property_name,
                         semantic_id=(property_data.get("semanticId")),
                         value=(property_data.get("value"))
@@ -599,9 +509,9 @@ class ConstraintEvaluator:
                 )
 
             collections[collection_name] = (
-                RequestedCollection(name=collection_name,properties=properties))
+                MS.RequestedCollection(name=collection_name,properties=properties))
 
-        return RequestedConstraints(ingredient_id=ingredient_id,collections=collections)
+        return MS.RequestedConstraints(ingredient_id=ingredient_id,collections=collections)
     
 
 # =========================================================
@@ -631,7 +541,7 @@ class ProductMatcher:
         if not match:
             return None
 
-        return ComponentLocation(
+        return MS.ComponentLocation(
             component_id=match.component_id,
             resource_shell_id=match.resource_shell_id,
             inventory_name=match.inventory_name,
@@ -639,7 +549,7 @@ class ProductMatcher:
             actor_names=match.accessible_actors if match.accessible_actors else None
         )
     
-    def find_matching_components(self,component_type_reference: str,order_properties: dict) -> list[ComponentLocation]:
+    def find_matching_components(self,component_type_reference: str,order_properties: dict) -> list[MS.ComponentLocation]:
         """
         Takes the full type topic such as: https://aausmartlab.org/Shells/Component/BottomCover
         AND the properties of that component from the MES order, as they are structured in the order
@@ -671,7 +581,7 @@ class ProductMatcher:
             if result_eval.matches:
 
                 results.append(
-                    ComponentLocation(
+                    MS.ComponentLocation(
                         component_id=candidate.component_id,
                         resource_shell_id=candidate.resource_shell_id,
                         inventory_name=candidate.inventory_name,

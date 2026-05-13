@@ -2,12 +2,12 @@ import enum
 from pydantic import BaseModel, model_validator, field_validator
 from uuid import UUID
 from datetime import datetime
-from typing import List, Dict
+from typing import List, Dict, Any, Optional
 import sys
 from pathlib import Path
 import time
 
-
+#I don't even think we actually use this here anymore
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 #Different between "seq_no: int | None = None" and "seq_no: int | None" is that the first has None as the default, while the second only allows it as a value for the field
@@ -314,3 +314,90 @@ def find_by_idshort(elements, target):
             return element
     return None
 
+
+#============================
+#ALL FOR THE PRODUCT MATCHER
+#============================
+
+# ============================================================
+# Indexed Runtime Component
+# ============================================================
+
+class IndexedComponent(BaseModel):
+    component_id: str
+
+    component_category: str
+    component_type: str
+    component_instance: str
+
+    component_type_reference: str
+
+    resource_shell_id: str
+    inventory_name: str
+    slot_id: str
+
+    accessible_actors: List[str]
+
+    reserved: bool = False
+
+# ============================================================
+# Normalizing property submodel
+# ============================================================
+class NormalizedProperty(BaseModel):
+    name: str
+    semantic_id: str | None
+    value: Any
+    value_type: str | None
+    unit: str | None = None
+
+
+class PropertyCollection(BaseModel):
+    name: str
+    semantic_id: str | None
+    properties: dict[str, NormalizedProperty]
+
+
+class ComponentProperties(BaseModel):
+    component_id: str
+    collections: dict[str, PropertyCollection]
+
+# ============================================================
+# Normalizing Requested Properties from Order
+# ============================================================
+
+class RequestedProperty(BaseModel):
+    name: str
+    semantic_id: str | None
+    value: Any
+
+class RequestedCollection(BaseModel):
+    name: str
+    properties: dict[str, RequestedProperty]
+
+class RequestedConstraints(BaseModel):
+    ingredient_id: str
+    collections: dict[str, RequestedCollection]
+
+# ============================================================
+# The Result Of A Property Matching
+# ============================================================
+
+class PropertyMatchFailure(BaseModel):
+    collection_name: str
+    property_name: str
+    reason: str
+    requested_value: Any | None = None
+    actual_value: Any | None = None
+
+class ConstraintMatchResult(BaseModel):
+    matches: bool
+    matched_properties: list[str]
+    failed_properties: list[PropertyMatchFailure]
+    missing_properties: list[PropertyMatchFailure]
+
+class ComponentLocation(BaseModel):
+    component_id: str
+    resource_shell_id: str
+    inventory_name: str
+    slot_id: str
+    actor_names: List[str] | None = None

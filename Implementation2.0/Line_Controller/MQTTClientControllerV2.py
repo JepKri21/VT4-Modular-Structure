@@ -754,6 +754,9 @@ async def main():
     time.sleep(1)
 
     component_location = pm.find_component_location("https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_7ef0e4df-1b09-4d0a-9448-14ae51652a52")
+    
+    #This part could also easily be done inside the ProductMatcher Class, as long as you provide the order data, and the ingridient name
+    #But it does also mean that the structure of the order is fixed, which is probably fine
     requested_properteies = order_data["Properties"]["Ingredient_1"]
     requested_component_type = order_data["Ingredients"]["Ingredient_1"].get("ComponentReference")
 
