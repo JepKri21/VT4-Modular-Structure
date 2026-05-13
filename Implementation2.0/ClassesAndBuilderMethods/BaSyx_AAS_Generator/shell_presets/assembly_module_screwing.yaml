@@ -57,8 +57,7 @@ submodels:
       Point3: { XPos:  55.0, YPos:  55.0 }
       Point4: { XPos: -55.0, YPos:  55.0 }
     InOutputZones:
-      Zone1:
-        Point1: { XPos: -45.0, YPos:  55.0 }
+      - Point1: { XPos: -45.0, YPos:  55.0 }
         Point2: { XPos:  45.0, YPos:  55.0 }
         Point3: { XPos:  45.0, YPos: 130.0 }
         Point4: { XPos: -45.0, YPos: 130.0 }

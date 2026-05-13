@@ -100,12 +100,14 @@ def build_elements_from_form(
         val      = form_data.get(id_short)
 
         if etype == "property":
-            if val is None or val == "":
+            if val is None:
                 continue
             vt = XS_TYPE_MAP.get(elem.get("value_type", "xs:string"))
             if vt is None:
                 continue
-            el = builder.add_property(parent, id_short, vt, _convert_value(val, vt), sem_id)
+            # Empty string means "create property with no value" (runtime-settable).
+            actual_val = None if val == "" else _convert_value(val, vt)
+            el = builder.add_property(parent, id_short, vt, actual_val, sem_id)
             for q in elem.get("qualifiers", []):
                 q_vt = XS_TYPE_MAP.get(q.get("value_type", "xs:string"))
                 if q_vt:
@@ -402,7 +404,7 @@ def build_environment(preset: dict, instance_suffix: str = "") -> tuple[dict, st
         template_file = SM_TEMPLATE_MAP.get(sm_id_short)
         if not template_file or not form_data:
             continue
-        sm_iri = f"{shell_id}/Submodels/{sm_id_short}"
+        sm_iri = f"{shell_id}/{sm_id_short}"
         sm = build_submodel(template_file, sm_iri, sm_id_short, form_data)
         submodels.append(sm)
         shell.submodel.add(_sm_ref(sm_iri))
