@@ -5,7 +5,7 @@
   "ProductReference": "Bottom_Cover_Drilled_PCB-BCDP001",
   "Ingredients": {
     "Ingredient_1": {
-      "ComponentReference": "https://aausmartlab.org/Shells/Component/Bottom_Cover"
+      "ComponentReference": "https://aausmartlab.org/Shells/Component/BottomCover"
     },
     "Ingredient_2": {
       "ComponentReference": "https://aausmartlab.org/Shells/Component/PCB"
@@ -26,29 +26,29 @@
         },
         "Material": {
           "semanticId": "https://aausmartlab.org/Semantics/Material",
-          "value": "PLA"
+          "value": "Plastic (ABS)"
         },
         "Finish": {
-          "semanticId": "https://aausmartlab.org/Semantics/Finish",
-          "value": "Textured"
+          "semanticId": "https://aausmartlab.org/Semantics/SurfaceFinish",
+          "value": "Matte"
         }
       },
       "PhysicalDimensions": {
         "Length": {
           "semanticId": "https://aausmartlab.org/Semantics/mm",
-          "value": "150"
+          "value": 150
         },
         "Height": {
           "semanticId": "https://aausmartlab.org/Semantics/mm",
-          "value": "80"
+          "value": 5
         },
         "Width": {
           "semanticId": "https://aausmartlab.org/Semantics/mm",
-          "value": "5"
+          "value": 80
         },
         "Weight": {
           "semanticId": "https://aausmartlab.org/Semantics/gram",
-          "value": "118"
+          "value": 131.0
         }
       }
     },
@@ -63,26 +63,26 @@
           "value": "Polyimide "
         },
         "Finish": {
-          "semanticId": "https://aausmartlab.org/Semantics/Finish",
+          "semanticId": "https://aausmartlab.org/Semantics/SurfaceFinish",
           "value": "Smooth"
         }
       },
       "PhysicalDimensions": {
         "Length": {
           "semanticId": "https://aausmartlab.org/Semantics/mm",
-          "value": "120"
+          "value": 120
         },
         "Height": {
           "semanticId": "https://aausmartlab.org/Semantics/mm",
-          "value": "60"
+          "value": 60
         },
         "Width": {
           "semanticId": "https://aausmartlab.org/Semantics/mm",
-          "value": "2"
+          "value": 2
         },
         "Weight": {
           "semanticId": "https://aausmartlab.org/Semantics/gram",
-          "value": "53"
+          "value": 53
         }
       }
     },

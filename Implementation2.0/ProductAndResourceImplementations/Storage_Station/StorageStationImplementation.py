@@ -95,19 +95,19 @@ resource_inventories = {
         "InventorySize": 10,
         "SupportedComponents": 
         [
-           "https://aausmartlab.org/Shells/Component/Bottom_Cover", 
-           "https://aausmartlab.org/Shells/Component/Top_Cover"
+           "https://aausmartlab.org/Shells/Component/BottomCover", 
+           "https://aausmartlab.org/Shells/Component/TopCover"
         ],
         "AccessibleActors" : [Actor],
         "Storage" : 
         {
-            "position1": "https://aausmartlab.org/Shells/Component/Bottom_Cover/Bottom_Cover-BC001",
-            "position2": "https://aausmartlab.org/Shells/Component/Bottom_Cover/Bottom_Cover-BC002",
-            "position3": "https://aausmartlab.org/Shells/Component/Bottom_Cover/Bottom_Cover-BC003",
-            "position4": "https://aausmartlab.org/Shells/Component/Bottom_Cover/Bottom_Cover-BC004",
-            "position5": "https://aausmartlab.org/Shells/Component/Top_Cover/Top_Cover-TC001",
-            "position6": "https://aausmartlab.org/Shells/Component/Top_Cover/Top_Cover-TC002",
-            "position7": "",
+            "position1": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover-BC001",
+            "position2": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover-BC002",
+            "position3": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover-BC003",
+            "position4": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover-BC004",
+            "position5": "https://aausmartlab.org/Shells/Component/TopCover/TopCover-TC001",
+            "position6": "https://aausmartlab.org/Shells/Component/TopCover/TopCover-TC002",
+            "position7": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_7ef0e4df-1b09-4d0a-9448-14ae51652a52",
             "position8": "",
             "position9": "",
             "position10": ""
