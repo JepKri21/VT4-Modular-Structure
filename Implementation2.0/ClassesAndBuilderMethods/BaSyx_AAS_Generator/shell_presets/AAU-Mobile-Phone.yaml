@@ -1,5 +1,5 @@
-shell: "final_product_shell"
-label: "Final Product – AAU Mobile Phone (Example)"
+﻿shell: "final_product_shell"
+label: "Final Product â€“ AAU Mobile Phone (Example)"
 description: "Preset that models the AAU Mobile Phone: BOM entries and a simple BOP to mirror the dummy phone example."
 
 asset_type: "Mobile_Phone"
@@ -12,7 +12,7 @@ submodels:
       Length: 140
       Width: 70
       Height: 12
-      Weight_g: 180.0
+      Weight: 180.0
     MaterialProperties:
       Material: "ABS"
       Color: "Black"

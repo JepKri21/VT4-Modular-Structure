@@ -1,0 +1,74 @@
+type: "storage_module"
+label: "Storage Module – Multi-Rack (AAU Lab)"
+description: "UR5 multi-rack storage module with two inventories: 10-slot rack for raw covers and 5-slot rack for drilled covers. Based on the Storage_12345678 instance in ProductAndResourceImplementations."
+
+asset_name: "Storage_MultiRack_01"
+
+submodels:
+  StoreCapabilityOffered:
+    SupportedComponents:
+      - "https://aausmartlab.org/Shells/Component/Bottom_Cover"
+      - "https://aausmartlab.org/Shells/Component/Top_Cover"
+      - "https://aausmartlab.org/Shells/Component/Bottom_Cover_Drilled"
+
+  RetrieveCapabilityOffered:
+    SupportedComponents:
+      - "https://aausmartlab.org/Shells/Component/Bottom_Cover"
+      - "https://aausmartlab.org/Shells/Component/Top_Cover"
+      - "https://aausmartlab.org/Shells/Component/Bottom_Cover_Drilled"
+
+  HandoffCapabilityOffered:
+    SupportedComponents:
+      - "https://aausmartlab.org/Shells/Component/Bottom_Cover"
+      - "https://aausmartlab.org/Shells/Component/Top_Cover"
+      - "https://aausmartlab.org/Shells/Component/Bottom_Cover_Drilled"
+    Parameters:
+      TargetPosition:
+        XPos: ""
+        YPos: ""
+
+  Inventory:
+    Inventories:
+      - Specifications:
+          InventorySize: 10
+        SupportedComponents:
+          - "https://aausmartlab.org/Shells/Component/Bottom_Cover"
+          - "https://aausmartlab.org/Shells/Component/Top_Cover"
+      - Specifications:
+          InventorySize: 5
+        SupportedComponents:
+          - "https://aausmartlab.org/Shells/Component/Bottom_Cover_Drilled"
+
+  Skills:
+    Skill:
+      - SkillName: "Store"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage_MultiRack_01/StoreCapabilityOffered"
+        SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+        Actors:
+          - "UR5"
+      - SkillName: "Retrieve"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage_MultiRack_01/RetrieveCapabilityOffered"
+        SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+        Actors:
+          - "UR5"
+      - SkillName: "Handoff"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage_MultiRack_01/HandoffCapabilityOffered"
+        SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+        Actors:
+          - "UR5"
+
+  ResourceZones:
+    CenterPoint:
+      XPos: 0.0
+      YPos: 0.0
+    ResourceGeometry:
+      Point1: { XPos: -50.0, YPos: -50.0 }
+      Point2: { XPos:  50.0, YPos: -50.0 }
+      Point3: { XPos:  50.0, YPos:  50.0 }
+      Point4: { XPos: -50.0, YPos:  50.0 }
+    InOutputZones:
+      Zone1:
+        Point1: { XPos: -40.0, YPos:  50.0 }
+        Point2: { XPos:  40.0, YPos:  50.0 }
+        Point3: { XPos:  40.0, YPos: 130.0 }
+        Point4: { XPos: -40.0, YPos: 130.0 }

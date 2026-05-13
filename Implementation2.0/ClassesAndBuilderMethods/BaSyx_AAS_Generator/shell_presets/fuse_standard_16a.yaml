@@ -1,7 +1,7 @@
-# Preset for a standard 16A slow-blow fuse component.
+﻿# Preset for a standard 16A slow-blow fuse component.
 
 type: "fuse"
-label: "Fuse – 16A Slow-Blow"
+label: "Fuse â€“ 16A Slow-Blow"
 description: "Standard 16A slow-blow glass fuse. Change SerialNumber and BatchNumber per instance."
 
 asset_name: "Fuse_16A_SB"
@@ -9,7 +9,7 @@ asset_name: "Fuse_16A_SB"
 submodels:
   Properties:
     PhysicalDimensions:
-      Weight_g: 3.2
+      Weight: 3.2
     MaterialProperties:
       Material: "Glass"
       Color: "Clear"
@@ -21,13 +21,13 @@ submodels:
   Documentation:
     ProductionIdentification:
       ModelNumber: "FUSE-SB-16A-001"
-      # SerialNumber: leave blank — unique per instance
-      # BatchNumber: leave blank — set at production time
+      # SerialNumber: leave blank â€” unique per instance
+      # BatchNumber: leave blank â€” set at production time
     DisplayName:
       - language: "en"
-        text: "Fuse – 16A Slow-Blow"
+        text: "Fuse â€“ 16A Slow-Blow"
       - language: "da"
-        text: "Sikring – 16A Tidsforsinket"
+        text: "Sikring â€“ 16A Tidsforsinket"
     Description:
       - language: "en"
         text: "250V 16A slow-blow glass cartridge fuse for FuseBox Series A"

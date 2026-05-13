@@ -1,0 +1,55 @@
+type: "drilling_station"
+label: "Drilling Station – UR5 Precision (AAU Lab)"
+description: "UR5 collaborative robot drilling station for precision small-diameter holes in Bottom Cover only. Narrower work envelope than the KUKA variant."
+
+asset_name: "Drilling_UR5_01"
+
+submodels:
+  DrillingCapabilityOffered:
+    SupportedComponents:
+      - "https://aausmartlab.org/Shells/Component/Bottom_Cover"
+    Parameters:
+      HoleDiameter: 3.0
+      DrillDepth:
+        min: 0.0
+        max: 50.0
+      TargetPosition:
+        XPos: { min: -30.0, max: 30.0 }
+        YPos: { min: -30.0, max: 30.0 }
+
+  HandoffCapabilityOffered:
+    SupportedComponents:
+      - "https://aausmartlab.org/Shells/Component/Bottom_Cover"
+    Parameters:
+      TargetPosition:
+        XPos: ""
+        YPos: ""
+
+  Skills:
+    Skill:
+      - SkillName: "Drilling"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Drilling_UR5_01/DrillingCapabilityOffered"
+        SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+        Actors:
+          - "UR5"
+      - SkillName: "Handoff"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Drilling_UR5_01/HandoffCapabilityOffered"
+        SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+        Actors:
+          - "UR5"
+
+  ResourceZones:
+    CenterPoint:
+      XPos: 0.0
+      YPos: 0.0
+    ResourceGeometry:
+      Point1: { XPos: -30.0, YPos: -30.0 }
+      Point2: { XPos:  30.0, YPos: -30.0 }
+      Point3: { XPos:  30.0, YPos:  30.0 }
+      Point4: { XPos: -30.0, YPos:  30.0 }
+    InOutputZones:
+      Zone1:
+        Point1: { XPos: -25.0, YPos:  30.0 }
+        Point2: { XPos:  25.0, YPos:  30.0 }
+        Point3: { XPos:  25.0, YPos:  90.0 }
+        Point4: { XPos: -25.0, YPos:  90.0 }

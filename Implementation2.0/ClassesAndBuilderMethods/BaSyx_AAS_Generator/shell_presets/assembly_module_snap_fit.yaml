@@ -1,0 +1,62 @@
+type: "assembly_module"
+label: "Assembly Module – Snap-Fit (AAU Lab)"
+description: "UR5 snap-fit assembly station for joining Bottom Cover and Bottom Cover PCB sub-assemblies without fasteners."
+
+asset_name: "Assembly_SnapFit_01"
+
+submodels:
+  AssembleCapabilityOffered:
+    SupportedComponents:
+      - "https://aausmartlab.org/Shells/Component/Bottom_Cover"
+      - "https://aausmartlab.org/Shells/SubAssembly/Bottom_Cover_PCB"
+    Parameters:
+      SupportedAssemblyTypes:
+        - "snap-fit"
+        - "press-fit"
+      AssemblyPosition:
+        XPos: { min: -40.0, max: 40.0 }
+        YPos: { min: -40.0, max: 40.0 }
+      MaxComponentCount:
+        min: 2
+        max: 4
+      MaxAssemblyTime_s:
+        min: 5.0
+        max: 60.0
+
+  HandoffCapabilityOffered:
+    SupportedComponents:
+      - "https://aausmartlab.org/Shells/Component/Bottom_Cover"
+      - "https://aausmartlab.org/Shells/SubAssembly/Bottom_Cover_PCB"
+    Parameters:
+      TargetPosition:
+        XPos: ""
+        YPos: ""
+
+  Skills:
+    Skill:
+      - SkillName: "Assemble"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Assembly_SnapFit_01/AssembleCapabilityOffered"
+        SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+        Actors:
+          - "UR5"
+      - SkillName: "Handoff"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Assembly_SnapFit_01/HandoffCapabilityOffered"
+        SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+        Actors:
+          - "UR5"
+
+  ResourceZones:
+    CenterPoint:
+      XPos: 0.0
+      YPos: 0.0
+    ResourceGeometry:
+      Point1: { XPos: -50.0, YPos: -50.0 }
+      Point2: { XPos:  50.0, YPos: -50.0 }
+      Point3: { XPos:  50.0, YPos:  50.0 }
+      Point4: { XPos: -50.0, YPos:  50.0 }
+    InOutputZones:
+      Zone1:
+        Point1: { XPos: -40.0, YPos:  50.0 }
+        Point2: { XPos:  40.0, YPos:  50.0 }
+        Point3: { XPos:  40.0, YPos: 120.0 }
+        Point4: { XPos: -40.0, YPos: 120.0 }

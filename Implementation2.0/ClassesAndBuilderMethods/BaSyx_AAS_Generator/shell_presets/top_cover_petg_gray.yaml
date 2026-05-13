@@ -1,5 +1,5 @@
-type: "top_cover"
-label: "Top Cover – PETG, Gray, Matte"
+﻿type: "top_cover"
+label: "Top Cover â€“ PETG, Gray, Matte"
 description: "3D-printed PETG top cover, gray matte finish. Better chemical and heat resistance than PLA. Change SerialNumber and BatchNumber per instance."
 
 asset_name: "TopCover_PETG_Gray"
@@ -7,7 +7,7 @@ asset_name: "TopCover_PETG_Gray"
 submodels:
   Properties:
     PhysicalDimensions:
-      Weight_g: 56.5
+      Weight: 56.5
     MaterialProperties:
       Material: "PETG"
       Color: "Gray"

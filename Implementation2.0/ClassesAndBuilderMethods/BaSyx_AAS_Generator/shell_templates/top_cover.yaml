@@ -25,7 +25,7 @@ submodels:
       Length: 150
       Width: 80
       Height: 8
-      # Weight_g omitted - varies by material, belongs in preset
+      # Weight omitted - varies by material, belongs in preset
   Documentation:
     ManufacturerName: "AAU SmartLab"
     ProductFamily: "FuseBox Series A"

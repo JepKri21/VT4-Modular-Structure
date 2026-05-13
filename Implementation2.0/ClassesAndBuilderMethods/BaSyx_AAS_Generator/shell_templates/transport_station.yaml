@@ -1,0 +1,52 @@
+# Category type shell for Transport Station resources.
+#
+# Shared across all transport station presets:
+#   - CapabilityCategory / CapabilityReference for Transport
+#   - AllowedMaterials (PLA and ABS)
+#   - Standard PackML Communication suffixes
+#
+# Preset (type: "transport_station") must supply:
+#   SupportedComponents, TargetPosition range, Actors, ResourceZones
+
+kind: "Type"
+shell: "resource_shell"
+asset_type: "Transport_Station"
+asset_category: "Resource"
+id: "https://aausmartlab.org/Shells/Resources/Transport_Station"
+
+submodel_templates:
+  TransportCapabilityOffered: "https://aausmartlab.org/Submodels/Templates/TransportCapabilityOffered"
+  Skills:                     "https://aausmartlab.org/Submodels/Templates/Skills"
+  ResourceZones:              "https://aausmartlab.org/Submodels/Templates/ResourceZones"
+  Communication:              "https://aausmartlab.org/Submodels/Templates/Communication"
+
+include:
+  TransportCapabilityOffered:
+    - Parameters
+    - SupportedComponents
+    - AllowedMaterials
+  Skills:
+    - Skill
+  ResourceZones:
+    - CenterPoint
+    - ResourceGeometry
+    - InOutputZones
+
+submodels:
+  TransportCapabilityOffered:
+    CapabilityCategory: "Offered"
+    CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Transport"
+    AllowedMaterials:
+      - "https://aausmartlab.org/Materials/PLA"
+      - "https://aausmartlab.org/Materials/ABS"
+
+  Communication:
+    MQTT:
+      Suffixes:
+        CommandSuffix: "CMD"
+        StateSuffix: "PackMLState"
+        JobResultSuffix: "JobResult"
+        InfoRequestSuffix: "InfoRequest"
+        ResourceAcknowledgementSuffix: "ResourceAck"
+        ControllerAcknowledgementSuffix: "ControllerAck"
+        OccupancySuffix: "Occupy"

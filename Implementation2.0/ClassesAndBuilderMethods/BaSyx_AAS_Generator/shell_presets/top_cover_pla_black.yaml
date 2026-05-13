@@ -1,5 +1,5 @@
-type: "top_cover"
-label: "Top Cover – PLA, Black, Matte"
+﻿type: "top_cover"
+label: "Top Cover â€“ PLA, Black, Matte"
 description: "3D-printed PLA top cover, black matte finish. Change SerialNumber and BatchNumber per instance."
 
 asset_name: "TopCover_PLA_Black"
@@ -7,7 +7,7 @@ asset_name: "TopCover_PLA_Black"
 submodels:
   Properties:
     PhysicalDimensions:
-      Weight_g: 53.5
+      Weight: 53.5
     MaterialProperties:
       Material: "PLA"
       Color: "Black"

@@ -1,7 +1,7 @@
-# Preset for the PCB board component.
+﻿# Preset for the PCB board component.
 
 type: "pcb"
-label: "PCB Board – FuseBox Series A"
+label: "PCB Board â€“ FuseBox Series A"
 description: "Printed circuit board for FuseBox Series A. Change SerialNumber and BatchNumber per instance."
 
 asset_name: "PCB_FuseBoxA"
@@ -9,7 +9,7 @@ asset_name: "PCB_FuseBoxA"
 submodels:
   Properties:
     PhysicalDimensions:
-      Weight_g: 45.0
+      Weight: 45.0
     MaterialProperties:
       Material: "FR4"
       Color: "Green"
@@ -17,13 +17,13 @@ submodels:
   Documentation:
     ProductionIdentification:
       ModelNumber: "PCB-FB-A-001"
-      # SerialNumber: leave blank — unique per instance
-      # BatchNumber: leave blank — set at production time
+      # SerialNumber: leave blank â€” unique per instance
+      # BatchNumber: leave blank â€” set at production time
     DisplayName:
       - language: "en"
-        text: "PCB Board – FuseBox Series A"
+        text: "PCB Board â€“ FuseBox Series A"
       - language: "da"
-        text: "Printkort – Sikringsboks Serie A"
+        text: "Printkort â€“ Sikringsboks Serie A"
     Description:
       - language: "en"
         text: "Printed circuit board for FuseBox Series A enclosures"

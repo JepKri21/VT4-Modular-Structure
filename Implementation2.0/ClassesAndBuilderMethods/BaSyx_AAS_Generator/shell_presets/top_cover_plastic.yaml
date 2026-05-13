@@ -1,6 +1,6 @@
-# Preset for the standard 3D-printed top cover component.
+﻿# Preset for the standard 3D-printed top cover component.
 type: "top_cover"
-label: "Top Cover – 3D Print, White"
+label: "Top Cover â€“ 3D Print, White"
 description: "3D-printed PLA top cover, white. Change SerialNumber and BatchNumber per instance."
 
 asset_name: "TopCover"
@@ -8,7 +8,7 @@ asset_name: "TopCover"
 submodels:
   Properties:
     PhysicalDimensions:
-      Weight_g: 54.0
+      Weight: 54.0
     MaterialProperties:
       Material: "PLA"
       Color: "White"
