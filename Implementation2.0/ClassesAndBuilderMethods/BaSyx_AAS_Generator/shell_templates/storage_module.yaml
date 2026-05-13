@@ -1,0 +1,83 @@
+# Category type shell for Storage Module resources.
+#
+# Shared across all storage module presets:
+#   - CapabilityCategory / CapabilityReference for Store, Retrieve, and Handoff
+#   - AllowedMaterials (PLA, ABS, Aluminum)
+#   - Standard PackML Communication suffixes including InventoryLevelSuffix
+#
+# Preset (type: "storage_module") must supply:
+#   SupportedComponents, Inventory slots, Actors, ResourceZones, Skills
+
+kind: "Type"
+shell: "resource_shell"
+asset_type: "Storage_Module"
+asset_category: "Resource"
+id: "https://aausmartlab.org/Shells/Resources/Storage_Module"
+
+submodel_templates:
+  StoreCapabilityOffered:    "https://aausmartlab.org/Submodels/Templates/StoreCapabilityOffered"
+  RetrieveCapabilityOffered: "https://aausmartlab.org/Submodels/Templates/RetrieveCapabilityOffered"
+  HandoffCapabilityOffered:  "https://aausmartlab.org/Submodels/Templates/HandoffCapabilityOffered"
+  Skills:                    "https://aausmartlab.org/Submodels/Templates/Skills"
+  ResourceZones:             "https://aausmartlab.org/Submodels/Templates/ResourceZones"
+  Inventory:                 "https://aausmartlab.org/Submodels/Templates/Inventory"
+  Communication:             "https://aausmartlab.org/Submodels/Templates/Communication"
+
+include:
+  StoreCapabilityOffered:
+    - Parameters
+    - SupportedComponents
+    - AllowedMaterials
+  RetrieveCapabilityOffered:
+    - Parameters
+    - SupportedComponents
+    - AllowedMaterials
+  HandoffCapabilityOffered:
+    - Parameters
+    - SupportedComponents
+    - AllowedMaterials
+  Skills:
+    - Skill
+  Inventory:
+    - Inventories
+  ResourceZones:
+    - CenterPoint
+    - ResourceGeometry
+    - InOutputZones
+
+submodels:
+  StoreCapabilityOffered:
+    CapabilityCategory: "Offered"
+    CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Store"
+    AllowedMaterials:
+      - "https://aausmartlab.org/Materials/PLA"
+      - "https://aausmartlab.org/Materials/ABS"
+      - "https://aausmartlab.org/Materials/Aluminum"
+
+  RetrieveCapabilityOffered:
+    CapabilityCategory: "Offered"
+    CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Retrieve"
+    AllowedMaterials:
+      - "https://aausmartlab.org/Materials/PLA"
+      - "https://aausmartlab.org/Materials/ABS"
+      - "https://aausmartlab.org/Materials/Aluminum"
+
+  HandoffCapabilityOffered:
+    CapabilityCategory: "Offered"
+    CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Handoff"
+    AllowedMaterials:
+      - "https://aausmartlab.org/Materials/PLA"
+      - "https://aausmartlab.org/Materials/ABS"
+      - "https://aausmartlab.org/Materials/Aluminum"
+
+  Communication:
+    MQTT:
+      Suffixes:
+        CommandSuffix: "CMD"
+        StateSuffix: "PackMLState"
+        JobResultSuffix: "JobResult"
+        InfoRequestSuffix: "InfoRequest"
+        ResourceAcknowledgementSuffix: "ResourceAck"
+        ControllerAcknowledgementSuffix: "ControllerAck"
+        OccupancySuffix: "Occupy"
+        InventoryLevelSuffix: "InventoryLevel"

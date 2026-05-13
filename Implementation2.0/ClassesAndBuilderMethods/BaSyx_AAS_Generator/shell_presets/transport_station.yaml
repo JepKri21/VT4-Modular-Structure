@@ -1,4 +1,4 @@
-shell: "resource_shell"
+type: "transport_station"
 label: "Transport Station – AAU Lab (Transport_12345678)"
 description: "Two-shuttle transport station covering the full line work area"
 
@@ -6,26 +6,23 @@ asset_name: "Transport_12345678"
 
 submodels:
   TransportCapabilityOffered:
-    CapabilityCategory: "Offered"
-    CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Transport"
     SupportedComponents:
-      - "BottomCover_ALU"
-      - "TopCover_ALU"
-      - "Bottom_Cover_Drilled"
-    AllowedMaterials:
-      - "PLA"
-      - "ABS"
+      - "https://aausmartlab.org/Shells/Component/Bottom_Cover"
+      - "https://aausmartlab.org/Shells/Component/Top_Cover"
+      - "https://aausmartlab.org/Shells/Component/Bottom_Cover_Drilled"
     Parameters:
       TargetPosition:
         XPos: { min: 60.0, max: 660.0 }
         YPos: { min: 60.0, max: 900.0 }
 
   Skills:
-    Transport:
-      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Transport-12345678/TransportCapabilityOffered"
-      Actors:
-        - "Shuttle1"
-        - "Shuttle2"
+    Skill:
+      - SkillName: "Transport"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Transport-12345678/TransportCapabilityOffered"
+        SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+        Actors:
+          - "Shuttle1"
+          - "Shuttle2"
 
   ResourceZones:
     CenterPoint:
@@ -42,14 +39,3 @@ submodels:
         Point2: { XPos: 660.0, YPos:  60.0 }
         Point3: { XPos: 660.0, YPos: 900.0 }
         Point4: { XPos:  60.0, YPos: 900.0 }
-
-  Communication:
-    MQTT:
-      Suffixes:
-        CommandSuffix: "CMD"
-        StateSuffix: "PackMLState"
-        JobResultSuffix: "JobResult"
-        InfoRequestSuffix: "InfoRequest"
-        ResourceAcknowledgementSuffix: "ResourceAck"
-        ControllerAcknowledgementSuffix: "ControllerAck"
-        OccupancySuffix: "Occupy"

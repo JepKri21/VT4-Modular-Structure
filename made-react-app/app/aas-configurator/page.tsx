@@ -444,13 +444,6 @@ export default function AasConfiguratorPage() {
   // Fetched capability templates keyed by template_file name
   const [capabilityTemplates, setCapabilityTemplates] = useState<Record<string, SubmodelTemplate>>({});
 
-  // Active shell: base shell slots + any capability slots injected from BOP operations
-  const activeShell = React.useMemo<ShellType | null>(() => {
-    if (!selectedShell) return null;
-    if (extraSlots.length === 0) return selectedShell;
-    return { ...selectedShell, submodels: [...selectedShell.submodels, ...extraSlots] };
-  }, [selectedShell, extraSlots]);
-
   // Preset selection (shown on the same shell-select step)
   const [presets, setPresets] = useState<ShellPresetSummary[]>([]);
   const [loadingPresets, setLoadingPresets] = useState(false);
@@ -459,6 +452,20 @@ export default function AasConfiguratorPage() {
   const [selectedCategory, setSelectedCategory] = useState<ShellCategory | null>(null);
   const [presetApplied, setPresetApplied] = useState(false);
   const [presetIncludes, setPresetIncludes] = useState<Record<string, string[]> | null>(null);
+
+  // Active shell: base shell slots + any capability slots injected from BOP operations.
+  // When a category is selected and has its own submodels (e.g. drilling_station defines
+  // DrillingCapabilityOffered rather than the generic CapabilitiesOffered from resource_shell),
+  // those category-specific slots replace the abstract blueprint slots so preset data matches.
+  const activeShell = React.useMemo<ShellType | null>(() => {
+    if (!selectedShell) return null;
+    const base: ShellType =
+      selectedCategory?.submodels && selectedCategory.submodels.length > 0
+        ? { ...selectedShell, submodels: selectedCategory.submodels }
+        : selectedShell;
+    if (extraSlots.length === 0) return base;
+    return { ...base, submodels: [...base.submodels, ...extraSlots] };
+  }, [selectedShell, selectedCategory, extraSlots]);
 
   // Instance info
   const [assetName, setAssetName] = useState("");
@@ -529,6 +536,10 @@ export default function AasConfiguratorPage() {
       });
       if (!res.ok) throw new Error(await res.text());
       setPathSaveState("saved");
+      setSelectedShell(null);
+      setAllPresets({});
+      setStep({ kind: "shell-select" });
+      fetchShellTypes();
     } catch {
       setPathSaveState("error");
     }
@@ -540,8 +551,8 @@ export default function AasConfiguratorPage() {
   const [uploadResults, setUploadResults] = useState<Record<number, UploadResult[]>>({});
   const [uploadState, setUploadState] = useState<Record<number, "idle" | "uploading" | "done" | "error">>({});
 
-  /* fetch shell types once */
-  useEffect(() => {
+  const fetchShellTypes = useCallback(() => {
+    setLoadingShells(true);
     fetch("/api/aas-configurator/shell-types")
       .then((r) => r.json())
       .then((data) => {
@@ -550,6 +561,11 @@ export default function AasConfiguratorPage() {
       })
       .catch(() => setLoadingShells(false));
   }, []);
+
+  /* fetch shell types once */
+  useEffect(() => {
+    fetchShellTypes();
+  }, [fetchShellTypes]);
 
   /* fetch presets when a shell or category is selected */
   useEffect(() => {
@@ -1159,7 +1175,7 @@ export default function AasConfiguratorPage() {
               </button>
             </div>
             {pathSaveState === "saved" && (
-              <span className="flex items-center gap-1 text-xs text-primary"><Check className="w-3.5 h-3.5" /> Saved — reload the page for changes to take effect.</span>
+              <span className="flex items-center gap-1 text-xs text-primary"><Check className="w-3.5 h-3.5" /> Saved — shell types refreshed.</span>
             )}
             {pathSaveState === "error" && (
               <span className="text-xs text-destructive">Failed to save — check the server log.</span>

@@ -1,0 +1,64 @@
+type: "assembly_module"
+label: "Assembly Module – Screwing (AAU Lab)"
+description: "KUKA manipulator torque-controlled screwing station for fastening Fuse Module and PCB sub-assemblies to Bottom Cover."
+
+asset_name: "Assembly_Screwing_01"
+
+submodels:
+  AssembleCapabilityOffered:
+    SupportedComponents:
+      - "https://aausmartlab.org/Shells/Component/Bottom_Cover"
+      - "https://aausmartlab.org/Shells/SubAssembly/Bottom_Cover_PCB"
+      - "https://aausmartlab.org/Shells/SubAssembly/Fuse_Module"
+    Parameters:
+      SupportedAssemblyTypes:
+        - "screwing"
+        - "torque-controlled"
+      AssemblyPosition:
+        XPos: { min: -45.0, max: 45.0 }
+        YPos: { min: -45.0, max: 45.0 }
+      MaxComponentCount:
+        min: 2
+        max: 6
+      MaxAssemblyTime_s:
+        min: 10.0
+        max: 120.0
+
+  HandoffCapabilityOffered:
+    SupportedComponents:
+      - "https://aausmartlab.org/Shells/Component/Bottom_Cover"
+      - "https://aausmartlab.org/Shells/SubAssembly/Bottom_Cover_PCB"
+      - "https://aausmartlab.org/Shells/SubAssembly/Fuse_Module"
+    Parameters:
+      TargetPosition:
+        XPos: ""
+        YPos: ""
+
+  Skills:
+    Skill:
+      - SkillName: "Assemble"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Assembly_Screwing_01/AssembleCapabilityOffered"
+        SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+        Actors:
+          - "KUKAManipulator"
+      - SkillName: "Handoff"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Assembly_Screwing_01/HandoffCapabilityOffered"
+        SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+        Actors:
+          - "KUKAManipulator"
+
+  ResourceZones:
+    CenterPoint:
+      XPos: 0.0
+      YPos: 0.0
+    ResourceGeometry:
+      Point1: { XPos: -55.0, YPos: -55.0 }
+      Point2: { XPos:  55.0, YPos: -55.0 }
+      Point3: { XPos:  55.0, YPos:  55.0 }
+      Point4: { XPos: -55.0, YPos:  55.0 }
+    InOutputZones:
+      Zone1:
+        Point1: { XPos: -45.0, YPos:  55.0 }
+        Point2: { XPos:  45.0, YPos:  55.0 }
+        Point3: { XPos:  45.0, YPos: 130.0 }
+        Point4: { XPos: -45.0, YPos: 130.0 }

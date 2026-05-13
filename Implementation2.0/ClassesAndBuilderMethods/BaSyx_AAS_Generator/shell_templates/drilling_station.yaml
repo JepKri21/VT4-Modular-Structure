@@ -1,0 +1,64 @@
+# Category type shell for Drilling Station resources.
+#
+# Shared across all drilling station presets:
+#   - CapabilityCategory / CapabilityReference for Drilling and Handoff
+#   - AllowedMaterials (PLA and ABS)
+#   - Standard PackML Communication suffixes
+#
+# Preset (type: "drilling_station") must supply:
+#   SupportedComponents, Parameters ranges, Actors, ResourceZones, Skills
+
+kind: "Type"
+shell: "resource_shell"
+asset_type: "Drilling_Station"
+asset_category: "Resource"
+id: "https://aausmartlab.org/Shells/Resources/Drilling_Station"
+
+submodel_templates:
+  DrillingCapabilityOffered: "https://aausmartlab.org/Submodels/Templates/DrillingCapabilityOffered"
+  HandoffCapabilityOffered:  "https://aausmartlab.org/Submodels/Templates/HandoffCapabilityOffered"
+  Skills:                    "https://aausmartlab.org/Submodels/Templates/Skills"
+  ResourceZones:             "https://aausmartlab.org/Submodels/Templates/ResourceZones"
+  Communication:             "https://aausmartlab.org/Submodels/Templates/Communication"
+
+include:
+  DrillingCapabilityOffered:
+    - Parameters
+    - SupportedComponents
+    - AllowedMaterials
+  HandoffCapabilityOffered:
+    - Parameters
+    - SupportedComponents
+    - AllowedMaterials
+  Skills:
+    - Skill
+  ResourceZones:
+    - CenterPoint
+    - ResourceGeometry
+    - InOutputZones
+
+submodels:
+  DrillingCapabilityOffered:
+    CapabilityCategory: "Offered"
+    CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Drilling"
+    AllowedMaterials:
+      - "https://aausmartlab.org/Materials/PLA"
+      - "https://aausmartlab.org/Materials/ABS"
+
+  HandoffCapabilityOffered:
+    CapabilityCategory: "Offered"
+    CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Handoff"
+    AllowedMaterials:
+      - "https://aausmartlab.org/Materials/PLA"
+      - "https://aausmartlab.org/Materials/ABS"
+
+  Communication:
+    MQTT:
+      Suffixes:
+        CommandSuffix: "CMD"
+        StateSuffix: "PackMLState"
+        JobResultSuffix: "JobResult"
+        InfoRequestSuffix: "InfoRequest"
+        ResourceAcknowledgementSuffix: "ResourceAck"
+        ControllerAcknowledgementSuffix: "ControllerAck"
+        OccupancySuffix: "Occupy"

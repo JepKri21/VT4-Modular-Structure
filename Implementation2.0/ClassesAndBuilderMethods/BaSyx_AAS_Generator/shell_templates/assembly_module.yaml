@@ -1,0 +1,67 @@
+# Category type shell for Assembly Module resources.
+#
+# Shared across all assembly module presets:
+#   - CapabilityCategory / CapabilityReference for Assemble and Handoff
+#   - AllowedMaterials (PLA, ABS, Aluminum)
+#   - Standard PackML Communication suffixes
+#
+# Preset (type: "assembly_module") must supply:
+#   SupportedAssemblyTypes, AssemblyPosition ranges, MaxComponentCount, MaxAssemblyTime_s,
+#   SupportedComponents, Actors, ResourceZones, Skills
+
+kind: "Type"
+shell: "resource_shell"
+asset_type: "Assembly_Module"
+asset_category: "Resource"
+id: "https://aausmartlab.org/Shells/Resources/Assembly_Module"
+
+submodel_templates:
+  AssembleCapabilityOffered: "https://aausmartlab.org/Submodels/Templates/AssembleCapabilityOffered"
+  HandoffCapabilityOffered:  "https://aausmartlab.org/Submodels/Templates/HandoffCapabilityOffered"
+  Skills:                    "https://aausmartlab.org/Submodels/Templates/Skills"
+  ResourceZones:             "https://aausmartlab.org/Submodels/Templates/ResourceZones"
+  Communication:             "https://aausmartlab.org/Submodels/Templates/Communication"
+
+include:
+  AssembleCapabilityOffered:
+    - Parameters
+    - SupportedComponents
+    - AllowedMaterials
+  HandoffCapabilityOffered:
+    - Parameters
+    - SupportedComponents
+    - AllowedMaterials
+  Skills:
+    - Skill
+  ResourceZones:
+    - CenterPoint
+    - ResourceGeometry
+    - InOutputZones
+
+submodels:
+  AssembleCapabilityOffered:
+    CapabilityCategory: "Offered"
+    CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Assemble"
+    AllowedMaterials:
+      - "https://aausmartlab.org/Materials/PLA"
+      - "https://aausmartlab.org/Materials/ABS"
+      - "https://aausmartlab.org/Materials/Aluminum"
+
+  HandoffCapabilityOffered:
+    CapabilityCategory: "Offered"
+    CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Handoff"
+    AllowedMaterials:
+      - "https://aausmartlab.org/Materials/PLA"
+      - "https://aausmartlab.org/Materials/ABS"
+      - "https://aausmartlab.org/Materials/Aluminum"
+
+  Communication:
+    MQTT:
+      Suffixes:
+        CommandSuffix: "CMD"
+        StateSuffix: "PackMLState"
+        JobResultSuffix: "JobResult"
+        InfoRequestSuffix: "InfoRequest"
+        ResourceAcknowledgementSuffix: "ResourceAck"
+        ControllerAcknowledgementSuffix: "ControllerAck"
+        OccupancySuffix: "Occupy"

@@ -1,29 +1,34 @@
 id_short: "Skills"
 id: "https://aausmartlab.org/Submodels/Templates/Skills"
-description: "Skills submodel template — one collection entry per capability offered by the resource"
+description: "Skills submodel template — one extensible entry per capability offered by the resource"
 
 elements:
 
-  # Add one collection per capability offered by this resource.
-  # The id_short of each entry must match the capability name
-  # (e.g. Drilling, Transport, Store, Retrieve, Handoff).
   - type: collection
     id_short: "Skill"
     semantic_id: "https://aausmartlab.org/Semantics/Capability"
-    description: "Skill entry for a single offered capability (repeat for each capability)"
-    cardinality: "OneToMany"
+    description: "Skill entries for all offered capabilities"
+    extensible: true
+    entry_template: "{SkillName}"
     elements:
 
+      - type: property
+        id_short: "SkillName"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.org/Semantics/SkillName"
+        description: "Name of this skill (e.g. Drilling, Handoff, Store, Retrieve, Assemble)"
+        cardinality: "One"
+
       - type: reference_element
-        id_short: "CapabilityReference"
-        semantic_id: "https://aausmartlab.org/Semantics/CapabilityReference"
+        id_short: "CapabilitySubmodelReference"
+        semantic_id: "https://aausmartlab.org/Semantics/CapabilitySubmodelReference"
         description: "Reference to the corresponding CapabilityOffered submodel"
         cardinality: "One"
 
       - type: list
         id_short: "SkillTriggers"
         semantic_id: "https://aausmartlab.org/Semantics/SkillTriggers"
-        description: "Trigger commands for this skill — all nine ISA-88 triggers are required: START | STOP | RESET | ABORT | CLEAR | HOLD | UNHOLD | SUSPEND | UNSUSPEND"
+        description: "Trigger commands for this skill (ISA-88: START, STOP, RESET, ABORT, CLEAR, HOLD, UNHOLD, SUSPEND, UNSUSPEND)"
         element_type: "property"
         value_type: "xs:string"
         cardinality: "OneToMany"
@@ -31,7 +36,7 @@ elements:
       - type: list
         id_short: "Actors"
         semantic_id: "https://aausmartlab.org/Semantics/Actors"
-        description: "Physical actors that execute this skill (e.g. KUKAManipulator, Shuttle1, Shuttle2)"
+        description: "Physical actors that execute this skill (e.g. KUKAManipulator, UR5)"
         element_type: "property"
         value_type: "xs:string"
         cardinality: "OneToMany"

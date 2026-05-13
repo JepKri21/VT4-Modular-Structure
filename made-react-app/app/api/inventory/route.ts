@@ -100,8 +100,9 @@ export async function DELETE(req: NextRequest) {
   }
 
   await ensureTables();
+  await pool.query("DELETE FROM order_items WHERE component_type_id = $1", [componentTypeId]);
+  await pool.query("DELETE FROM inventory WHERE component_type_id = $1", [componentTypeId]);
   await pool.query("DELETE FROM component_types WHERE id = $1", [componentTypeId]);
-  // Cascade delete via FK will remove inventory and order_items
 
   return NextResponse.json({ ok: true });
 }

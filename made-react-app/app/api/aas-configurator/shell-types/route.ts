@@ -55,7 +55,10 @@ export async function GET() {
 
     // Pass 1: separate abstract blueprints from category type shells
     interface BlueprintEntry { name: string; doc: Record<string, unknown>; }
-    interface CategoryEntry  { name: string; label: string; description: string; blueprintRef: string; }
+    interface CategoryEntry  {
+      name: string; label: string; description: string; blueprintRef: string;
+      submodels: RawShellSubmodel[];
+    }
 
     const blueprints: BlueprintEntry[] = [];
     const typeShells: CategoryEntry[]  = [];
@@ -72,7 +75,17 @@ export async function GET() {
       if (Array.isArray(doc.submodels)) {
         blueprints.push({ name, doc });
       } else if (typeof doc.shell === "string") {
-        typeShells.push({ name, label, description: String(doc.description ?? ""), blueprintRef: doc.shell });
+        // Build a slot list from submodel_templates: { id_short → template_id }
+        const smtMap = doc.submodel_templates as Record<string, string> | undefined;
+        const categorySubmodels: RawShellSubmodel[] = smtMap
+          ? Object.entries(smtMap).map(([id_short, template_id]) => ({
+              template_id,
+              id_short,
+              description: "",
+              required: true,
+            }))
+          : [];
+        typeShells.push({ name, label, description: String(doc.description ?? ""), blueprintRef: doc.shell, submodels: categorySubmodels });
       }
     }
 
@@ -93,7 +106,16 @@ export async function GET() {
 
       const categories = typeShells
         .filter((ts) => ts.blueprintRef === name)
-        .map(({ name: n, label: l, description: d }) => ({ name: n, label: l, description: d }));
+        .map(({ name: n, label: l, description: d, submodels: sms }) => ({
+          name: n,
+          label: l,
+          description: d,
+          submodels: sms.map((sm) => ({
+            ...sm,
+            required: sm.required ?? true,
+            template_file: submodelIndex[sm.template_id] ?? null,
+          })),
+        }));
 
       return {
         name,

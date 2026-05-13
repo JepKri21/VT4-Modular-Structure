@@ -200,6 +200,7 @@ export interface ShellCategory {
   name: string;        // e.g. "bottom_cover"
   label: string;       // e.g. "Bottom Cover"
   description: string;
+  submodels?: ShellSubmodelSlot[]; // from category type shell's submodel_templates; overrides blueprint slots when set
 }
 
 export interface ShellType {
