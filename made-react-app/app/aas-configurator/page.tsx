@@ -56,8 +56,8 @@ function applyPattern(pattern: string, name: string, category: string, uuid?: st
     .replace(/\{uuid\}/g, uuid ?? "{uuid}");
 }
 
-function buildSubmodelId(instanceShellId: string, slot: ShellSubmodelSlot, index: number) {
-  return `${instanceShellId}/Submodel/${slot.id_short}/${index}`;
+function buildSubmodelId(instanceShellId: string, slot: ShellSubmodelSlot) {
+  return `${instanceShellId}/${slot.id_short}`;
 }
 
 
@@ -845,7 +845,7 @@ export default function AasConfiguratorPage() {
 
           const bomSlotIdx = activeShell.submodels.findIndex((s) => s.id_short === "BillOfMaterials");
           const bomSubmodelId = bomSlotIdx >= 0
-            ? buildSubmodelId(instanceShellId, activeShell.submodels[bomSlotIdx], bomSlotIdx)
+            ? buildSubmodelId(instanceShellId, activeShell.submodels[bomSlotIdx])
             : undefined;
 
           const baseInputs = activeShell.submodels
@@ -880,7 +880,7 @@ export default function AasConfiguratorPage() {
               return {
                 template_file: slot.template_file,
                 id_short: slot.id_short,
-                id: buildSubmodelId(instanceShellId, slot, i),
+                id: buildSubmodelId(instanceShellId, slot),
                 form_data: formData,
               };
             })
@@ -1023,7 +1023,7 @@ export default function AasConfiguratorPage() {
 
             const bomSlotIdx = shell.submodels.findIndex((s) => s.id_short === "BillOfMaterials");
             const bomSubmodelId = bomSlotIdx >= 0
-              ? buildSubmodelId(instanceShellId, shell.submodels[bomSlotIdx], bomSlotIdx)
+              ? buildSubmodelId(instanceShellId, shell.submodels[bomSlotIdx])
               : undefined;
 
             let capabilitySubmodelInputs: CapabilitySubmodelInput[] = [];
@@ -1040,7 +1040,7 @@ export default function AasConfiguratorPage() {
                   formDataFinal = result.bopData;
                   capabilitySubmodelInputs = result.capabilitySubmodels;
                 }
-                return { template_file: slot.template_file, id_short: slot.id_short, id: buildSubmodelId(instanceShellId, slot, i), form_data: formDataFinal };
+                return { template_file: slot.template_file, id_short: slot.id_short, id: buildSubmodelId(instanceShellId, slot), form_data: formDataFinal };
               })
               .filter(Boolean);
 

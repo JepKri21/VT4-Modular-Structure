@@ -79,12 +79,14 @@ elements:
   - type: collection
     id_short: "InputZones"
     description: "Zones where this resource accepts incoming components"
+    extensible: true
+    entry_template: "Zone{N}"
     cardinality: "ZeroToMany"
     elements:
       - type: collection
         id_short: "Zone"
-        description: "A zone defined by four corner points (add one collection per zone)"
-        cardinality: "ZeroToMany"
+        description: "A zone defined by four corner points"
+        cardinality: "One"
         elements:
           - type: collection
             id_short: "Point1"
@@ -138,12 +140,14 @@ elements:
   - type: collection
     id_short: "OutputZones"
     description: "Zones where this resource presents finished components for pick-up"
+    extensible: true
+    entry_template: "Zone{N}"
     cardinality: "ZeroToMany"
     elements:
       - type: collection
         id_short: "Zone"
-        description: "A zone defined by four corner points (add one collection per zone)"
-        cardinality: "ZeroToMany"
+        description: "A zone defined by four corner points"
+        cardinality: "One"
         elements:
           - type: collection
             id_short: "Point1"
@@ -197,12 +201,14 @@ elements:
   - type: collection
     id_short: "InOutputZones"
     description: "Zones that serve as both input and output — used for component handoff"
+    extensible: true
+    entry_template: "Zone{N}"
     cardinality: "ZeroToMany"
     elements:
       - type: collection
         id_short: "Zone"
-        description: "A zone defined by four corner points (add one collection per zone)"
-        cardinality: "ZeroToMany"
+        description: "A zone defined by four corner points"
+        cardinality: "One"
         elements:
           - type: collection
             id_short: "Point1"
