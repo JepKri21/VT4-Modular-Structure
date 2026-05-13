@@ -11,6 +11,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from ClassesAndBuilderMethods.InformationModels import MessageStructure as MS
 from resource_manager import ResourceManager as RM
+from product_property_matcher import ProductMatcher as PM
 
 
 class MQTTClientController:
@@ -601,6 +602,34 @@ class MQTTClientController:
         except Exception as e:
             print(f"[WATCHDOG ERROR] {e}")
 
+
+
+#=========================
+#Defining and constructing classes to use (should be done in the controller, but we do it here to test)
+#=========================
+
+
+BROKER = "localhost"
+MQTT_PORT = 1883
+BASE_TOPIC = "AAUSmartLab/ProductionLine1" 
+CLIENT_ID = "Controller_12345678"
+
+AAS_BROKER = "localhost"
+BASE_TOPIC = "AAUSmartLab/ProductionLine1"
+AAS_PORT = "8081"
+resources_url = "https://aausmartlab.org/Shells/Resources"
+
+rm = RM(MQTT_PORT,BASE_TOPIC,AAS_BROKER,AAS_PORT,resources_url)
+
+controller_mqtt = MQTTClientController(BROKER,MQTT_PORT,CLIENT_ID,BASE_TOPIC,rm)
+
+pm = PM(AAS_BROKER,AAS_PORT)
+
+with open(r'C:\Users\silas\Desktop\Manufacturing_Technology_4\Github\VT4-Modular-Structure\Implementation2.0\Line_Controller\WorkOrderExampleComplex.json') as f:
+    order_data = json.load(f)
+
+
+
 #=========================
 #Defining message handlers (should be done in the controller, but we do it here to test)
 #=========================
@@ -643,7 +672,14 @@ def handle_inventory_level_message(controller: MQTTClientController,message,topi
     controller.shared_handler_variable.setdefault("inventory",{})
     controller.shared_handler_variable["inventory"][resource_shell_id] = message.inventory
 
-    print(f"[INVENTORY] "f"{resource_suffix} "f"updated inventory "f"{message.inventory}")
+    #print(f"[INVENTORY] "f"{resource_suffix} "f"updated inventory "f"{message.inventory}")
+    print(f"[INVENTORY] "f"{resource_suffix} "f"updated inventory")
+
+    # =====================================
+    #Rebuilding the inventory indexing for the product matcher
+    # =====================================
+    pm.inventory_indexer.rebuild_index(controller_mqtt.shared_handler_variable["inventory"])
+
 
 def handle_state_message(controller: MQTTClientController, message, topic_info):
 
@@ -681,19 +717,8 @@ def handle_state_message(controller: MQTTClientController, message, topic_info):
 
     print(f"[STATE] "f"{resource_suffix}/{actor_id} "f"→ {message.state}")
 
-BROKER = "localhost"
-MQTT_PORT = 1883
-BASE_TOPIC = "AAUSmartLab/ProductionLine1" 
-CLIENT_ID = "Controller_12345678"
 
-AAS_BROKER = "localhost"
-BASE_TOPIC = "AAUSmartLab/ProductionLine1"
-AAS_PORT = "8081"
-resources_url = "https://aausmartlab.org/Shells/Resources"
 
-rm = RM(MQTT_PORT,BASE_TOPIC,AAS_BROKER,AAS_PORT,resources_url)
-
-controller_mqtt = MQTTClientController(BROKER,MQTT_PORT,CLIENT_ID,BASE_TOPIC,rm)
 
 controller_mqtt.register_handler(MS.StateMessage, handle_state_message)
 controller_mqtt.register_handler(MS.JobResultMessage, handle_job_result_message)
@@ -716,29 +741,27 @@ params = {
 command = MS.CommandMessage(timestamp=datetime.now(), resource_id="Drilling_12345678",actor_name="KUKAManipulator", skill="Drilling", skill_trigger="START", order_id="asudyg1123", job_id="job_XDDD", parameters=params, seq_no=5)
 
 
+
+
 async def main():
     global main_loop
     main_loop = asyncio.get_running_loop()
     controller_mqtt.start_mqtt_connection()
     controller_mqtt.update_information()
-    #print("============================================================================")
-    #print(f"shell_id_to_topic: {controller_mqtt.shell_id_to_topic}")
-    #print("============================================================================")
-    #print(f"topic_to_shell_id: {controller_mqtt.topic_to_shell_id}")
-    #print("============================================================================")
-    #print(f"topic_maps: {controller_mqtt.topic_maps}")
-    #print("============================================================================")
-    #print(f"reverse_topic_maps: {controller_mqtt.reverse_topic_maps}")
-    #print("============================================================================")
 
     controller_mqtt.publish_message(controller_mqtt.topic_to_shell_id["Drilling_12345678"],command)
     controller_mqtt.request_data(MS.InventoryLevelMessage)
-    i = 0
-    while i < 120:
-        i = i+1
-        print(controller_mqtt.shared_handler_variable)
-        time.sleep(5)
+    time.sleep(1)
+
+    component_location = pm.find_component_location("https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_7ef0e4df-1b09-4d0a-9448-14ae51652a52")
+    requested_properteies = order_data["Properties"]["Ingredient_1"]
+    requested_component_type = order_data["Ingredients"]["Ingredient_1"].get("ComponentReference")
+
+    component_type_location = pm.find_matching_components(component_type_reference=requested_component_type,order_properties=requested_properteies)
     
+    print(f"[COMPONENT LOCATION] {component_location}")
+    print(f"[COMPONENT TYPE LOCATION] {component_type_location}")
+
     # Keep machine alive forever
     await asyncio.Event().wait()
 
