@@ -152,23 +152,7 @@ Resource subscribes to ProductionLine1/Transport-12345678/Data/InfoRequest/value
 Since there can be multiple actors 
 """
 
-"""
-STEPS TO GO FROM HERE:
-1. I Think that this Line Controller Main.py script should be held clean, and all functions should be moved to other scripts and imported. I believe that handle_job_result() and handle_state should be in resource_manager or something else.
 
-2. I need to figure out how this works. It is all kind of overwhelming at the moment, and I need to be able to tell the group what has been added.
-
-3. When a Process from the BoP has been targeted as COMPLETE, the Line Controller should continue to the next step. It should look at the next ready step and generate pre_process_steps if the component is not at the target position and so on.
-
-4. When all steps has been completed in the BoP, the final product should be stored somewhere, or there should at least be taken some kind of action to remove it from the station where the final process is performed, and the workorder should be complete. 
-
-Something we haven't looked into yet is that when a process has been performed, before completing the task, the AAS instance of the product should be updated with a component reference to the specifically used component/ingredient in that process for tracability. 
-
-Also, we haven't yet figured out how it would handle multiple orders at the same time (thinking about scaling the production line to use many resources with more storage stations, drilling and so on.)
-
-The pre_process_steps should also be defined in a way that are modular, so that when a new process is to be performed, then it must figure out where the required component is stored, and if it is not at the station, it must figure out the steps needed to get it to the station, and if handoff is required. Where would be the best place to define this? Maybe it should just be those predefined steps actually, I can't really imagine if they are different for assembly stations, since they would require multiple components?
-
-"""
 
 class Shuttle1Behaviour(StationBehavior):
 

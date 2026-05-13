@@ -10,7 +10,7 @@ elements:
     description: "Describes the category of cabaility, whether it is offered by a resource or required by a product"
     value_type: "xs:string"
     value: "Offered"
-  
+
   - type: property
     id_short: "CapabilityReference"
     semantic_id: "https://aausmartlab.org/Semantics/CapabilityReference"
@@ -23,7 +23,6 @@ elements:
     semantic_id: "https://aausmartlab.org/Semantics/Parameters"
     description: "Parameters defining the capability envelope"
     elements:
-
       - type: collection
         id_short: "TargetPosition"
         elements:
@@ -51,26 +50,28 @@ elements:
   - type: list
     id_short: "SupportedComponents"
     semantic_id: "https://aausmartlab.org/Semantics/SupportedComponents"
-    description: "Components this drilling station can process"
+    description: "Component types this transport can carry — full IRIs to match the work order"
     element_type: "property"
     value_type: "xs:string"
     items:
-      - "BottomCover_ALU"
-      - "TopCover_ALU"
-      - "Bottom_Cover_Drilled"
+      - "https://aausmartlab.org/Shells/Component/BottomCover"
+      - "https://aausmartlab.org/Shells/Component/TopCover"
+      - "https://aausmartlab.org/Shells/Component/PCB"
+      - "https://aausmartlab.org/Shells/Assembly/BottomCover_Drilled"
+      - "https://aausmartlab.org/Shells/Assembly/BottomCover_Drilled_PCB"
 
   - type: list
     id_short: "AllowedMaterials"
     semantic_id: "https://aausmartlab.org/Semantics/AllowedMaterials"
-    description: "Materials that can be drilled by this capability"
+    description: "Materials that can be processed by this capability"
     element_type: "property"
     value_type: "xs:string"
     items:
-      - "PLA"
-      - "ABS"
+      - "https://aausmartlab.org/Materials/Plastic (PLA)"
+      - "https://aausmartlab.org/Materials/Plastic (ABS)"
 
   - type: reference_element
     id_short: "ResourceReference"
     semantic_id: "https://aausmartlab.org/Semantics/ResourceReference"
     description: "Reference to the physical resource realizing this capability"
-    value: "https://aausmartlab.org/Shells/Resources/Transport-12345678"
+    value: "https://aausmartlab.org/Shells/Resources/Transport_12345678"

@@ -1,6 +1,4 @@
-import asyncio
 import json
-from datetime import datetime
 from pathlib import Path
 import sys
 import requests
@@ -32,49 +30,17 @@ class ResourceManager:
 
         self.resource_shell_ids = {}
 
-        # Runtime per-(resource_topic, actor) PackML state, populated by
-        # state messages observed on MQTT. Keyed by (resource_id_short, actor).
-        self.actor_states: Dict[Tuple[str, str], MS.PackMLState] = {}
-
-    # =========================================================================
-    # Runtime state — populated by the MQTT layer
-    # =========================================================================
-
     @staticmethod
     def topic_id_for_iri(iri: str) -> str:
-        """Last URI segment of a shell IRI — the resource_id used in MQTT topics."""
-        return iri.rstrip("/").split("/")[-1]
+        """Last URI segment of a shell IRI — the resource_id used in MQTT topics.
 
-    def mark_actor_state(
-        self, resource_id_short: str, actor: str, state: MS.PackMLState
-    ) -> None:
-        self.actor_states[(resource_id_short, actor)] = state
-
-    def actor_state(
-        self, resource_id_short: str, actor: str
-    ) -> MS.PackMLState | None:
-        return self.actor_states.get((resource_id_short, actor))
-
-    async def wait_for_idle(
-        self,
-        resource_id_short: str,
-        actor: str,
-        timeout: float = 15.0,
-        poll: float = 0.2,
-    ) -> bool:
-        """Wait until (resource, actor) reports IDLE. False on timeout.
-
-        Stations only publish State after their first PackML transition, so on
-        the very first command of a run we may never see IDLE. Callers can
-        treat False as "send the command anyway and trust the resource is idle".
+        Per-actor PackML state lives on the controller's
+        `shared_handler_variable["state"]`, populated by
+        `handle_state_message` in main.py. The scheduler reads it from there
+        (see `Scheduler._wait_for_idle`). ResourceManager intentionally no
+        longer owns that runtime state.
         """
-        loop = asyncio.get_running_loop()
-        deadline = loop.time() + timeout
-        while loop.time() < deadline:
-            if self.actor_state(resource_id_short, actor) == MS.PackMLState.IDLE:
-                return True
-            await asyncio.sleep(poll)
-        return False
+        return iri.rstrip("/").split("/")[-1]
 
     # =========================================================================
     # Convenience queries on the AAS data
@@ -537,58 +503,12 @@ class ResourceManager:
         #So it would be skillName -> ActorName -> SkillTriggers and CapabilitySubmodelReference.
         #This does take up more space, but it allows actors to have different skilltriggers and reference unique capability submodels, even if they are for the same skill
 
-# =============================================================================
-# Free-function helpers used as MQTT handlers
-# =============================================================================
-
-def make_state_handler(rm: ResourceManager):
-    """Build the MQTT StateMessage handler that updates the ResourceManager.
-
-    Register with controller.register_handler(MS.StateMessage, make_state_handler(rm)).
-    """
-    def handle(controller, message: MS.StateMessage, topic_info) -> None:
-        resource_suffix = topic_info.get("resource_suffix")
-        actor = topic_info.get("actor_id")
-        if not (actor and resource_suffix):
-            return
-
-        rm.mark_actor_state(resource_suffix, actor, message.state)
-
-        # Keep reachability in sync — without this, every shell stays
-        # UNREACHABLE for the whole run and find_by_capability would still
-        # work (we only reject INACTIVE) but reachability becomes meaningless.
-        shell_iri = controller.topic_to_shell_id.get(resource_suffix)
-        if shell_iri is not None:
-            rm.resource_shell_ids[shell_iri] = controller.classify_reachability(message)
-
-        state_str = (
-            message.state.value if hasattr(message.state, "value") else str(message.state)
-        )
-        print(f"[state]     {resource_suffix}/{actor} -> {state_str}")
-    return handle
-
-
-def request_state_update(controller, shell_iri: str) -> None:
-    """Ask a resource to publish its current State.
-
-    Stations don't publish State on startup, only after a PackML transition.
-    Sending this InfoRequest forces them to emit it right away, so
-    `wait_for_idle` works on the very first command.
-    """
-    resource_suffix = ResourceManager.topic_id_for_iri(shell_iri)
-    topic_map = controller.topic_maps.get(resource_suffix, {})
-    state_suffix = topic_map.get(MS.StateMessage)
-    if not state_suffix:
-        print(f"[warn] no StateSuffix known for {resource_suffix}; skipping InfoRequest")
-        return
-    msg = MS.RequestMessage(
-        timestamp=datetime.now(),
-        requested_topic_update=f"{controller.base_topic}/{resource_suffix}/{state_suffix}",
-        resource_id=resource_suffix,
-        seq_no=None,
-    )
-    controller.publish_message(shell_iri, msg)
-    print(f"[init] requested State update from {resource_suffix}")
+# State + InfoRequest helpers used to live here. They moved:
+#   - The MQTT state handler is now `handle_state_message` in main.py (V2
+#     style, writes into `controller.shared_handler_variable["state"]`).
+#   - The InfoRequest fan-out at startup is now `controller.request_data(...)`
+#     from MQTTClientControllerV2.
+# ResourceManager no longer touches MQTT directly.
 
 
 if __name__ == "__main__":

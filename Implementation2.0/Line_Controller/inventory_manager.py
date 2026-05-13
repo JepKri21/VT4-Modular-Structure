@@ -49,14 +49,25 @@ class InventoryManager:
         return results
 
     def make_handler(self):
-        """Build the MQTT InventoryLevelMessage handler closure."""
+        """Build the MQTT InventoryLevelMessage handler closure.
+
+        The InventoryLevelMessage schema nests as
+            inventory[<inventory_name>].storage[<position>].component_id
+        We flatten that into the list of currently-held item IRIs so
+        `find_storage_for` can scan it directly.
+        """
         def handle(controller, message: MS.InventoryLevelMessage, topic_info) -> None:
             resource_suffix = topic_info.get("resource_suffix")
             shell_iri = controller.topic_to_shell_id.get(resource_suffix)
             if shell_iri is None:
                 return
-            self.update(shell_iri, message.AllItems)
-            print(f"[inventory] {resource_suffix}: {len(message.AllItems)} item(s) catalogued")
+            items: list[str] = []
+            for inv in message.inventory.values():
+                for slot in inv.storage.values():
+                    if slot.component_id:
+                        items.append(slot.component_id)
+            self.update(shell_iri, items)
+            print(f"[inventory] {resource_suffix}: {len(items)} item(s) catalogued")
         return handle
 
 

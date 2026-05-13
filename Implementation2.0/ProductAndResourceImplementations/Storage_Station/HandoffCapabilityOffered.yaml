@@ -23,7 +23,6 @@ elements:
     semantic_id: "https://aausmartlab.org/Semantics/Parameters"
     description: "Parameters defining the capability envelope"
     elements:
-
       - type: collection
         id_short: "TargetPosition"
         elements:
@@ -53,9 +52,8 @@ elements:
     element_type: "property"
     value_type: "xs:string"
     items:
-      - "BottomCover_ALU"
-      - "TopCover_ALU"
-      - "Bottom_Cover_Drilled"
+      - "https://aausmartlab.org/Shells/Component/BottomCover"
+      - "https://aausmartlab.org/Shells/Component/TopCover"
 
   - type: list
     id_short: "AllowedMaterials"
@@ -64,8 +62,8 @@ elements:
     element_type: "property"
     value_type: "xs:string"
     items:
-      - "PLA"
-      - "ABS"
+      - "https://aausmartlab.org/Materials/Plastic (PLA)"
+      - "https://aausmartlab.org/Materials/Plastic (ABS)"
 
   - type: reference_element
     id_short: "ResourceReference"

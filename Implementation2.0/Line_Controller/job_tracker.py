@@ -1,14 +1,13 @@
-"""Tracks JobResult messages and lets callers `await` a specific job.
+"""Thin async wrapper that lets callers `await` a specific JobResult.
 
-Stations publish `JobResultMessage` to their `JobResult/<actor>` topic when a
-command finishes. The Line Controller correlates results to commands by
-`job_id`, which uses the format `{order_id}-{step_id}`.
+The JobResult itself lives on the controller's shared_handler_variable
+(written by `handle_job_result_message` in main.py — same pattern as the
+V2 controller). JobTracker doesn't keep its own copy; it just polls the
+shared dict for a matching job_id and returns the message when it appears.
 
 Usage:
-    tracker = JobTracker()
-    controller.register_handler(MS.JobResultMessage, tracker.make_handler())
-    ...
-    result = await tracker.wait_for(job_id)
+    tracker = JobTracker(controller)
+    result  = await tracker.wait_for("ORD-001-1x1-pp1-transport")
 """
 
 from __future__ import annotations
@@ -23,13 +22,13 @@ from ClassesAndBuilderMethods.InformationModels import MessageStructure as MS
 
 
 class JobTracker:
-    """In-memory store of every JobResultMessage seen on the line, indexed by job_id."""
 
-    def __init__(self) -> None:
-        self.results: dict[str, MS.JobResultMessage] = {}
-
-    def record(self, message: MS.JobResultMessage) -> None:
-        self.results[message.job_id] = message
+    def __init__(self, controller) -> None:
+        """Args:
+            controller: MQTTClientController whose shared_handler_variable
+                holds {"job_result": {shell_iri: {actor: JobResultMessage}}}.
+        """
+        self.controller = controller
 
     async def wait_for(
         self,
@@ -37,7 +36,8 @@ class JobTracker:
         timeout: float = 120.0,
         poll: float = 0.2,
     ) -> MS.JobResultMessage:
-        """Block until the JobResult for this job_id arrives, then return it.
+        """Block until a JobResultMessage with `job_id` appears anywhere in
+        the controller's shared_handler_variable["job_result"]. Returns it.
 
         Raises:
             TimeoutError: if nothing arrives within `timeout` seconds.
@@ -45,17 +45,22 @@ class JobTracker:
         loop = asyncio.get_running_loop()
         deadline = loop.time() + timeout
         while loop.time() < deadline:
-            if job_id in self.results:
-                return self.results[job_id]
+            msg = self._find(job_id)
+            if msg is not None:
+                return msg
             await asyncio.sleep(poll)
         raise TimeoutError(f"No JobResult received for {job_id} within {timeout}s")
 
-    def make_handler(self):
-        """Build the MQTT handler closure to pass to controller.register_handler()."""
-        def handle(controller, message: MS.JobResultMessage, topic_info) -> None:
-            self.record(message)
-            print(
-                f"[jobresult] {message.job_id}  result={message.result.value} "
-                f"quality={message.quality.value}"
-            )
-        return handle
+    def latest(self, shell_iri: str, actor_name: str) -> MS.JobResultMessage | None:
+        """Most recent JobResult from this (shell, actor), or None."""
+        jr = self.controller.shared_handler_variable.get("job_result", {})
+        return jr.get(shell_iri, {}).get(actor_name)
+
+    def _find(self, job_id: str) -> MS.JobResultMessage | None:
+        """Scan the shared dict for a message with this job_id."""
+        jr = self.controller.shared_handler_variable.get("job_result", {})
+        for by_actor in jr.values():
+            for msg in by_actor.values():
+                if getattr(msg, "job_id", None) == job_id:
+                    return msg
+        return None

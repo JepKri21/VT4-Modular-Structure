@@ -25,7 +25,6 @@ keeps the shuttle marked occupied while the BoP step runs.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
 from typing import TYPE_CHECKING
 
 from workorder_handler import StepStates
@@ -50,12 +49,24 @@ class ResourceEndpoint:
     has_handoff: bool
 
 
+# A cargo transfer is (resource_id, actor_name, new_cargo_or_None) applied
+# atomically when a step completes. `None` means "this actor stops carrying".
+CargoTransfer = tuple[str, str, "str | None"]
+
+
 @dataclass
 class PreProcessStep:
     """A single executable step in a PreProcessPlan.
 
     `skill` matches the strings each station checks in its `starting()` method:
-    "Transport", "Retrieve", "Handoff".
+    "Transport", "Retrieve", "Handoff", "Store".
+
+    `cargo_transfers` declares the physical-cargo side-effects of this step
+    succeeding — the scheduler applies them to the OccupancyManager on
+    StepStates.COMPLETED. A Transport step has none (the carrier just moves);
+    a Retrieve sets cargo on the storage actor; a Handoff (per the 4-case
+    rule) is the moment when cargo actually changes hands; a Store clears
+    the storage actor's cargo.
     """
     step_id: str
     skill: str
@@ -67,6 +78,7 @@ class PreProcessStep:
     state: StepStates = StepStates.PENDING
     assigned_resource: str | None = None
     job_id: str | None = None
+    cargo_transfers: tuple[CargoTransfer, ...] = ()
     timestamps: dict = field(default_factory=lambda: {
         StepStates.ASSIGNED: None,
         StepStates.IN_PROGRESS: None,
@@ -95,6 +107,50 @@ class NoShuttleAvailable(RuntimeError):
     """Raised when the plan needs transport but no shuttle was supplied."""
 
 
+class NoReleaseSequence(RuntimeError):
+    """Raised when a resource holds a part but can't release it.
+
+    Happens if the resource has neither Retrieve (to pull it out of inventory)
+    nor Handoff (to give it directly to a shuttle). The caller should pick a
+    different source or surface a fault.
+    """
+
+
+def release_sequence_for(
+    resource: "ResourceEndpoint",
+    component_ref: str,
+    *,
+    shell_iri: str,
+    rm,                # ResourceManager — kept loose to avoid a circular import
+) -> list[str]:
+    """Ordered skill names needed to make `component_ref` available for handoff
+    from `resource`.
+
+    Today's heuristic (data-driven via the resource's declared skills):
+      - If the resource exposes a Retrieve skill → ["Retrieve", "Handoff"].
+        (The scheduler has already verified this resource holds the component
+        via ProductMatcher before calling this, so Retrieve is always valid.)
+      - Else if the resource has Handoff → ["Handoff"]. (Used for picking up
+        a part that's already sitting at a non-storage station.)
+      - Otherwise raise NoReleaseSequence.
+
+    Future: when each resource declares its own release recipe via an AAS
+    submodel, this function reads that instead. The return shape stays the
+    same so call sites don't change.
+    """
+    skills = rm.get_resource_skills(shell_iri)
+    has_retrieve = "Retrieve" in skills
+
+    if has_retrieve:
+        return ["Retrieve", "Handoff"]
+    if resource.has_handoff:
+        return ["Handoff"]
+    raise NoReleaseSequence(
+        f"{resource.resource_id} cannot release {component_ref}: "
+        f"has_retrieve={has_retrieve} has_handoff={resource.has_handoff}"
+    )
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Planner
 # ─────────────────────────────────────────────────────────────────────────────
@@ -120,6 +176,7 @@ class PreProcessPlanner:
         current_location: ResourceEndpoint,
         target: ResourceEndpoint,
         shuttle: ResourceEndpoint | None,
+        release_skills: list[str] | None = None,
     ) -> PreProcessPlan:
         """Build the pre-process plan for one BoP step.
 
@@ -132,6 +189,11 @@ class PreProcessPlanner:
             target: the resource/actor that will perform the BoP step.
             shuttle: a Transport (resource, actor) reserved for this plan.
                 May be None *only if* current_location.resource_id == target.resource_id.
+            release_skills: ordered skill names needed to make the component
+                releasable from `current_location` (typically computed via
+                `release_sequence_for(...)`). Defaults to
+                ["Retrieve", "Handoff"] for backwards-compat when the caller
+                doesn't compute it explicitly.
 
         Returns:
             PreProcessPlan with sequential, chained steps. If the part is
@@ -158,13 +220,16 @@ class PreProcessPlanner:
                 "but no shuttle was supplied."
             )
 
+        if release_skills is None:
+            release_skills = ["Retrieve", "Handoff"]
+
         builder = _StepIdBuilder(bop_step_id)
         steps: list[PreProcessStep] = []
 
         storage_pos = self.transport.handoff_position(current_location.resource_id)
         target_pos = self.transport.handoff_position(target.resource_id)
 
-        # 1) Move shuttle to the storage handoff zone.
+        # 1) Move shuttle to the source handoff zone.
         steps.append(self._transport_step(
             builder=builder,
             shuttle=shuttle,
@@ -173,13 +238,16 @@ class PreProcessPlanner:
             depends_on=None,
         ))
 
-        # 2) Retrieve the part from storage.
-        steps.append(self._retrieve_step(
-            builder=builder,
-            storage=current_location,
-            component_reference=component_reference,
-            depends_on=steps[-1].step_id,
-        ))
+        # 2) Optional: Retrieve the part from inventory (only if the
+        #    release sequence calls for it — skip when picking up a part
+        #    that's already at the resource but not in inventory).
+        if "Retrieve" in release_skills:
+            steps.append(self._retrieve_step(
+                builder=builder,
+                storage=current_location,
+                component_reference=component_reference,
+                depends_on=steps[-1].step_id,
+            ))
 
         # 3) Handoff: storage → shuttle (rules applied).
         handoffs_a = self._build_handoff_steps(
@@ -324,6 +392,11 @@ class PreProcessPlanner:
             parameters={"ComponentReference": component_reference},
             component_reference=component_reference,
             depends_on=steps[-1].step_id,
+            # After Store, the storage actor has filed the part — it no
+            # longer carries it.
+            cargo_transfers=(
+                (store_destination.resource_id, store_destination.actor_name, None),
+            ),
         ))
 
         return PreProcessPlan(
@@ -372,6 +445,10 @@ class PreProcessPlanner:
             parameters={"ComponentReference": component_reference},
             component_reference=component_reference,
             depends_on=depends_on,
+            # After Retrieve, the storage actor is physically holding the part.
+            cargo_transfers=(
+                (storage.resource_id, storage.actor_name, component_reference),
+            ),
         )
 
     def _handoff_step(
@@ -405,26 +482,43 @@ class PreProcessPlanner:
         component_reference: str,
         depends_on: str | None,
     ) -> list[PreProcessStep]:
-        """Apply the 4-case rule and return 0–2 handoff steps."""
+        """Apply the 4-case rule and return 0–2 handoff steps.
+
+        Whenever at least one handoff is generated, the cargo transfer
+        (sender loses, receiver gains) is attached to the LAST step in the
+        sequence — the moment the part has physically changed hands. In the
+        (False, False) case no steps are produced and the sender keeps the
+        cargo (the shuttle stays clamped under the target through the BoP).
+        """
         s = sender.has_handoff
         r = receiver.has_handoff
 
+        cargo_after = (
+            (sender.resource_id,   sender.actor_name,   None),
+            (receiver.resource_id, receiver.actor_name, component_reference),
+        )
+
         match (s, r):
             case (False, False):
-                # No physical handoff possible — occupation carries the part logically.
+                # No physical handoff possible — cargo stays with the sender.
                 return []
             case (False, True):
-                return [self._handoff_step(
+                step = self._handoff_step(
                     builder=builder, performer=receiver, position=position,
                     component_reference=component_reference, depends_on=depends_on,
-                )]
+                )
+                step.cargo_transfers = cargo_after
+                return [step]
             case (True, False):
-                return [self._handoff_step(
+                step = self._handoff_step(
                     builder=builder, performer=sender, position=position,
                     component_reference=component_reference, depends_on=depends_on,
-                )]
+                )
+                step.cargo_transfers = cargo_after
+                return [step]
             case (True, True):
                 # Sender first (releases part), then receiver (acquires part).
+                # Cargo moves only after the receiver finishes clamping it.
                 first = self._handoff_step(
                     builder=builder, performer=sender, position=position,
                     component_reference=component_reference, depends_on=depends_on,
@@ -433,9 +527,9 @@ class PreProcessPlanner:
                     builder=builder, performer=receiver, position=position,
                     component_reference=component_reference, depends_on=first.step_id,
                 )
+                second.cargo_transfers = cargo_after
                 return [first, second]
             case _:
-                # Unreachable — kept for exhaustiveness.
                 return []
 
 

@@ -46,20 +46,20 @@ them, and where to look first when something breaks.
 
 ## 2. Modules
 
-| File | What it owns |
-|---|---|
-| `main.py` | Wiring only. Loads config, builds managers, hands a work order to `Scheduler.run_order(...)`. |
-| `workorder_handler.py` | Parses the work order JSON, builds the dependency graph between ingredients, exposes `get_ready_steps()` and per-step state transitions (PENDING → ASSIGNED → IN_PROGRESS → COMPLETED). |
-| `resource_manager.py` | AAS discovery: walks the BaSyx server for shells, reads their Skills / Capability submodels. Also holds runtime PackML state per actor (`actor_states`) and reachability per shell. `make_state_handler(rm)` is the MQTT closure that keeps those fresh. |
-| `capability_matcher.py` | Filters discovered resources to those that can actually run a given BoP step (semanticId + parameter ranges + supported components + allowed materials). Returns candidates, never picks. |
-| `transport_planner.py` | Parses `LineConfiguration` (resource positions + connection points). Provides `handoff_position(resource_id)` and the parameter-dict builders for Transport / Handoff commands. |
-| `pre_process_planner.py` | Given a chosen target + storage + shuttle, produces the ordered list of pre-process steps (`Transport`, `Retrieve`, `Handoff`) using the 4-case handoff rule. Also `plan_post_process(...)` mirrors that to put the finished part into storage. |
-| `inventory_manager.py` | Listens for `InventoryLevelMessage` from each storage station. Answers "which storage has this component?". Has `request_inventory_update(...)` to ping all storages on startup. |
-| `job_tracker.py` | Listens for `JobResultMessage`. Exposes `await tracker.wait_for(job_id)` so the scheduler can block until a station finishes a command. |
-| `occupancy_manager.py` | In-memory ledger of `(resource, actor) → order_id`. `commit()` reserves, `release()` frees. Also publishes `OccupancyMessage` so observers can see who's holding what. |
-| `aas_writer.py` | Writes a `Traceability` submodel back to the product shell after the work order completes, recording which specific component instances were consumed. |
-| `scheduler.py` | The orchestration loop. Drives one or more work orders end-to-end using everything above. |
-| `MQTTClientController_Simple.py` | Generic MQTT pump. Subscribes to every known resource's full namespace, parses topics into `topic_info`, dispatches by message type to registered handlers, publishes outbound messages on the right topic. |
+| File                             | What it owns                                                                                                                                                                                                                                             |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `main.py`                        | Wiring only. Loads config, builds managers, hands a work order to `Scheduler.run_order(...)`.                                                                                                                                                            |
+| `workorder_handler.py`           | Parses the work order JSON, builds the dependency graph between ingredients, exposes `get_ready_steps()` and per-step state transitions (PENDING → ASSIGNED → IN_PROGRESS → COMPLETED).                                                                  |
+| `resource_manager.py`            | AAS discovery: walks the BaSyx server for shells, reads their Skills / Capability submodels. Holds per-shell reachability. Runtime PackML state lives on `controller.shared_handler_variable["state"]` (written by `handle_state_message` in `main.py`).      |
+| `capability_matcher.py`          | Filters discovered resources to those that can actually run a given BoP step (semanticId + parameter ranges + supported components + allowed materials). Returns candidates, never picks.                                                                |
+| `transport_planner.py`           | Parses `LineConfiguration` (resource positions + connection points). Provides `handoff_position(resource_id)` and the parameter-dict builders for Transport / Handoff commands.                                                                          |
+| `pre_process_planner.py`         | Given a chosen target + storage + shuttle, produces the ordered list of pre-process steps (`Transport`, `Retrieve`, `Handoff`) using the 4-case handoff rule. Also `plan_post_process(...)` mirrors that to put the finished part into storage.          |
+| `product_property_matcher.py`    | Replaces `inventory_manager.py`. `InventoryIndexer` keeps an index of currently-held components per (resource, inventory, slot); rebuilt from `controller.shared_handler_variable["inventory"]` inside the inventory handler. `ProductMatcher.find_component_location(id)` / `find_matching_components(type, order_properties)` answer "where is X?" with optional property constraints from the work order. |
+| `job_tracker.py`                 | Listens for `JobResultMessage`. Exposes `await tracker.wait_for(job_id)` so the scheduler can block until a station finishes a command.                                                                                                                  |
+| `occupancy_manager.py`           | In-memory ledger of `(resource, actor) → order_id`. `commit()` reserves, `release()` frees. Also publishes `OccupancyMessage` so observers can see who's holding what.                                                                                   |
+| `aas_writer.py`                  | Writes a `Traceability` submodel back to the product shell after the work order completes, recording which specific component instances were consumed.                                                                                                   |
+| `scheduler.py`                   | The orchestration loop. Drives one or more work orders end-to-end using everything above.                                                                                                                                                                |
+| `MQTTClientController_Simple.py` | Generic MQTT pump. Subscribes to every known resource's full namespace, parses topics into `topic_info`, dispatches by message type to registered handlers, publishes outbound messages on the right topic.                                              |
 
 ---
 
@@ -115,14 +115,14 @@ submodel to the product shell and publishes `WorkOrderStatus.COMPLETE`.
 
 ## 4. Where to look when X happens
 
-| Symptom | First place to look |
-|---|---|
-| No matching resource | `capability_matcher.py` debug prints. Most likely cause: parameter names disagree between the work order and the capability YAML. The matcher prints both lists on a rejection. |
-| Station hangs in COMPLETING | The station's own `completing()` method threw an exception. Look at the station log first; typo in skill name comparisons (e.g. `"Retrive"` vs `"Retrieve"`) is the historical favourite. |
-| Controller times out waiting for JobResult | The station never published it — see above. If the station logged a `Published to ...JobResult/...`, the topic split is the suspect; check `MQTTClientController_Simple.on_message`. |
-| First command warns "never saw IDLE" | Expected on cold start — stations don't publish State until their first transition. The `request_state_update(...)` calls in `Scheduler._seed_initial_state` paper over this. |
-| Inventory lookup returns nothing | `inventory_manager.py` hasn't received the `InventoryLevelMessage` yet, OR the work order's `ComponentReference` doesn't prefix-match any inventory item. The handler logs each catalogued storage. |
-| Resource stays UNREACHABLE | The state handler isn't running OR the station hasn't published any State. Check `make_state_handler(rm)` is registered on the controller. |
+| Symptom                                    | First place to look                                                                                                                                                                                 |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No matching resource                       | `capability_matcher.py` debug prints. Most likely cause: parameter names disagree between the work order and the capability YAML. The matcher prints both lists on a rejection.                     |
+| Station hangs in COMPLETING                | The station's own `completing()` method threw an exception. Look at the station log first; typo in skill name comparisons (e.g. `"Retrive"` vs `"Retrieve"`) is the historical favourite.           |
+| Controller times out waiting for JobResult | The station never published it — see above. If the station logged a `Published to ...JobResult/...`, the topic split is the suspect; check `MQTTClientController_Simple.on_message`.                |
+| First command warns "never saw IDLE"       | Expected on cold start — stations don't publish State until their first transition. `Scheduler._seed_initial_state` calls `controller.request_data(MS.StateMessage)` to ask everyone for it.        |
+| Inventory lookup returns nothing           | `inventory_manager.py` hasn't received the `InventoryLevelMessage` yet, OR the work order's `ComponentReference` doesn't prefix-match any inventory item. The handler logs each catalogued storage. |
+| Resource stays UNREACHABLE                 | The state handler isn't running OR the station hasn't published any State. Check `handle_state_message` is registered on the controller (in `main.py`).                                            |
 
 ---
 
@@ -140,12 +140,14 @@ async def run_orders(self, handlers: list[WorkOrderHandler]):
 ```
 
 The pieces that already work across orders:
+
 - `OccupancyManager` is keyed on `(resource, actor)` and tags reservations
   with `order_id` — two orders fighting for the same shuttle is handled.
 - `JobTracker.results` is keyed on `job_id` which includes `order_id`.
 - `_traceability` in `Scheduler` is per `order_id`.
 
 The pieces that still need attention before multi-order is real:
+
 - The scheduler picks `candidates[0]` greedily. With concurrent orders, that
   can starve one of them. A "cost-aware" or "round-robin among free
   candidates" rule belongs in `_pick_target_for(step)`.

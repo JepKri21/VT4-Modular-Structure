@@ -38,6 +38,7 @@ import asyncio
 import json
 import sys
 from pathlib import Path
+from datetime import datetime
 
 # Make the shared ClassesAndBuilderMethods importable. Use insert(0, ...) so
 # our project root wins over whatever cwd / PYTHONPATH happen to be.
@@ -48,14 +49,14 @@ if _IMPL_DIR not in sys.path:
 from ClassesAndBuilderMethods.InformationModels import MessageStructure as MS
 
 from workorder_handler import WorkOrderHandler
-from resource_manager import ResourceManager, make_state_handler
+from resource_manager import ResourceManager
 from capability_matcher import CapabilityMatcher
 from MQTTClientControllerV2 import MQTTClientController
 from transport_planner import TransportPlanner, load_line_config_from_file
 from pre_process_planner import PreProcessPlanner
 from job_tracker import JobTracker
-from inventory_manager import InventoryManager
 from occupancy_manager import OccupancyManager
+from product_property_matcher import ProductMatcher
 from scheduler import Scheduler
 
 
@@ -82,12 +83,117 @@ LINE_CONFIG_PATH = (
     / "LineConfiguration.json"
 )
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Message Handlers
+#
+# Flat V2-style handlers. Each takes (controller, message, topic_info) and
+# writes into controller.shared_handler_variable. Layout after a run:
+#   {
+#     "state":      {shell_iri: {actor: PackMLState}},
+#     "inventory":  {shell_iri: {inventory_name: InventoryData}},
+#     "job_result": {shell_iri: {actor: JobResultMessage}},
+#   }
+#
+# Other modules read from there:
+#   - JobTracker.wait_for(job_id) scans "job_result"
+#   - Scheduler's wait_for_idle reads "state"
+#   - ProductMatcher's index is rebuilt from "inventory" inside the handler
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Module-level ProductMatcher — initialized in main(), referenced by the
+# inventory handler. Same pattern as MQTTClientControllerV2 keeps `pm` global.
+_product_matcher: ProductMatcher | None = None
+
+
+def handle_state_message(controller: MQTTClientController, message, topic_info):
+    resource_suffix = topic_info["resource_suffix"]
+    actor_id = topic_info.get("actor_id", "default")
+    resource_shell_id = controller.topic_to_shell_id[resource_suffix]
+
+    # Reachability + last_seen go onto the controller/RM directly.
+    controller.RM.resource_shell_ids[resource_shell_id] = controller.classify_reachability(message)
+    controller.last_seen[resource_suffix] = datetime.now()
+
+    # Per-actor PackML state lives in the shared dict.
+    state_store = controller.shared_handler_variable.setdefault("state", {})
+    state_store.setdefault(resource_shell_id, {})[actor_id] = message.state
+
+    state_str = message.state.value if hasattr(message.state, "value") else str(message.state)
+    print(f"[STATE]     {resource_suffix}/{actor_id} -> {state_str}")
+
+
+def handle_job_result_message(controller: MQTTClientController, message, topic_info):
+    resource_suffix = topic_info["resource_suffix"]
+    actor_id = topic_info.get("actor_id", "default")
+    resource_shell_id = controller.topic_to_shell_id[resource_suffix]
+
+    job_store = controller.shared_handler_variable.setdefault("job_result", {})
+    job_store.setdefault(resource_shell_id, {})[actor_id] = message
+
+    print(
+        f"[JOBRESULT] {message.job_id}  result={message.result.value} "
+        f"quality={message.quality.value}"
+    )
+
+
+def handle_inventory_level_message(controller: MQTTClientController, message, topic_info):
+    resource_suffix = topic_info["resource_suffix"]
+    resource_shell_id = controller.topic_to_shell_id[resource_suffix]
+
+    inv_store = controller.shared_handler_variable.setdefault("inventory", {})
+    inv_store[resource_shell_id] = message.inventory
+
+    # Keep the ProductMatcher index fresh.
+    if _product_matcher is not None:
+        _product_matcher.inventory_indexer.rebuild_index(inv_store)
+
+    print(f"[INVENTORY] {resource_suffix} updated")
+
+
+def handle_occupancy_message(controller: MQTTClientController, message, topic_info):
+    """Mirror the controller's own OccupancyMessage broadcasts into the
+    shared dict so observers can read the per-actor occupation map.
+
+    Layout:  shared_handler_variable["occupancy"][shell_iri][actor] = OccupancyMessage
+    """
+    resource_suffix = topic_info["resource_suffix"]
+    actor_id = topic_info.get("actor_id", "default")
+    resource_shell_id = controller.topic_to_shell_id[resource_suffix]
+
+    occ_store = controller.shared_handler_variable.setdefault("occupancy", {})
+    occ_store.setdefault(resource_shell_id, {})[actor_id] = message
+
+    print(
+        f"[OCCUPANCY] {resource_suffix}/{actor_id} occupied={message.occupied} "
+        f"job_id={message.job_id}"
+    )
+
+
+def handle_cargo_message(controller: MQTTClientController, message, topic_info):
+    """Mirror CargoMessage broadcasts into the shared dict.
+
+    Layout:  shared_handler_variable["cargo"][shell_iri][actor] = component_reference (str or None)
+    """
+    resource_suffix = topic_info["resource_suffix"]
+    actor_id = topic_info.get("actor_id", "default")
+    resource_shell_id = controller.topic_to_shell_id[resource_suffix]
+
+    cargo_store = controller.shared_handler_variable.setdefault("cargo", {})
+    cargo_store.setdefault(resource_shell_id, {})[actor_id] = message.component_reference
+
+    print(
+        f"[CARGO]     {resource_suffix}/{actor_id} -> "
+        f"{message.component_reference or '(empty)'}"
+    )
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Entry point
 # ─────────────────────────────────────────────────────────────────────────────
 
 async def main() -> None:
+    global _product_matcher
+
     # Load work order
     print(f"[init] loading work order from {WORKORDER_PATH.name}")
     with open(WORKORDER_PATH) as f:
@@ -107,18 +213,21 @@ async def main() -> None:
     pre_process_planner = PreProcessPlanner(transport_planner)
     print(f"[init] line resources in config: {list(line_config.locations)}")
 
-    # Runtime managers
-    job_tracker = JobTracker()
-    inventory = InventoryManager()
+    # ProductMatcher — module-level so the flat inventory handler can refresh it.
+    _product_matcher = ProductMatcher(AAS_BROKER, AAS_PORT)
 
-    # MQTT controller + handlers (occupancy needs the controller to publish)
+    # MQTT controller + flat V2 handlers
     controller = MQTTClientController(BROKER, MQTT_PORT, CLIENT_ID, BASE_TOPIC, rm)
-    controller.register_handler(MS.StateMessage, make_state_handler(rm))
-    controller.register_handler(MS.JobResultMessage, job_tracker.make_handler())
-    controller.register_handler(MS.InventoryLevelMessage, inventory.make_handler())
+    controller.register_handler(MS.StateMessage, handle_state_message)
+    controller.register_handler(MS.JobResultMessage, handle_job_result_message)
+    controller.register_handler(MS.InventoryLevelMessage, handle_inventory_level_message)
+    controller.register_handler(MS.OccupancyMessage, handle_occupancy_message)
+    controller.register_handler(MS.CargoMessage, handle_cargo_message)
     controller.start_mqtt_connection()
     await asyncio.sleep(2)  # let on_connect run update_information() + subscribe
 
+    # Runtime managers that need the controller
+    job_tracker = JobTracker(controller)
     occupancy = OccupancyManager(controller=controller, base_topic=BASE_TOPIC)
 
     # Drive the order
@@ -129,9 +238,10 @@ async def main() -> None:
         pre_process_planner=pre_process_planner,
         transport_planner=transport_planner,
         job_tracker=job_tracker,
-        inventory=inventory,
+        product_matcher=_product_matcher,
         occupancy=occupancy,
         aas_server_base=AAS_SERVER_BASE,
+        workorder=order,
     )
     await scheduler.run_order(handler)
 
