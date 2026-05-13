@@ -47,12 +47,13 @@ function inputClass() {
   return "w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary";
 }
 
-function applyPattern(pattern: string, name: string, category: string) {
+function applyPattern(pattern: string, name: string, category: string, uuid?: string) {
   return pattern
     .replace(/\{name\}/g, name || "MyAsset")
     .replace(/\{asset_name\}/g, name || "MyAsset")
     .replace(/\{category\}/g, category || "General")
-    .replace(/\{asset_type\}/g, category || "General");
+    .replace(/\{asset_type\}/g, category || "General")
+    .replace(/\{uuid\}/g, uuid ?? "{uuid}");
 }
 
 function buildSubmodelId(instanceShellId: string, slot: ShellSubmodelSlot, index: number) {
@@ -821,8 +822,8 @@ export default function AasConfiguratorPage() {
       const instances = await Promise.all(
         Array.from({ length: quantity }, async () => {
           const uuid = crypto.randomUUID();
-          const instanceShellId = `${shellId}/${uuid}`;
-          const instanceGlobalAssetId = `${globalAssetId}/${uuid}`;
+          const instanceShellId = applyPattern(selectedShell!.id_pattern, assetName, assetCategory, uuid);
+          const instanceGlobalAssetId = applyPattern(selectedShell!.global_asset_id_pattern, assetName, assetCategory, uuid);
 
           let capabilitySubmodelInputs: CapabilitySubmodelInput[] = [];
 
@@ -1001,8 +1002,8 @@ export default function AasConfiguratorPage() {
         for (let n = 0; n < qty; n++) {
           try {
             const uuid = crypto.randomUUID();
-            const instanceShellId = `${applyPattern(shell.id_pattern, assetNameVal, assetCategoryVal)}/${uuid}`;
-            const instanceGlobalAssetId = `${applyPattern(shell.global_asset_id_pattern, assetNameVal, assetCategoryVal)}/${uuid}`;
+            const instanceShellId = applyPattern(shell.id_pattern, assetNameVal, assetCategoryVal, uuid);
+            const instanceGlobalAssetId = applyPattern(shell.global_asset_id_pattern, assetNameVal, assetCategoryVal, uuid);
 
             const bomSlotIdx = shell.submodels.findIndex((s) => s.id_short === "BillOfMaterials");
             const bomSubmodelId = bomSlotIdx >= 0

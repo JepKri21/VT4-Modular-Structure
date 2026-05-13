@@ -4,9 +4,9 @@
 kind: "Type"
 description: "AAS shell template for Final Product type assets"
 
-id_pattern: "https://aausmartlab.org/Shells/Configuration/{asset_type}/{asset_name}"
+id_pattern: "https://aausmartlab.org/Shells/Configuration/{asset_type}/{asset_name}_{uuid}"
 id_short_pattern: "{asset_name}"
-global_asset_id_pattern: "https://aausmartlab.org/Shells/Configuration/{asset_type}/{asset_name}"
+global_asset_id_pattern: "https://aausmartlab.org/Shells/Configuration/{asset_type}/{asset_name}_{uuid}"
 
 submodels:
   - template_id: "https://aausmartlab.org/Submodels/Templates/ProductProperties"

@@ -10,9 +10,9 @@
 kind: "Type"
 description: "AAS shell template for production resource assets"
 
-id_pattern: "https://aausmartlab.org/Shells/Resources/{name}"
+id_pattern: "https://aausmartlab.org/Shells/Resources/{name}_{uuid}"
 id_short_pattern: "{name}"
-global_asset_id_pattern: "https://aausmartlab.org/Shells/Resources/{name}"
+global_asset_id_pattern: "https://aausmartlab.org/Shells/Resources/{name}_{uuid}"
 
 submodels:
 
