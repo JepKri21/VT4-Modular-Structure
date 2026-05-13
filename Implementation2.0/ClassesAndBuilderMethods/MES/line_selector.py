@@ -6,8 +6,8 @@ Required capabilities are extracted directly from the WorkOrder's ProcessSteps
 (all CapabilityReferences), so we don't need to query the ServiceRequired
 submodel in BaSyx.
 
-Line matching: query BaSyx for all resource shells, collect their offered
-capability semanticIds, group them by line_id, return first line that covers all.
+Line matching: discover all production line shells from BaSyx by IRI prefix,
+collect their offered capabilities, return first line that covers all required.
 """
 
 import logging
@@ -21,8 +21,27 @@ import basyx_client
 
 log = logging.getLogger(__name__)
 
-# Known line IDs (can be extended or auto-discovered from BaSyx)
-KNOWN_LINE_IDS = ["ProductionLine1"]
+_PRODUCTION_LINE_IRI_PREFIX = "https://aausmartlab.org/Shells/ProductionLine/"
+
+# Fallback used only when BaSyx returns no production line shells at all
+_FALLBACK_LINE_ID = "ProductionLine_1"
+
+
+def _discover_lines(basyx_url: str) -> list[dict]:
+    """
+    Query BaSyx for all shells and return the full shell dicts for every shell
+    whose IRI starts with the production line prefix.
+    """
+    lines = []
+    for shell in basyx_client.list_shells(basyx_url):
+        iri = shell.get("id", "")
+        if iri.startswith(_PRODUCTION_LINE_IRI_PREFIX):
+            lines.append(shell)
+    if lines:
+        log.info("Discovered production lines in BaSyx: %s", [s.get("idShort") for s in lines])
+    else:
+        log.warning("No production line shells found in BaSyx (prefix=%s)", _PRODUCTION_LINE_IRI_PREFIX)
+    return lines
 
 
 def _extract_required_capabilities(workorder: WorkOrderMessage) -> set[str]:
@@ -36,26 +55,30 @@ def _extract_required_capabilities(workorder: WorkOrderMessage) -> set[str]:
     return caps
 
 
-def _get_offered_capabilities_for_line(line_id: str, basyx_url: str) -> set[str]:
-    """
-    Read the ServiceOffered submodel from the ProductionLine shell and return
-    the set of capability IRIs it advertises.
+def _submodel_iris_from_shell(shell: dict) -> list[str]:
+    """Extract submodel IRIs referenced in a shell dict (no extra fetch needed)."""
+    iris = []
+    for ref in shell.get("submodels", []):
+        keys = ref.get("keys", [])
+        if keys:
+            iris.append(keys[-1].get("value", ""))
+    return iris
 
-    The ProductionLine shell is pre-created externally; the MES only reads it.
-    If the shell or submodel is absent, returns an empty set and the caller's
-    fallback warning fires — same observable behaviour as before.
+
+def _get_offered_capabilities(shell: dict, basyx_url: str) -> set[str]:
     """
-    line_iri = f"https://aausmartlab.org/Shells/ProductionLine/{line_id}"
-    sm_iris = basyx_client.get_submodel_refs_for_shell(line_iri, basyx_url)
+    Read the ServiceOffered submodel from an already-fetched ProductionLine shell
+    dict and return the set of capability IRIs it advertises.
+    """
+    sm_iris = _submodel_iris_from_shell(shell)
     service_iri = next((iri for iri in sm_iris if "/ServiceOffered" in iri), None)
     if not service_iri:
-        log.debug(
-            "No ServiceOffered submodel found for line %s — is the shell in BaSyx?", line_id
-        )
+        log.debug("No ServiceOffered submodel found for line %s", shell.get("idShort"))
         return set()
 
     sm = basyx_client.fetch_submodel(service_iri, basyx_url)
     if not sm:
+        log.warning("ServiceOffered submodel not found in BaSyx: %s", service_iri)
         return set()
 
     offered = set()
@@ -80,27 +103,31 @@ def select_line(
     basyx_url: str = basyx_client.BASYX_URL,
 ) -> str:
     """
-    Return the first line_id whose resources cover all capabilities required
-    by the WorkOrder.
+    Discover all production lines from BaSyx and return the idShort of the first
+    whose ServiceOffered covers all capabilities required by the WorkOrder.
 
-    Falls back to KNOWN_LINE_IDS[0] if no match is found (allows testing without
-    BaSyx being fully populated with line shells).
+    Falls back to _FALLBACK_LINE_ID if BaSyx has no line shells or none match.
     """
     required = _extract_required_capabilities(workorder)
     log.info("Required capabilities: %s", required)
 
-    for line_id in KNOWN_LINE_IDS:
-        offered = _get_offered_capabilities_for_line(line_id, basyx_url)
+    lines = _discover_lines(basyx_url)
+    if not lines:
+        log.warning("No production line shells in BaSyx — using fallback %s", _FALLBACK_LINE_ID)
+        return _FALLBACK_LINE_ID
+
+    for shell in lines:
+        line_id = shell.get("idShort") or shell["id"][len(_PRODUCTION_LINE_IRI_PREFIX):]
+        offered = _get_offered_capabilities(shell, basyx_url)
         log.info("Line %s offers: %s", line_id, offered)
         if required.issubset(offered):
             log.info("Selected line: %s", line_id)
             return line_id
 
-    # Fallback: return first known line and log a warning
-    fallback = KNOWN_LINE_IDS[0] if KNOWN_LINE_IDS else "ProductionLine1"
+    fallback_id = lines[0].get("idShort") or _FALLBACK_LINE_ID
     log.warning(
         "No line fully covers required capabilities %s — falling back to %s",
         required,
-        fallback,
+        fallback_id,
     )
-    return fallback
+    return fallback_id

@@ -363,10 +363,12 @@ def build_environment(preset: dict, instance_suffix: str = "") -> tuple[dict, st
 
     Returns (env_dict, shell_iri).
     """
+    import uuid as _uuid
     preset = resolve_type(preset)
     shell_type = preset["shell"]
     asset_type = preset.get("asset_type", "")
     asset_name = preset.get("asset_name", "")
+    instance_uuid = str(_uuid.uuid4())
 
     shell_cfg = _load_yaml(SHELL_TEMPLATES_DIR / f"{shell_type}.yaml")
 
@@ -377,6 +379,7 @@ def build_environment(preset: dict, instance_suffix: str = "") -> tuple[dict, st
             .replace("{asset_name}", asset_name)
             .replace("{name}", asset_name)
             .replace("{category}", preset.get("asset_category", ""))
+            .replace("{uuid}", instance_uuid)
         )
 
     base_iri = _resolve_pattern(shell_cfg["id_pattern"])

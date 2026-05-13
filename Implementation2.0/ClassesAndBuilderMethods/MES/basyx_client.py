@@ -81,7 +81,7 @@ def fetch_shell(shell_iri: str, basyx_url: str = BASYX_URL) -> Optional[dict]:
     r = requests.get(f"{url}/shells/{_b64(shell_iri)}")
     if r.status_code == 200:
         return r.json()
-    log.warning("fetch_shell %s → %s", shell_iri, r.status_code)
+    log.debug("fetch_shell %s → %s", shell_iri, r.status_code)
     return None
 
 
@@ -123,8 +123,10 @@ def resolve_shell(iri: str, basyx_url: str = BASYX_URL) -> Optional[dict]:
     if shell:
         return shell
     id_short = iri.rstrip("/").split("/")[-1]
-    log.debug("Exact IRI lookup failed for %s, trying idShort=%s", iri, id_short)
-    return find_shell_by_idshort(id_short, basyx_url)
+    shell = find_shell_by_idshort(id_short, basyx_url)
+    if not shell:
+        log.warning("resolve_shell: not found by IRI or idShort=%s (%s)", id_short, iri)
+    return shell
 
 
 def get_submodel_refs_for_shell(shell_iri: str, basyx_url: str = BASYX_URL) -> list[str]:

@@ -54,10 +54,8 @@ submodels:
           RequiredComponentState: "Raw"
         CapabilityParams:
           DrillingParameters:
-            BitDiameter_mm: 5.0
+            HoleDiameter_mm: 5.0
             DrillDepth_mm: 3.0
-            SpindleSpeed_RPM: 1800.0
-            SpindleFeed_mm_per_s: 2.5
             HolePlacement_x_mm: 75.0
             HolePlacement_y_mm: 40.0
             OperationLabel:

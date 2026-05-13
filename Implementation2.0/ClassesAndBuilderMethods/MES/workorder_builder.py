@@ -34,6 +34,97 @@ ASSET_NAME_TO_PRESET: dict[str, str] = {
     "BottomCoverPCBFuse_SA":  "bottom_cover_pcb_fuse_assembly",
 }
 
+# Cache: component variant IRI → all property sections fetched from BaSyx
+_TYPE_SHELL_PROPS_CACHE: dict[str, dict] = {}
+
+_XS_NUMERIC = {
+    "xs:integer", "xs:int", "xs:long", "xs:short", "xs:byte",
+    "xs:double", "xs:float", "xs:decimal",
+}
+
+def _coerce_value(raw, value_type: str):
+    """Convert a BaSyx string value to int or float when the template says so."""
+    if raw is None:
+        return raw
+    vt = (value_type or "").lower()
+    if vt in ("xs:integer", "xs:int", "xs:long", "xs:short", "xs:byte"):
+        try:
+            return int(raw)
+        except (ValueError, TypeError):
+            pass
+    elif vt in ("xs:double", "xs:float", "xs:decimal"):
+        try:
+            return float(raw)
+        except (ValueError, TypeError):
+            pass
+    return raw
+
+
+def _elem_semantic_id(elem: dict) -> str:
+    """Extract the semantic IRI from a BaSyx v3 element dict."""
+    sem = elem.get("semanticId") or {}
+    keys = sem.get("keys", [])
+    return keys[-1].get("value", "") if keys else ""
+
+
+
+def _get_type_shell_properties(component_iri: str, basyx_url: str) -> dict:
+    """
+    Fetch static properties (e.g. Length/Width/Height) from the category type shell
+    in BaSyx.  The category type shell carries a TEMPLATE-kind Properties submodel
+    populated with default values that are the same for every variant in that category.
+
+    Strategy:
+      1. Derive category type IRI by stripping the last path segment from the
+         variant IRI:  …/Component/Bottom_Cover/BottomCover_PETG_Gray
+                     → …/Component/Bottom_Cover
+      2. Fetch the Properties template at {category_type_iri}/Properties.
+      3. Fall back to {component_iri}/Properties (variant-level) if not found.
+    """
+    if component_iri in _TYPE_SHELL_PROPS_CACHE:
+        return _TYPE_SHELL_PROPS_CACHE[component_iri]
+
+    # Derive category type IRI: strip the variant name (last path segment).
+    category_type_iri = component_iri.rstrip("/").rsplit("/", 1)[0]
+    category_props_iri = f"{category_type_iri}/Properties"
+
+    log.info("category-type props fetch: %s", category_props_iri)
+    sm = basyx_client.fetch_submodel(category_props_iri, basyx_url)
+
+    if not sm:
+        # Fallback: try the variant shell's own Properties submodel.
+        variant_props_iri = f"{component_iri}/Properties"
+        log.info("  not found, trying variant: %s", variant_props_iri)
+        sm = basyx_client.fetch_submodel(variant_props_iri, basyx_url)
+
+    if not sm:
+        log.warning("  no Properties submodel found for %s", component_iri)
+        _TYPE_SHELL_PROPS_CACHE[component_iri] = {}
+        return {}
+
+    # Read every top-level collection present (PhysicalDimensions,
+    # ElectricalProperties, MaterialProperties, …) without hardcoding the set.
+    result: dict = {}
+    for col in sm.get("submodelElements", []):
+        if col.get("modelType") != "SubmodelElementCollection":
+            continue
+        children = col.get("value", [])
+        if not isinstance(children, list):
+            continue
+        section = col["idShort"]
+        result[section] = {
+            elem["idShort"]: {
+                "semanticId": _elem_semantic_id(elem),
+                "value": _coerce_value(elem.get("value"), elem.get("valueType", "")),
+            }
+            for elem in children
+            if elem.get("idShort") and elem.get("value") is not None
+        }
+
+    log.info("  → sections=%s", list(result.keys()) or "EMPTY")
+    _TYPE_SHELL_PROPS_CACHE[component_iri] = result
+    return result
+
 # Derives (display_name, semantic_iri) from a CapabilityParams key like "BitDiameter_mm"
 _UNIT_SEMANTIC: list[tuple[str, str, str]] = [
     # (suffix, unit_label, semantic_iri)  — longest first
@@ -79,94 +170,8 @@ def _flatten_capability_params(cap_params: dict) -> dict:
     return result
 
 
-def _resolve_sm_value(elem: dict) -> str | float | None:
-    """Extract a scalar value from a BaSyx submodel element."""
-    val = elem.get("value")
-    if isinstance(val, (int, float)):
-        return val
-    if isinstance(val, str) and val:
-        return val
-    if isinstance(val, dict):
-        keys = val.get("keys", [])
-        if keys:
-            return keys[-1].get("value")
-    return None
 
 
-def _fetch_aas_properties(shell_iri: str, basyx_url: str) -> dict:
-    """
-    Pull MaterialProperties + PhysicalDimensions from the component type shell
-    in BaSyx. Resolves the Properties submodel IRI from the shell's own references
-    rather than guessing the suffix, so it works for both UI-uploaded and
-    MES-generated shells.
-
-    Returns { "MaterialProperties": {...}, "PhysicalDimensions": {...} }.
-    All values use the WorkOrder semanticId format (capital S).
-    """
-    empty = {"MaterialProperties": {}, "PhysicalDimensions": {}}
-    try:
-        # Resolve shell — tries exact IRI first, then falls back to idShort search
-        shell = basyx_client.resolve_shell(shell_iri, basyx_url)
-        if not shell:
-            log.debug("Shell not found in BaSyx: %s", shell_iri)
-            return empty
-        actual_iri = shell.get("id", shell_iri)
-        sm_iris = basyx_client.get_submodel_refs_for_shell(actual_iri, basyx_url)
-        props_iri = next((iri for iri in sm_iris if "/Properties" in iri), None)
-        if not props_iri:
-            # Fallback: try both IRI conventions against the resolved IRI
-            for candidate in (
-                f"{actual_iri}/Submodels/Properties",
-                f"{actual_iri}/Submodel/Properties/0",
-            ):
-                sm = basyx_client.fetch_submodel(candidate, basyx_url)
-                if sm:
-                    props_iri = candidate
-                    break
-
-        if not props_iri:
-            log.debug("No Properties submodel found for %s", shell_iri)
-            return empty
-
-        sm = basyx_client.fetch_submodel(props_iri, basyx_url)
-        if not sm:
-            return empty
-
-        elements = sm.get("submodelElements", [])
-        mat_props: dict = {}
-        phys_dims: dict = {}
-
-        mat_col = basyx_client.find_element_by_idshort(elements, "MaterialProperties")
-        if mat_col and isinstance(mat_col.get("value"), list):
-            for elem in mat_col["value"]:
-                id_short = elem.get("idShort", "")
-                val = _resolve_sm_value(elem)
-                if val is not None and id_short:
-                    mat_props[id_short] = {
-                        "semanticId": f"https://aausmartlab.org/Semantics/{id_short}",
-                        "value": str(val),
-                    }
-
-        phys_col = basyx_client.find_element_by_idshort(elements, "PhysicalDimensions")
-        if phys_col and isinstance(phys_col.get("value"), list):
-            for elem in phys_col["value"]:
-                id_short = elem.get("idShort", "")
-                val = _resolve_sm_value(elem)
-                if val is not None and id_short:
-                    phys_dims[id_short] = {
-                        "semanticId": f"https://aausmartlab.org/Semantics/{id_short}",
-                        "value": str(val),
-                    }
-
-        log.debug(
-            "Fetched AAS properties for %s: mat=%d phys=%d",
-            shell_iri, len(mat_props), len(phys_dims),
-        )
-        return {"MaterialProperties": mat_props, "PhysicalDimensions": phys_dims}
-
-    except Exception as exc:
-        log.warning("Could not fetch AAS properties for %s: %s", shell_iri, exc)
-        return empty
 
 
 def _load_preset(name: str) -> dict:
@@ -203,15 +208,15 @@ def _make_properties_for_slot(slot_cfg: dict) -> dict:
     """Build a Properties dict (MaterialProperties + PhysicalDimensions) from slot config."""
     customer = slot_cfg.get("properties") or {}
     mat = {}
-    for prop_key, sem_key in (
-        ("material", "Material"),
-        ("color", "Color"),
-        ("finish", "Finish"),
+    for prop_key, id_short, sem_fragment in (
+        ("material", "Material",   "Material"),
+        ("color",    "Color",      "Color"),
+        ("finish",   "Finish",     "SurfaceFinish"),
     ):
         val = customer.get(prop_key)
         if val:
-            mat[sem_key] = {
-                "semanticId": f"https://aausmartlab.org/Semantics/{sem_key}",
+            mat[id_short] = {
+                "semanticId": f"https://aausmartlab.org/Semantics/{sem_fragment}",
                 "value": val,
             }
     dims = {}
@@ -252,7 +257,7 @@ def build_workorder(
     assemblies: dict[str, dict] = {}
     process_steps: dict[str, dict] = {}
 
-    _ing_counter = [0]
+    _name_count: dict[str, int] = {}
     _step_counter = [0]
     _last_step_id: list[str | None] = [None]  # global across recursion levels
 
@@ -265,9 +270,10 @@ def build_workorder(
         (s.get("category") or "").lower(): s for s in configuration if s.get("category")
     }
 
-    def _next_ing() -> str:
-        _ing_counter[0] += 1
-        return f"Ingredient_{_ing_counter[0]}"
+    def _make_ing_id(name: str) -> str:
+        _name_count[name] = _name_count.get(name, 0) + 1
+        n = _name_count[name]
+        return name if n == 1 else f"{name}_{n}"
 
     def _next_step() -> str:
         _step_counter[0] += 1
@@ -280,6 +286,7 @@ def build_workorder(
         for slot in configuration:
             ctype = slot.get("componentTypeId", "")
             if ctype and (ctype == asset_name or ctype in ref_iri or asset_name in ctype):
+                log.debug("slot match (typeId) for %s → slot=%s", asset_name, slot.get("slot"))
                 return slot
         # 2. Try category/slot-label match, normalising spaces→underscores
         iri_lower = ref_iri.lower()
@@ -287,7 +294,9 @@ def build_workorder(
             for field in ("category", "slot"):
                 raw = (slot.get(field) or "").lower().replace(" ", "_")
                 if raw and raw in iri_lower:
+                    log.debug("slot match (%s) for %s → slot=%s", field, asset_name, slot.get("slot"))
                     return slot
+        log.warning("no slot match for %s — properties will be empty", asset_name)
         return {}
 
     def resolve(preset: dict) -> list[str]:
@@ -328,35 +337,32 @@ def build_workorder(
                 sub_output_ids = resolve(sub_preset)
                 input_ids.extend(sub_output_ids)
             else:
-                # Raw component → create leaf ingredient.
-                # ComponentReference = type-level IRI (no UUID) so the production
-                # line knows what type to pick; instance assignment happens there.
-                ing_id = _next_ing()
+                # Raw component — resolve the actual ordered component IRI first,
+                # then use it as the ingredient name so "BottomCover_PETG_Gray"
+                # appears instead of the generic BOM family name "BottomCover_3DP".
                 slot_cfg = _find_slot_config(ref_iri)
+                type_iri = (slot_cfg.get("aasTypeIri") if slot_cfg else None) or ref_iri
+                component_ref_iri = _type_iri_from_full(type_iri)
 
-                # aasTypeIri from DB carries the full UUID IRI (the actual BaSyx shell).
-                # Strip UUID for ComponentReference; keep full for property fetch.
-                full_iri = (slot_cfg.get("aasTypeIri") if slot_cfg else None) or ref_iri
-                component_ref_iri = _type_iri_from_full(full_iri)
+                ing_id = _make_ing_id(_asset_name_from_iri(component_ref_iri))
+
                 ingredients[ing_id] = {"ComponentReference": component_ref_iri}
 
-                # Fetch properties from the full UUID IRI (exists in BaSyx).
-                aas_props = (
-                    _fetch_aas_properties(full_iri, basyx_url)
-                    if basyx_url
-                    else {"MaterialProperties": {}, "PhysicalDimensions": {}}
+                # Static defaults from the category type shell in BaSyx
+                # (e.g. .../Component/Fuse → Length/Width/Height).
+                # Delta (Material/Color/Finish) comes from the order configuration.
+                # Order values override type-shell defaults.
+                type_props = _get_type_shell_properties(component_ref_iri, basyx_url) if basyx_url else {}
+                order_props = _make_properties_for_slot(slot_cfg) if slot_cfg else {}
+                merged: dict = {}
+                for section in set(type_props) | set(order_props):
+                    merged[section] = {**type_props.get(section, {}), **order_props.get(section, {})}
+                properties[ing_id] = merged
+                log.info(
+                    "ingredient %s — %s",
+                    ing_id,
+                    {s: list(v.keys()) for s, v in merged.items()},
                 )
-                customer_props = _make_properties_for_slot(slot_cfg) if slot_cfg else {}
-                properties[ing_id] = {
-                    "MaterialProperties": {
-                        **aas_props.get("MaterialProperties", {}),
-                        **customer_props.get("MaterialProperties", {}),
-                    },
-                    "PhysicalDimensions": {
-                        **aas_props.get("PhysicalDimensions", {}),
-                        **customer_props.get("PhysicalDimensions", {}),
-                    },
-                }
                 input_ids.append(ing_id)
 
         # ── Step 2: process BOP steps ───────────────────────────────────────
@@ -380,9 +386,9 @@ def build_workorder(
 
             if process_type == "Assemble":
                 # Create output ingredient representing the assembled result
-                output_id = _next_ing()
+                output_id = _make_ing_id(asset_name)
                 ingredients[output_id] = {"ComponentReference": instance_iri}
-                properties[output_id] = {"MaterialProperties": {}, "PhysicalDimensions": {}}
+                properties[output_id] = {}
                 assemblies[output_id] = {"Ingredients": list(input_ids)}
 
                 step_id = _next_step()
@@ -425,9 +431,9 @@ def build_workorder(
                     _last_step_id[0] = step_id
 
                     # Create output ingredient for the processed component
-                    output_id = _next_ing()
+                    output_id = _make_ing_id(asset_name)
                     ingredients[output_id] = {"ComponentReference": instance_iri}
-                    properties[output_id] = {"MaterialProperties": {}, "PhysicalDimensions": {}}
+                    properties[output_id] = {}
                     assemblies[output_id] = {"Ingredients": [target_id]}
 
         if output_id:
@@ -448,6 +454,7 @@ def build_workorder(
 
     # ── Build the full WorkOrder ────────────────────────────────────────────
     final_output_ids = resolve(final_preset)
+
     final_asset_name = final_preset.get("asset_name", "")
     product_reference = shell_iris.get(final_asset_name, "")
 

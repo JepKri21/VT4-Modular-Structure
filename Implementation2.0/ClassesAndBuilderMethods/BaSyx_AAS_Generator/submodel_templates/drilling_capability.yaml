@@ -10,10 +10,10 @@ elements:
     cardinality: "One"
     elements:
       - type: property
-        id_short: "BitDiameter_mm"
+        id_short: "HoleDiameter_mm"
         value_type: "xs:float"
-        semantic_id: "https://aausmartlab.org/Semantics/BitDiameter_mm"
-        description: "Drill bit diameter in mm"
+        semantic_id: "https://aausmartlab.org/Semantics/mm"
+        description: "Hole diameter in mm"
         cardinality: "One"
         qualifiers:
           - type: "range_min"
@@ -28,22 +28,8 @@ elements:
       - type: range
         id_short: "DrillDepth_mm"
         value_type: "xs:float"
-        semantic_id: "https://aausmartlab.org/Semantics/DrillDepth_mm"
+        semantic_id: "https://aausmartlab.org/Semantics/mm"
         description: "Minimum and maximum drill depth in mm"
-        cardinality: "One"
-
-      - type: range
-        id_short: "SpindleSpeed_RPM"
-        value_type: "xs:float"
-        semantic_id: "https://aausmartlab.org/Semantics/SpindleSpeed_RPM"
-        description: "Spindle speed range in RPM"
-        cardinality: "One"
-
-      - type: range
-        id_short: "SpindleFeed_mm_per_s"
-        value_type: "xs:float"
-        semantic_id: "https://aausmartlab.org/Semantics/SpindleFeed_mm_per_s"
-        description: "Spindle feed rate range in mm/s"
         cardinality: "One"
 
       - type: range

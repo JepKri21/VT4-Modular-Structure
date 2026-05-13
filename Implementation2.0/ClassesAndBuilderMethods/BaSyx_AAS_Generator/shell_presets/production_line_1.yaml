@@ -18,6 +18,12 @@ submodels:
         SupportedComponents:
           - "https://aausmartlab.org/Shells/Component/Bottom_Cover"
           - "https://aausmartlab.org/Shells/Component/Top_Cover"
+      - CapabilityType: "Assemble"
+        ResourceRef: "https://aausmartlab.org/Shells/Resources/Assembly-12345678"
+        CapabilityRef: "https://aausmartlab.org/Shells/Resources/Assembly-12345678/AssembleCapabilityOffered"
+        SupportedComponents:
+          - "https://aausmartlab.org/Shells/Assembly/Bottom_Cover"
+          - "https://aausmartlab.org/Shells/Assembly/Bottom_Cover_PCB"
       - CapabilityType: "Handoff"
         ResourceRef: "https://aausmartlab.org/Shells/Resources/Drilling-12345678"
         CapabilityRef: "https://aausmartlab.org/Shells/Resources/Drilling-12345678/HandoffCapabilityOffered"
