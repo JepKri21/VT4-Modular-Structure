@@ -1,5 +1,5 @@
-type: "bottom_cover"
-label: "Bottom Cover – PLA, Red, Textured"
+﻿type: "bottom_cover"
+label: "Bottom Cover â€“ PLA, Red, Textured"
 description: "3D-printed PLA bottom cover, red textured finish. Change SerialNumber and BatchNumber per instance."
 
 asset_name: "BottomCover_PLA_Red"
@@ -7,7 +7,7 @@ asset_name: "BottomCover_PLA_Red"
 submodels:
   Properties:
     PhysicalDimensions:
-      Weight_g: 119.5
+      Weight: 119.5
     MaterialProperties:
       Material: "PLA"
       Color: "Red"

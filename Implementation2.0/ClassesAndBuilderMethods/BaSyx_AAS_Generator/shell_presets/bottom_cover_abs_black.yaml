@@ -1,5 +1,5 @@
-type: "bottom_cover"
-label: "Bottom Cover – ABS, Black, Glossy"
+﻿type: "bottom_cover"
+label: "Bottom Cover â€“ ABS, Black, Glossy"
 description: "Injection-moulded ABS bottom cover, black glossy finish. Higher impact resistance than PLA. Change SerialNumber and BatchNumber per instance."
 
 asset_name: "BottomCover_ABS_Black"
@@ -7,7 +7,7 @@ asset_name: "BottomCover_ABS_Black"
 submodels:
   Properties:
     PhysicalDimensions:
-      Weight_g: 131.0
+      Weight: 131.0
     MaterialProperties:
       Material: "ABS"
       Color: "Black"

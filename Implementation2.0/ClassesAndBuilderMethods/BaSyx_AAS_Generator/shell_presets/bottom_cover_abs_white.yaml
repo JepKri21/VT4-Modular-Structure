@@ -1,5 +1,5 @@
-type: "bottom_cover"
-label: "Bottom Cover – ABS, White, Glossy"
+﻿type: "bottom_cover"
+label: "Bottom Cover â€“ ABS, White, Glossy"
 description: "Injection-moulded ABS bottom cover, white glossy finish. Change SerialNumber and BatchNumber per instance."
 
 asset_name: "BottomCover_ABS_White"
@@ -7,7 +7,7 @@ asset_name: "BottomCover_ABS_White"
 submodels:
   Properties:
     PhysicalDimensions:
-      Weight_g: 130.0
+      Weight: 130.0
     MaterialProperties:
       Material: "ABS"
       Color: "White"

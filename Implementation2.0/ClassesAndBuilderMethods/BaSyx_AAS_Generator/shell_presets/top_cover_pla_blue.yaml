@@ -1,5 +1,5 @@
-type: "top_cover"
-label: "Top Cover – PLA, Blue, Textured"
+﻿type: "top_cover"
+label: "Top Cover â€“ PLA, Blue, Textured"
 description: "3D-printed PLA top cover, blue textured finish. Change SerialNumber and BatchNumber per instance."
 
 asset_name: "TopCover_PLA_Blue"
@@ -7,7 +7,7 @@ asset_name: "TopCover_PLA_Blue"
 submodels:
   Properties:
     PhysicalDimensions:
-      Weight_g: 54.5
+      Weight: 54.5
     MaterialProperties:
       Material: "PLA"
       Color: "Blue"

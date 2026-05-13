@@ -1,5 +1,5 @@
-type: "top_cover"
-label: "Top Cover – PLA, Red, Textured"
+﻿type: "top_cover"
+label: "Top Cover â€“ PLA, Red, Textured"
 description: "3D-printed PLA top cover, red textured finish. Change SerialNumber and BatchNumber per instance."
 
 asset_name: "TopCover_PLA_Red"
@@ -7,7 +7,7 @@ asset_name: "TopCover_PLA_Red"
 submodels:
   Properties:
     PhysicalDimensions:
-      Weight_g: 54.0
+      Weight: 54.0
     MaterialProperties:
       Material: "PLA"
       Color: "Red"

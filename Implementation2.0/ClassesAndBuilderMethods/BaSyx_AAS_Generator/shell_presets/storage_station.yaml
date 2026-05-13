@@ -43,18 +43,22 @@ submodels:
         YPos: ""
 
   Skills:
-    Retrieve:
-      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage-12345678/RetrieveCapabilityOffered"
-      Actors:
-        - "UR5"
-    Handoff:
-      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage-12345678/HandoffCapabilityOffered"
-      Actors:
-        - "UR5"
-    Store:
-      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage-12345678/StoreCapabilityOffered"
-      Actors:
-        - "UR5"
+    Skill:
+      - SkillName: "Store"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage-12345678/StoreCapabilityOffered"
+        SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+        Actors:
+          - "UR5"
+      - SkillName: "Retrieve"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage-12345678/RetrieveCapabilityOffered"
+        SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+        Actors:
+          - "UR5"
+      - SkillName: "Handoff"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage-12345678/HandoffCapabilityOffered"
+        SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+        Actors:
+          - "UR5"
 
   Inventory:
     Inventories:
