@@ -108,7 +108,7 @@ resource_inventories = {
             "position5": "https://aausmartlab.org/Shells/Component/TopCover/TopCover-TC001",
             "position6": "https://aausmartlab.org/Shells/Component/TopCover/TopCover-TC002",
             "position7": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_7ef0e4df-1b09-4d0a-9448-14ae51652a52",
-            "position8": "",
+            "position8": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_3e06a1b6-96bf-4b44-abf6-b5e122c50427",
             "position9": "",
             "position10": ""
         }

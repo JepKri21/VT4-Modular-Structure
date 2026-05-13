@@ -1,15 +1,31 @@
 """Routing and transport-command helper.
 
-The line is small enough that resources move via direct point-to-point
-transport — there is no graph pathfinding. This module wraps the
-LineConfiguration submodel so the pre-process planner can ask
-"where do I send a shuttle to handoff with resource X?" without knowing
-anything about AAS structure.
+This module owns everything about *where* parts can move on the line:
+
+- It parses the `LineConfiguration` submodel (resource locations + connection
+  points) into typed structures.
+- It exposes `handoff_position(resource_id)` for direct point-to-point
+  lookups — still useful when storage and target share a transport.
+- It builds a `LineGraph` over the connection points: a node is a
+  non-transport resource (where parts live), an edge means "some transport
+  resource can directly carry a part between these two". `find_route(src,
+  dst)` returns the ordered list of `RouteHop`s — one per transport leg.
+
+What this module *doesn't* do:
+- Decide *which* actor of a transport pool (Shuttle1 vs Shuttle2) does a
+  hop — that's the scheduler's job (occupancy + state).
+- Translate a route into MQTT commands (Move, Handoff) — that's the
+  pre-process planner's job, expanding each hop with the 4-case handoff
+  rule between consecutive resources.
+
+For a one-shuttle line the graph collapses to a single edge per pair and
+`find_route` returns a one-hop list — exactly the behaviour we had before.
 """
 
 from __future__ import annotations
 
 import json
+from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -153,6 +169,195 @@ def load_line_config_from_file(path: str | Path) -> LineConfig:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Graph + routing
+# ─────────────────────────────────────────────────────────────────────────────
+
+@dataclass(frozen=True)
+class TransportEdge:
+    """One direct transport relation between two non-transport resources.
+
+    "Direct" means: there is a transport resource that touches a connection
+    point shared with the source AND a connection point shared with the
+    destination (possibly the same connection point — in that case the
+    transport doesn't have to move between zones, just hand off).
+    """
+    transport_resource_id: str         # idShort, e.g. "Transport_12345678"
+    src_connection_point: str          # idShort of the CP at the pickup side
+    dst_connection_point: str          # idShort of the CP at the dropoff side
+    pickup_position: tuple[float, float]
+    dropoff_position: tuple[float, float]
+
+
+@dataclass(frozen=True)
+class RouteHop:
+    """One leg of a route: one transport carries a part from A to B."""
+    transport_resource_id: str
+    from_resource_id: str
+    to_resource_id: str
+    pickup_position: tuple[float, float]
+    dropoff_position: tuple[float, float]
+
+
+class LineGraph:
+    """Graph derived from a LineConfig. Used by `TransportPlanner.find_route`.
+
+    Args:
+        config: the parsed LineConfig.
+        transport_resource_ids: idShorts of resources that are transports
+            (shuttles, conveyors, AGVs). If None, transports are inferred as
+            the resources that appear in 2 or more `ConnectionPoint`s — the
+            usual signature of "something that moves between zones".
+    """
+
+    def __init__(
+        self,
+        config: LineConfig,
+        transport_resource_ids: set[str] | None = None,
+    ) -> None:
+        self.config = config
+        self.transport_resource_ids: set[str] = (
+            transport_resource_ids
+            if transport_resource_ids is not None
+            else self._infer_transports()
+        )
+        # iri -> [(neighbour_iri, TransportEdge), ...]
+        self._adjacency: dict[str, list[tuple[str, TransportEdge]]] = (
+            self._build_adjacency()
+        )
+
+    # ── Public queries ──────────────────────────────────────────────────────
+
+    def find_route(
+        self, src_resource_id: str, dst_resource_id: str
+    ) -> list[RouteHop] | None:
+        """BFS over transport edges. Returns:
+
+        - `[]` if `src == dst` (already there, no transport needed).
+        - `[RouteHop, ...]` for a found path, one hop per transport leg.
+        - `None` if no route exists in the current line topology.
+        """
+        src_iri = self._iri_for(src_resource_id)
+        dst_iri = self._iri_for(dst_resource_id)
+        if src_iri is None or dst_iri is None:
+            return None
+        if src_iri == dst_iri:
+            return []
+
+        queue: deque[tuple[str, list[RouteHop]]] = deque([(src_iri, [])])
+        visited: set[str] = {src_iri}
+        while queue:
+            current_iri, path = queue.popleft()
+            for neighbour_iri, edge in self._adjacency.get(current_iri, []):
+                if neighbour_iri in visited:
+                    continue
+                hop = RouteHop(
+                    transport_resource_id=edge.transport_resource_id,
+                    from_resource_id=self._id_for(current_iri),
+                    to_resource_id=self._id_for(neighbour_iri),
+                    pickup_position=edge.pickup_position,
+                    dropoff_position=edge.dropoff_position,
+                )
+                extended = path + [hop]
+                if neighbour_iri == dst_iri:
+                    return extended
+                visited.add(neighbour_iri)
+                queue.append((neighbour_iri, extended))
+        return None
+
+    def transports_between(
+        self, src_resource_id: str, dst_resource_id: str
+    ) -> list[str]:
+        """idShorts of transport resources that can directly carry src → dst.
+
+        Empty list means no single transport spans this pair (multi-hop needed).
+        """
+        src_iri = self._iri_for(src_resource_id)
+        dst_iri = self._iri_for(dst_resource_id)
+        if src_iri is None or dst_iri is None:
+            return []
+        return [
+            edge.transport_resource_id
+            for neighbour_iri, edge in self._adjacency.get(src_iri, [])
+            if neighbour_iri == dst_iri
+        ]
+
+    # ── Construction ────────────────────────────────────────────────────────
+
+    def _infer_transports(self) -> set[str]:
+        """Resources appearing in 2+ ConnectionPoints are treated as transports."""
+        counts: dict[str, int] = {}
+        for cp in self.config.connection_points:
+            seen_here: set[str] = set()  # don't double-count one CP
+            for cr in cp.connected:
+                if cr.resource_iri in seen_here:
+                    continue
+                seen_here.add(cr.resource_iri)
+                counts[cr.resource_iri] = counts.get(cr.resource_iri, 0) + 1
+        return {iri for iri, n in counts.items() if n >= 2}
+
+    # ZoneType semantics:
+    #   "infeed"      -> parts can enter the resource through this zone (receive only)
+    #   "outfeed"     -> parts can leave the resource through this zone  (send only)
+    #   "in_outfeed"  -> bidirectional (the common case in this lab)
+    # An edge A -> B via transport T requires:
+    #   * A's zone at the pickup CP allows sending  ("outfeed" or "in_outfeed")
+    #   * B's zone at the dropoff CP allows receiving ("infeed" or "in_outfeed")
+    _CAN_SEND = {"outfeed", "in_outfeed"}
+    _CAN_RECEIVE = {"infeed", "in_outfeed"}
+
+    def _build_adjacency(self) -> dict[str, list[tuple[str, TransportEdge]]]:
+        """For each transport T, expand the (CP_src, CP_dst) cross-product into edges,
+        respecting each partner's ZoneType direction.
+        """
+        adj: dict[str, list[tuple[str, TransportEdge]]] = {}
+
+        for transport_iri in self.transport_resource_ids:
+            transport_cps: list[tuple[ConnectionPoint, list[ConnectedResource]]] = []
+            for cp in self.config.connection_points:
+                if not any(cr.resource_iri == transport_iri for cr in cp.connected):
+                    continue
+                partners = [
+                    cr for cr in cp.connected if cr.resource_iri != transport_iri
+                ]
+                if partners:
+                    transport_cps.append((cp, partners))
+
+            transport_id = self._id_for(transport_iri)
+            for src_cp, src_partners in transport_cps:
+                for dst_cp, dst_partners in transport_cps:
+                    for src in src_partners:
+                        if src.zone_type not in self._CAN_SEND:
+                            continue
+                        for dst in dst_partners:
+                            if dst.zone_type not in self._CAN_RECEIVE:
+                                continue
+                            if src.resource_iri == dst.resource_iri:
+                                continue
+                            edge = TransportEdge(
+                                transport_resource_id=transport_id,
+                                src_connection_point=src_cp.id_short,
+                                dst_connection_point=dst_cp.id_short,
+                                pickup_position=(src_cp.global_x, src_cp.global_y),
+                                dropoff_position=(dst_cp.global_x, dst_cp.global_y),
+                            )
+                            adj.setdefault(src.resource_iri, []).append(
+                                (dst.resource_iri, edge)
+                            )
+        return adj
+
+    # ── IRI <-> idShort helpers ─────────────────────────────────────────────
+
+    def _iri_for(self, resource_id: str) -> str | None:
+        loc = self.config.locations.get(resource_id)
+        return loc.resource_iri if loc else None
+
+    def _id_for(self, iri: str) -> str:
+        if iri in self.config.iri_to_id:
+            return self.config.iri_to_id[iri]
+        return iri.rstrip("/").split("/")[-1]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Transport planner
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -167,10 +372,32 @@ class TransportPlanner:
         line_config: LineConfig,
         default_speed: float = 0.2,
         default_accel: float = 0.5,
+        transport_resource_ids: set[str] | None = None,
     ) -> None:
         self.config = line_config
         self.default_speed = default_speed
         self.default_accel = default_accel
+        self.graph = LineGraph(line_config, transport_resource_ids=transport_resource_ids)
+
+    # ── Routing ──────────────────────────────────────────────────────────────
+
+    def find_route(
+        self, src_resource_id: str, dst_resource_id: str
+    ) -> list[RouteHop] | None:
+        """Shortest (BFS) transport route from src to dst.
+
+        Returns:
+            - `[]` if both are the same resource (no transport needed).
+            - `[RouteHop, ...]` where each hop is a single transport leg.
+            - `None` if the LineConfiguration has no path between them.
+        """
+        return self.graph.find_route(src_resource_id, dst_resource_id)
+
+    def transports_between(
+        self, src_resource_id: str, dst_resource_id: str
+    ) -> list[str]:
+        """idShorts of transports that can carry src→dst in one hop."""
+        return self.graph.transports_between(src_resource_id, dst_resource_id)
 
     # ── Position lookup ──────────────────────────────────────────────────────
 

@@ -299,6 +299,8 @@ class MQTTClientController:
             #===============
             #Updating self.topic_maps
             #===============
+            
+            #UPDATE TOPIC MAP to include the Occupancy and Cargo message type
             suffixes = self.RM.get_resource_MQTT_suffixes(resource_shell_id)
             self.topic_maps[resource_suffix] = {
                 MS.CommandMessage: suffixes.get("CommandSuffix"),
@@ -307,7 +309,9 @@ class MQTTClientController:
                 MS.AlarmsMessage: suffixes.get("AlarmSuffix"),
                 MS.AcknowledgementMessage: {"ResourceAcknowledgementSuffix": suffixes.get("ResourceAcknowledgementSuffix"), "ControllerAcknowledgementSuffix": suffixes.get("ControllerAcknowledgementSuffix") },
                 MS.JobResultMessage: suffixes.get("JobResultSuffix"),
-                MS.InventoryLevelMessage: suffixes.get("InventoryLevelSuffix")
+                MS.InventoryLevelMessage: suffixes.get("InventoryLevelSuffix"),
+                MS.OccupancyMessage: suffixes.get("OccupancySuffix"),
+                MS.CargoMessage: suffixes.get("CargoSuffix")
                 }
             
             # ===============================
@@ -603,170 +607,3 @@ class MQTTClientController:
             print(f"[WATCHDOG ERROR] {e}")
 
 
-
-#=========================
-#Defining and constructing classes to use (should be done in the controller, but we do it here to test)
-#=========================
-
-
-BROKER = "localhost"
-MQTT_PORT = 1883
-BASE_TOPIC = "AAUSmartLab/ProductionLine1" 
-CLIENT_ID = "Controller_12345678"
-
-AAS_BROKER = "localhost"
-BASE_TOPIC = "AAUSmartLab/ProductionLine1"
-AAS_PORT = "8081"
-resources_url = "https://aausmartlab.org/Shells/Resources"
-
-rm = RM(MQTT_PORT,BASE_TOPIC,AAS_BROKER,AAS_PORT,resources_url)
-
-controller_mqtt = MQTTClientController(BROKER,MQTT_PORT,CLIENT_ID,BASE_TOPIC,rm)
-
-pm = PM(AAS_BROKER,AAS_PORT)
-
-with open(r'C:\Users\silas\Desktop\Manufacturing_Technology_4\Github\VT4-Modular-Structure\Implementation2.0\Line_Controller\WorkOrderExampleComplex.json') as f:
-    order_data = json.load(f)
-
-
-
-#=========================
-#Defining message handlers (should be done in the controller, but we do it here to test)
-#=========================
-
-
-def handle_job_result_message(controller: MQTTClientController,message,topic_info):
-
-    resource_suffix = topic_info["resource_suffix"]
-
-    actor_id = topic_info.get("actor_id","default")
-
-    # =====================================
-    # Convert MQTT suffix -> shell id
-    # =====================================
-    resource_shell_id = (controller.topic_to_shell_id[resource_suffix])
-
-    # =====================================
-    # Creating or updating the job_result data structure with the job_result from the actor
-    # =====================================
-    job_store = (controller.shared_handler_variable.setdefault("job_result", {}))
-
-    resource_jobs = job_store.setdefault(resource_shell_id,{})
-
-    resource_jobs[actor_id] = message
-
-    print(f"[JOB RESULT] "f"{resource_suffix}/{actor_id}")
-
-def handle_inventory_level_message(controller: MQTTClientController,message,topic_info):
-
-    resource_suffix = topic_info["resource_suffix"]
-
-    # =====================================
-    # Convert MQTT suffix -> shell id
-    # =====================================
-    resource_shell_id = (controller.topic_to_shell_id[resource_suffix])
-
-    # =====================================
-    # Directly inserting the message into the data structure
-    # =====================================
-    controller.shared_handler_variable.setdefault("inventory",{})
-    controller.shared_handler_variable["inventory"][resource_shell_id] = message.inventory
-
-    #print(f"[INVENTORY] "f"{resource_suffix} "f"updated inventory "f"{message.inventory}")
-    print(f"[INVENTORY] "f"{resource_suffix} "f"updated inventory")
-
-    # =====================================
-    #Rebuilding the inventory indexing for the product matcher
-    # =====================================
-    pm.inventory_indexer.rebuild_index(controller_mqtt.shared_handler_variable["inventory"])
-
-
-def handle_state_message(controller: MQTTClientController, message, topic_info):
-
-    resource_suffix = topic_info["resource_suffix"]
-    actor_id = topic_info.get("actor_id", "default")
-
-    # =====================================
-    # Convert MQTT suffix -> shell id
-    # =====================================
-    resource_shell_id = (controller.topic_to_shell_id[resource_suffix])
-
-    # =====================================
-    # Classify reachability
-    # =====================================
-    reachability = controller.classify_reachability(message)
-
-    controller.RM.resource_shell_ids[resource_shell_id] = reachability
-
-    # =====================================
-    # Update last_seen
-    # =====================================
-    controller.last_seen[resource_suffix] = (datetime.now())
-
-    # =====================================
-    # Initialize shared state namespace
-    # =====================================
-    state_store = (controller.shared_handler_variable.setdefault("state", {}))
-
-    resource_store = state_store.setdefault(resource_shell_id,{})
-
-    # =====================================
-    # Store actor state
-    # =====================================
-    resource_store[actor_id] = message.state
-
-    print(f"[STATE] "f"{resource_suffix}/{actor_id} "f"→ {message.state}")
-
-
-
-
-controller_mqtt.register_handler(MS.StateMessage, handle_state_message)
-controller_mqtt.register_handler(MS.JobResultMessage, handle_job_result_message)
-controller_mqtt.register_handler(MS.InventoryLevelMessage,handle_inventory_level_message)
-
-params = {
-    "BitDiameter": 5.0,
-    "DrillDepth": 50.0,
-    "SpindleSpeed": 800.0,
-    "SpindleFeed": 20.0,
-    "TargetPosition": {
-      "XPos": 20.0,
-      "YPos": 10.0
-    },
-    "ComponentReference": "BottomCover_ALU"
-}
-
-
-
-command = MS.CommandMessage(timestamp=datetime.now(), resource_id="Drilling_12345678",actor_name="KUKAManipulator", skill="Drilling", skill_trigger="START", order_id="asudyg1123", job_id="job_XDDD", parameters=params, seq_no=5)
-
-
-
-
-async def main():
-    global main_loop
-    main_loop = asyncio.get_running_loop()
-    controller_mqtt.start_mqtt_connection()
-    controller_mqtt.update_information()
-
-    controller_mqtt.publish_message(controller_mqtt.topic_to_shell_id["Drilling_12345678"],command)
-    controller_mqtt.request_data(MS.InventoryLevelMessage)
-    time.sleep(1)
-
-    component_location = pm.find_component_location("https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_7ef0e4df-1b09-4d0a-9448-14ae51652a52")
-    
-    #This part could also easily be done inside the ProductMatcher Class, as long as you provide the order data, and the ingridient name
-    #But it does also mean that the structure of the order is fixed, which is probably fine
-    requested_properteies = order_data["Properties"]["Ingredient_1"]
-    requested_component_type = order_data["Ingredients"]["Ingredient_1"].get("ComponentReference")
-
-    component_type_location = pm.find_matching_components(component_type_reference=requested_component_type,order_properties=requested_properteies)
-    
-    print(f"[COMPONENT LOCATION] {component_location}")
-    print(f"[COMPONENT TYPE LOCATION] {component_type_location}")
-
-    # Keep machine alive forever
-    await asyncio.Event().wait()
-
-if __name__ == "__main__":
-    asyncio.run(main())

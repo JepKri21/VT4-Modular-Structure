@@ -41,3 +41,7 @@ elements:
             id_short: "OccupancySuffix"
             value_type: "xs:string"
             value: "Occupy"
+          - type: property
+            id_short: "CargoSuffix"
+            value_type: "xs:string"
+            value: "Cargo"

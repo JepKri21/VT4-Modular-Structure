@@ -302,6 +302,18 @@ class OccupancyMessage(BaseModel):
     seq_no: int | None = None
 
 
+# Published by the Line Controller whenever an actor's physical cargo state
+# changes (after Retrieve / Handoff / Store completes). `component_reference`
+# is the IRI of the part being carried, or None when the actor was just
+# emptied. Actor identity is in the topic path, not the payload — same
+# convention as StateMessage / JobResultMessage.
+class CargoMessage(BaseModel):
+    timestamp: datetime
+    resource_id: str
+    component_reference: str | None
+    seq_no: int | None = None
+
+
 
 #=============================================================================
 #============================== Helpers ======================================
