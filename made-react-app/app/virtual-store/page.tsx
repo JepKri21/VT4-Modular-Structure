@@ -52,15 +52,44 @@ function useSessionId(): string {
   return id;
 }
 
-function componentPropertyItems(component: ComponentType): Array<{ label: string; value: string }> {
+type PropertyKey = "material" | "color" | "finish" | "currentRating" | "voltageRating" | "version";
+
+const PROPERTY_LABELS: Record<PropertyKey, string> = {
+  material: "Material",
+  color: "Color",
+  finish: "Finish",
+  currentRating: "Current",
+  voltageRating: "Voltage",
+  version: "Type",
+};
+
+const ALL_PROPERTY_KEYS: PropertyKey[] = ["material", "color", "finish", "currentRating", "voltageRating", "version"];
+
+function getDifferentiatingKeys(components: ComponentType[]): Set<PropertyKey> {
+  const keys = new Set<PropertyKey>();
+  for (const key of ALL_PROPERTY_KEYS) {
+    const values = new Set(components.map((c) => c[key] ?? null));
+    if (values.size > 1) keys.add(key);
+  }
+  return keys;
+}
+
+function differentiatingPropertyItems(
+  component: ComponentType,
+  diffKeys: Set<PropertyKey>
+): Array<{ label: string; value: string }> {
   const items: Array<{ label: string; value: string }> = [];
-  if (component.material) items.push({ label: "Material", value: component.material });
-  if (component.color) items.push({ label: "Color", value: component.color });
-  if (component.finish) items.push({ label: "Finish", value: component.finish });
-  if (component.currentRating) items.push({ label: "Current", value: component.currentRating });
-  if (component.voltageRating) items.push({ label: "Voltage", value: component.voltageRating });
-  if (component.version) items.push({ label: "Type", value: component.version });
-  if (items.length === 0) items.push({ label: "Properties", value: "Standard" });
+  for (const key of diffKeys) {
+    const val = component[key];
+    if (val) items.push({ label: PROPERTY_LABELS[key], value: val });
+    else items.push({ label: PROPERTY_LABELS[key], value: "—" });
+  }
+  if (items.length === 0) {
+    for (const key of ALL_PROPERTY_KEYS) {
+      const val = component[key];
+      if (val) items.push({ label: PROPERTY_LABELS[key], value: val });
+    }
+  }
   return items;
 }
 
@@ -92,6 +121,7 @@ interface TypeCardProps {
   onDeselect: () => void;
   onQuantityChange: (qty: number) => void;
   selecting: boolean;
+  diffKeys: Set<PropertyKey>;
 }
 
 function TypeCard({
@@ -104,6 +134,7 @@ function TypeCard({
   onDeselect,
   onQuantityChange,
   selecting,
+  diffKeys,
 }: TypeCardProps) {
   const outOfStock = available === 0 && !isSelected;
 
@@ -120,10 +151,10 @@ function TypeCard({
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
         <div className="min-w-0 flex-1">
           <p className="break-words font-semibold text-sm leading-tight sm:text-base">
-            {component.category}
+            {component.name}
           </p>
           <div className="mt-1 flex flex-wrap gap-1.5">
-            {componentPropertyItems(component).map((item) => (
+            {differentiatingPropertyItems(component, diffKeys).map((item) => (
               <span
                 key={`${item.label}-${item.value}`}
                 className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
@@ -637,24 +668,28 @@ export default function VirtualStorePage() {
                         <p className="text-sm text-muted-foreground italic pl-1">{slot.description}</p>
                       ) : (
                         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                          {slotComponents.map((component) => (
-                            <TypeCard
-                              key={component.id}
-                              component={component}
-                              available={Math.max(0, (component.quantityAvailable ?? 0) - (component.quantityReserved ?? 0) - (otherAllocated.get(component.id) ?? 0))}
-                              maxQuantity={slot.maxQuantity}
-                              isSelected={selectedForSlot?.component.id === component.id}
-                              quantity={selectedForSlot?.component.id === component.id ? selectedForSlot.quantity : 1}
-                              onSelect={() => {
-                                setSelectingKey(key);
-                                handleSelect(product.id, slot.id, component);
-                                setSelectingKey(null);
-                              }}
-                              onDeselect={() => handleDeselect(product.id, slot.id)}
-                              onQuantityChange={(qty) => handleQuantityChange(product.id, slot.id, qty)}
-                              selecting={selectingKey === key}
-                            />
-                          ))}
+                          {(() => {
+                            const diffKeys = getDifferentiatingKeys(slotComponents);
+                            return slotComponents.map((component) => (
+                              <TypeCard
+                                key={component.id}
+                                component={component}
+                                diffKeys={diffKeys}
+                                available={Math.max(0, (component.quantityAvailable ?? 0) - (component.quantityReserved ?? 0) - (otherAllocated.get(component.id) ?? 0))}
+                                maxQuantity={slot.maxQuantity}
+                                isSelected={selectedForSlot?.component.id === component.id}
+                                quantity={selectedForSlot?.component.id === component.id ? selectedForSlot.quantity : 1}
+                                onSelect={() => {
+                                  setSelectingKey(key);
+                                  handleSelect(product.id, slot.id, component);
+                                  setSelectingKey(null);
+                                }}
+                                onDeselect={() => handleDeselect(product.id, slot.id)}
+                                onQuantityChange={(qty) => handleQuantityChange(product.id, slot.id, qty)}
+                                selecting={selectingKey === key}
+                              />
+                            ));
+                          })()}
                         </div>
                       )}
                     </section>

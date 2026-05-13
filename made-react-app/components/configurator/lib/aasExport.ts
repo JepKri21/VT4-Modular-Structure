@@ -1,4 +1,4 @@
-import type { Scene, TypeById, ZoneType } from "./types";
+import type { CapabilityEntry, Scene, TypeById, ZoneType } from "./types";
 
 const LINE_CONFIG_ID =
   "https://aausmartlab.org/Shells/Configuration/ProductionLine1-12345678";
@@ -44,6 +44,7 @@ const localLocation = (x: number, y: number): SME =>
   ]);
 
 export const buildLineConfigurationSubmodel = (
+  submodelId: string = LINE_CONFIG_ID,
   scene: Scene,
   typeById: TypeById,
 ): Record<string, unknown> => {
@@ -86,8 +87,27 @@ export const buildLineConfigurationSubmodel = (
   return {
     idShort: "LineConfiguration",
     modelType: "Submodel",
-    id: LINE_CONFIG_ID,
+    id: submodelId,
     submodelElements: [resourceLocations, connectionPoints],
+  };
+};
+
+export const buildServiceOfferedSubmodel = (
+  submodelId: string,
+  capabilities: CapabilityEntry[],
+): Record<string, unknown> => {
+  const entries = capabilities.map((cap, i) =>
+    smc(`${cap.capabilityType}_${i}`, [
+      prop("CapabilityType", cap.capabilityType, "xs:string"),
+      prop("ResourceRef", cap.resourceRef, "xs:string"),
+      prop("CapabilityRef", cap.capabilityRef, "xs:string"),
+    ]),
+  );
+  return {
+    idShort: "ServiceOffered",
+    modelType: "Submodel",
+    id: submodelId,
+    submodelElements: [smc("OfferedCapabilities", entries)],
   };
 };
 
@@ -95,7 +115,7 @@ export const exportLineConfiguration = (
   scene: Scene,
   typeById: TypeById,
 ): void => {
-  const payload = buildLineConfigurationSubmodel(scene, typeById);
+  const payload = buildLineConfigurationSubmodel(LINE_CONFIG_ID, scene, typeById);
   const blob = new Blob([JSON.stringify(payload, null, 2)], {
     type: "application/json",
   });

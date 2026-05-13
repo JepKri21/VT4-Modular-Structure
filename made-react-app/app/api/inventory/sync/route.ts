@@ -7,7 +7,6 @@ import {
   CREATE_ORDER_ITEMS_TABLE_SQL,
   MIGRATE_COMPONENT_TYPES_SQL,
 } from "@/lib/inventory";
-import { randomUUID } from "crypto";
 
 type ParsedProperties = {
   material?: string;
@@ -59,7 +58,7 @@ function formatVolt(raw: string | undefined): string | undefined {
 
 async function fetchComponentProperties(base: string, shellId: string): Promise<ParsedProperties> {
   try {
-    const submodelId = `${shellId}/Submodel/Properties/0`;
+    const submodelId = `${shellId}/Properties`;
     const encoded = Buffer.from(submodelId).toString("base64url");
     const response = await fetch(`${base}/submodels/${encoded}`);
     if (!response.ok) return {};
@@ -117,8 +116,19 @@ export async function POST(req: NextRequest) {
       await pool.query(sql);
     }
 
-    // Parse IRI and extract component type info
-    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    // Clean up stale UUID-tainted component type IDs from previous (broken) syncs.
+    // Old IDs looked like "fuse_fuse_16a_sb_d6f8e1d3-6196-4c44-..." — strip those so
+    // they don't appear alongside the new correctly-grouped types.
+    await pool.query(
+      `DELETE FROM component_types WHERE id ~ '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'`
+    );
+
+    // Parse IRI and extract component type info.
+    // IRI pattern: https://aausmartlab.org/Shells/Component/{AssetType}/{AssetName}_{UUID}
+    // The UUID is embedded in the last segment with an underscore prefix, not as a separate path segment.
+    const UUID_SUFFIX_RE = /_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    // Also handle plain UUIDs as full path segments (legacy/fallback)
+    const UUID_SEGMENT_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
     // Count shells per component type
     const typeCounts: Record<string, { category: string; type: string; name: string; count: number; shellId: string }> = {};
@@ -127,18 +137,24 @@ export async function POST(req: NextRequest) {
       const id = (shell.id as string) ?? "";
       if (!id) continue;
 
-      // Extract component type info from IRI
-      // Pattern: https://aausmartlab.org/Shells/Component/{Category}/{Type}/{UUID}
-      // where {Category} is what we use to group components (e.g., Bottom_Cover, Top_Cover, PCB, Fuse)
+      // Skip non-component shells (resources, production lines, etc.)
+      if (!id.includes("/Shells/Component/")) continue;
+
       const segments = id.replace("https://aausmartlab.org/Shells/", "").split("/").filter(Boolean);
-      const meaningful = segments.filter((s) => !UUID_RE.test(s));
+      // Filter out any full-UUID path segments (legacy format)
+      const meaningful = segments.filter((s) => !UUID_SEGMENT_RE.test(s));
+
+      // Strip UUID suffix from the last meaningful segment (e.g., "Fuse_16A_SB_d6f8e1d3-..." → "Fuse_16A_SB")
+      const rawLastSegment = meaningful[2] ?? meaningful[meaningful.length - 1] ?? "Unknown";
+      const typeSegment = rawLastSegment.replace(UUID_SUFFIX_RE, "");
+
       const category = (meaningful[1] ?? "Unknown").replace(/_/g, " ");
-      const type = meaningful[2] ?? "Unknown";
-      const name = meaningful[2] ?? meaningful[meaningful.length - 1] ?? "Unknown";
-      const componentTypeId = `${meaningful[1]}_${meaningful[2]}`.toLowerCase().replace(/\s+/g, "_");
+      const name = typeSegment.replace(/_/g, " ");
+      const componentTypeId = `${meaningful[1] ?? "unknown"}_${typeSegment}`.toLowerCase().replace(/\s+/g, "_");
 
       if (!typeCounts[componentTypeId]) {
-        typeCounts[componentTypeId] = { category, type, name, count: 0, shellId: id };
+        // Store this instance's IRI for property fetching (any instance of the same type works)
+        typeCounts[componentTypeId] = { category, type: typeSegment, name, count: 0, shellId: id };
       }
       typeCounts[componentTypeId].count++;
     }
@@ -146,12 +162,10 @@ export async function POST(req: NextRequest) {
     let created = 0;
     // For each component type found on the AAS server, ensure it exists and SET inventory to the count
     for (const [componentTypeId, info] of Object.entries(typeCounts)) {
+      // Use instance IRI for property fetching; store the type IRI (no UUID) for WorkOrder references
       const properties = await fetchComponentProperties(base, info.shellId);
-
-      // Store the full shell IRI (including UUID) — this is the actual BaSyx address
-      // used for property lookups. The WorkOrder ComponentReference uses the type
-      // portion (without UUID), derived at WorkOrder build time.
-      const typeIri = info.shellId;
+      const categorySegment = info.category.replace(/ /g, "_");
+      const typeIri = `https://aausmartlab.org/Shells/Component/${categorySegment}/${info.type}`;
 
       // Ensure component type exists and keep the live properties in sync
       const typeRes = await pool.query(

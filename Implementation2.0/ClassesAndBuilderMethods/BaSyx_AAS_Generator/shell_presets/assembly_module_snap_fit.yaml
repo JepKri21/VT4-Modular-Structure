@@ -14,8 +14,8 @@ submodels:
         - "snap-fit"
         - "press-fit"
       AssemblyPosition:
-        XPos: { min: -40.0, max: 40.0 }
-        YPos: { min: -40.0, max: 40.0 }
+        XPos: { min: -55.0, max: 55.0 }
+        YPos: { min: -55.0, max: 55.0 }
       MaxComponentCount:
         min: 2
         max: 4
@@ -50,12 +50,12 @@ submodels:
       XPos: 0.0
       YPos: 0.0
     ResourceGeometry:
-      Point1: { XPos: -50.0, YPos: -50.0 }
-      Point2: { XPos:  50.0, YPos: -50.0 }
-      Point3: { XPos:  50.0, YPos:  50.0 }
-      Point4: { XPos: -50.0, YPos:  50.0 }
+      Point1: { XPos: -65.0, YPos: -65.0 }
+      Point2: { XPos:  65.0, YPos: -65.0 }
+      Point3: { XPos:  65.0, YPos:  65.0 }
+      Point4: { XPos: -65.0, YPos:  65.0 }
     InOutputZones:
-      - Point1: { XPos: -40.0, YPos:  50.0 }
-        Point2: { XPos:  40.0, YPos:  50.0 }
-        Point3: { XPos:  40.0, YPos: 120.0 }
-        Point4: { XPos: -40.0, YPos: 120.0 }
+      - Point1: { XPos: -55.0, YPos:  65.0 }
+        Point2: { XPos:  55.0, YPos:  65.0 }
+        Point3: { XPos:  55.0, YPos: 155.0 }
+        Point4: { XPos: -55.0, YPos: 155.0 }

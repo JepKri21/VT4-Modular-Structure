@@ -107,3 +107,16 @@ export interface PendingOverlap extends OverlapRegion {
   otherInstanceId: string;
 }
 
+export interface ProductionLineShell {
+  id: string;
+  idShort: string;
+  lineConfigSubmodelId?: string;   // IRI of the existing LineConfiguration submodel on the shell
+  serviceOfferedSubmodelId?: string; // IRI of the existing ServiceOffered submodel on the shell
+}
+
+export interface CapabilityEntry {
+  capabilityType: string;
+  resourceRef: string;
+  capabilityRef: string;
+}
+

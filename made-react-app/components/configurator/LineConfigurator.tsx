@@ -11,9 +11,20 @@ import { useHistory } from "./hooks/useHistory";
 import { useSceneTransforms } from "./hooks/useSceneTransforms";
 import { useZoneOverlaps } from "./hooks/useZoneOverlaps";
 import { localToWorld } from "./lib/geometry";
-import { exportLineConfiguration } from "./lib/aasExport";
-import { fetchResourceLibrary } from "./lib/aasFetch";
+import {
+  buildLineConfigurationSubmodel,
+  buildServiceOfferedSubmodel,
+  exportLineConfiguration,
+} from "./lib/aasExport";
+import {
+  AAS_SERVER_URL,
+  fetchLineConfiguration,
+  fetchProductionLines,
+  fetchResourceCapabilities,
+  fetchResourceLibrary,
+} from "./lib/aasFetch";
 import type {
+  ProductionLineShell,
   Scene,
   ZoneType,
   ResourceType,
@@ -34,6 +45,11 @@ export default function LineConfigurator() {
   const [library, setLibrary] = useState<ResourceType[]>([]);
   const [libraryError, setLibraryError] = useState<string | null>(null);
   const [libraryLoading, setLibraryLoading] = useState(true);
+  const [productionLines, setProductionLines] = useState<ProductionLineShell[]>([]);
+  const [selectedLine, setSelectedLine] = useState<string | null>(null);
+  const [loadingLine, setLoadingLine] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "ok" | "error">("idle");
 
   const reloadLibrary = useCallback(async () => {
     setLibraryLoading(true);
@@ -51,6 +67,10 @@ export default function LineConfigurator() {
   useEffect(() => {
     reloadLibrary();
   }, [reloadLibrary]);
+
+  useEffect(() => {
+    fetchProductionLines().then(setProductionLines).catch(() => {});
+  }, []);
 
   const typeById = useMemo(
     () =>
@@ -271,6 +291,52 @@ export default function LineConfigurator() {
     [],
   );
 
+  useEffect(() => {
+    if (!selectedLine) return;
+    const line = productionLines.find((l) => l.id === selectedLine);
+    const submodelId =
+      line?.lineConfigSubmodelId ?? `${selectedLine}/Submodels/LineConfiguration`;
+    setLoadingLine(true);
+    fetchLineConfiguration(submodelId, AAS_SERVER_URL, library)
+      .then((loaded) => commit(loaded))
+      .catch(() => {})
+      .finally(() => setLoadingLine(false));
+  // Only re-run when the selected line changes, not on library/productionLines updates.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLine]);
+
+  const handleSave = useCallback(async () => {
+    if (!selectedLine || saving) return;
+    setSaving(true);
+    setSaveStatus("idle");
+    try {
+      const line = productionLines.find((l) => l.id === selectedLine);
+      const lineConfigId =
+        line?.lineConfigSubmodelId ?? `${selectedLine}/Submodels/LineConfiguration`;
+      const serviceOfferedId =
+        line?.serviceOfferedSubmodelId ?? `${selectedLine}/Submodels/ServiceOffered`;
+
+      const capabilities = await fetchResourceCapabilities(
+        scene.resources.map((r) => r.typeId),
+      );
+      const lineConfigSM = buildLineConfigurationSubmodel(lineConfigId, scene, typeById);
+      const serviceOfferedSM = buildServiceOfferedSubmodel(serviceOfferedId, capabilities);
+      const res = await fetch("/api/line-configurator/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          serverUrl: AAS_SERVER_URL,
+          submodels: [lineConfigSM, serviceOfferedSM],
+        }),
+      });
+      setSaveStatus(res.ok ? "ok" : "error");
+    } catch {
+      setSaveStatus("error");
+    } finally {
+      setSaving(false);
+    }
+  }, [selectedLine, saving, scene, typeById, productionLines]);
+
   const handleExport = useCallback(() => {
     exportLineConfiguration(scene, typeById);
   }, [scene, typeById]);
@@ -281,7 +347,37 @@ export default function LineConfigurator() {
   );
 
   return (
-    <div className="grid grid-cols-[240px_1fr_320px] h-screen bg-gray-900 text-gray-400 font-mono text-xs">
+    <div className="flex flex-col h-screen bg-gray-900 text-gray-400 font-mono text-xs">
+      {/* Line selector header */}
+      <div className="flex items-center gap-2 px-3 py-2 bg-gray-800 border-b border-gray-700 shrink-0">
+        <span className="text-gray-500">Line:</span>
+        <select
+          className="bg-gray-900 border border-gray-600 rounded px-2 py-1 text-gray-300 text-xs"
+          value={selectedLine ?? ""}
+          onChange={(e) => {
+            const val = e.target.value || null;
+            setSelectedLine(val);
+            setSaveStatus("idle");
+            if (!val) commit({ resources: [], connections: [] });
+          }}
+        >
+          <option value="">— none selected —</option>
+          {productionLines.map((l) => (
+            <option key={l.id} value={l.id}>{l.idShort}</option>
+          ))}
+        </select>
+        {loadingLine && <span className="text-gray-400 italic">Loading…</span>}
+        <button
+          className="px-3 py-1 rounded bg-blue-700 hover:bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed"
+          disabled={!selectedLine || saving}
+          onClick={() => { void handleSave(); }}
+        >
+          {saving ? "Saving…" : "Save to BaSyx"}
+        </button>
+        {saveStatus === "ok" && <span className="text-green-400">Saved</span>}
+        {saveStatus === "error" && <span className="text-red-400">Save failed</span>}
+      </div>
+      <div className="grid grid-cols-[240px_1fr_320px] flex-1 min-h-0">
       <ResourcePalette
         onPaletteDragStart={onPaletteDragStart}
         library={library}
@@ -356,6 +452,7 @@ export default function LineConfigurator() {
         selectedZoneKey={selectedZoneKey}
         setSelectedZoneKey={setSelectedZoneKey}
       />
+      </div>
     </div>
   );
 }

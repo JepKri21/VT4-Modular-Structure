@@ -1,0 +1,145 @@
+{
+  "OrderId": "ORD-001",
+  "Priority": 0,
+  "IssueDate": "2026-05-01T10:22:37.995604",
+  "ProductReference": "Bottom_Cover_Drilled_PCB-BCDP001",
+  "Ingredients": {
+    "Ingredient_1": {
+      "ComponentReference": "https://aausmartlab.org/Shells/Component/Bottom_Cover"
+    },
+    "Ingredient_2": {
+      "ComponentReference": "https://aausmartlab.org/Shells/Component/PCB"
+    },
+    "Ingredient_3": {
+      "ComponentReference": "https://aausmartlab.org/Shells/Assembly/Bottom_Cover_Drilled/Bottom_Cover_Drilled-BCD002"
+    },
+    "Ingredient_4": {
+      "ComponentReference": "https://aausmartlab.org/Shells/Assembly/Bottom_Cover_Drilled_PCB/Bottom_Cover_Drilled_PCB-BCDP001"
+    }
+  },
+  "Properties": {
+    "Ingredient_1": {
+      "MaterialProperties": {
+        "Color": {
+          "semanticId": "https://aausmartlab.org/Semantics/Color",
+          "value": "Black"
+        },
+        "Material": {
+          "semanticId": "https://aausmartlab.org/Semantics/Material",
+          "value": "PLA"
+        },
+        "Finish": {
+          "semanticId": "https://aausmartlab.org/Semantics/Finish",
+          "value": "Textured"
+        }
+      },
+      "PhysicalDimensions": {
+        "Length": {
+          "semanticId": "https://aausmartlab.org/Semantics/mm",
+          "value": "150"
+        },
+        "Height": {
+          "semanticId": "https://aausmartlab.org/Semantics/mm",
+          "value": "80"
+        },
+        "Width": {
+          "semanticId": "https://aausmartlab.org/Semantics/mm",
+          "value": "5"
+        },
+        "Weight": {
+          "semanticId": "https://aausmartlab.org/Semantics/gram",
+          "value": "118"
+        }
+      }
+    },
+    "Ingredient_2": {
+      "MaterialProperties": {
+        "Color": {
+          "semanticId": "https://aausmartlab.org/Semantics/Color",
+          "value": "Green"
+        },
+        "Material": {
+          "semanticId": "https://aausmartlab.org/Semantics/Material",
+          "value": "Polyimide "
+        },
+        "Finish": {
+          "semanticId": "https://aausmartlab.org/Semantics/Finish",
+          "value": "Smooth"
+        }
+      },
+      "PhysicalDimensions": {
+        "Length": {
+          "semanticId": "https://aausmartlab.org/Semantics/mm",
+          "value": "120"
+        },
+        "Height": {
+          "semanticId": "https://aausmartlab.org/Semantics/mm",
+          "value": "60"
+        },
+        "Width": {
+          "semanticId": "https://aausmartlab.org/Semantics/mm",
+          "value": "2"
+        },
+        "Weight": {
+          "semanticId": "https://aausmartlab.org/Semantics/gram",
+          "value": "53"
+        }
+      }
+    },
+    "Ingredient_3": {
+      "MaterialProperties": {},
+      "PhysicalDimensions": {}
+    },
+    "Ingredient_4": {
+      "MaterialProperties": {},
+      "PhysicalDimensions": {}
+    }
+  },
+  "Assemblies": {
+    "Ingredient_3": {
+      "Ingredients": ["Ingredient_1"]
+    },
+    "Ingredient_4": {
+      "Ingredients": ["Ingredient_3", "Ingredient_2"]
+    }
+  },
+  "ProcessSteps": {
+    "Ingredient_1": {
+      "ProcessStep1": {
+        "CapabilityReference": "https://aausmartlab.org/Submodels/Capability/Drilling",
+        "ProcessStepId": "1x1",
+        "Dependencies": [],
+        "Parameters": {
+          "HoleDiameter": {
+            "semantic_id": "https://aausmartlab.org/Semantics/mm",
+            "value": 5.0
+          },
+          "DrillDepth": {
+            "semantic_id": "https://aausmartlab.org/Semantics/mm",
+            "value": 50.0
+          },
+          "TargetPosition": {
+            "XPos": {
+              "semantic_id": "https://aausmartlab.org/Semantics/mm",
+              "value": 10.0
+            },
+            "YPos": {
+              "semantic_id": "https://aausmartlab.org/Semantics/mm",
+              "value": 20.0
+            }
+          }
+        }
+      }
+    },
+    "Ingredient_4": {
+      "ProcessStep1": {
+        "CapabilityReference": "https://aausmartlab.org/Submodels/Capability/Assemble",
+        "ProcessStepId": "2x1",
+        "Dependencies": [],
+        "Parameters": {
+          "InputComponents": ["Ingredient_2", "Ingredient_3"]
+        }
+      }
+    }
+  }
+}

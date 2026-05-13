@@ -1,7 +1,12 @@
 import type {
+  CapabilityEntry,
+  Connection,
   ConnectionZone,
   PolygonLocal,
+  ProductionLineShell,
+  Resource,
   ResourceType,
+  Scene,
   ZoneType,
 } from "./types";
 
@@ -156,6 +161,143 @@ const pagedResults = async <T,>(url: string): Promise<T[]> => {
     if (!cursor) break;
   }
   return out;
+};
+
+const b64url = (s: string): string => {
+  const bytes = new TextEncoder().encode(s);
+  let binary = "";
+  bytes.forEach((b) => { binary += String.fromCharCode(b); });
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+};
+
+export const fetchProductionLines = async (
+  serverUrl: string = AAS_SERVER_URL,
+): Promise<ProductionLineShell[]> => {
+  const shells = await pagedResults<Shell>(`${serverUrl}/shells`);
+  return shells
+    .filter((s) => s.id.startsWith("https://aausmartlab.org/Shells/ProductionLine/"))
+    .map((s) => {
+      const smIris = (s.submodels ?? []).map((ref) => ref.keys?.[0]?.value ?? "");
+      return {
+        id: s.id,
+        idShort: s.idShort,
+        lineConfigSubmodelId: smIris.find((iri) => iri.includes("LineConfiguration")),
+        serviceOfferedSubmodelId: smIris.find((iri) => iri.includes("ServiceOffered")),
+      };
+    });
+};
+
+const importZoneType = (raw: string): ZoneType =>
+  raw === "in_outfeed" ? "inout" : (raw as ZoneType);
+
+export const fetchLineConfiguration = async (
+  submodelId: string,
+  serverUrl: string = AAS_SERVER_URL,
+  resourceLibrary: ResourceType[] = [],
+): Promise<Scene> => {
+  const res = await fetch(`${serverUrl}/submodels/${b64url(submodelId)}`);
+  if (!res.ok) throw new Error(`Failed to fetch LineConfiguration: ${res.status}`);
+  const sm = (await res.json()) as SME;
+
+  const typeByName = new Map<string, ResourceType>(
+    resourceLibrary.map((t) => [t.name, t]),
+  );
+  const typeById = new Map<string, ResourceType>(
+    resourceLibrary.map((t) => [t.typeId, t]),
+  );
+
+  const locsSmc = children(sm).find((c) => c.idShort === "ResourceLocations");
+  const connsSmc = children(sm).find((c) => c.idShort === "ConnectionPoints");
+
+  const resources: Resource[] = children(locsSmc)
+    .filter((c) => c.modelType === "SubmodelElementCollection")
+    .map((c) => {
+      const rawTypeId = (findChild(c, "ResourceReference")?.value as string) ?? "";
+      const libraryEntry = typeById.get(rawTypeId) ?? typeByName.get(rawTypeId);
+      const typeIdVal = libraryEntry?.typeId ?? rawTypeId;
+      const globalLoc = findChild(c, "GlobalLocation");
+      const x = propNumber(globalLoc, "XPos");
+      const y = propNumber(globalLoc, "YPos");
+      const theta = propNumber(globalLoc, "ThetaAngle");
+      return {
+        instanceId: crypto.randomUUID(),
+        typeId: typeIdVal,
+        position: { x, y },
+        rotation: theta,
+        customZones: [],
+      } satisfies Resource;
+    })
+    .filter((r) => r.typeId !== "");
+
+  const connections: Connection[] = children(connsSmc)
+    .filter((c) => c.modelType === "SubmodelElementCollection")
+    .map((c) => {
+      const globalLoc = findChild(c, "GlobalLocation");
+      const wx = propNumber(globalLoc, "XPos");
+      const wy = propNumber(globalLoc, "YPos");
+      const connRes = findChild(c, "ConnectedResources");
+      const r1 = findChild(connRes, "Resource1");
+      const r2 = findChild(connRes, "Resource2");
+      const refA = (findChild(r1, "ResourceReference")?.value as string) ?? "";
+      const refB = (findChild(r2, "ResourceReference")?.value as string) ?? "";
+      const ztA = importZoneType((findChild(r1, "ZoneType")?.value as string) ?? "inout");
+      const ztB = importZoneType((findChild(r2, "ZoneType")?.value as string) ?? "inout");
+      const locA = findChild(r1, "LocalLocation");
+      const locB = findChild(r2, "LocalLocation");
+      const lax = propNumber(locA, "XPos");
+      const lay = propNumber(locA, "YPos");
+      const lbx = propNumber(locB, "XPos");
+      const lby = propNumber(locB, "YPos");
+
+      const resA = resources.find((r) => r.typeId === refA);
+      const resB = resources.find((r) => r.typeId === refB);
+      const rtA = typeById.get(refA) ?? typeByName.get(refA);
+      const rtB = typeById.get(refB) ?? typeByName.get(refB);
+      const zoneA = rtA?.connectionZones.find((z) => z.type === ztA);
+      const zoneB = rtB?.connectionZones.find((z) => z.type === ztB);
+
+      return {
+        id: crypto.randomUUID(),
+        resourceAId: resA?.instanceId ?? "",
+        resourceBId: resB?.instanceId ?? "",
+        zoneAId: zoneA?.id ?? `${ztA}_0`,
+        zoneBId: zoneB?.id ?? `${ztB}_0`,
+        zoneAType: ztA,
+        zoneBType: ztB,
+        worldPosition: { x: wx, y: wy },
+        localPositionA: { x: lax, y: lay },
+        localPositionB: { x: lbx, y: lby },
+      } satisfies Connection;
+    })
+    .filter((c) => c.resourceAId !== "" && c.resourceBId !== "");
+
+  return { resources, connections };
+};
+
+export const fetchResourceCapabilities = async (
+  resourceTypeIds: string[],
+  serverUrl: string = AAS_SERVER_URL,
+): Promise<CapabilityEntry[]> => {
+  const allSubmodels = await pagedResults<Submodel>(`${serverUrl}/submodels`);
+  const capSubmodels = allSubmodels.filter((sm) =>
+    resourceTypeIds.some(
+      (rid) => sm.id.startsWith(rid) && sm.id.endsWith("CapabilityOffered"),
+    ),
+  );
+
+  const results: CapabilityEntry[] = [];
+  for (const capSm of capSubmodels) {
+    const resourceRef = resourceTypeIds.find((rid) => capSm.id.startsWith(rid)) ?? "";
+    const full = await fetch(`${serverUrl}/submodels/${b64url(capSm.id)}`);
+    if (!full.ok) continue;
+    const data = (await full.json()) as SME;
+    const capRefEl = children(data).find((c) => c.idShort === "CapabilityReference");
+    const capIri = (capRefEl?.value as string) ?? "";
+    if (!capIri) continue;
+    const capabilityType = capIri.split("/").at(-1) ?? capIri;
+    results.push({ capabilityType, resourceRef, capabilityRef: capSm.id });
+  }
+  return results;
 };
 
 export const fetchResourceLibrary = async (
