@@ -168,6 +168,43 @@ def load_line_config_from_file(path: str | Path) -> LineConfig:
         return parse_line_config(json.load(f))
 
 
+def load_line_config_from_aas(
+    aas_server_base: str,
+    line_shell_prefix: str = "https://aausmartlab.org/Shells/ProductionLine/",
+) -> LineConfig:
+    """Fetch the active ProductionLine shell from the AAS server and parse its
+    LineConfiguration submodel.
+
+    Finds the first shell whose id starts with `line_shell_prefix` and reads
+    its `<shell_id>/LineConfiguration` submodel. If multiple production-line
+    shells exist, the first one returned by the server is used — adjust the
+    prefix to disambiguate.
+    """
+    import base64
+    import requests
+
+    def _b64(value: str) -> str:
+        return base64.urlsafe_b64encode(value.encode("utf-8")).decode("ascii").rstrip("=")
+
+    shells_resp = requests.get(f"{aas_server_base}/shells")
+    shells_resp.raise_for_status()
+    shells = shells_resp.json().get("result", [])
+
+    line_shell_id = next(
+        (s["id"] for s in shells if s["id"].startswith(line_shell_prefix)),
+        None,
+    )
+    if line_shell_id is None:
+        raise RuntimeError(
+            f"No ProductionLine shell found on AAS server with prefix '{line_shell_prefix}'"
+        )
+
+    submodel_id = f"{line_shell_id}/LineConfiguration"
+    sm_resp = requests.get(f"{aas_server_base}/submodels/{_b64(submodel_id)}")
+    sm_resp.raise_for_status()
+    return parse_line_config(sm_resp.json())
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Graph + routing
 # ─────────────────────────────────────────────────────────────────────────────

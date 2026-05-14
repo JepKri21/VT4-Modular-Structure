@@ -29,6 +29,14 @@ class ResourceManager:
         self.SHELL_ENDPOINT = f"{self.AAS_SERVER_BASE}/shells"
 
         self.resource_shell_ids = {}
+        # Optional whitelist of full shell IRIs to keep. Set on the first
+        # call to update_resource_availablility(); subsequent calls (e.g. from
+        # the MQTT controller's on_connect) reuse it so templates don't leak
+        # back into the registry. We filter by full IRI rather than trailing
+        # segment because the line-config idShort isn't always equal to the
+        # shell's last URL segment (e.g. Assembly_Screwing_01 vs.
+        # Assembly_Screwing_01_<uuid>).
+        self._allowed_iris: set[str] | None = None
 
     @staticmethod
     def topic_id_for_iri(iri: str) -> str:
@@ -209,21 +217,36 @@ class ResourceManager:
     #===========
     #Methods to retrieve resource shells from AAS server
     #===========
-    def update_resource_availablility(self):
-        #This should only really read the server and find the shells that are resources
+    def update_resource_availablility(self, allowed_iris: set[str] | None = None):
+        """Pull resource shells from the AAS server and add them to the registry.
+
+        If `allowed_iris` is provided, only shells whose full IRI is in the
+        set are added — this keeps generic/template shells out of the live
+        registry. Pass the IRIs from the line config's ResourceReferences,
+        e.g. `{loc.resource_iri for loc in line_config.locations.values()}`.
+        """
+        if allowed_iris is not None:
+            self._allowed_iris = set(allowed_iris)
+        effective_filter = self._allowed_iris
+
         response = requests.get(self.SHELL_ENDPOINT)
         data = response.json()
         resource_shells = data.get("result", [])
         for resource_shell in resource_shells:
             resoruce_shell_id = resource_shell["id"]
-            if resoruce_shell_id.startswith(self.RESOURCE_URL):
+            if not resoruce_shell_id.startswith(self.RESOURCE_URL):
+                continue
+
+            if effective_filter is not None and resoruce_shell_id not in effective_filter:
                 if resoruce_shell_id not in self.resource_shell_ids:
-                    print(f"Updating list of resource with: {resoruce_shell_id}")
-                    #Right now I directly set them to active, but in reality, it should ping the resource first
-                    #This could be its own seperate method that you just call at the end of this method, passing the resources to check 
-                    self.resource_shell_ids[resoruce_shell_id] = MS.ResourceReachability.UNREACHABLE
-                else:
-                    print("Resource is already known")
+                    print(f"Skipping resource (not in line config): {resoruce_shell_id}")
+                continue
+
+            if resoruce_shell_id not in self.resource_shell_ids:
+                print(f"Updating list of resource with: {resoruce_shell_id}")
+                self.resource_shell_ids[resoruce_shell_id] = MS.ResourceReachability.UNREACHABLE
+            else:
+                print("Resource is already known")
         #It should be able to check if an older resource might not be on the server anymore?
         #Maybe better, each resource can be shown as active or inactive. 
         #So when we update we might also send a ping to the actual resource to make sure that it is active, 

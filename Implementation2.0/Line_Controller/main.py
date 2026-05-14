@@ -52,7 +52,7 @@ from workorder_handler import WorkOrderHandler
 from resource_manager import ResourceManager
 from capability_matcher import CapabilityMatcher
 from MQTTClientControllerV2 import MQTTClientController
-from transport_planner import TransportPlanner, load_line_config_from_file
+from transport_planner import TransportPlanner, load_line_config_from_aas
 from pre_process_planner import PreProcessPlanner
 from job_tracker import JobTracker
 from occupancy_manager import OccupancyManager
@@ -75,13 +75,11 @@ AAS_SERVER_BASE = f"http://{AAS_BROKER}:{AAS_PORT}"
 RESOURCE_URL = "https://aausmartlab.org/Shells/Resources"
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-WORKORDER_PATH = SCRIPT_DIR / "WorkOrderExampleComplex.json"
-LINE_CONFIG_PATH = (
-    SCRIPT_DIR.parent
-    / "ProductAndResourceImplementations"
-    / "ProductionLine1"
-    / "LineConfiguration.json"
-)
+# WORKORDER_PATH = SCRIPT_DIR / "WorkOrderExampleComplex.json"
+WORKORDER_PATH = SCRIPT_DIR / "WorkOrder.json"
+# The ProductionLine shell on the AAS server is the source of truth for the
+# line configuration. The local LineConfiguration.json is no longer read.
+LINE_SHELL_PREFIX = "https://aausmartlab.org/Shells/ProductionLine/"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Message Handlers
@@ -202,16 +200,20 @@ async def main() -> None:
     handler.load_workorder(order)
     handler.print_process_list()
 
-    # AAS-driven resource discovery
-    rm = ResourceManager(MQTT_PORT, BASE_TOPIC, AAS_BROKER, AAS_PORT, RESOURCE_URL)
-    rm.update_resource_availablility()
-    matcher = CapabilityMatcher(rm)
-
-    # Planners
-    line_config = load_line_config_from_file(LINE_CONFIG_PATH)
+    # Load line config first so we can filter resource discovery to only the
+    # resources actually configured on this line (skips template shells).
+    # Source of truth is the ProductionLine shell on the AAS server.
+    line_config = load_line_config_from_aas(AAS_SERVER_BASE, LINE_SHELL_PREFIX)
     transport_planner = TransportPlanner(line_config)
     pre_process_planner = PreProcessPlanner(transport_planner)
     print(f"[init] line resources in config: {list(line_config.locations)}")
+
+    # AAS-driven resource discovery, filtered by the line config.
+    rm = ResourceManager(MQTT_PORT, BASE_TOPIC, AAS_BROKER, AAS_PORT, RESOURCE_URL)
+    rm.update_resource_availablility(
+        allowed_iris={loc.resource_iri for loc in line_config.locations.values()}
+    )
+    matcher = CapabilityMatcher(rm)
 
     # ProductMatcher — module-level so the flat inventory handler can refresh it.
     _product_matcher = ProductMatcher(AAS_BROKER, AAS_PORT)

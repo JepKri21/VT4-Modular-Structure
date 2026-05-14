@@ -56,9 +56,10 @@ class CapabilityMatcher:
 
             cap_parameters, supported_components, allowed_materials = cap_data
 
-            if not self._check_parameters(params, cap_parameters):
+            ok, reason = self._check_parameters(params, cap_parameters)
+            if not ok:
                 print(
-                    f"[match] [{tag}] rejected: parameter check failed "
+                    f"[match] [{tag}] rejected: parameter check failed — {reason} "
                     f"(work-order params={list(params)}, "
                     f"capability leaves={list(self._flatten_cap_parameters(cap_parameters))})"
                 )
@@ -100,19 +101,24 @@ class CapabilityMatcher:
         declares a Range for a leaf, the workorder value must fall inside it.
         Property declarations are accepted as-is. Unknown parameters on the
         workorder are rejected.
+
+        Returns (ok, reason). `reason` is a short human-readable string when
+        ok is False, otherwise empty.
         """
         cap_by_name = self._flatten_cap_parameters(cap_parameters)
         step_by_name = self._flatten_step_params(step_params)
 
         for name, value in step_by_name.items():
             cap_param = cap_by_name.get(name)
+            resolved_name = name
             if cap_param is None:
                 aliased = self.PARAMETER_ALIASES.get(name)
                 if aliased:
                     cap_param = cap_by_name.get(aliased)
+                    resolved_name = aliased
 
             if cap_param is None:
-                return False
+                return False, f"work-order parameter '{name}' has no matching leaf in the capability"
 
             if hasattr(cap_param, "min") and hasattr(cap_param, "max"):
                 try:
@@ -120,11 +126,16 @@ class CapabilityMatcher:
                     lo = float(cap_param.min)
                     hi = float(cap_param.max)
                 except (TypeError, ValueError):
-                    return False
+                    return False, (
+                        f"parameter '{resolved_name}' could not be coerced to float "
+                        f"(value={value!r}, min={cap_param.min!r}, max={cap_param.max!r})"
+                    )
                 if not (lo <= v <= hi):
-                    return False
+                    return False, (
+                        f"parameter '{resolved_name}'={v} outside allowed range [{lo}, {hi}]"
+                    )
 
-        return True
+        return True, ""
 
     def _flatten_step_params(self, step_params):
         """Walk the work-order parameter tree, returning {leaf_idShort: value}.

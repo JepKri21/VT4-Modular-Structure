@@ -2,14 +2,14 @@ type: "assembly_module"
 label: "Assembly Module – Screwing (AAU Lab)"
 description: "KUKA manipulator torque-controlled screwing station for fastening Fuse Module and PCB sub-assemblies to Bottom Cover."
 
-asset_name: "Assembly_Screwing_01"
+asset_name: "Assembly_Screwing"
 
 submodels:
   AssembleCapabilityOffered:
     SupportedComponents:
-      - "https://aausmartlab.org/Shells/Component/Bottom_Cover"
-      - "https://aausmartlab.org/Shells/SubAssembly/Bottom_Cover_PCB"
-      - "https://aausmartlab.org/Shells/SubAssembly/Fuse_Module"
+      - "https://aausmartlab.org/Shells/Component/BottomCover"
+      - "https://aausmartlab.org/Shells/SubAssembly/BottomCoverPCB"
+      - "https://aausmartlab.org/Shells/SubAssembly/FuseModule"
     Parameters:
       SupportedAssemblyTypes:
         - "screwing"
@@ -26,9 +26,9 @@ submodels:
 
   HandoffCapabilityOffered:
     SupportedComponents:
-      - "https://aausmartlab.org/Shells/Component/Bottom_Cover"
-      - "https://aausmartlab.org/Shells/SubAssembly/Bottom_Cover_PCB"
-      - "https://aausmartlab.org/Shells/SubAssembly/Fuse_Module"
+      - "https://aausmartlab.org/Shells/Component/BottomCover"
+      - "https://aausmartlab.org/Shells/SubAssembly/BottomCoverPCB"
+      - "https://aausmartlab.org/Shells/SubAssembly/FuseModule"
     Parameters:
       TargetPosition:
         XPos: ""
@@ -37,13 +37,35 @@ submodels:
   Skills:
     Skill:
       - SkillName: "Assemble"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Assembly_Screwing_01/AssembleCapabilityOffered"
-        SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Assembly_Screwing/AssembleCapabilityOffered"
+        SkillTriggers:
+          [
+            "START",
+            "STOP",
+            "RESET",
+            "ABORT",
+            "CLEAR",
+            "HOLD",
+            "UNHOLD",
+            "SUSPEND",
+            "UNSUSPEND",
+          ]
         Actors:
           - "KUKAManipulator"
       - SkillName: "Handoff"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Assembly_Screwing_01/HandoffCapabilityOffered"
-        SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Assembly_Screwing/HandoffCapabilityOffered"
+        SkillTriggers:
+          [
+            "START",
+            "STOP",
+            "RESET",
+            "ABORT",
+            "CLEAR",
+            "HOLD",
+            "UNHOLD",
+            "SUSPEND",
+            "UNSUSPEND",
+          ]
         Actors:
           - "KUKAManipulator"
 
@@ -53,11 +75,11 @@ submodels:
       YPos: 0.0
     ResourceGeometry:
       Point1: { XPos: -70.0, YPos: -70.0 }
-      Point2: { XPos:  70.0, YPos: -70.0 }
-      Point3: { XPos:  70.0, YPos:  70.0 }
-      Point4: { XPos: -70.0, YPos:  70.0 }
+      Point2: { XPos: 70.0, YPos: -70.0 }
+      Point3: { XPos: 70.0, YPos: 70.0 }
+      Point4: { XPos: -70.0, YPos: 70.0 }
     InOutputZones:
-      - Point1: { XPos: -60.0, YPos:  70.0 }
-        Point2: { XPos:  60.0, YPos:  70.0 }
-        Point3: { XPos:  60.0, YPos: 160.0 }
+      - Point1: { XPos: -60.0, YPos: 70.0 }
+        Point2: { XPos: 60.0, YPos: 70.0 }
+        Point3: { XPos: 60.0, YPos: 160.0 }
         Point4: { XPos: -60.0, YPos: 160.0 }
