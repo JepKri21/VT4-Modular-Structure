@@ -63,11 +63,29 @@ def _on_message(client, userdata, msg):
         log.warning("Failed to parse WorkOrderStatus: %s", exc)
 
 
+def _workorder_to_pascal_dict(wo: WorkOrderMessage) -> dict:
+    raw = wo.model_dump(mode="json")
+    result = {
+        "Timestamp": raw["timestamp"],
+        "OrderId": raw["order_id"],
+        "Priority": raw["priority"],
+        "IssueDate": raw["issue_date"],
+        "ProductReference": raw["product_reference"],
+        "Ingredients": raw["ingredients"],
+        "Properties": raw["properties"],
+        "Assemblies": raw["assemblies"],
+        "ProcessSteps": raw["process_steps"],
+    }
+    if raw.get("seq_no") is not None:
+        result["SeqNo"] = raw["seq_no"]
+    return result
+
+
 def publish_workorder(line_id: str, workorder: WorkOrderMessage) -> None:
     """Publish WorkOrderMessage (retained) to AAUSmartLab/<line_id>/MES/WorkOrder."""
     client = _get_client()
     topic = f"AAUSmartLab/{line_id}/MES/WorkOrder"
-    payload = workorder.model_dump_json()
+    payload = json.dumps(_workorder_to_pascal_dict(workorder), default=str)
     client.publish(topic, payload, qos=1, retain=True)
     log.info("Published WorkOrder %s to %s", workorder.order_id, topic)
 

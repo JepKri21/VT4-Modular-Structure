@@ -14,7 +14,6 @@ import re
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any
 
 import yaml
 
@@ -114,7 +113,7 @@ def _get_type_shell_properties(component_iri: str, basyx_url: str) -> dict:
         section = col["idShort"]
         result[section] = {
             elem["idShort"]: {
-                "semanticId": _elem_semantic_id(elem),
+                "SemanticId": _elem_semantic_id(elem),
                 "value": _coerce_value(elem.get("value"), elem.get("valueType", "")),
             }
             for elem in children
@@ -125,48 +124,67 @@ def _get_type_shell_properties(component_iri: str, basyx_url: str) -> dict:
     _TYPE_SHELL_PROPS_CACHE[component_iri] = result
     return result
 
-# Derives (display_name, semantic_iri) from a CapabilityParams key like "BitDiameter_mm"
-_UNIT_SEMANTIC: list[tuple[str, str, str]] = [
-    # (suffix, unit_label, semantic_iri)  — longest first
-    ("_mm_per_s", "mm_per_s", "https://aausmartlab.org/Semantics/mm_per_s"),
-    ("_x_mm",     "mm",       "https://aausmartlab.org/Semantics/mm"),
-    ("_y_mm",     "mm",       "https://aausmartlab.org/Semantics/mm"),
-    ("_z_mm",     "mm",       "https://aausmartlab.org/Semantics/mm"),
-    ("_RPM",      "RPM",      "https://aausmartlab.org/Semantics/RPM"),
-    ("_mm",       "mm",       "https://aausmartlab.org/Semantics/mm"),
-    ("_g",        "gram",     "https://aausmartlab.org/Semantics/gram"),
-    ("_s",        "s",        "https://aausmartlab.org/Semantics/s"),
-]
-
-
-def _parse_param(key: str, value: Any) -> tuple[str, dict]:
-    """Convert a CapabilityParams key/value to (display_name, { semantic_id, value })."""
-    for suffix, _unit, semantic in _UNIT_SEMANTIC:
-        if key.endswith(suffix):
-            base = key[: -len(suffix)]
-            # Capitalise axis letter for _x_mm / _y_mm / _z_mm
-            if suffix in ("_x_mm", "_y_mm", "_z_mm"):
-                axis = suffix[1].upper()  # "x" → "X"
-                base = f"{base}_{axis}"
-            return base, {"semantic_id": semantic, "value": value}
-    return key, {"semantic_id": "https://aausmartlab.org/Semantics/Unknown", "value": value}
-
-
-def _flatten_capability_params(cap_params: dict) -> dict:
+def _fetch_required_cap_params(shell_iri: str, operation: str, basyx_url: str) -> dict:
     """
-    Flatten nested CapabilityParams dict into a single-level dict of
-    { display_name: { semantic_id, value } }.
-    Skips non-numeric values (e.g. OperationLabel, SupportedComponents).
+    Fetch capability parameters for a process step from BaSyx.
+
+    Looks up the shell's BillOfProcesses submodel, finds the step whose
+    Operation matches, follows its RequiredCapabilityRef, and returns
+    { id_short: { SemanticId, value } } for every leaf Property element.
+    Returns an empty dict if the BOP or ref is not found.
     """
-    result = {}
-    for _group, group_val in cap_params.items():
-        if not isinstance(group_val, dict):
-            continue
-        for param_key, param_val in group_val.items():
-            if not isinstance(param_val, (int, float)):
-                continue
-            display_name, param_dict = _parse_param(param_key, param_val)
-            result[display_name] = param_dict
+    bop_iri = f"{shell_iri}/BillOfProcesses"
+    bop = basyx_client.fetch_submodel(bop_iri, basyx_url)
+    if not bop:
+        log.warning("BOP not found in BaSyx: %s", bop_iri)
+        return {}
+
+    steps_coll = basyx_client.find_element_by_idshort(
+        bop.get("submodelElements", []), "ProcessSteps"
+    )
+    if not steps_coll:
+        return {}
+
+    cap_sm_iri: str | None = None
+    for step_elem in (steps_coll.get("value") or []):
+        op_elem = basyx_client.find_element_by_idshort(
+            step_elem.get("value", []), "Operation"
+        )
+        if (op_elem or {}).get("value", "") == operation:
+            ref_elem = basyx_client.find_element_by_idshort(
+                step_elem.get("value", []), "RequiredCapabilityRef"
+            )
+            if ref_elem:
+                keys = (ref_elem.get("value") or {}).get("keys", [])
+                if keys:
+                    cap_sm_iri = keys[-1].get("value", "")
+            break
+
+    if not cap_sm_iri:
+        log.warning("No RequiredCapabilityRef for operation=%s in %s", operation, bop_iri)
+        return {}
+
+    cap_sm = basyx_client.fetch_submodel(cap_sm_iri, basyx_url)
+    if not cap_sm:
+        log.warning("Required capability submodel not found: %s", cap_sm_iri)
+        return {}
+
+    result: dict = {}
+
+    def _walk(elements: list) -> None:
+        for elem in elements:
+            if elem.get("modelType") == "Property" and elem.get("value") is not None:
+                id_short = elem.get("idShort", "")
+                if id_short:
+                    result[id_short] = {
+                        "SemanticId": _elem_semantic_id(elem),
+                        "value": _coerce_value(elem.get("value"), elem.get("valueType", "")),
+                    }
+            children = elem.get("value", [])
+            if isinstance(children, list):
+                _walk(children)
+
+    _walk(cap_sm.get("submodelElements", []))
     return result
 
 
@@ -216,7 +234,7 @@ def _make_properties_for_slot(slot_cfg: dict) -> dict:
         val = customer.get(prop_key)
         if val:
             mat[id_short] = {
-                "semanticId": f"https://aausmartlab.org/Semantics/{sem_fragment}",
+                "SemanticId": f"https://aausmartlab.org/Semantics/{sem_fragment}",
                 "value": val,
             }
     dims = {}
@@ -228,7 +246,7 @@ def _make_properties_for_slot(slot_cfg: dict) -> dict:
         val = customer.get(prop_key)
         if val is not None:
             dims[sem_key] = {
-                "semanticId": "https://aausmartlab.org/Semantics/mm",
+                "SemanticId": "https://aausmartlab.org/Semantics/mm",
                 "value": str(val),
             }
     return {"MaterialProperties": mat, "PhysicalDimensions": dims}
@@ -343,10 +361,11 @@ def build_workorder(
                 slot_cfg = _find_slot_config(ref_iri)
                 type_iri = (slot_cfg.get("aasTypeIri") if slot_cfg else None) or ref_iri
                 component_ref_iri = _type_iri_from_full(type_iri)
+                category_iri = component_ref_iri.rstrip("/").rsplit("/", 1)[0]
 
                 ing_id = _make_ing_id(_asset_name_from_iri(component_ref_iri))
 
-                ingredients[ing_id] = {"ComponentReference": component_ref_iri}
+                ingredients[ing_id] = {"ComponentReference": category_iri}
 
                 # Static defaults from the category type shell in BaSyx
                 # (e.g. .../Component/Fuse → Length/Width/Height).
@@ -382,7 +401,6 @@ def build_workorder(
         for step in bop_steps:
             process_type = step.get("ProcessType", "")
             required_comps = step.get("RequiredComponents", [])
-            cap_params = step.get("CapabilityParams", {})
 
             if process_type == "Assemble":
                 # Create output ingredient representing the assembled result
@@ -416,7 +434,7 @@ def build_workorder(
                     # Use ProcessType if explicit, else fall back to Operation field
                     cap_name = process_type or step.get("Operation", "")
                     cap_ref = f"https://aausmartlab.org/Submodels/Capability/{cap_name}"
-                    params = _flatten_capability_params(cap_params) if cap_params else {}
+                    params = _fetch_required_cap_params(instance_iri, cap_name, basyx_url) if basyx_url else {}
 
                     if target_id not in process_steps:
                         process_steps[target_id] = {}
@@ -448,7 +466,8 @@ def build_workorder(
         for ing_id in input_ids:
             ref = ingredients[ing_id]["ComponentReference"]
             for req in required_comps:
-                if req.lower() in ref.lower() or ref.endswith(req):
+                req_l = req.lower()
+                if req_l in ref.lower() or ref.endswith(req) or req_l in ing_id.lower():
                     return ing_id
         return None
 

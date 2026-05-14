@@ -2,7 +2,7 @@ type: "assembly_module"
 label: "Assembly Module – Screwing (AAU Lab)"
 description: "KUKA manipulator torque-controlled screwing station for fastening Fuse Module and PCB sub-assemblies to Bottom Cover."
 
-asset_name: "Assembly_Screwing_01"
+asset_name: "Assembly_Screwing"
 
 submodels:
   AssembleCapabilityOffered:
@@ -37,12 +37,12 @@ submodels:
   Skills:
     Skill:
       - SkillName: "Assemble"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Assembly_Screwing_01/AssembleCapabilityOffered"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Assembly_Screwing/AssembleCapabilityOffered"
         SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
         Actors:
           - "KUKAManipulator"
       - SkillName: "Handoff"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Assembly_Screwing_01/HandoffCapabilityOffered"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Assembly_Screwing/HandoffCapabilityOffered"
         SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
         Actors:
           - "KUKAManipulator"

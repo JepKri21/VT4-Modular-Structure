@@ -1,8 +1,8 @@
 shell: "resource_shell"
-label: "Drilling Station – AAU Lab (Drilling_12345678)"
+label: "Drilling Station – AAU Lab"
 description: "KUKA Manipulator drilling station with drilling and handoff capabilities"
 
-asset_name: "Drilling_12345678"
+asset_name: "Drilling"
 
 submodels:
   DrillingCapabilityOffered:
@@ -40,12 +40,12 @@ submodels:
   Skills:
     Skill:
       - SkillName: "Drilling"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Drilling-12345678/DrillingCapabilityOffered"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Drilling/DrillingCapabilityOffered"
         SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
         Actors:
           - "KUKAManipulator"
       - SkillName: "Handoff"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Drilling-12345678/HandoffCapabilityOffered"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Drilling/HandoffCapabilityOffered"
         SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
         Actors:
           - "KUKAManipulator"

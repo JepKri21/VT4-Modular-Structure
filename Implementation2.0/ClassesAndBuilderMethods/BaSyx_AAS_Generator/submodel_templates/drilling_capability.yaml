@@ -10,7 +10,7 @@ elements:
     cardinality: "One"
     elements:
       - type: property
-        id_short: "HoleDiameter_mm"
+        id_short: "HoleDiameter"
         value_type: "xs:float"
         semantic_id: "https://aausmartlab.org/Semantics/mm"
         description: "Hole diameter in mm"
@@ -26,25 +26,29 @@ elements:
             kind: "TEMPLATE_QUALIFIER"
 
       - type: range
-        id_short: "DrillDepth_mm"
+        id_short: "DrillDepth"
         value_type: "xs:float"
         semantic_id: "https://aausmartlab.org/Semantics/mm"
         description: "Minimum and maximum drill depth in mm"
         cardinality: "One"
 
-      - type: range
-        id_short: "HolePlacement_x_mm"
-        value_type: "xs:float"
-        semantic_id: "https://aausmartlab.org/Semantics/HolePlacement_x_mm"
-        description: "Possible range of X-coordinate position of hole relative to product placement point"
+      - type: collection
+        id_short: "TargetPosition"
+        description: "Reachable hole placement area relative to the product placement point"
         cardinality: "ZeroToOne"
-
-      - type: range
-        id_short: "HolePlacement_y_mm"
-        value_type: "xs:float"
-        semantic_id: "https://aausmartlab.org/Semantics/HolePlacement_y_mm"
-        description: "Possible range of Y-coordinate position of hole relative to product placement point"
-        cardinality: "ZeroToOne"
+        elements:
+          - type: range
+            id_short: "XPos"
+            value_type: "xs:float"
+            semantic_id: "https://aausmartlab.org/Semantics/mm"
+            description: "X range of hole placement in mm"
+            cardinality: "One"
+          - type: range
+            id_short: "YPos"
+            value_type: "xs:float"
+            semantic_id: "https://aausmartlab.org/Semantics/mm"
+            description: "Y range of hole placement in mm"
+            cardinality: "One"
 
       - type: multi_language_property
         id_short: "OperationLabel"

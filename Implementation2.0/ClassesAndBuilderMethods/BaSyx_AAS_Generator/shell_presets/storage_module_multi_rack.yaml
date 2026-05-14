@@ -1,8 +1,8 @@
 type: "storage_module"
 label: "Storage Module – Multi-Rack (AAU Lab)"
-description: "UR5 multi-rack storage module with two inventories: 10-slot rack for raw covers and 5-slot rack for drilled covers. Based on the Storage_12345678 instance in ProductAndResourceImplementations."
+description: "UR5 multi-rack storage module with two inventories: 10-slot rack for raw covers and 5-slot rack for drilled covers."
 
-asset_name: "Storage_MultiRack_01"
+asset_name: "Storage_MultiRack"
 
 submodels:
   StoreCapabilityOffered:
@@ -42,17 +42,17 @@ submodels:
   Skills:
     Skill:
       - SkillName: "Store"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage_MultiRack_01/StoreCapabilityOffered"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage_MultiRack/StoreCapabilityOffered"
         SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
         Actors:
           - "UR5"
       - SkillName: "Retrieve"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage_MultiRack_01/RetrieveCapabilityOffered"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage_MultiRack/RetrieveCapabilityOffered"
         SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
         Actors:
           - "UR5"
       - SkillName: "Handoff"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage_MultiRack_01/HandoffCapabilityOffered"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage_MultiRack/HandoffCapabilityOffered"
         SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
         Actors:
           - "UR5"

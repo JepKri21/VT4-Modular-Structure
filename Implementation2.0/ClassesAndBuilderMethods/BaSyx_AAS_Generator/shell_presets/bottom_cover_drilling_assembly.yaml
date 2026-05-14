@@ -54,10 +54,11 @@ submodels:
           RequiredComponentState: "Raw"
         CapabilityParams:
           DrillingParameters:
-            HoleDiameter_mm: 5.0
-            DrillDepth_mm: 3.0
-            HolePlacement_x_mm: 75.0
-            HolePlacement_y_mm: 40.0
+            HoleDiameter: 5.0
+            DrillDepth: 3.0
+            TargetPosition:
+              XPos: 75.0
+              YPos: 40.0
             OperationLabel:
               - language: "en"
                 text: "Drill mounting holes in aluminium bottom cover"

@@ -2,7 +2,7 @@ type: "drilling_station"
 label: "Drilling Station – UR5 Precision (AAU Lab)"
 description: "UR5 collaborative robot drilling station for precision small-diameter holes in Bottom Cover only. Narrower work envelope than the KUKA variant."
 
-asset_name: "Drilling_UR5_01"
+asset_name: "Drilling_UR5"
 
 submodels:
   DrillingCapabilityOffered:
@@ -28,12 +28,12 @@ submodels:
   Skills:
     Skill:
       - SkillName: "Drilling"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Drilling_UR5_01/DrillingCapabilityOffered"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Drilling_UR5/DrillingCapabilityOffered"
         SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
         Actors:
           - "UR5"
       - SkillName: "Handoff"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Drilling_UR5_01/HandoffCapabilityOffered"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Drilling_UR5/HandoffCapabilityOffered"
         SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
         Actors:
           - "UR5"

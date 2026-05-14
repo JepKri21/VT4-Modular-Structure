@@ -1,8 +1,8 @@
 type: "transport_station"
-label: "Transport Station – AAU Lab (Transport_12345678)"
+label: "Transport Station – AAU Lab"
 description: "Two-shuttle transport station covering the full line work area"
 
-asset_name: "Transport_12345678"
+asset_name: "Transport"
 
 submodels:
   TransportCapabilityOffered:
@@ -18,7 +18,7 @@ submodels:
   Skills:
     Skill:
       - SkillName: "Transport"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Transport-12345678/TransportCapabilityOffered"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Transport/TransportCapabilityOffered"
         SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
         Actors:
           - "Shuttle1"
