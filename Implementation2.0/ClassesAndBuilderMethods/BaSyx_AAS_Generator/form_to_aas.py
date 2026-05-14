@@ -25,6 +25,7 @@ Output: AAS environment JSON compatible with BaSyx v3 REST API.
 Exit codes: 0 = success, 1 = error (traceback on stderr).
 """
 
+import copy
 import json
 import re
 import sys
@@ -268,6 +269,42 @@ def _derive_service_required(shell_id: str, bop_form_data: dict):
     return sm, sm_id
 
 
+
+
+# ────────────────── capability params extraction ──────────────────
+
+def _extract_capability_submodels(
+    bop_form_data: dict, shell_id: str
+) -> tuple[dict, list]:
+    """
+    Strip CapabilityParams from each BOP ProcessStep, build a
+    {Operation}CapabilityRequired submodel from them, and inject
+    RequiredCapabilityRef back into the step so the BOP in BaSyx carries
+    the pointer.
+
+    Returns (modified_bop_form_data, list_of_capability_submodels).
+    """
+    form_data = copy.deepcopy(bop_form_data)
+    extra: list = []
+
+    for step in form_data.get("ProcessSteps", []):
+        cap_params = step.pop("CapabilityParams", None)
+        if not cap_params:
+            continue
+        operation = step.get("Operation", "")
+        if not operation:
+            continue
+        sm_id_short = f"{operation}CapabilityRequired"
+        template_file = SM_TEMPLATE_MAP.get(sm_id_short)
+        if not template_file:
+            continue
+        cap_iri = f"{shell_id}/{sm_id_short}"
+        cap_sm = build_submodel(template_file, cap_iri, sm_id_short, cap_params)
+        extra.append(cap_sm)
+        step["RequiredCapabilityRef"] = cap_iri
+
+    return form_data, extra
+
 # ───────────────────────────── submodel builder ───────────────────────────
 
 def build_submodel(
@@ -408,6 +445,13 @@ def build_environment(preset: dict, instance_suffix: str = "") -> tuple[dict, st
         if not template_file or not form_data:
             continue
         sm_iri = f"{shell_id}/{sm_id_short}"
+
+        if sm_id_short == "BillOfProcesses":
+            form_data, cap_submodels = _extract_capability_submodels(form_data, shell_id)
+            for cap_sm in cap_submodels:
+                submodels.append(cap_sm)
+                shell.submodel.add(_sm_ref(cap_sm.id))
+
         sm = build_submodel(template_file, sm_iri, sm_id_short, form_data)
         submodels.append(sm)
         shell.submodel.add(_sm_ref(sm_iri))

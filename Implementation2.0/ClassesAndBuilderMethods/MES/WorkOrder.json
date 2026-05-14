@@ -1,21 +1,21 @@
 {
-  "timestamp": "2026-05-13T22:17:30.804559",
-  "order_id": "ORD-CB1CE608",
+  "timestamp": "2026-05-13T22:39:49.056065",
+  "order_id": "ORD-88ED8762",
   "priority": 0,
-  "issue_date": "2026-05-13T22:17:30.804559",
-  "product_reference": "https://aausmartlab.org/Shells/Configuration/Mobile_Phone/AAU_Mobile_Phone_v1_a7f564f3-df2f-42bf-abba-d99d15fdbb21-ORD-CB1CE608",
+  "issue_date": "2026-05-13T22:39:49.056065",
+  "product_reference": "https://aausmartlab.org/Shells/Configuration/Mobile_Phone/AAU_Mobile_Phone_v1_f5a40154-f4d9-41f7-9e6a-571e5809fddf-ORD-88ED8762",
   "ingredients": {
-    "BottomCover_PLA_Blue": {
-      "ComponentReference": "https://aausmartlab.org/Shells/Component/Bottom_Cover/BottomCover_PLA_Blue"
+    "BottomCover_PETG_Gray": {
+      "ComponentReference": "https://aausmartlab.org/Shells/Component/Bottom_Cover/BottomCover_PETG_Gray"
     },
     "BottomCoverDrilling_SA": {
-      "ComponentReference": "https://aausmartlab.org/Shells/Assembly/Bottom_Cover/BottomCoverDrilling_SA_ecffe291-5293-4d2f-9ebf-e92049c1cd44-ORD-CB1CE608"
+      "ComponentReference": "https://aausmartlab.org/Shells/Assembly/Bottom_Cover/BottomCoverDrilling_SA_bfdc9a0e-6a02-41ff-8b44-7e3cf583c4be-ORD-88ED8762"
     },
     "PCB_FuseBoxA": {
       "ComponentReference": "https://aausmartlab.org/Shells/Component/PCB/PCB_FuseBoxA"
     },
     "BottomCoverPCB_SA": {
-      "ComponentReference": "https://aausmartlab.org/Shells/Assembly/Bottom_Cover_PCB/BottomCoverPCB_SA_20bad8ef-93e2-4cff-baea-2e285821af58-ORD-CB1CE608"
+      "ComponentReference": "https://aausmartlab.org/Shells/Assembly/Bottom_Cover_PCB/BottomCoverPCB_SA_31e93b67-6e44-4a01-aba1-f4fbb4c4f981-ORD-88ED8762"
     },
     "Fuse_16A_SB": {
       "ComponentReference": "https://aausmartlab.org/Shells/Component/Fuse/Fuse_16A_SB"
@@ -24,29 +24,29 @@
       "ComponentReference": "https://aausmartlab.org/Shells/Component/Fuse/Fuse_16A_SB"
     },
     "BottomCoverPCBFuse_SA": {
-      "ComponentReference": "https://aausmartlab.org/Shells/Assembly/Bottom_Cover_PCB_Fuse/BottomCoverPCBFuse_SA_44c1991c-f376-4f40-afe5-203f53148cda-ORD-CB1CE608"
+      "ComponentReference": "https://aausmartlab.org/Shells/Assembly/Bottom_Cover_PCB_Fuse/BottomCoverPCBFuse_SA_45845aeb-34b1-4f52-a9a6-dfdf88d62c85-ORD-88ED8762"
     },
-    "TopCover_ABS_White": {
-      "ComponentReference": "https://aausmartlab.org/Shells/Component/Top_Cover/TopCover_ABS_White"
+    "TopCover_ABS_Black": {
+      "ComponentReference": "https://aausmartlab.org/Shells/Component/Top_Cover/TopCover_ABS_Black"
     },
     "AAU_Mobile_Phone_v1": {
-      "ComponentReference": "https://aausmartlab.org/Shells/Configuration/Mobile_Phone/AAU_Mobile_Phone_v1_a7f564f3-df2f-42bf-abba-d99d15fdbb21-ORD-CB1CE608"
+      "ComponentReference": "https://aausmartlab.org/Shells/Configuration/Mobile_Phone/AAU_Mobile_Phone_v1_f5a40154-f4d9-41f7-9e6a-571e5809fddf-ORD-88ED8762"
     }
   },
   "properties": {
-    "BottomCover_PLA_Blue": {
+    "BottomCover_PETG_Gray": {
       "MaterialProperties": {
         "Material": {
           "semanticId": "https://aausmartlab.org/Semantics/Material",
-          "value": "PLA"
+          "value": "PETG"
         },
         "Color": {
           "semanticId": "https://aausmartlab.org/Semantics/Color",
-          "value": "Blue"
+          "value": "Gray"
         },
         "Finish": {
           "semanticId": "https://aausmartlab.org/Semantics/SurfaceFinish",
-          "value": "Textured"
+          "value": "Matte"
         }
       },
       "PhysicalDimensions": {
@@ -155,7 +155,7 @@
       }
     },
     "BottomCoverPCBFuse_SA": {},
-    "TopCover_ABS_White": {
+    "TopCover_ABS_Black": {
       "MaterialProperties": {
         "Material": {
           "semanticId": "https://aausmartlab.org/Semantics/Material",
@@ -163,7 +163,7 @@
         },
         "Color": {
           "semanticId": "https://aausmartlab.org/Semantics/Color",
-          "value": "White"
+          "value": "Black"
         },
         "Finish": {
           "semanticId": "https://aausmartlab.org/Semantics/SurfaceFinish",
@@ -188,7 +188,7 @@
     "AAU_Mobile_Phone_v1": {}
   },
   "assemblies": {
-    "BottomCoverDrilling_SA": { "Ingredients": ["BottomCover_PLA_Blue"] },
+    "BottomCoverDrilling_SA": { "Ingredients": ["BottomCover_PETG_Gray"] },
     "BottomCoverPCB_SA": {
       "Ingredients": ["BottomCoverDrilling_SA", "PCB_FuseBoxA"]
     },
@@ -196,11 +196,11 @@
       "Ingredients": ["BottomCoverPCB_SA", "Fuse_16A_SB", "Fuse_16A_SB_2"]
     },
     "AAU_Mobile_Phone_v1": {
-      "Ingredients": ["BottomCoverPCBFuse_SA", "TopCover_ABS_White"]
+      "Ingredients": ["BottomCoverPCBFuse_SA", "TopCover_ABS_Black"]
     }
   },
   "process_steps": {
-    "BottomCover_PLA_Blue": {
+    "BottomCover_PETG_Gray": {
       "ProcessStep1": {
         "CapabilityReference": "https://aausmartlab.org/Submodels/Capability/Drilling",
         "ProcessStepId": "1x1",
@@ -255,7 +255,7 @@
         "ProcessStepId": "4x1",
         "Dependencies": ["3x1"],
         "Parameters": {
-          "InputComponents": ["BottomCoverPCBFuse_SA", "TopCover_ABS_White"]
+          "InputComponents": ["BottomCoverPCBFuse_SA", "TopCover_ABS_Black"]
         }
       }
     }

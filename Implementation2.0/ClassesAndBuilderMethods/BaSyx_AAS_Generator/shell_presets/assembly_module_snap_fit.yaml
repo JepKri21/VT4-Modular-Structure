@@ -2,7 +2,7 @@ type: "assembly_module"
 label: "Assembly Module – Snap-Fit (AAU Lab)"
 description: "UR5 snap-fit assembly station for joining Bottom Cover and Bottom Cover PCB sub-assemblies without fasteners."
 
-asset_name: "Assembly_SnapFit_01"
+asset_name: "Assembly_SnapFit"
 
 submodels:
   AssembleCapabilityOffered:
@@ -35,12 +35,12 @@ submodels:
   Skills:
     Skill:
       - SkillName: "Assemble"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Assembly_SnapFit_01/AssembleCapabilityOffered"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Assembly_SnapFit/AssembleCapabilityOffered"
         SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
         Actors:
           - "UR5"
       - SkillName: "Handoff"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Assembly_SnapFit_01/HandoffCapabilityOffered"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Assembly_SnapFit/HandoffCapabilityOffered"
         SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
         Actors:
           - "UR5"

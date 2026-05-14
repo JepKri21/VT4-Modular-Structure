@@ -1,8 +1,8 @@
 shell: "resource_shell"
-label: "Storage Station – AAU Lab (Storage_12345678)"
+label: "Storage Station – AAU Lab"
 description: "UR5 storage station with store, retrieve, and handoff capabilities"
 
-asset_name: "Storage_12345678"
+asset_name: "Storage"
 
 submodels:
   StoreCapabilityOffered:
@@ -45,17 +45,17 @@ submodels:
   Skills:
     Skill:
       - SkillName: "Store"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage-12345678/StoreCapabilityOffered"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage/StoreCapabilityOffered"
         SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
         Actors:
           - "UR5"
       - SkillName: "Retrieve"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage-12345678/RetrieveCapabilityOffered"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage/RetrieveCapabilityOffered"
         SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
         Actors:
           - "UR5"
       - SkillName: "Handoff"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage-12345678/HandoffCapabilityOffered"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage/HandoffCapabilityOffered"
         SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
         Actors:
           - "UR5"

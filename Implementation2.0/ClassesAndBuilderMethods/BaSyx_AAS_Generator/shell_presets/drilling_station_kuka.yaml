@@ -1,8 +1,8 @@
 type: "drilling_station"
 label: "Drilling Station – KUKA Manipulator (AAU Lab)"
-description: "KUKA manipulator drilling station. Supports PLA and ABS bottom and top covers. Based on the Drilling_12345678 instance in ProductAndResourceImplementations."
+description: "KUKA manipulator drilling station. Supports PLA and ABS bottom and top covers."
 
-asset_name: "Drilling_KUKA_01"
+asset_name: "Drilling_KUKA"
 
 submodels:
   DrillingCapabilityOffered:
@@ -30,12 +30,12 @@ submodels:
   Skills:
     Skill:
       - SkillName: "Drilling"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Drilling_KUKA_01/DrillingCapabilityOffered"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Drilling_KUKA/DrillingCapabilityOffered"
         SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
         Actors:
           - "KUKAManipulator"
       - SkillName: "Handoff"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Drilling_KUKA_01/HandoffCapabilityOffered"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Drilling_KUKA/HandoffCapabilityOffered"
         SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
         Actors:
           - "KUKAManipulator"

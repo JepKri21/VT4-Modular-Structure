@@ -2,7 +2,7 @@ type: "storage_module"
 label: "Storage Module – Single Rack (AAU Lab)"
 description: "UR5 compact single-rack storage module. One 15-slot inventory for raw Bottom Cover and Top Cover components."
 
-asset_name: "Storage_SingleRack_01"
+asset_name: "Storage_SingleRack"
 
 submodels:
   StoreCapabilityOffered:
@@ -35,17 +35,17 @@ submodels:
   Skills:
     Skill:
       - SkillName: "Store"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage_SingleRack_01/StoreCapabilityOffered"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage_SingleRack/StoreCapabilityOffered"
         SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
         Actors:
           - "UR5"
       - SkillName: "Retrieve"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage_SingleRack_01/RetrieveCapabilityOffered"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage_SingleRack/RetrieveCapabilityOffered"
         SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
         Actors:
           - "UR5"
       - SkillName: "Handoff"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage_SingleRack_01/HandoffCapabilityOffered"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage_SingleRack/HandoffCapabilityOffered"
         SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
         Actors:
           - "UR5"
