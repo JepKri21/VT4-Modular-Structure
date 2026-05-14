@@ -685,7 +685,7 @@ export default function AasConfiguratorPage() {
 
   /* apply preset: fetch full preset data and merge into all submodel forms */
   const applyPreset = async (presetSummary: ShellPresetSummary) => {
-    if (!activeShell) return;
+    if (!selectedShell) return;
     const res = await fetch(
       `/api/aas-configurator/presets/${presetSummary.filename}`
     );
@@ -695,11 +695,30 @@ export default function AasConfiguratorPage() {
     if (preset.asset_name) setAssetName(preset.asset_name);
     if (preset.asset_category) setAssetCategory(preset.asset_category);
 
+    // Auto-select the matching category when the preset declares a type and
+    // no category has been chosen yet — ensures the form uses the type shell's
+    // submodel slots (e.g. TransportCapabilityOffered) rather than the generic
+    // blueprint slots (e.g. CapabilitiesOffered).
+    let targetCategory = selectedCategory;
+    if (presetSummary.type && !selectedCategory) {
+      const match = selectedShell.categories.find(c => c.name === presetSummary.type);
+      if (match) {
+        targetCategory = match;
+        setSelectedCategory(match);
+      }
+    }
+
+    // Use category submodels if available, otherwise fall back to base shell slots
+    const targetSubmodels =
+      targetCategory?.submodels && targetCategory.submodels.length > 0
+        ? targetCategory.submodels
+        : selectedShell.submodels;
+
     // merge preset submodel data into form state, keyed by slot id_short
     if (preset.submodels) {
       setSubmodelForms((prev) => {
         const next = { ...prev };
-        activeShell.submodels.forEach((slot, i) => {
+        targetSubmodels.forEach((slot, i) => {
           const presetSlotData = preset.submodels[slot.id_short] as
             | Record<string, unknown>
             | undefined;

@@ -49,7 +49,7 @@ export async function DELETE(req: NextRequest) {
         if (!smId) continue;
         const encoded = Buffer.from(smId).toString("base64url");
         const del = await fetch(`${base}/submodels/${encoded}`, { method: "DELETE" });
-        results.push({ id: smId, type: "submodel", status: del.status, ok: del.ok });
+        results.push({ id: smId, type: "submodel", status: del.status, ok: del.ok || del.status === 404 });
       }
       const encoded = Buffer.from(shell.id).toString("base64url");
       const del = await fetch(`${base}/shells/${encoded}`, { method: "DELETE" });
