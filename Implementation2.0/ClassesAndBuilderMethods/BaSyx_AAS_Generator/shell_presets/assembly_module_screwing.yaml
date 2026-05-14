@@ -3,7 +3,7 @@ label: "Assembly Module – Screwing (AAU Lab)"
 description: "KUKA manipulator torque-controlled screwing station for fastening Fuse Module and PCB sub-assemblies to Bottom Cover."
 
 asset_name: "Assembly_Screwing"
-asset_name: "Assembly_Screwing"
+
 
 submodels:
   AssembleCapabilityOffered:

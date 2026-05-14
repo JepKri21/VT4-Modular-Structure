@@ -49,21 +49,28 @@ export async function GET(req: Request) {
 
     const presets = files
       .map((file) => {
-        const raw = fs.readFileSync(path.join(PRESETS_DIR, file), "utf-8");
-        const doc = yaml.load(raw) as Record<string, unknown>;
-        const originalType = String(doc.type ?? "");
-        const resolved = resolvePresetType(doc);
-        return {
-          filename: path.basename(file, path.extname(file)),
-          shell: String(resolved.shell ?? ""),
-          type: originalType,
-          label: String(resolved.label ?? file),
-          description: String(resolved.description ?? ""),
-          asset_name: String(resolved.asset_name ?? ""),
-          asset_category: String(resolved.asset_category ?? ""),
-        };
+        try {
+          const raw = fs.readFileSync(path.join(PRESETS_DIR, file), "utf-8");
+          const doc = yaml.load(raw) as Record<string, unknown>;
+          const originalType = String(doc.type ?? "");
+          const resolved = resolvePresetType(doc);
+          return {
+            filename: path.basename(file, path.extname(file)),
+            shell: String(resolved.shell ?? ""),
+            type: originalType,
+            label: String(resolved.label ?? file),
+            description: String(resolved.description ?? ""),
+            asset_name: String(resolved.asset_name ?? ""),
+            asset_category: String(resolved.asset_category ?? ""),
+          };
+        } catch (e) {
+          console.error(`[presets] Failed to process ${file}:`, e);
+          return null;
+        }
       })
-      .filter((p) => !shellFilter || p.shell === shellFilter || p.type === shellFilter);
+      .filter((p): p is NonNullable<typeof p> =>
+        p !== null && (!shellFilter || p.shell === shellFilter || p.type === shellFilter)
+      );
 
     return NextResponse.json(presets);
   } catch (err) {
