@@ -1,4 +1,4 @@
-shell: "resource_shell"
+type: "storage_module"
 label: "Storage Station – AAU Lab"
 description: "UR5 storage station with store, retrieve, and handoff capabilities"
 

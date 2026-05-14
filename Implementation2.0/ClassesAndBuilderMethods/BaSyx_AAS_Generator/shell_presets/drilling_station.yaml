@@ -1,4 +1,4 @@
-shell: "resource_shell"
+type: "drilling_station"
 label: "Drilling Station – AAU Lab"
 description: "KUKA Manipulator drilling station with drilling and handoff capabilities"
 
