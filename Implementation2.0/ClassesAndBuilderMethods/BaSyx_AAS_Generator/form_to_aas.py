@@ -271,6 +271,28 @@ def _derive_service_required(shell_id: str, bop_form_data: dict):
 
 
 
+# ────────────────── skills reference rewrite ──────────────────
+
+def _rewrite_skills_capability_refs(skills_form_data: dict, shell_id: str) -> dict:
+    """Rewrite each Skill's CapabilitySubmodelReference so its prefix matches
+    the resolved `shell_id`. The preset YAML can author the reference with
+    the asset_name (no UUID), and this fixer points it at the actually
+    uploaded capability submodel id (`<shell_id>/<CapabilitySubmodelIdShort>`).
+
+    Only the trailing path segment is preserved; everything before it is
+    replaced with shell_id.
+    """
+    if not isinstance(skills_form_data, dict):
+        return skills_form_data
+    fixed = copy.deepcopy(skills_form_data)
+    for skill in fixed.get("Skill", []) or []:
+        ref = skill.get("CapabilitySubmodelReference")
+        if isinstance(ref, str) and "/" in ref:
+            sm_id_short = ref.rsplit("/", 1)[-1]
+            skill["CapabilitySubmodelReference"] = f"{shell_id}/{sm_id_short}"
+    return fixed
+
+
 # ────────────────── capability params extraction ──────────────────
 
 def _extract_capability_submodels(
@@ -317,6 +339,15 @@ def build_submodel(
     builder = AASInstanceBuilder(id_short, submodel_id)
     if desc := tmpl.get("description"):
         builder.submodel.description = model.MultiLanguageTextType({"en": desc})
+    # Top-level semantic_id on the submodel itself — used by capability
+    # submodels so consumers (e.g. the Line Controller's capability matcher)
+    # can identify the capability without parsing inner elements. We drive
+    # it off the CapabilityReference property already supplied in form_data
+    # (injected by the resource type shell), so no submodel-template schema
+    # change is needed.
+    cap_ref = (form_data or {}).get("CapabilityReference")
+    if isinstance(cap_ref, str) and cap_ref:
+        builder.submodel.semantic_id = _ext_ref(cap_ref)
     build_elements_from_form(builder, builder.get(), tmpl.get("elements", []), form_data or {})
     return builder.get()
 
@@ -349,12 +380,18 @@ def main() -> None:
     if desc := shell_cfg.get("description"):
         shell.description = model.MultiLanguageTextType({"en": desc})
 
+    def _form_data_for(sm):
+        form_data = sm.get("form_data", {})
+        if sm.get("id_short") == "Skills":
+            form_data = _rewrite_skills_capability_refs(form_data, shell_id)
+        return form_data
+
     submodels = [
         build_submodel(
             sm["template_file"],
             sm["id"],
             sm["id_short"],
-            sm.get("form_data", {}),
+            _form_data_for(sm),
         )
         for sm in submodel_inputs
     ]
@@ -451,6 +488,9 @@ def build_environment(preset: dict, instance_suffix: str = "") -> tuple[dict, st
             for cap_sm in cap_submodels:
                 submodels.append(cap_sm)
                 shell.submodel.add(_sm_ref(cap_sm.id))
+
+        if sm_id_short == "Skills":
+            form_data = _rewrite_skills_capability_refs(form_data, shell_id)
 
         sm = build_submodel(template_file, sm_iri, sm_id_short, form_data)
         submodels.append(sm)

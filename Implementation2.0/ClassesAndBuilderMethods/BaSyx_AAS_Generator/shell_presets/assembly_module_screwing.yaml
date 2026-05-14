@@ -4,7 +4,6 @@ description: "KUKA manipulator torque-controlled screwing station for fastening 
 
 asset_name: "Assembly_Screwing"
 
-
 submodels:
   AssembleCapabilityOffered:
     SupportedComponents:
