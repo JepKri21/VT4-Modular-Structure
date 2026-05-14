@@ -258,7 +258,14 @@ class WorkOrderHandler:
         ingredients = self.workorder.get("Ingredients", {})
         properties = self.workorder.get("Properties", {})
 
-        component_reference = ingredients.get(ingredient_name, {}).get("ComponentReference")
+        ingredient_data = ingredients.get(ingredient_name, {})
+        component_reference = ingredient_data.get("ComponentReference")
+        # Optional type/family IRI used for capability matching. When the
+        # ComponentReference is a per-order instance IRI (e.g. an Assembly
+        # shell created for this specific order), ComponentType points at
+        # the family-level shell IRI declared in the resource's
+        # SupportedComponents list.
+        component_type = ingredient_data.get("ComponentType")
 
         material = None
         material_block = properties.get(ingredient_name, {}).get("MaterialProperties", {})
@@ -270,6 +277,7 @@ class WorkOrderHandler:
             "Parameters": step["parameters"],
             "Ingredient": ingredient_name,
             "ComponentReference": component_reference,
+            "ComponentType": component_type,
             "Material": material,
         }
     

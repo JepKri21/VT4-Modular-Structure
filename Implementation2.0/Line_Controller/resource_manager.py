@@ -324,7 +324,17 @@ class ResourceManager:
         if response.ok:
             #If we get a response, then we work on the data, finding the suffixes
             data = response.json()
-            skills_data= self.find_by_idshort(data, "Skills").get("submodelElements")
+            skills_data = self.find_by_idshort(data, "Skills").get("submodelElements") or []
+
+            # Two known shapes for Skills submodels:
+            #   A) [DrillingCol, HandoffCol, ...]            — skills directly at top
+            #   B) [SkillCol[AssembleCol, HandoffCol, ...]]  — skills nested under
+            #      a single "Skill" SubmodelElementCollection (current generator)
+            # If we see shape (B), descend one level.
+            if (len(skills_data) == 1
+                    and skills_data[0].get("idShort") in ("Skill", "Skills")
+                    and isinstance(skills_data[0].get("value"), list)):
+                skills_data = skills_data[0]["value"]
 
             for skill in skills_data:
                 name = skill.get("idShort")

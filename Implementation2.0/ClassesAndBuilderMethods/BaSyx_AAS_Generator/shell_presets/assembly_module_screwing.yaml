@@ -9,7 +9,9 @@ submodels:
     SupportedComponents:
       - "https://aausmartlab.org/Shells/Component/BottomCover"
       - "https://aausmartlab.org/Shells/SubAssembly/BottomCoverPCB"
+      - "https://aausmartlab.org/Shells/SubAssembly/BottomCoverPCBFuse"
       - "https://aausmartlab.org/Shells/SubAssembly/FuseModule"
+      - "https://aausmartlab.org/Shells/Configuration/MobilePhone"
     Parameters:
       SupportedAssemblyTypes:
         - "screwing"
