@@ -139,11 +139,130 @@
     "created_at": "2026-05-14T10:35:19.868448",
     "updated_at": "2026-05-14T10:35:20.363824"
   },
-  "ORD-DEB3D0DF": {
-    "order_id": "ORD-DEB3D0DF",
+  "ORD-F4B2A598": {
+    "order_id": "ORD-F4B2A598",
     "line_id": "ProductionLine",
     "status": "PENDING",
     "created_at": "2026-05-14T14:10:25.097867",
     "updated_at": "2026-05-14T14:10:32.752651"
+  },
+  "ORD-D210034C": {
+    "order_id": "ORD-D210034C",
+    "line_id": "ProductionLine_1",
+    "status": "PENDING",
+    "created_at": "2026-05-15T10:19:04.580723",
+    "updated_at": "2026-05-15T10:19:07.176574"
+  },
+  "ORD-E5106777": {
+    "order_id": "ORD-E5106777",
+    "line_id": null,
+    "status": "FAILED",
+    "created_at": "2026-05-15T10:22:33.379620",
+    "updated_at": "2026-05-15T10:22:34.518406"
+  },
+  "ORD-06021F32": {
+    "order_id": "ORD-06021F32",
+    "line_id": null,
+    "status": "NO_LINE_AVAILABLE",
+    "created_at": "2026-05-15T10:26:37.397615",
+    "updated_at": "2026-05-15T10:26:38.278741",
+    "error": "No production line found that matches the required capabilities: {'https://aausmartlab.org/Submodels/Capability/Assemble', 'https://aausmartlab.org/Submodels/Capability/Drilling'}. No production line shells are registered in BaSyx."
+  },
+  "ORD-4A31E93C": {
+    "order_id": "ORD-4A31E93C",
+    "line_id": null,
+    "status": "NO_LINE_AVAILABLE",
+    "created_at": "2026-05-15T10:30:53.052227",
+    "updated_at": "2026-05-15T10:30:53.810728",
+    "error": "No production line found that matches the required capabilities: {'https://aausmartlab.org/Submodels/Capability/Assemble', 'https://aausmartlab.org/Submodels/Capability/Drilling'}. No production line shells are registered in BaSyx."
+  },
+  "ORD-9DE7B049": {
+    "order_id": "ORD-9DE7B049",
+    "line_id": null,
+    "status": "NO_LINE_AVAILABLE",
+    "created_at": "2026-05-15T10:32:41.481164",
+    "updated_at": "2026-05-15T10:32:42.137736",
+    "error": "No production line found that matches the required capabilities: {'https://aausmartlab.org/Submodels/Capability/Drilling', 'https://aausmartlab.org/Submodels/Capability/Assemble'}. No production line shells are registered in BaSyx."
+  },
+  "ORD-0310480C": {
+    "order_id": "ORD-0310480C",
+    "line_id": null,
+    "status": "NO_LINE_AVAILABLE",
+    "created_at": "2026-05-15T10:33:17.355093",
+    "updated_at": "2026-05-15T10:33:18.050260",
+    "error": "No production line found that matches the required capabilities: {'https://aausmartlab.org/Submodels/Capability/Drilling', 'https://aausmartlab.org/Submodels/Capability/Assemble'}. No production line shells are registered in BaSyx."
+  },
+  "ORD-314DB75D": {
+    "order_id": "ORD-314DB75D",
+    "webshop_id": "314db75d-c2ad-41b5-bbb2-a4f576c8fc6c",
+    "line_id": null,
+    "status": "NO_LINE_AVAILABLE",
+    "created_at": "2026-05-15T11:48:00.124057",
+    "updated_at": "2026-05-15T11:48:01.064940",
+    "shell_iris": {
+      "BottomCoverDrilling_SA": "https://aausmartlab.org/Shells/Assembly/Bottom_Cover/BottomCoverDrilling_SA_149d374a-fce5-4987-a1df-c52a1d9a2b59-ORD-314DB75D",
+      "BottomCoverPCB_SA": "https://aausmartlab.org/Shells/Assembly/Bottom_Cover_PCB/BottomCoverPCB_SA_5e1551f2-d7d2-44ab-a37b-e72a223a6a97-ORD-314DB75D",
+      "BottomCoverPCBFuse_SA": "https://aausmartlab.org/Shells/Assembly/Bottom_Cover_PCB_Fuse/BottomCoverPCBFuse_SA_142f4ed4-ef81-46a2-828d-8fe22cdaf157-ORD-314DB75D",
+      "AAU_Mobile_Phone_v1": "https://aausmartlab.org/Shells/Configuration/Mobile_Phone/AAU_Mobile_Phone_v1_9ad979ea-1bbd-4e02-a1d3-36938e8d9450-ORD-314DB75D"
+    },
+    "error": "No production line found that matches the required capabilities: {'https://aausmartlab.org/Submodels/Capability/Drilling', 'https://aausmartlab.org/Submodels/Capability/Assemble'}. No production line shells are registered in BaSyx."
+  },
+  "ORD-B7A19D7D": {
+    "order_id": "ORD-B7A19D7D",
+    "webshop_id": "b7a19d7d-86a3-4aae-ab9e-626cac897afd",
+    "line_id": null,
+    "status": "NO_LINE_AVAILABLE",
+    "created_at": "2026-05-15T11:48:32.753239",
+    "updated_at": "2026-05-15T11:48:34.018612",
+    "shell_iris": {
+      "BottomCoverDrilling_SA": "https://aausmartlab.org/Shells/Assembly/Bottom_Cover/BottomCoverDrilling_SA_475a2298-e301-47a9-8d06-b1b64d1c65f1-ORD-B7A19D7D",
+      "BottomCoverPCB_SA": "https://aausmartlab.org/Shells/Assembly/Bottom_Cover_PCB/BottomCoverPCB_SA_40b751c9-ed82-4b14-b64e-b8ea55fa038a-ORD-B7A19D7D",
+      "BottomCoverPCBFuse_SA": "https://aausmartlab.org/Shells/Assembly/Bottom_Cover_PCB_Fuse/BottomCoverPCBFuse_SA_116da13c-323b-4b42-8121-fd3199fbc842-ORD-B7A19D7D",
+      "AAU_Mobile_Phone_v1": "https://aausmartlab.org/Shells/Configuration/Mobile_Phone/AAU_Mobile_Phone_v1_06021207-43f0-4853-9965-fe63bbfa3f4e-ORD-B7A19D7D"
+    },
+    "error": "No production line found that matches the required capabilities: {'https://aausmartlab.org/Submodels/Capability/Drilling', 'https://aausmartlab.org/Submodels/Capability/Assemble'}. No production line shells are registered in BaSyx."
+  },
+  "ORD-FE9028F4": {
+    "order_id": "ORD-FE9028F4",
+    "webshop_id": "fe9028f4-7df6-4551-b23d-8c992a88ae88",
+    "line_id": null,
+    "status": "NO_LINE_AVAILABLE",
+    "created_at": "2026-05-15T12:03:25.484541",
+    "updated_at": "2026-05-15T12:03:26.100440",
+    "shell_iris": {
+      "BottomCoverDrilling_SA": "https://aausmartlab.org/Shells/Assembly/Bottom_Cover/BottomCoverDrilling_SA_8ad3d4d1-ff0f-4149-aef8-d4cf35d61e89-ORD-FE9028F4",
+      "BottomCoverPCB_SA": "https://aausmartlab.org/Shells/Assembly/Bottom_Cover_PCB/BottomCoverPCB_SA_c26cb6fe-f218-48ac-bd18-2f23af12bca8-ORD-FE9028F4",
+      "BottomCoverPCBFuse_SA": "https://aausmartlab.org/Shells/Assembly/Bottom_Cover_PCB_Fuse/BottomCoverPCBFuse_SA_45d4bcf7-3828-434c-bb79-efccb3886b60-ORD-FE9028F4",
+      "AAU_Mobile_Phone_v1": "https://aausmartlab.org/Shells/Configuration/Mobile_Phone/AAU_Mobile_Phone_v1_758cb371-3c99-4003-99df-a0b5fe4cb800-ORD-FE9028F4"
+    },
+    "error": "No production line found that matches the required capabilities: {'https://aausmartlab.org/Submodels/Capability/Drilling', 'https://aausmartlab.org/Submodels/Capability/Assemble'}. No production line shells are registered in BaSyx."
+  },
+  "ORD-0DBC5871": {
+    "order_id": "ORD-0DBC5871",
+    "webshop_id": "0dbc5871-a15c-41ef-833d-fb87d80fcf71",
+    "line_id": "ProductionLine",
+    "status": "PENDING",
+    "created_at": "2026-05-15T19:26:43.444979",
+    "updated_at": "2026-05-15T19:26:45.185157",
+    "shell_iris": {
+      "BottomCoverDrillingSA": "https://aausmartlab.org/Shells/Assembly/BottomCover/BottomCoverDrillingSA_b8a9f80d-15ad-46eb-be23-90d82f9974ce-ORD-0DBC5871",
+      "BottomCoverPCBSA": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB/BottomCoverPCBSA_23ee7857-9262-46a1-8ff0-110c3f496bd7-ORD-0DBC5871",
+      "BottomCoverPCBFuseSA": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse/BottomCoverPCBFuseSA_8e52d955-aa23-4bb1-9dac-0f1c8b4a4cfb-ORD-0DBC5871",
+      "AAUMobilePhoneV1": "https://aausmartlab.org/Shells/Configuration/MobilePhone/AAUMobilePhoneV1_505461a8-db14-469d-a19e-0bd2f179b4a1-ORD-0DBC5871"
+    }
+  },
+  "ORD-DF8FACFB": {
+    "order_id": "ORD-DF8FACFB",
+    "webshop_id": "df8facfb-b984-447d-86af-92e5b7350e01",
+    "line_id": "ProductionLine",
+    "status": "PENDING",
+    "created_at": "2026-05-15T19:50:30.398584",
+    "updated_at": "2026-05-15T19:50:32.482251",
+    "shell_iris": {
+      "BottomCoverDrillingSA": "https://aausmartlab.org/Shells/Assembly/BottomCover/BottomCoverDrillingSA_130ad512-54fa-4799-9ef9-295e6c0dc0bf-ORD-DF8FACFB",
+      "BottomCoverPCBSA": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB/BottomCoverPCBSA_f4fb37a9-bbf9-41e8-a907-b1733a4f76f7-ORD-DF8FACFB",
+      "BottomCoverPCBFuseSA": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse/BottomCoverPCBFuseSA_ecf1b90f-8032-4827-a69d-cb77f1095659-ORD-DF8FACFB",
+      "AAUMobilePhoneV1": "https://aausmartlab.org/Shells/Configuration/MobilePhone/AAUMobilePhoneV1_3c6a22d1-6610-45fb-949a-2d5927a5d3d5-ORD-DF8FACFB"
+    }
   }
 }

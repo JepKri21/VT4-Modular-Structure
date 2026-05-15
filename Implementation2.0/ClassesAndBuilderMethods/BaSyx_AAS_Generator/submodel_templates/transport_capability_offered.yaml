@@ -1,6 +1,6 @@
-id_short: "TransportCapabilityOffered"
+﻿id_short: "TransportCapabilityOffered"
 id: "https://aausmartlab.org/Submodels/Templates/TransportCapabilityOffered"
-description: "Offered transport capability — defines the reachable target area and supported components"
+description: "Offered transport capability â€” defines the reachable target area and supported components"
 
 elements:
 

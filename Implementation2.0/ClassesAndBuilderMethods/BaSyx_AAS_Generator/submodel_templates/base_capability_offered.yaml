@@ -1,13 +1,13 @@
-id_short: "BaseCapabilityOffered"
+﻿id_short: "BaseCapabilityOffered"
 id: "https://aausmartlab.org/Submodels/Templates/BaseCapabilityOffered"
-description: "Base structure for all CapabilityOffered submodels — extend with resource-specific parameters inside the Parameters collection"
+description: "Base structure for all CapabilityOffered submodels â€” extend with resource-specific parameters inside the Parameters collection"
 
 elements:
 
   - type: collection
     id_short: "Parameters"
     semantic_id: "https://aausmartlab.org/Semantics/Parameters"
-    description: "Parameters defining the capability envelope — add resource-specific entries here"
+    description: "Parameters defining the capability envelope â€” add resource-specific entries here"
     cardinality: "One"
     elements:
 
@@ -18,14 +18,14 @@ elements:
         description: "Human-readable operation label in multiple languages"
         cardinality: "One"
 
-      # OPTIONAL — add resource-specific parameters below this line.
+      # OPTIONAL â€” add resource-specific parameters below this line.
       # Examples:
-      #   Drilling  → BitDiameter_mm (property/range), DrillDepth_mm (range),
+      #   Drilling  â†’ BitDiameter_mm (property/range), DrillDepth_mm (range),
       #               SpindleSpeed_RPM (range), SpindleFeed_mm_per_s (range),
       #               HolePlacement_x_mm (range), HolePlacement_y_mm (range)
-      #   Transport → SpeedConstraint_m_per_s (range), AccelerationConstraint_m_per_s2 (range),
+      #   Transport â†’ SpeedConstraint_m_per_s (range), AccelerationConstraint_m_per_s2 (range),
       #               TargetPosition (collection of XPos/YPos ranges)
-      #   Store / Retrieve → no additional parameters beyond OperationLabel
+      #   Store / Retrieve â†’ no additional parameters beyond OperationLabel
 
   - type: list
     id_short: "SupportedComponents"

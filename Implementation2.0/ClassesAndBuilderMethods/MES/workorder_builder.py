@@ -69,21 +69,20 @@ def _elem_semantic_id(elem: dict) -> str:
 
 def _get_type_shell_properties(component_iri: str, basyx_url: str) -> dict:
     """
-    Fetch static properties (e.g. Length/Width/Height) from the category type shell
-    in BaSyx.  The category type shell carries a TEMPLATE-kind Properties submodel
-    populated with default values that are the same for every variant in that category.
+    Fetch static properties from the category type shell in BaSyx.
+
+    The category type shell carries default values shared by every variant
+    in that category (e.g. Length/Width/Height for all fuses).
 
     Strategy:
-      1. Derive category type IRI by stripping the last path segment from the
-         variant IRI:  …/Component/BottomCover/BottomCoverPETGGray
-                     → …/Component/BottomCover
-      2. Fetch the Properties template at {category_type_iri}/Properties.
-      3. Fall back to {component_iri}/Properties (variant-level) if not found.
+      1. Derive category IRI by stripping the last path segment from the variant IRI:
+           …/Component/Fuse/Fuse16ASB → …/Component/Fuse
+      2. Fetch {category_iri}/Properties.
+      3. Fall back to {component_iri}/Properties if the category submodel is absent.
     """
     if component_iri in _TYPE_SHELL_PROPS_CACHE:
         return _TYPE_SHELL_PROPS_CACHE[component_iri]
 
-    # Derive category type IRI: strip the variant name (last path segment).
     category_type_iri = component_iri.rstrip("/").rsplit("/", 1)[0]
     category_props_iri = f"{category_type_iri}/Properties"
 
@@ -91,7 +90,6 @@ def _get_type_shell_properties(component_iri: str, basyx_url: str) -> dict:
     sm = basyx_client.fetch_submodel(category_props_iri, basyx_url)
 
     if not sm:
-        # Fallback: try the variant shell's own Properties submodel.
         variant_props_iri = f"{component_iri}/Properties"
         log.info("  not found, trying variant: %s", variant_props_iri)
         sm = basyx_client.fetch_submodel(variant_props_iri, basyx_url)
@@ -101,8 +99,6 @@ def _get_type_shell_properties(component_iri: str, basyx_url: str) -> dict:
         _TYPE_SHELL_PROPS_CACHE[component_iri] = {}
         return {}
 
-    # Read every top-level collection present (PhysicalDimensions,
-    # ElectricalProperties, MaterialProperties, …) without hardcoding the set.
     result: dict = {}
     for col in sm.get("submodelElements", []):
         if col.get("modelType") != "SubmodelElementCollection":
@@ -113,7 +109,7 @@ def _get_type_shell_properties(component_iri: str, basyx_url: str) -> dict:
         section = col["idShort"]
         result[section] = {
             elem["idShort"]: {
-                "SemanticId": _elem_semantic_id(elem),
+                "semanticId": _elem_semantic_id(elem),
                 "value": _coerce_value(elem.get("value"), elem.get("valueType", "")),
             }
             for elem in children
@@ -177,7 +173,7 @@ def _fetch_required_cap_params(shell_iri: str, operation: str, basyx_url: str) -
                 id_short = elem.get("idShort", "")
                 if id_short:
                     result[id_short] = {
-                        "SemanticId": _elem_semantic_id(elem),
+                        "semanticId": _elem_semantic_id(elem),
                         "value": _coerce_value(elem.get("value"), elem.get("valueType", "")),
                     }
             children = elem.get("value", [])
@@ -222,34 +218,74 @@ def _type_iri_from_full(iri: str) -> str:
     return _UUID_RE.sub("", iri.rstrip("/"))
 
 
+_NUMERIC_PREFIX_RE = re.compile(r"^([\d.]+)")
+
+
+def _parse_electrical_value(val):
+    """Strip a unit suffix from strings like '16A' or '250V' and return a number."""
+    if not isinstance(val, str):
+        return val
+    m = _NUMERIC_PREFIX_RE.match(val.strip())
+    if m:
+        num = m.group(1)
+        try:
+            return int(num) if "." not in num else float(num)
+        except ValueError:
+            pass
+    return val
+
+
 def _make_properties_for_slot(slot_cfg: dict) -> dict:
-    """Build a Properties dict (MaterialProperties + PhysicalDimensions) from slot config."""
+    """Build a Properties dict from slot config, covering all property sections."""
     customer = slot_cfg.get("properties") or {}
+
     mat = {}
     for prop_key, id_short, sem_fragment in (
-        ("material", "Material",   "Material"),
-        ("color",    "Color",      "Color"),
-        ("finish",   "Finish",     "SurfaceFinish"),
+        ("material", "Material",  "Material"),
+        ("color",    "Color",     "Color"),
+        ("finish",   "Finish",    "SurfaceFinish"),
     ):
         val = customer.get(prop_key)
         if val:
             mat[id_short] = {
-                "SemanticId": f"https://aausmartlab.org/Semantics/{sem_fragment}",
+                "semanticId": f"https://aausmartlab.org/Semantics/{sem_fragment}",
                 "value": val,
             }
+
     dims = {}
     for prop_key, sem_key in (
         ("length", "Length"),
-        ("width", "Width"),
+        ("width",  "Width"),
         ("height", "Height"),
     ):
         val = customer.get(prop_key)
         if val is not None:
             dims[sem_key] = {
-                "SemanticId": "https://aausmartlab.org/Semantics/mm",
+                "semanticId": "https://aausmartlab.org/Semantics/mm",
                 "value": str(val),
             }
-    return {"MaterialProperties": mat, "PhysicalDimensions": dims}
+
+    elec = {}
+    for prop_key, id_short, sem_fragment in (
+        ("voltageRating", "VoltageRating", "VoltageRating"),
+        ("currentRating", "CurrentRating", "CurrentRating"),
+        ("type",          "Type",          "ElectricalType"),
+    ):
+        val = customer.get(prop_key)
+        if val is not None:
+            elec[id_short] = {
+                "semanticId": f"https://aausmartlab.org/Semantics/{sem_fragment}",
+                "value": _parse_electrical_value(val),
+            }
+
+    result: dict = {}
+    if mat:
+        result["MaterialProperties"] = mat
+    if dims:
+        result["PhysicalDimensions"] = dims
+    if elec:
+        result["ElectricalProperties"] = elec
+    return result
 
 
 def build_workorder(

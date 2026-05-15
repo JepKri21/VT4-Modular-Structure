@@ -1,4 +1,4 @@
-id_short: "SkillTemplate"
+﻿id_short: "SkillTemplate"
 id: "https://aausmartlab.org/Submodels/Templates/BasicSkill"
 description: "Generic skill template following Plattform I4.0 CSS model"
 
@@ -49,7 +49,7 @@ elements:
       - type: list
         id_short: "Transitions"
         semantic_id: "https://aausmartlab.org/Semantics/Transitions"
-        description: "State transitions (FromState → ToState via trigger)"
+        description: "State transitions (FromState â†’ ToState via trigger)"
         element_type: "collection"
         cardinality: "OneToMany"
 
@@ -71,5 +71,5 @@ elements:
   - type: reference_element
     id_short: "ResourceReference"
     semantic_id: "https://aausmartlab.org/Semantics/ResourceReference"
-    description: "Physical resource (robot, shuttle…) that executes this skill"
+    description: "Physical resource (robot, shuttleâ€¦) that executes this skill"
     cardinality: "ZeroToOne"

@@ -1,6 +1,6 @@
-id_short: "ServiceRequired"
+﻿id_short: "ServiceRequired"
 id: "https://aausmartlab.org/Submodels/Templates/ServiceRequired"
-description: "Service requirement submodel for a product — aggregates all capability types needed across all BOP process steps into a single discoverable list. Auto-derived from BOP at generation time for final products. Used by an orchestrator to match this product against production line service offerings."
+description: "Service requirement submodel for a product â€” aggregates all capability types needed across all BOP process steps into a single discoverable list. Auto-derived from BOP at generation time for final products. Used by an orchestrator to match this product against production line service offerings."
 
 elements:
 
@@ -9,7 +9,7 @@ elements:
   - type: collection
     id_short: "RequiredCapabilities"
     semantic_id: "https://aausmartlab.org/Semantics/RequiredCapabilities"
-    description: "All capability types required to manufacture this product — one entry per BOP process step"
+    description: "All capability types required to manufacture this product â€” one entry per BOP process step"
     cardinality: "OneToMany"
     extensible: true
     entry_template: "{CapabilityType}_{N}"
@@ -25,7 +25,7 @@ elements:
             id_short: "CapabilityType"
             value_type: "xs:string"
             semantic_id: "https://aausmartlab.org/Semantics/CapabilityType"
-            description: "Capability type identifier — must match the CapabilityType values used in ServiceOffered (e.g. Drilling, Transport, Store, Handoff, Retrieve)"
+            description: "Capability type identifier â€” must match the CapabilityType values used in ServiceOffered (e.g. Drilling, Transport, Store, Handoff, Retrieve)"
             cardinality: "One"
 
           - type: property
@@ -38,5 +38,5 @@ elements:
           - type: reference_element
             id_short: "RequiredCapabilityRef"
             semantic_id: "https://aausmartlab.org/Semantics/RequiredCapabilityRef"
-            description: "Reference to the RequiredCapability submodel instance for this step — contains the exact parameter values to be matched against an OfferedCapability"
+            description: "Reference to the RequiredCapability submodel instance for this step â€” contains the exact parameter values to be matched against an OfferedCapability"
             cardinality: "ZeroToOne"

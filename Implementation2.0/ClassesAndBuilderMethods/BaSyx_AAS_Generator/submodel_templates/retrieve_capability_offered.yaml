@@ -1,6 +1,6 @@
-id_short: "RetrieveCapabilityOffered"
+﻿id_short: "RetrieveCapabilityOffered"
 id: "https://aausmartlab.org/Submodels/Templates/RetrieveCapabilityOffered"
-description: "Offered retrieve capability — used by storage-type resources to declare what they can pick and present"
+description: "Offered retrieve capability â€” used by storage-type resources to declare what they can pick and present"
 
 elements:
 

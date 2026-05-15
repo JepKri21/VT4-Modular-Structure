@@ -1,6 +1,6 @@
-id_short: "Properties"
+﻿id_short: "Properties"
 id: "https://aausmartlab.org/Submodels/Templates/ProductProperties"
-description: "General product properties submodel template — used for components, sub-assemblies, and final products"
+description: "General product properties submodel template â€” used for components, sub-assemblies, and final products"
 
 elements:
   - type: collection
@@ -49,7 +49,7 @@ elements:
         id_short: "Weight"
         value_type: "xs:double"
         semantic_id: "https://aausmartlab.org/Semantics/gram"
-        description: "Weight in grams — used for handling and logistics"
+        description: "Weight in grams â€” used for handling and logistics"
         cardinality: "ZeroToOne"
         qualifiers:
           - type: "unit"
@@ -67,7 +67,7 @@ elements:
         id_short: "Material"
         value_type: "xs:string"
         semantic_id: "https://aausmartlab.org/Semantics/Material"
-        description: "Material type — matched against AllowedMaterials in capability"
+        description: "Material type â€” matched against AllowedMaterials in capability"
         cardinality: "ZeroToOne"
 
       - type: property
@@ -125,5 +125,5 @@ elements:
         id_short: "Layers"
         value_type: "xs:integer"
         semantic_id: "https://aausmartlab.org/Semantics/Layers"
-        description: "Number of structural layers — affects soldering and drilling process"
+        description: "Number of structural layers â€” affects soldering and drilling process"
         cardinality: "ZeroToOne"

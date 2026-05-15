@@ -1,6 +1,6 @@
-id_short: "BillOfMaterials"
+﻿id_short: "BillOfMaterials"
 id: "https://aausmartlab.org/Submodels/Templates/BillOfMaterials"
-description: "Bill of Materials submodel template — generic for components, sub-assemblies and final products"
+description: "Bill of Materials submodel template â€” generic for components, sub-assemblies and final products"
 
 elements:
   - type: collection
@@ -14,7 +14,7 @@ elements:
       - type: collection
         id_short: "BOMEntry"
         semantic_id: "https://aausmartlab.org/Semantics/BOMEntry"
-        description: "Template entry — one collection per required component"
+        description: "Template entry â€” one collection per required component"
         cardinality: "OneToMany"
         elements:
           - type: property
@@ -45,5 +45,5 @@ elements:
           - type: reference_element
             id_short: "ComponentInstanceRef"
             semantic_id: "https://aausmartlab.org/Semantics/ComponentInstanceRef"
-            description: "Reference to the actual component instance used — empty at creation, filled during production"
+            description: "Reference to the actual component instance used â€” empty at creation, filled during production"
             cardinality: "One"

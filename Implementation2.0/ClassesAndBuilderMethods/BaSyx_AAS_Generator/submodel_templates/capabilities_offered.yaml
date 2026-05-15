@@ -1,6 +1,6 @@
-id_short: "CapabilitiesOffered"
+﻿id_short: "CapabilitiesOffered"
 id: "https://aausmartlab.org/Submodels/Templates/CapabilitiesOffered"
-description: "Index of all capability submodels offered by this resource — entry point for capability discovery"
+description: "Index of all capability submodels offered by this resource â€” entry point for capability discovery"
 
 elements:
 

@@ -1,6 +1,6 @@
-id_short: "Inventory"
+﻿id_short: "Inventory"
 id: "https://aausmartlab.org/Submodels/Templates/Inventory"
-description: "Inventory submodel for a storage resource — one entry per physical storage slot or rack"
+description: "Inventory submodel for a storage resource â€” one entry per physical storage slot or rack"
 
 elements:
 

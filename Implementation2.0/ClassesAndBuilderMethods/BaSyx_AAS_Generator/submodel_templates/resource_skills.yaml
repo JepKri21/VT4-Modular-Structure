@@ -1,6 +1,6 @@
-id_short: "Skills"
+﻿id_short: "Skills"
 id: "https://aausmartlab.org/Submodels/Templates/Skills"
-description: "Skills submodel template — one extensible entry per capability offered by the resource"
+description: "Skills submodel template â€” one extensible entry per capability offered by the resource"
 
 elements:
 

@@ -1,4 +1,4 @@
-id_short: "ResourceZones"
+﻿id_short: "ResourceZones"
 id: "https://aausmartlab.org/Submodels/Templates/ResourceZones"
 description: "Defines the physical footprint and interaction zones of a production resource"
 
@@ -200,7 +200,7 @@ elements:
 
   - type: collection
     id_short: "InOutputZones"
-    description: "Zones that serve as both input and output — used for component handoff"
+    description: "Zones that serve as both input and output â€” used for component handoff"
     extensible: true
     entry_template: "Zone{N}"
     cardinality: "ZeroToMany"

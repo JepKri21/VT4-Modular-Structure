@@ -1,6 +1,6 @@
-id_short: "StoreCapabilityOffered"
+﻿id_short: "StoreCapabilityOffered"
 id: "https://aausmartlab.org/Submodels/Templates/StoreCapabilityOffered"
-description: "Offered store capability — used by storage-type resources to declare what they can accept and hold"
+description: "Offered store capability â€” used by storage-type resources to declare what they can accept and hold"
 
 elements:
 

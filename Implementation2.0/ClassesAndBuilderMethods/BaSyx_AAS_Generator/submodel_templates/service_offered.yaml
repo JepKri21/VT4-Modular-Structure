@@ -1,6 +1,6 @@
-id_short: "ServiceOffered"
+﻿id_short: "ServiceOffered"
 id: "https://aausmartlab.org/Submodels/Templates/ServiceOffered"
-description: "Service offering submodel for a production line — aggregates all capability types offered across its constituent resources into a single discoverable list. Used by an orchestrator to match production lines against product service requirements."
+description: "Service offering submodel for a production line â€” aggregates all capability types offered across its constituent resources into a single discoverable list. Used by an orchestrator to match production lines against product service requirements."
 
 elements:
 
@@ -15,7 +15,7 @@ elements:
   - type: collection
     id_short: "OfferedCapabilities"
     semantic_id: "https://aausmartlab.org/Semantics/OfferedCapabilities"
-    description: "All capability types this production line can fulfill — one entry per capability"
+    description: "All capability types this production line can fulfill â€” one entry per capability"
     cardinality: "OneToMany"
     extensible: true
     entry_template: "{CapabilityType}_{N}"
@@ -31,7 +31,7 @@ elements:
             id_short: "CapabilityType"
             value_type: "xs:string"
             semantic_id: "https://aausmartlab.org/Semantics/CapabilityType"
-            description: "Capability type identifier — must match the CapabilityType values used in ServiceRequired (e.g. Drilling, Transport, Store, Handoff, Retrieve)"
+            description: "Capability type identifier â€” must match the CapabilityType values used in ServiceRequired (e.g. Drilling, Transport, Store, Handoff, Retrieve)"
             cardinality: "One"
 
           - type: reference_element
@@ -49,7 +49,7 @@ elements:
           - type: list
             id_short: "SupportedComponents"
             semantic_id: "https://aausmartlab.org/Semantics/SupportedComponents"
-            description: "Component types this capability entry can process — used for fine-grained matching"
+            description: "Component types this capability entry can process â€” used for fine-grained matching"
             element_type: "property"
             value_type: "xs:string"
             cardinality: "ZeroToMany"

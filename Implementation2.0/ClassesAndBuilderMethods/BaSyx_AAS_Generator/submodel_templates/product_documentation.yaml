@@ -1,6 +1,6 @@
-id_short: "Documentation"
+﻿id_short: "Documentation"
 id: "https://aausmartlab.org/Submodels/Templates/ProductDocumentation"
-description: "Documentation submodel template — generic human-readable reference information for products, assemblies and components"
+description: "Documentation submodel template â€” generic human-readable reference information for products, assemblies and components"
 
 elements:
   - type: collection
@@ -13,14 +13,14 @@ elements:
         id_short: "ModelNumber"
         value_type: "xs:string"
         semantic_id: "https://aausmartlab.org/Semantics/ModelNumber"
-        description: "Model number — drives BOM and BOP selection"
+        description: "Model number â€” drives BOM and BOP selection"
         cardinality: "One"
 
       - type: property
         id_short: "HardwareRevision"
         value_type: "xs:string"
         semantic_id: "https://aausmartlab.org/Semantics/HardwareRevision"
-        description: "Design revision — a change may imply a different BOM or BOP"
+        description: "Design revision â€” a change may imply a different BOM or BOP"
         cardinality: "ZeroToOne"
 
       - type: property

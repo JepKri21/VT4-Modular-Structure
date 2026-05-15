@@ -1,6 +1,6 @@
-id_short: "LineConfiguration"
+﻿id_short: "LineConfiguration"
 id: "https://aausmartlab.org/Submodels/Templates/LineConfiguration"
-description: "Physical layout and connection topology of a production line — resource positions and connection points"
+description: "Physical layout and connection topology of a production line â€” resource positions and connection points"
 
 elements:
 

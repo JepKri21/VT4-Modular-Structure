@@ -1,6 +1,6 @@
-id_short: "HandoffCapabilityOffered"
+﻿id_short: "HandoffCapabilityOffered"
 id: "https://aausmartlab.org/Submodels/Templates/HandoffCapabilityOffered"
-description: "Offered capability template for a handoff operation — shared by Drilling and Storage resources"
+description: "Offered capability template for a handoff operation â€” shared by Drilling and Storage resources"
 
 elements:
 
