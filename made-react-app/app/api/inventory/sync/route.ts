@@ -70,8 +70,8 @@ async function fetchComponentProperties(base: string, shellId: string): Promise<
     const color = getCollectionValue(elems, "MaterialProperties", "Color");
     const finish = getCollectionValue(elems, "MaterialProperties", "Finish");
     const fuseType = getCollectionValue(elems, "ElectricalProperties", "Type");
-    const currentRating = formatAmpere(getCollectionValue(elems, "ElectricalProperties", "Current_Rating"));
-    const voltageRating = formatVolt(getCollectionValue(elems, "ElectricalProperties", "Voltage_Rating"));
+    const currentRating = formatAmpere(getCollectionValue(elems, "ElectricalProperties", "CurrentRating"));
+    const voltageRating = formatVolt(getCollectionValue(elems, "ElectricalProperties", "VoltageRating"));
 
     return {
       material,
@@ -124,9 +124,9 @@ export async function POST(req: NextRequest) {
     );
 
     // Parse IRI and extract component type info.
-    // IRI pattern: https://aausmartlab.org/Shells/Component/{AssetType}/{AssetName}_{UUID}
-    // The UUID is embedded in the last segment with an underscore prefix, not as a separate path segment.
-    const UUID_SUFFIX_RE = /_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    // IRI pattern: https://aausmartlab.org/Shells/Component/{AssetType}/{AssetName}-{UUID}
+    // The UUID is appended to the last segment with a hyphen prefix.
+    const UUID_SUFFIX_RE = /[-_][0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     // Also handle plain UUIDs as full path segments (legacy/fallback)
     const UUID_SEGMENT_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

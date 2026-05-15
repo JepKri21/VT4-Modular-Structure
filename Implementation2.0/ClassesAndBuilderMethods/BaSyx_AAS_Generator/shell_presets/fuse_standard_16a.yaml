@@ -14,8 +14,8 @@ submodels:
       Material: "Glass"
       Color: "Clear"
     ElectricalProperties:
-      Voltage_Rating: 250
-      Current_Rating: 16.0
+      VoltageRating: 250
+      CurrentRating: 16.0
       Type: "slow-blow"
 
   Documentation:
