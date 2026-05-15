@@ -38,7 +38,12 @@ class CapabilityMatcher:
             print(f"          - {c['resource_id']}  (skill={c['skill_name']})")
 
         params = step_info.get("Parameters", {})
-        component = step_info.get("ComponentReference")
+        # Prefer the family/type IRI for the SupportedComponents check; fall
+        # back to the per-instance ComponentReference if no ComponentType is
+        # provided. This lets the work order carry a per-order instance IRI
+        # while still matching a resource that advertises support at the
+        # family level.
+        component = step_info.get("ComponentType") or step_info.get("ComponentReference")
         material = step_info.get("Material")
 
         viable = []
@@ -92,6 +97,22 @@ class CapabilityMatcher:
         "HolePlacement_Y": "YPos",
     }
 
+    # Workorder parameter names that are runtime payload (e.g. the list of
+    # components to assemble), not capability-envelope parameters. They are
+    # not expected to appear as leaves in the capability submodel. If a
+    # capability leaf is configured to derive a value from one of these,
+    # the mapping in PAYLOAD_PARAM_DERIVATIONS handles it; otherwise the
+    # payload value is passed to the resource at execute time.
+    PAYLOAD_PARAM_NAMES = {"InputComponents"}
+
+    # How to derive a numeric capability-check value from a payload param.
+    # For each payload param, maps capability-leaf name -> callable(value) -> number.
+    PAYLOAD_PARAM_DERIVATIONS = {
+        "InputComponents": {
+            "MaxComponentCount": lambda v: len(v) if isinstance(v, list) else None,
+        },
+    }
+
     def _check_parameters(self, step_params, cap_parameters):
         """
         Validate every workorder parameter against the capability. Both sides
@@ -109,6 +130,35 @@ class CapabilityMatcher:
         step_by_name = self._flatten_step_params(step_params)
 
         for name, value in step_by_name.items():
+            # Payload params (e.g. InputComponents) are not capability-envelope
+            # parameters. If a derivation is defined, run it against the
+            # corresponding capability leaf; otherwise skip the param entirely.
+            if name in self.PAYLOAD_PARAM_NAMES:
+                derivations = self.PAYLOAD_PARAM_DERIVATIONS.get(name, {})
+                for leaf_name, fn in derivations.items():
+                    cap_param = cap_by_name.get(leaf_name)
+                    if cap_param is None:
+                        continue
+                    derived = fn(value)
+                    if derived is None:
+                        continue
+                    if hasattr(cap_param, "min") and hasattr(cap_param, "max"):
+                        try:
+                            v = float(derived)
+                            lo = float(cap_param.min)
+                            hi = float(cap_param.max)
+                        except (TypeError, ValueError):
+                            return False, (
+                                f"derived '{leaf_name}' from payload '{name}' could not be coerced to float "
+                                f"(derived={derived!r})"
+                            )
+                        if not (lo <= v <= hi):
+                            return False, (
+                                f"derived '{leaf_name}'={v} from payload '{name}' "
+                                f"outside allowed range [{lo}, {hi}]"
+                            )
+                continue
+
             cap_param = cap_by_name.get(name)
             resolved_name = name
             if cap_param is None:
