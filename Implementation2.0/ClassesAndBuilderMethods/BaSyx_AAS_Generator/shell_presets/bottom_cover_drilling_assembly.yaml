@@ -9,7 +9,7 @@ type: "bottom_cover_assembly_chain"
 label: "Bottom Cover – Drilling Sub-Assembly"
 description: "Sub-assembly in which a bottom cover component is drilled to specification. Requires a station that offers the matching drilling capability."
 
-asset_type: "BottomCover"
+asset_type: "BottomCoverDrilling"
 asset_name: "BottomCoverDrillingSA"
 asset_category: "Telefon"
 
