@@ -409,7 +409,7 @@ class UR5ManipulatorBehavior(StationBehavior):
         if self.skill == "Handoff":
             try:
                 #Loading handoff specific parameters
-                self.component_reference = self.parameters.get("ComponentReference")
+                #self.component_reference = self.parameters.get("ComponentReference")
                 self.target_position = self.parameters.get("TargetPosition")
                 self.XPos = self.target_position.get("XPos")
                 self.YPos = self.target_position.get("YPos")
@@ -425,7 +425,7 @@ class UR5ManipulatorBehavior(StationBehavior):
 
             try:
                 # unpack for readability
-                self.component_reference = self.parameters.get("ComponentReference")
+                #self.component_reference = self.parameters.get("ComponentReference")
 
                 print("Retrieve parameters loaded:", self.parameters)
 
@@ -439,7 +439,7 @@ class UR5ManipulatorBehavior(StationBehavior):
 
             try:
                 # unpack for readability
-                self.component_reference = self.parameters.get("ComponentReference")
+                #self.component_reference = self.parameters.get("ComponentReference")
 
                 print("Store parameters loaded:", self.parameters)
 
@@ -461,7 +461,7 @@ class UR5ManipulatorBehavior(StationBehavior):
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
 
         if self.skill == "Handoff":
-            print(f"Handing off product: {self.component_reference}")
+            print(f"Handing off product: {self.command_payload.component_reference}")
             print(f"At position ({self.XPos},{self.YPos})")
             self.ideal_cycle_time = 4000+int(self.XPos)+int(self.YPos)
             self.actual_cycle_time = self.ideal_cycle_time + random.randint(200,800)
@@ -472,9 +472,9 @@ class UR5ManipulatorBehavior(StationBehavior):
 
             
         elif self.skill == "Retrieve":
-            print(f"Executing Retrieve with product {self.component_reference}")
+            print(f"Executing Retrieve with product {self.command_payload.component_reference}")
 
-            retriveable_locations = find_positions(inventories=resource_inventories,query=self.component_reference)
+            retriveable_locations = find_positions(inventories=resource_inventories,query=self.command_payload.component_reference)
 
             if retriveable_locations:
                 retrieved_item = retriveable_locations[0]  # We just take the first one
@@ -493,12 +493,12 @@ class UR5ManipulatorBehavior(StationBehavior):
             
         
         elif self.skill == "Store":
-            print(f"Executing Store with product {self.component_reference}")
+            print(f"Executing Store with product {self.command_payload.component_reference}")
             
             #This should automatically find available positions and then place it into one
             #It also returns the specific inventory and position, but we don't need that right now
 
-            stored_item_position = place_item(resource_inventories, self.component_reference)
+            stored_item_position = place_item(resource_inventories, self.command_payload.component_reference)
             
             if stored_item_position is not None:
                 #Generating cycle times based on parameters
@@ -534,7 +534,7 @@ class UR5ManipulatorBehavior(StationBehavior):
                 job_id=self.command_payload.job_id, 
                 ideal_cycle_time_ms=self.ideal_cycle_time,
                 actual_cycle_time_ms=self.actual_cycle_time,
-                component_reference= self.component_reference,
+                component_reference= self.command_payload.component_reference,
                 result=self.result,
                 quality=self.quality,
                 output_parameters={}
@@ -548,7 +548,7 @@ class UR5ManipulatorBehavior(StationBehavior):
                 job_id=self.command_payload.job_id, 
                 ideal_cycle_time_ms=self.ideal_cycle_time,
                 actual_cycle_time_ms=self.actual_cycle_time,
-                component_reference= self.component_reference,
+                component_reference= self.command_payload.component_reference,
                 result=self.result,
                 quality=self.quality,
                 output_parameters={}
