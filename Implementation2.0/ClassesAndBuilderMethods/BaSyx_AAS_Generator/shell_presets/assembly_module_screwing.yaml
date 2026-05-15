@@ -8,9 +8,9 @@ submodels:
   AssembleCapabilityOffered:
     SupportedComponents:
       - "https://aausmartlab.org/Shells/Component/BottomCover"
-      - "https://aausmartlab.org/Shells/SubAssembly/BottomCoverPCB"
-      - "https://aausmartlab.org/Shells/SubAssembly/BottomCoverPCBFuse"
-      - "https://aausmartlab.org/Shells/SubAssembly/FuseModule"
+      - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
+      - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
+      - "https://aausmartlab.org/Shells/Assembly/FuseModule"
       - "https://aausmartlab.org/Shells/Configuration/MobilePhone"
     Parameters:
       SupportedAssemblyTypes:
@@ -29,8 +29,8 @@ submodels:
   HandoffCapabilityOffered:
     SupportedComponents:
       - "https://aausmartlab.org/Shells/Component/BottomCover"
-      - "https://aausmartlab.org/Shells/SubAssembly/BottomCoverPCB"
-      - "https://aausmartlab.org/Shells/SubAssembly/FuseModule"
+      - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
+      - "https://aausmartlab.org/Shells/Assembly/FuseModule"
     Parameters:
       TargetPosition:
         XPos: ""

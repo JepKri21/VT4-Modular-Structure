@@ -7,8 +7,8 @@ asset_name: "Assembly_SnapFit"
 submodels:
   AssembleCapabilityOffered:
     SupportedComponents:
-      - "https://aausmartlab.org/Shells/Component/Bottom_Cover"
-      - "https://aausmartlab.org/Shells/SubAssembly/Bottom_Cover_PCB"
+      - "https://aausmartlab.org/Shells/Component/BottomCover"
+      - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
     Parameters:
       SupportedAssemblyTypes:
         - "snap-fit"
@@ -25,8 +25,8 @@ submodels:
 
   HandoffCapabilityOffered:
     SupportedComponents:
-      - "https://aausmartlab.org/Shells/Component/Bottom_Cover"
-      - "https://aausmartlab.org/Shells/SubAssembly/Bottom_Cover_PCB"
+      - "https://aausmartlab.org/Shells/Component/BottomCover"
+      - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
     Parameters:
       TargetPosition:
         XPos: ""
