@@ -246,6 +246,7 @@ export async function POST(req: NextRequest) {
           currentRating: row?.current_rating ?? null,
           voltageRating: row?.voltage_rating ?? null,
           type: row?.version ?? null,
+          weight: row?.weight != null ? Number(row.weight) : null,
         },
       };
     });

@@ -13,6 +13,7 @@ export interface ComponentType {
   currentRating?: string;    // e.g. "16A" (fuses, PCB)
   voltageRating?: string;    // e.g. "250V" (fuses, PCB)
   version?: string;          // e.g. "slow-blow" (fuse type)
+  weight?: number;           // Component weight in grams (delta value from preset)
   aasTypeIri?: string;       // AAS component type shell IRI, e.g. "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover3DP"
   name: string;              // Human-readable name
   description?: string;      // Optional description
@@ -67,6 +68,7 @@ export const CREATE_COMPONENT_TYPES_TABLE_SQL = `
     current_rating TEXT,
     voltage_rating TEXT,
     version     TEXT,
+    weight      REAL,
     aas_type_iri TEXT,
     name        TEXT NOT NULL,
     description TEXT,
@@ -79,6 +81,7 @@ export const MIGRATE_COMPONENT_TYPES_SQL = [
   `ALTER TABLE component_types ADD COLUMN IF NOT EXISTS finish TEXT`,
   `ALTER TABLE component_types ADD COLUMN IF NOT EXISTS current_rating TEXT`,
   `ALTER TABLE component_types ADD COLUMN IF NOT EXISTS voltage_rating TEXT`,
+  `ALTER TABLE component_types ADD COLUMN IF NOT EXISTS weight REAL`,
   `ALTER TABLE component_types ADD COLUMN IF NOT EXISTS aas_type_iri TEXT`,
 ];
 
@@ -134,6 +137,7 @@ export function rowToComponentType(row: Record<string, any>): ComponentType {
     currentRating: row.current_rating ?? undefined,
     voltageRating: row.voltage_rating ?? undefined,
     version: row.version ?? undefined,
+    weight: row.weight != null ? Number(row.weight) : undefined,
     aasTypeIri: row.aas_type_iri ?? undefined,
     name: row.name ?? "",
     description: row.description ?? undefined,

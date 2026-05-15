@@ -1,0 +1,60 @@
+id_short: "ProcessTracking"
+id: "https://aausmartlab.org/Submodels/Templates/ProcessTracking"
+description: "Process history submodel — records all process steps applied to this component or assembly instance"
+
+elements:
+  - type: collection
+    id_short: "ProcessHistory"
+    semantic_id: "https://aausmartlab.org/Semantics/ProcessHistory"
+    description: "Ordered list of process steps applied to this physical asset, most recent last"
+    cardinality: "ZeroToOne"
+    extensible: true
+    entry_template: "{ProcessType}_{N}"
+    elements:
+      - type: collection
+        id_short: "ProcessRecord"
+        semantic_id: "https://aausmartlab.org/Semantics/ProcessRecord"
+        description: "Execution record for one process step applied to this asset"
+        cardinality: "ZeroToMany"
+        elements:
+          - type: property
+            id_short: "ProcessType"
+            value_type: "xs:string"
+            semantic_id: "https://aausmartlab.org/Semantics/ProcessType"
+            description: "Type of process applied (e.g. Drilling, Assemble, Transport)"
+            cardinality: "One"
+
+          - type: reference_element
+            id_short: "CapabilityReference"
+            semantic_id: "https://aausmartlab.org/Semantics/CapabilityReference"
+            description: "Reference to the required capability submodel instance for this step (e.g. DrillingCapabilityRequired on the product AAS) — carries the actual parameter values used"
+            cardinality: "ZeroToOne"
+            reference_type: "model"
+
+          - type: property
+            id_short: "PerformedBy"
+            value_type: "xs:string"
+            semantic_id: "https://aausmartlab.org/Semantics/PerformedBy"
+            description: "id_short of the resource/station that performed this process"
+            cardinality: "One"
+
+          - type: property
+            id_short: "Status"
+            value_type: "xs:string"
+            semantic_id: "https://aausmartlab.org/Semantics/StepStatus"
+            description: "Execution status: Pending, InProgress, Completed, Failed"
+            cardinality: "One"
+
+          - type: property
+            id_short: "StartTime"
+            value_type: "xs:string"
+            semantic_id: "https://aausmartlab.org/Semantics/StartTime"
+            description: "ISO 8601 timestamp when the process started"
+            cardinality: "ZeroToOne"
+
+          - type: property
+            id_short: "CompletionTime"
+            value_type: "xs:string"
+            semantic_id: "https://aausmartlab.org/Semantics/CompletionTime"
+            description: "ISO 8601 timestamp when the process completed"
+            cardinality: "ZeroToOne"

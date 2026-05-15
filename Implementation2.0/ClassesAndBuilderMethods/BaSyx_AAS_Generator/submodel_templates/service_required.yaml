@@ -36,7 +36,7 @@ elements:
             cardinality: "One"
 
           - type: reference_element
-            id_short: "RequiredCapabilityRef"
-            semantic_id: "https://aausmartlab.org/Semantics/RequiredCapabilityRef"
+            id_short: "RequiredCapabilityReference"
+            semantic_id: "https://aausmartlab.org/Semantics/RequiredCapabilityReference"
             description: "Reference to the RequiredCapability submodel instance for this step â€” contains the exact parameter values to be matched against an OfferedCapability"
             cardinality: "ZeroToOne"

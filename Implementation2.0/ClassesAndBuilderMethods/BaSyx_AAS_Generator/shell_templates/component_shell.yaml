@@ -29,3 +29,8 @@ submodels:
     id_short: "Documentation"
     description: "Human-readable reference information (display name, manufacturer, revision)"
     required: true
+
+  - template_id: "https://aausmartlab.org/Submodels/Templates/ProcessTracking"
+    id_short: "ProcessTracking"
+    description: "Process history — all process steps applied to this component instance"
+    required: true

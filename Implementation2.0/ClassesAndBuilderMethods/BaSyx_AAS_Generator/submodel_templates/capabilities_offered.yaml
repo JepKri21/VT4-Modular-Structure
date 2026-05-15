@@ -7,7 +7,7 @@ elements:
   # One reference_element per capability submodel registered in the shell.
   # id_short must match the id_short of the referenced capability submodel.
   - type: reference_element
-    id_short: "CapabilityRef"
+    id_short: "CapabilityReference"
     semantic_id: "https://aausmartlab.org/Semantics/CapabilityReference"
     description: "Reference to an offered capability submodel on this resource shell"
     cardinality: "OneToMany"

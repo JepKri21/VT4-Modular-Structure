@@ -323,7 +323,7 @@ def _extract_capability_submodels(
         cap_iri = f"{shell_id}/{sm_id_short}"
         cap_sm = build_submodel(template_file, cap_iri, sm_id_short, cap_params)
         extra.append(cap_sm)
-        step["RequiredCapabilityRef"] = cap_iri
+        step["RequiredCapabilityReference"] = cap_iri
 
     return form_data, extra
 

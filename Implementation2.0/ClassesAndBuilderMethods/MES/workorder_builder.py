@@ -148,7 +148,7 @@ def _fetch_required_cap_params(shell_iri: str, operation: str, basyx_url: str) -
         )
         if (op_elem or {}).get("value", "") == operation:
             ref_elem = basyx_client.find_element_by_idshort(
-                step_elem.get("value", []), "RequiredCapabilityRef"
+                step_elem.get("value", []), "RequiredCapabilityReference"
             )
             if ref_elem:
                 keys = (ref_elem.get("value") or {}).get("keys", [])
@@ -157,7 +157,7 @@ def _fetch_required_cap_params(shell_iri: str, operation: str, basyx_url: str) -
             break
 
     if not cap_sm_iri:
-        log.warning("No RequiredCapabilityRef for operation=%s in %s", operation, bop_iri)
+        log.warning("No RequiredCapabilityReference for operation=%s in %s", operation, bop_iri)
         return {}
 
     cap_sm = basyx_client.fetch_submodel(cap_sm_iri, basyx_url)
@@ -253,16 +253,17 @@ def _make_properties_for_slot(slot_cfg: dict) -> dict:
             }
 
     dims = {}
-    for prop_key, sem_key in (
-        ("length", "Length"),
-        ("width",  "Width"),
-        ("height", "Height"),
+    for prop_key, sem_key, sem_unit in (
+        ("length", "Length", "mm"),
+        ("width",  "Width",  "mm"),
+        ("height", "Height", "mm"),
+        ("weight", "Weight", "gram"),
     ):
         val = customer.get(prop_key)
         if val is not None:
             dims[sem_key] = {
-                "semanticId": "https://aausmartlab.org/Semantics/mm",
-                "value": str(val),
+                "semanticId": f"https://aausmartlab.org/Semantics/{sem_unit}",
+                "value": val,
             }
 
     elec = {}

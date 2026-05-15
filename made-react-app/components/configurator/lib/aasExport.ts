@@ -99,8 +99,8 @@ export const buildServiceOfferedSubmodel = (
   const entries = capabilities.map((cap, i) =>
     smc(`${cap.capabilityType}_${i}`, [
       prop("CapabilityType", cap.capabilityType, "xs:string"),
-      prop("ResourceRef", cap.resourceRef, "xs:string"),
-      prop("CapabilityRef", cap.capabilityRef, "xs:string"),
+      prop("ResourceReference", cap.resourceRef, "xs:string"),
+      prop("CapabilityReference", cap.capabilityRef, "xs:string"),
     ]),
   );
   return {

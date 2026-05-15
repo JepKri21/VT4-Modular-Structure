@@ -35,13 +35,13 @@ elements:
             cardinality: "One"
 
           - type: reference_element
-            id_short: "ResourceRef"
+            id_short: "ResourceReference"
             semantic_id: "https://aausmartlab.org/Semantics/ResourceReference"
             description: "Reference to the AAS shell of the resource within this production line that provides this capability"
             cardinality: "One"
 
           - type: reference_element
-            id_short: "CapabilityRef"
+            id_short: "CapabilityReference"
             semantic_id: "https://aausmartlab.org/Semantics/CapabilityReference"
             description: "Reference to the specific OfferedCapability submodel on that resource"
             cardinality: "One"

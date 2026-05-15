@@ -33,3 +33,8 @@ submodels:
     id_short: "ServiceRequired"
     description: "Aggregated list of all capability types required to manufacture this product — used for production line matching"
     required: true
+
+  - template_id: "https://aausmartlab.org/Submodels/Templates/ProcessTracking"
+    id_short: "ProcessTracking"
+    description: "Process history — all process steps applied to this final product instance"
+    required: true
