@@ -185,41 +185,6 @@ def build_inventory(resource_inventories):
     return inventory_models
 
 
-#WE NEED TO CHANGE THIS TO MATCH THE NEW INVENTORY LEVEL MESSAGE TYPE
-#AS WELL AS WHERE WE PUBLISH THE MESSAGE
-#def summarize_inventories(inventories):
-#    result = {}
-#    all_items = []
-#
-#    for inv_name, inv_data in inventories.items():
-#        storage = inv_data.get("Storage", {})
-#        counts = {}
-#
-#        for item in storage.values():
-#            if not item:
-#                continue
-#            
-#            # Collect full item list
-#            all_items.append(item)
-#            
-#            # Remove unique ID (last part of URL)
-#            base = item.rsplit("/", 1)[0]
-#            
-#            # Count per type
-#            counts[base] = counts.get(base, 0) + 1
-#
-#        # Convert counts to list of dicts
-#        result[inv_name] = [
-#            {
-#                "ComponentReference": ref,
-#                "Amount": amt
-#            }
-#            for ref, amt in counts.items()
-#        ]
-#
-#    return result, all_items
-
-
 def find_positions(inventories, query):
     results = []
 
@@ -301,82 +266,6 @@ def place_item(inventories, item_url):
 
 mqtt_client = MQTTClientResource(BROKER, MQTT_PORT, CLIENT_ID, BASE_TOPIC)
 
-
-
-
-"""
-Since there will occasionally be more than 1 actor on a station, it is important to know the different states of each actor individually.
-Each actor may also have slightly different implementations of PackML
-
-We think the smartest way would be to setup topics like this:
-
-#========
-#STATE
-#========
-
-ProductionLine1/Transport-12345678/Data/State/Shuttle1/value
-ProductionLine1/Transport-12345678/Data/State/Shuttle2/value
-Contoller subscribes to ProductionLine1/Transport-12345678/Data/State/+/value
-
-#========
-#COMMAND
-#========
-
-ProductionLine1/Transport-12345678/Data/CMD/Shuttle1/value
-ProductionLine1/Transport-12345678/Data/CMD/Shuttle2/value
-Resoruce subscribes to ProductionLine1/Transport-12345678/Data/CMD/+/value
-
-OR MAYBE IT IS BETTER TO:
-
-ProductionLine1/Transport-12345678/Data/CMD/value           #CMD message specifies the actor
-Resoruce subscribes to ProductionLine1/Transport-12345678/Data/CMD/value
-
-#========
-#JOBRESULT
-#========
-
-ProductionLine1/Transport-12345678/Data/JobResult/Shuttle1/value
-ProductionLine1/Transport-12345678/Data/JobResult/Shuttle2/value
-Controller subscribes to ProductionLine1/Transport-12345678/Data/JobResult/+/value
-
-#========
-#ALARMS
-#========
-
-ProductionLine1/Transport-12345678/Data/Alarms/value        #Alarm payload specifies which actor has the alarm and if the resource itself maybe has an alarm
-Controller subscribes to ProductionLine1/Transport-12345678/Data/Alarms/value
-
-#========
-#ACKNOWLEDGEMENTS
-#========
-
-ProductionLine1/Transport-12345678/Data/ResourceAck/value        #Acknowledgement is handled on the resource itself when commands or similar messages are published (not actor specific)
-Controller subscribes to ProductionLine1/Transport-12345678/Data/Resource_ack/value
-
-ProductionLine1/Transport-12345678/Data/ControllerAck/value        
-Resource subscribes to ProductionLine1/Transport-12345678/Data/Controller_ack/value
-
-#========
-#INVENTORY
-#========
-
-ProductionLine1/Transport-12345678/Data/InventoryLevel/value       #The payload specifies the number of products in each inventory (Not actor specific)
-Controller subscribes to ProductionLine1/Transport-12345678/Data/InventoryLevel/value
-
-#========
-#REQUEST
-#========
-
-ProductionLine1/Transport-12345678/Data/InfoRequest/value
-Resource subscribes to ProductionLine1/Transport-12345678/Data/InfoRequest/value
-#The controller does not need to subscribe to an additional response message, just all the topics from the submodel
-
-"""
-
-
-"""
-Since there can be multiple actors 
-"""
 
 class UR5ManipulatorBehavior(StationBehavior):
 

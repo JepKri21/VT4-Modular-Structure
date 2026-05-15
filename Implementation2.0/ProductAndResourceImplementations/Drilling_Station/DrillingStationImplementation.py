@@ -271,7 +271,7 @@ class KUKAManipulatorBehavior(StationBehavior):
             
 
         else:
-            print("How did you even get here?")
+            print("This is not a skill on this resource, How did you even get here?")
             await machine.transition_to(PackMLState.STOPPING)
         
         await machine.transition_to(PackMLState.COMPLETING)
@@ -279,8 +279,11 @@ class KUKAManipulatorBehavior(StationBehavior):
     async def completing(self, machine):
         state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=PackMLState.COMPLETING)
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
+        spindle_speed_element = MS.PropertyElement(id_short="SpindleSpeed", value=self.spindle_speed, semantic_id="https://aausmartlab.org/Semantics/RPM")
+        spindle_feed_element =MS.PropertyElement(id_short="SpindleFeed", value=self.spindle_feed, semantic_id="https://aausmartlab.org/Semantics/mm_per_s")
+        used_parameters = MS.CollectionElement(id_short="Parameters", semantic_id="https://aausmartlab.org/Semantics/Parameters", elements=[spindle_speed_element, spindle_feed_element])
         print("Finalizing Process and sending result")
-
+        #This should also input the parameters it used to perform the process, so that they can be recorded.
         job_result_message = MS.JobResultMessage(
             timestamp=datetime.now(),
             resource_id=CLIENT_ID, 
@@ -289,6 +292,7 @@ class KUKAManipulatorBehavior(StationBehavior):
             ideal_cycle_time_ms=self.ideal_cycle_time,
             actual_cycle_time_ms=self.actual_cycle_time,
             component_reference=self.command_payload.component_reference,
+            output_parameters=used_parameters,
             result=self.result,
             quality=self.quality
         )
