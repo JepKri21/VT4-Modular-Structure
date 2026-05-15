@@ -65,10 +65,10 @@ json_str = json.dumps(builder.get(),cls=basyx.aas.adapter.json.AASToJsonEncoder,
 result = yaml_to_instance.upload_submodel(json_str, SERVER_BASE)
 print(result)  # "created" or "updated"
 
-#builder = yaml_to_instance.load_instance_from_yaml(f"{script_dir}/HandoffCapabilityOffered.yaml")
-#json_str = json.dumps(builder.get(),cls=basyx.aas.adapter.json.AASToJsonEncoder,indent=2,ensure_ascii=False,)
-#result = yaml_to_instance.upload_submodel(json_str, SERVER_BASE)
-#print(result)  # "created" or "updated"
+builder = yaml_to_instance.load_instance_from_yaml(f"{script_dir}/HandoffCapabilityOffered.yaml")
+json_str = json.dumps(builder.get(),cls=basyx.aas.adapter.json.AASToJsonEncoder,indent=2,ensure_ascii=False,)
+result = yaml_to_instance.upload_submodel(json_str, SERVER_BASE)
+print(result)  # "created" or "updated"
 
 builder = yaml_to_instance.load_instance_from_yaml(f"{script_dir}/Skills.yaml")
 json_str = json.dumps(builder.get(),cls=basyx.aas.adapter.json.AASToJsonEncoder,indent=2,ensure_ascii=False,)

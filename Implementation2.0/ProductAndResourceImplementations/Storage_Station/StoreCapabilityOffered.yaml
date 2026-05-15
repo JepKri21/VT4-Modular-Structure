@@ -55,4 +55,4 @@ elements:
     id_short: "ResourceReference"
     semantic_id: "https://aausmartlab.org/Semantics/ResourceReference"
     description: "Reference to the physical resource realizing this capability"
-    value: "https://aausmartlab.org/Shells/Resources/Storage-12345678"
+    value: "https://aausmartlab.org/Shells/Resources/Storage_12345678"
