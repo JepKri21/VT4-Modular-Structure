@@ -14,9 +14,9 @@ submodels:
     id_short: "Skills"
     description: "Offered skills for the drilling station"
 
-  - template_id: "https://aausmartlab.org/Shells/Resources/Drilling_12345678/HandoffCapabilityOffered"
-    id_short: "HandoffCapabilityOffered"
-    description: "Offered handoff capability with parameters expressed as ranges defining the operational envelope"
+#  - template_id: "https://aausmartlab.org/Shells/Resources/Drilling_12345678/HandoffCapabilityOffered"
+#    id_short: "HandoffCapabilityOffered"
+#    description: "Offered handoff capability with parameters expressed as ranges defining the operational envelope"
 
   - template_id: "https://aausmartlab.org/Shells/Resources/Drilling_12345678/ResourceZones"
     id_short: "ResourceZones"

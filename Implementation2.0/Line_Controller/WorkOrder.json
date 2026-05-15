@@ -3,20 +3,20 @@
   "OrderId": "ORD-D9311AFD",
   "Priority": 0,
   "IssueDate": "2026-05-14T10:35:20.346806",
-  "ProductReference": "https://aausmartlab.org/Shells/Configuration/Mobile_Phone/AAU_Mobile_Phone_v1_99a831c3-9930-4af1-844a-c4b12c9a297c-ORD-D9311AFD",
+  "ProductReference": "https://aausmartlab.org/Shells/Configuration/MobilePhone/AAU_Mobile_Phone_v1_99a831c3-9930-4af1-844a-c4b12c9a297c-ORD-D9311AFD",
   "Ingredients": {
     "BottomCover_ABS_Black": {
       "ComponentReference": "https://aausmartlab.org/Shells/Component/BottomCover"
     },
     "BottomCoverDrilling_SA": {
-      "ComponentReference": "https://aausmartlab.org/Shells/Assembly/Bottom_Cover/BottomCoverDrilling_SA_4dcd5d96-cc81-477a-86a6-1425cb2ef52f-ORD-D9311AFD"
+      "ComponentReference": "https://aausmartlab.org/Shells/Assembly/BottomCoverDrilling/BottomCoverDrilling_SA_4dcd5d96-cc81-477a-86a6-1425cb2ef52f-ORD-D9311AFD"
     },
     "PCB_FuseBoxA": {
       "ComponentReference": "https://aausmartlab.org/Shells/Component/PCB"
     },
     "BottomCoverPCB_SA": {
-      "ComponentReference": "https://aausmartlab.org/Shells/Assembly/Bottom_Cover_PCB/BottomCoverPCB_SA_a2304a4e-cdd2-47f0-9859-a37d6471da44-ORD-D9311AFD",
-      "ComponentType": "https://aausmartlab.org/Shells/SubAssembly/BottomCoverPCB"
+      "ComponentReference": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB/BottomCoverPCB_SA_a2304a4e-cdd2-47f0-9859-a37d6471da44-ORD-D9311AFD",
+      "ComponentType": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
     },
     "Fuse_16A_SB": {
       "ComponentReference": "https://aausmartlab.org/Shells/Component/Fuse/Fuse_16A_SB"
@@ -25,14 +25,14 @@
       "ComponentReference": "https://aausmartlab.org/Shells/Component/Fuse/Fuse_16A_SB"
     },
     "BottomCoverPCBFuse_SA": {
-      "ComponentReference": "https://aausmartlab.org/Shells/Assembly/Bottom_Cover_PCB_Fuse/BottomCoverPCBFuse_SA_e0776a18-a36d-4788-8e23-2c380cfefca6-ORD-D9311AFD",
-      "ComponentType": "https://aausmartlab.org/Shells/SubAssembly/BottomCoverPCBFuse"
+      "ComponentReference": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse/BottomCoverPCBFuse_SA_e0776a18-a36d-4788-8e23-2c380cfefca6-ORD-D9311AFD",
+      "ComponentType": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
     },
     "TopCover_ABS_Black": {
-      "ComponentReference": "https://aausmartlab.org/Shells/Component/Top_Cover/TopCover_ABS_Black"
+      "ComponentReference": "https://aausmartlab.org/Shells/Component/TopCover/TopCover_ABS_Black"
     },
     "AAU_Mobile_Phone_v1": {
-      "ComponentReference": "https://aausmartlab.org/Shells/Configuration/Mobile_Phone/AAU_Mobile_Phone_v1_99a831c3-9930-4af1-844a-c4b12c9a297c-ORD-D9311AFD",
+      "ComponentReference": "https://aausmartlab.org/Shells/Configuration/MobilePhone/AAU_Mobile_Phone_v1_99a831c3-9930-4af1-844a-c4b12c9a297c-ORD-D9311AFD",
       "ComponentType": "https://aausmartlab.org/Shells/Configuration/MobilePhone"
     }
   },

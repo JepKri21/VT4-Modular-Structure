@@ -122,7 +122,7 @@ class JobResultMessage(BaseModel):
     actual_cycle_time_ms: int
     result: Result
     quality: Quality
-    component_reference: str | None = None
+    component_reference: str| List[str] | None = None
     output_parameters: Dict[str, str | int | float | Dict] | None = None
     seq_no: int | None = None
 

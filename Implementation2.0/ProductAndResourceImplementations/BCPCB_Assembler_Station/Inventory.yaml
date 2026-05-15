@@ -1,5 +1,5 @@
 id_short: "Inventory"
-id: "https://aausmartlab.org/Shells/Resources/Storage_12345678/Inventory"
+id: "https://aausmartlab.org/Shells/Resources/BCPCBAssembler_12345678/Inventory"
 description: "Submodel describing the inventory of a resource"
 
 elements:
@@ -35,33 +35,4 @@ elements:
           element_type: "property"
           value_type: "xs:string"
           items:
-            - "BottomCover"
-            - "TopCover"
-
-    - type: collection
-      id_short: "Invertory_2"
-      semantic_id: "https://aausmartlab.org/Semantics/Inventory"
-      description: "Specifications and other relevant information of a specific inventory"
-      
-      elements:
-        - type: collection
-          id_short: "Specifications"
-          semantic_id: "https://aausmartlab.org/Semantics/Parameters"
-          description: "Parameters defining the capability envelope"
-          
-          elements:
-            - type: property
-              id_short: "InventorySize"
-              value_type: "xs:integer"
-              semantic_id: "https://aausmartlab.org/Semantics/InventorySize"
-              description: "Size of the inventory"
-              value: 5
-              
-        - type: list
-          id_short: "SupportedComponents"
-          semantic_id: "https://aausmartlab.org/Semantics/SupportedComponents"
-          description: "Components that can be stored in this inventory"
-          element_type: "property"
-          value_type: "xs:string"
-          items:
-            - "Phone"
+            - "https://aausmartlab.org/Shells/Component/PCB"

@@ -185,41 +185,6 @@ def build_inventory(resource_inventories):
     return inventory_models
 
 
-#WE NEED TO CHANGE THIS TO MATCH THE NEW INVENTORY LEVEL MESSAGE TYPE
-#AS WELL AS WHERE WE PUBLISH THE MESSAGE
-#def summarize_inventories(inventories):
-#    result = {}
-#    all_items = []
-#
-#    for inv_name, inv_data in inventories.items():
-#        storage = inv_data.get("Storage", {})
-#        counts = {}
-#
-#        for item in storage.values():
-#            if not item:
-#                continue
-#            
-#            # Collect full item list
-#            all_items.append(item)
-#            
-#            # Remove unique ID (last part of URL)
-#            base = item.rsplit("/", 1)[0]
-#            
-#            # Count per type
-#            counts[base] = counts.get(base, 0) + 1
-#
-#        # Convert counts to list of dicts
-#        result[inv_name] = [
-#            {
-#                "ComponentReference": ref,
-#                "Amount": amt
-#            }
-#            for ref, amt in counts.items()
-#        ]
-#
-#    return result, all_items
-
-
 def find_positions(inventories, query):
     results = []
 
@@ -302,82 +267,6 @@ def place_item(inventories, item_url):
 mqtt_client = MQTTClientResource(BROKER, MQTT_PORT, CLIENT_ID, BASE_TOPIC)
 
 
-
-
-"""
-Since there will occasionally be more than 1 actor on a station, it is important to know the different states of each actor individually.
-Each actor may also have slightly different implementations of PackML
-
-We think the smartest way would be to setup topics like this:
-
-#========
-#STATE
-#========
-
-ProductionLine1/Transport-12345678/Data/State/Shuttle1/value
-ProductionLine1/Transport-12345678/Data/State/Shuttle2/value
-Contoller subscribes to ProductionLine1/Transport-12345678/Data/State/+/value
-
-#========
-#COMMAND
-#========
-
-ProductionLine1/Transport-12345678/Data/CMD/Shuttle1/value
-ProductionLine1/Transport-12345678/Data/CMD/Shuttle2/value
-Resoruce subscribes to ProductionLine1/Transport-12345678/Data/CMD/+/value
-
-OR MAYBE IT IS BETTER TO:
-
-ProductionLine1/Transport-12345678/Data/CMD/value           #CMD message specifies the actor
-Resoruce subscribes to ProductionLine1/Transport-12345678/Data/CMD/value
-
-#========
-#JOBRESULT
-#========
-
-ProductionLine1/Transport-12345678/Data/JobResult/Shuttle1/value
-ProductionLine1/Transport-12345678/Data/JobResult/Shuttle2/value
-Controller subscribes to ProductionLine1/Transport-12345678/Data/JobResult/+/value
-
-#========
-#ALARMS
-#========
-
-ProductionLine1/Transport-12345678/Data/Alarms/value        #Alarm payload specifies which actor has the alarm and if the resource itself maybe has an alarm
-Controller subscribes to ProductionLine1/Transport-12345678/Data/Alarms/value
-
-#========
-#ACKNOWLEDGEMENTS
-#========
-
-ProductionLine1/Transport-12345678/Data/ResourceAck/value        #Acknowledgement is handled on the resource itself when commands or similar messages are published (not actor specific)
-Controller subscribes to ProductionLine1/Transport-12345678/Data/Resource_ack/value
-
-ProductionLine1/Transport-12345678/Data/ControllerAck/value        
-Resource subscribes to ProductionLine1/Transport-12345678/Data/Controller_ack/value
-
-#========
-#INVENTORY
-#========
-
-ProductionLine1/Transport-12345678/Data/InventoryLevel/value       #The payload specifies the number of products in each inventory (Not actor specific)
-Controller subscribes to ProductionLine1/Transport-12345678/Data/InventoryLevel/value
-
-#========
-#REQUEST
-#========
-
-ProductionLine1/Transport-12345678/Data/InfoRequest/value
-Resource subscribes to ProductionLine1/Transport-12345678/Data/InfoRequest/value
-#The controller does not need to subscribe to an additional response message, just all the topics from the submodel
-
-"""
-
-
-"""
-Since there can be multiple actors 
-"""
-
 class UR5ManipulatorBehavior(StationBehavior):
 
     def __init__(self, actor_name: str, mqtt_client):
@@ -409,7 +298,7 @@ class UR5ManipulatorBehavior(StationBehavior):
         if self.skill == "Handoff":
             try:
                 #Loading handoff specific parameters
-                self.component_reference = self.parameters.get("ComponentReference")
+                #self.component_reference = self.parameters.get("ComponentReference")
                 self.target_position = self.parameters.get("TargetPosition")
                 self.XPos = self.target_position.get("XPos")
                 self.YPos = self.target_position.get("YPos")
@@ -425,7 +314,7 @@ class UR5ManipulatorBehavior(StationBehavior):
 
             try:
                 # unpack for readability
-                self.component_reference = self.parameters.get("ComponentReference")
+                #self.component_reference = self.parameters.get("ComponentReference")
 
                 print("Retrieve parameters loaded:", self.parameters)
 
@@ -439,7 +328,7 @@ class UR5ManipulatorBehavior(StationBehavior):
 
             try:
                 # unpack for readability
-                self.component_reference = self.parameters.get("ComponentReference")
+                #self.component_reference = self.parameters.get("ComponentReference")
 
                 print("Store parameters loaded:", self.parameters)
 
@@ -461,7 +350,7 @@ class UR5ManipulatorBehavior(StationBehavior):
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
 
         if self.skill == "Handoff":
-            print(f"Handing off product: {self.component_reference}")
+            print(f"Handing off product: {self.command_payload.component_reference}")
             print(f"At position ({self.XPos},{self.YPos})")
             self.ideal_cycle_time = 4000+int(self.XPos)+int(self.YPos)
             self.actual_cycle_time = self.ideal_cycle_time + random.randint(200,800)
@@ -472,9 +361,9 @@ class UR5ManipulatorBehavior(StationBehavior):
 
             
         elif self.skill == "Retrieve":
-            print(f"Executing Retrieve with product {self.component_reference}")
+            print(f"Executing Retrieve with product {self.command_payload.component_reference}")
 
-            retriveable_locations = find_positions(inventories=resource_inventories,query=self.component_reference)
+            retriveable_locations = find_positions(inventories=resource_inventories,query=self.command_payload.component_reference)
 
             if retriveable_locations:
                 retrieved_item = retriveable_locations[0]  # We just take the first one
@@ -493,12 +382,12 @@ class UR5ManipulatorBehavior(StationBehavior):
             
         
         elif self.skill == "Store":
-            print(f"Executing Store with product {self.component_reference}")
+            print(f"Executing Store with product {self.command_payload.component_reference}")
             
             #This should automatically find available positions and then place it into one
             #It also returns the specific inventory and position, but we don't need that right now
 
-            stored_item_position = place_item(resource_inventories, self.component_reference)
+            stored_item_position = place_item(resource_inventories, self.command_payload.component_reference)
             
             if stored_item_position is not None:
                 #Generating cycle times based on parameters
@@ -534,7 +423,7 @@ class UR5ManipulatorBehavior(StationBehavior):
                 job_id=self.command_payload.job_id, 
                 ideal_cycle_time_ms=self.ideal_cycle_time,
                 actual_cycle_time_ms=self.actual_cycle_time,
-                component_reference= self.component_reference,
+                component_reference= self.retrieved_item_component,
                 result=self.result,
                 quality=self.quality,
                 output_parameters={}
@@ -548,7 +437,7 @@ class UR5ManipulatorBehavior(StationBehavior):
                 job_id=self.command_payload.job_id, 
                 ideal_cycle_time_ms=self.ideal_cycle_time,
                 actual_cycle_time_ms=self.actual_cycle_time,
-                component_reference= self.component_reference,
+                component_reference= self.command_payload.component_reference,
                 result=self.result,
                 quality=self.quality,
                 output_parameters={}

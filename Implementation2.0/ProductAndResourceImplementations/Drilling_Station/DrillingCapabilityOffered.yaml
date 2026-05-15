@@ -98,4 +98,4 @@ elements:
     id_short: "ResourceReference"
     semantic_id: "https://aausmartlab.org/Semantics/ResourceReference"
     description: "Reference to the physical resource realizing this capability"
-    value: "https://aausmartlab.org/Shells/Resources/Drilling-12345678"
+    value: "https://aausmartlab.org/Shells/Resources/Drilling_12345678"

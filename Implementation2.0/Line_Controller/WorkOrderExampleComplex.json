@@ -11,10 +11,7 @@
       "ComponentReference": "https://aausmartlab.org/Shells/Component/PCB"
     },
     "Ingredient_3": {
-      "ComponentReference": "https://aausmartlab.org/Shells/Assembly/Bottom_Cover_Drilled/Bottom_Cover_Drilled-BCD002"
-    },
-    "Ingredient_4": {
-      "ComponentReference": "https://aausmartlab.org/Shells/Assembly/Bottom_Cover_Drilled_PCB/Bottom_Cover_Drilled_PCB-BCDP001"
+      "ComponentReference": "https://aausmartlab.org/Shells/Assembly/BottomCPCB/BCPCB-BCDP001"
     }
   },
   "Properties": {
@@ -89,18 +86,11 @@
     "Ingredient_3": {
       "MaterialProperties": {},
       "PhysicalDimensions": {}
-    },
-    "Ingredient_4": {
-      "MaterialProperties": {},
-      "PhysicalDimensions": {}
     }
   },
   "Assemblies": {
     "Ingredient_3": {
-      "Ingredients": ["Ingredient_1"]
-    },
-    "Ingredient_4": {
-      "Ingredients": ["Ingredient_3", "Ingredient_2"]
+      "Ingredients": ["Ingredient_1", "Ingredient_2"]
     }
   },
   "ProcessSteps": {
@@ -131,14 +121,23 @@
         }
       }
     },
-    "Ingredient_4": {
+    "Ingredient_3": {
       "ProcessStep1": {
         "CapabilityReference": "https://aausmartlab.org/Submodels/Capability/Assemble",
         "ProcessStepId": "2x1",
         "Dependencies": [],
         "Parameters": {
-          "InputComponents": ["Ingredient_2", "Ingredient_3"]
-        }
+          "TargetPosition": {"XPos": 80.0, "YPos": 40.0}
+        },
+        "ProcessTransformation": {
+            "InputTypes": [
+              "https://aausmartlab.org/Shells/Component/BottomCover", 
+              "https://aausmartlab.org/Shells/Component/PCB"
+              ]
+            },
+            "OutputTypes": [
+              "https://aausmartlab.org/Shells/Assembly/BottomCPCB/BCPCB-BCDP001"
+            ]
       }
     }
   }

@@ -232,11 +232,33 @@ class CapabilityMatcher:
             flat[name] = node
 
     def _check_component(self, component, supported_components):
+        """
+        Compare components by their type IRI ('/Shells/<Category>/<Type>'),
+        not by per-instance IRI. The work order's ComponentReference for
+        sub-assemblies includes a trailing instance segment + UUID; the
+        capability's SupportedComponents declares the type-level IRI only.
+        Both sides are reduced to the same prefix before comparison.
+        """
         if not supported_components:
             return True
         if component is None:
             return False
-        return component in supported_components
+        normalized = self._component_type(component)
+        supported = {self._component_type(s) for s in supported_components}
+        return normalized in supported
+
+    def _component_type(self, url):
+        """Reduce a Shells URL to '/Shells/<Category>/<Type>', dropping any
+        per-instance suffix. URLs already in that form pass through
+        unchanged; non-URL input is returned as-is."""
+        if not isinstance(url, str):
+            return url
+        parts = url.split("/")
+        try:
+            idx = parts.index("Shells")
+        except ValueError:
+            return url
+        return "/".join(parts[: idx + 3])
 
     def _check_material(self, material, allowed_materials):
         """

@@ -194,7 +194,7 @@ class Shuttle1Behaviour(StationBehavior):
                 self.target_position = self.parameters.get("TargetPosition")
                 self.x_pos = self.target_position.get("XPos")
                 self.y_pos = self.target_position.get("YPos")
-                self.component_reference = self.parameters.get("ComponentReference")
+                #self.component_reference = self.parameters.get("ComponentReference")
 
                 print("Transport parameters loaded:", self.parameters)
 
@@ -216,7 +216,7 @@ class Shuttle1Behaviour(StationBehavior):
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
 
         if self.skill == "Transport":
-            print(f"Executing Transport with parameters:  Speed Constraint: {self.speed_constraint}, Acceleration Constraint: {self.acceleration_constraint}, Target Position: { self.target_position}, Component Reference: {self.component_reference}")
+            print(f"Executing Transport with parameters:  Speed Constraint: {self.speed_constraint}, Acceleration Constraint: {self.acceleration_constraint}, Target Position: { self.target_position}, Component Reference: {self.command_payload.component_reference}")
             
             #Generating cycle times based on parameters
 
@@ -385,7 +385,7 @@ class Shuttle2Behaviour(StationBehavior):
                 self.target_position = self.parameters.get("TargetPosition")
                 self.x_pos = self.target_position.get("XPos")
                 self.y_pos = self.target_position.get("YPos")
-                self.component_reference = self.parameters.get("ComponentReference")
+                #self.component_reference = self.parameters.get("ComponentReference")
 
                 print("Transport parameters loaded:", self.parameters)
 
@@ -408,7 +408,7 @@ class Shuttle2Behaviour(StationBehavior):
 
         if self.skill == "Transport":
             print(f"Current Position Is: ({self.current_position[0]},{self.current_position[1]})")
-            print(f"Executing Transport with parameters:  Speed Constraint: {self.speed_constraint}, Acceleration Constraint: {self.acceleration_constraint}, Target Position: { self.target_position}, Component Reference: {self.component_reference}")
+            print(f"Executing Transport with parameters:  Speed Constraint: {self.speed_constraint}, Acceleration Constraint: {self.acceleration_constraint}, Target Position: { self.target_position}, Component Reference: {self.command_payload.component_reference}")
             
             #Generating cycle times based on parameters
             target_position = [self.x_pos, self.y_pos]

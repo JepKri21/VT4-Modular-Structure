@@ -1,0 +1,47 @@
+id_short: "Communication"
+id: "https://aausmartlab.org/Shells/Resources/BCPCBAssembler_12345678/Communication"
+description: "Communication zones submodel for the drilling station"
+
+elements:
+  - type: collection
+    id_short: "MQTT"
+    elements:
+      - type: collection
+        id_short: "Suffixes"
+        elements:
+          - type: property
+            id_short: "CommandSuffix"
+            value_type: "xs:string"
+            value: "CMD"
+          - type: property
+            id_short: "StateSuffix"
+            value_type: "xs:string"
+            value: "PackMLState"
+          - type: property
+            id_short: "JobResultSuffix"
+            value_type: "xs:string"
+            value: "JobResult"
+          - type: property
+            id_short: "InfoRequestSuffix"
+            value_type: "xs:string"
+            value: "InfoRequest"
+          - type: property
+            id_short: "ResourceAcknowledgementSuffix"
+            value_type: "xs:string"
+            value: "ResourceAck"
+          - type: property
+            id_short: "ControllerAcknowledgementSuffix"
+            value_type: "xs:string"
+            value: "ControllerAck"
+          - type: property
+            id_short: "OccupancySuffix"
+            value_type: "xs:string"
+            value: "Occupy"
+          - type: property
+            id_short: "CargoSuffix"
+            value_type: "xs:string"
+            value: "Cargo"
+          - type: property
+            id_short: "InventoryLevelSuffix"
+            value_type: "xs:string"
+            value: "InventoryLevel"
