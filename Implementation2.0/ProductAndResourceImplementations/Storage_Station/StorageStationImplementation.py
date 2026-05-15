@@ -534,7 +534,7 @@ class UR5ManipulatorBehavior(StationBehavior):
                 job_id=self.command_payload.job_id, 
                 ideal_cycle_time_ms=self.ideal_cycle_time,
                 actual_cycle_time_ms=self.actual_cycle_time,
-                component_reference= self.command_payload.component_reference,
+                component_reference= self.retrieved_item_component,
                 result=self.result,
                 quality=self.quality,
                 output_parameters={}
