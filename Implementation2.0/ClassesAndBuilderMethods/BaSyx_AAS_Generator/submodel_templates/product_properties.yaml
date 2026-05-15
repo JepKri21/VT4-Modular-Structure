@@ -91,7 +91,7 @@ elements:
     cardinality: "ZeroToOne"
     elements:
       - type: property
-        id_short: "Voltage_Rating"
+        id_short: "VoltageRating"
         value_type: "xs:integer"
         semantic_id: "https://aausmartlab.org/Semantics/VoltageRating"
         description: "Maximum voltage rating in volts"
@@ -103,7 +103,7 @@ elements:
             kind: "TEMPLATE_QUALIFIER"
 
       - type: property
-        id_short: "Current_Rating"
+        id_short: "CurrentRating"
         value_type: "xs:double"
         semantic_id: "https://aausmartlab.org/Semantics/CurrentRating"
         description: "Current rating in amperes"
