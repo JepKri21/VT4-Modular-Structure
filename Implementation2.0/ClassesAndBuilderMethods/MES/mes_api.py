@@ -26,6 +26,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "BaSyx_AAS_Generator"))
 
 import order_store
 import order_processor
+import shell_uploader
 
 logging.basicConfig(
     level=logging.INFO,
@@ -74,6 +75,28 @@ async def get_order(order_id: str):
         from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Order not found")
     return order
+
+
+@app.delete("/api/v1/orders/{webshop_id}/shells", status_code=200)
+async def delete_order_shells(webshop_id: str, background_tasks: BackgroundTasks):
+    """
+    Delete all BaSyx shells that were uploaded for a given webshop order UUID.
+    Called by the Next.js app when an order is cancelled by the user.
+    """
+    order = order_store.get_order_by_webshop_id(webshop_id)
+    if order is None:
+        log.warning("delete_order_shells: no MES record for webshop_id=%s", webshop_id)
+        return {"ok": True, "deleted": 0}
+
+    iris = order.get("shell_iris", {})
+    if not iris:
+        log.info("delete_order_shells: no shells recorded for webshop_id=%s", webshop_id)
+        return {"ok": True, "deleted": 0}
+
+    order_id = order.get("order_id", webshop_id)
+    log.info("Scheduling shell cleanup for order %s (%d shells)", order_id, len(iris))
+    background_tasks.add_task(shell_uploader.delete_all, iris)
+    return {"ok": True, "deleted": len(iris)}
 
 
 @app.get("/health")

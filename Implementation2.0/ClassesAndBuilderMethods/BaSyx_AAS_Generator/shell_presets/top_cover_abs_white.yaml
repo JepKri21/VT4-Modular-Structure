@@ -1,8 +1,8 @@
-﻿type: "top_cover"
-label: "Top Cover â€“ ABS, White, Glossy"
+type: "top_cover"
+label: "Top Cover – ABS, White, Glossy"
 description: "Injection-moulded ABS top cover, white glossy finish. Change SerialNumber and BatchNumber per instance."
 
-asset_name: "TopCover_ABS_White"
+asset_name: "TopCoverABSWhite"
 
 submodels:
   Properties:

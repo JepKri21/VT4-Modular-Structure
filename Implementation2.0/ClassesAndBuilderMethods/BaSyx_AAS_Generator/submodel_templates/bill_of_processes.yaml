@@ -1,4 +1,4 @@
-id_short: "BillOfProcesses"
+﻿id_short: "BillOfProcesses"
 id: "https://aausmartlab.org/Submodels/Templates/BillOfProcesses"
 description: "Bill of Processes submodel template — generic process definition and tracking for assemblies and final products"
 
@@ -118,16 +118,16 @@ elements:
                 cardinality: "ZeroToOne"
 
               - type: property
-                id_short: "MaxDuration_s"
+                id_short: "MaxDurationS"
                 value_type: "xs:integer"
-                semantic_id: "https://aausmartlab.org/Semantics/MaxDuration_s"
+                semantic_id: "https://aausmartlab.org/Semantics/MaxDurationS"
                 description: "Maximum allowed duration for this step in seconds"
                 cardinality: "ZeroToOne"
 
               - type: property
-                id_short: "MaxWaitAfter_s"
+                id_short: "MaxWaitAfterS"
                 value_type: "xs:integer"
-                semantic_id: "https://aausmartlab.org/Semantics/MaxWaitAfter_s"
+                semantic_id: "https://aausmartlab.org/Semantics/MaxWaitAfterS"
                 description: "Maximum seconds allowed between this step completing and the next step starting"
                 cardinality: "ZeroToOne"
 

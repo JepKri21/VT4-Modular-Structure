@@ -1,15 +1,15 @@
-﻿# SA2 Sub-Assembly: Bottom Cover PCB Fuse Assembly
+# SA2 Sub-Assembly: Bottom Cover PCB Fuse Assembly
 # Inputs: SA1 (Bottom Cover PCB) + Fuse 1 + Fuse 2
 # Output: Bottom Cover with PCB and two fuses mounted
 # ProcessType "Assemble" is used by the MES workorder_builder to create an Assemblies entry.
-# IsSubAssembly flags are MES-specific â€” ignored by form_to_aas.py template processing.
+# IsSubAssembly flags are MES-specific — ignored by form_to_aas.py template processing.
 
 type: "bottom_cover_assembly_chain"
 label: "Bottom Cover PCB Fuse Sub-Assembly"
 description: "Sub-assembly in which two fuses are mounted onto the PCB inside the bottom cover."
 
-asset_type: "Bottom_Cover_PCB_Fuse"
-asset_name: "BottomCoverPCBFuse_SA"
+asset_type: "BottomCoverPCBFuse"
+asset_name: "BottomCoverPCBFuseSA"
 asset_category: "Electrical"
 
 submodels:
@@ -24,35 +24,35 @@ submodels:
       - language: "en"
         text: "Bottom Cover PCB Fuse Sub-Assembly"
       - language: "da"
-        text: "BundlÃ¥g PCB Sikring Samleenhed"
+        text: "Bundlåg PCB Sikring Samleenhed"
     Description:
       - language: "en"
         text: "Sub-assembly: bottom cover PCB assembly with two fuses mounted on the PCB"
       - language: "da"
-        text: "Samleenhed: bundlÃ¥g PCB samleenhed med to sikringer monteret pÃ¥ PCB"
+        text: "Samleenhed: bundlåg PCB samleenhed med to sikringer monteret på PCB"
 
   BillOfMaterials:
     BOMEntries:
       - Description: "Bottom Cover PCB Sub-Assembly"
         Quantity: 1
         IsSubAssembly: true
-        ProductFamilyRef: "https://aausmartlab.org/Shells/Assembly/Bottom_Cover_PCB/BottomCoverPCB_SA"
-      - Description: "Fuse 1 â€“ 16A Slow-Blow"
+        ProductFamilyRef: "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB/BottomCoverPCBSA"
+      - Description: "Fuse 1 – 16A Slow-Blow"
         Quantity: 1
         IsSubAssembly: false
-        ProductFamilyRef: "https://aausmartlab.org/Shells/Component/Fuse/Fuse_16A_SB"
-      - Description: "Fuse 2 â€“ 16A Slow-Blow"
+        ProductFamilyRef: "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB"
+      - Description: "Fuse 2 – 16A Slow-Blow"
         Quantity: 1
         IsSubAssembly: false
-        ProductFamilyRef: "https://aausmartlab.org/Shells/Component/Fuse/Fuse_16A_SB"
+        ProductFamilyRef: "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB"
 
   BillOfProcesses:
     ProcessSteps:
       - Operation: "Assemble Fuses"
         ProcessType: "Assemble"
         RequiredComponents:
-          - "BottomCoverPCB_SA"
-          - "Fuse_16A_SB"
+          - "BottomCoverPCBSA"
+          - "Fuse16ASB"
         StepConstraints:
-          MaxDuration_s: 90
+          MaxDurationS: 90
           RequiresInspection: false

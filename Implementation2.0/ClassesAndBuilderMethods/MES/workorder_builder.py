@@ -28,9 +28,9 @@ PRESETS_DIR = Path(__file__).parent.parent / "BaSyx_AAS_Generator" / "shell_pres
 
 # Maps the last IRI segment (asset_name) to a preset file name
 ASSET_NAME_TO_PRESET: dict[str, str] = {
-    "BottomCoverDrilling_SA": "bottom_cover_drilling_assembly",
-    "BottomCoverPCB_SA":      "bottom_cover_pcb_assembly",
-    "BottomCoverPCBFuse_SA":  "bottom_cover_pcb_fuse_assembly",
+    "BottomCoverDrillingSA": "bottom_cover_drilling_assembly",
+    "BottomCoverPCBSA":      "bottom_cover_pcb_assembly",
+    "BottomCoverPCBFuseSA":  "bottom_cover_pcb_fuse_assembly",
 }
 
 # Cache: component variant IRI → all property sections fetched from BaSyx
@@ -75,8 +75,8 @@ def _get_type_shell_properties(component_iri: str, basyx_url: str) -> dict:
 
     Strategy:
       1. Derive category type IRI by stripping the last path segment from the
-         variant IRI:  …/Component/Bottom_Cover/BottomCover_PETG_Gray
-                     → …/Component/Bottom_Cover
+         variant IRI:  …/Component/BottomCover/BottomCoverPETGGray
+                     → …/Component/BottomCover
       2. Fetch the Properties template at {category_type_iri}/Properties.
       3. Fall back to {component_iri}/Properties (variant-level) if not found.
     """
@@ -217,7 +217,7 @@ def _asset_name_from_iri(iri: str) -> str:
 def _type_iri_from_full(iri: str) -> str:
     """Strip trailing UUID segment to get the component type IRI.
 
-    e.g. …/BottomCover_ABS_Black/37d24975-… → …/BottomCover_ABS_Black
+    e.g. …/BottomCoverABSBlack/37d24975-… → …/BottomCoverABSBlack
     """
     return _UUID_RE.sub("", iri.rstrip("/"))
 
@@ -356,8 +356,8 @@ def build_workorder(
                 input_ids.extend(sub_output_ids)
             else:
                 # Raw component — resolve the actual ordered component IRI first,
-                # then use it as the ingredient name so "BottomCover_PETG_Gray"
-                # appears instead of the generic BOM family name "BottomCover_3DP".
+                # then use it as the ingredient name so "BottomCoverPETGGray"
+                # appears instead of the generic BOM family name "BottomCover3DP".
                 slot_cfg = _find_slot_config(ref_iri)
                 type_iri = (slot_cfg.get("aasTypeIri") if slot_cfg else None) or ref_iri
                 component_ref_iri = _type_iri_from_full(type_iri)

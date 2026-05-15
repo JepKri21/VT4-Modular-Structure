@@ -140,6 +140,10 @@ export async function POST(req: NextRequest) {
       // Skip non-component shells (resources, production lines, etc.)
       if (!id.includes("/Shells/Component/")) continue;
 
+      // Skip type-level template shells — only count physical instances
+      const assetKind = (shell.assetInformation as Record<string, unknown> | undefined)?.assetKind;
+      if (assetKind === "Type") continue;
+
       const segments = id.replace("https://aausmartlab.org/Shells/", "").split("/").filter(Boolean);
       // Filter out any full-UUID path segments (legacy format)
       const meaningful = segments.filter((s) => !UUID_SEGMENT_RE.test(s));
@@ -208,6 +212,35 @@ export async function POST(req: NextRequest) {
           [componentTypeId, info.count]
         );
       }
+    }
+
+    // Remove stale synced entries that are no longer present on the AAS server
+    // (covers type-level template shells and any other previously-synced leftovers).
+    // Only touches rows whose description starts with "Synced from" to avoid
+    // deleting manually-created entries.
+    const activeIds = Object.keys(typeCounts);
+    if (activeIds.length > 0) {
+      const placeholders = activeIds.map((_, i) => `$${i + 1}`).join(", ");
+      const staleFilter = `id NOT IN (${placeholders}) AND description LIKE 'Synced from %'`;
+      await pool.query(
+        `DELETE FROM inventory WHERE component_type_id NOT IN (${placeholders})
+           AND component_type_id IN (SELECT id FROM component_types WHERE ${staleFilter})`,
+        activeIds
+      );
+      await pool.query(
+        `DELETE FROM order_items WHERE component_type_id NOT IN (${placeholders})
+           AND component_type_id IN (SELECT id FROM component_types WHERE ${staleFilter})`,
+        activeIds
+      );
+      await pool.query(
+        `DELETE FROM component_types WHERE ${staleFilter}`,
+        activeIds
+      );
+    } else {
+      // Nothing synced — wipe all previously-synced entries
+      await pool.query(`DELETE FROM inventory WHERE component_type_id IN (SELECT id FROM component_types WHERE description LIKE 'Synced from %')`);
+      await pool.query(`DELETE FROM order_items WHERE component_type_id IN (SELECT id FROM component_types WHERE description LIKE 'Synced from %')`);
+      await pool.query(`DELETE FROM component_types WHERE description LIKE 'Synced from %'`);
     }
 
     return NextResponse.json({

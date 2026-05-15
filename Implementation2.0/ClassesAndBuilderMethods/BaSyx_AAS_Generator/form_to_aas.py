@@ -357,6 +357,13 @@ def build_submodel(
 def main() -> None:
     payload = json.loads(sys.stdin.read())
 
+    # Preset-mode: batch generator passes full resolved preset dict.
+    # build_environment() auto-discovers all templates via SM_TEMPLATE_MAP.
+    if "preset" in payload:
+        env, _ = build_environment(payload["preset"])
+        print(json.dumps(env, ensure_ascii=False))
+        return
+
     shell_type      = payload["shell_type"]
     name            = payload["name"]
     category        = payload["category"]

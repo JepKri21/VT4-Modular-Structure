@@ -1,14 +1,14 @@
-type: "assembly_module"
+﻿type: "assembly_module"
 label: "Assembly Module – Snap-Fit (AAU Lab)"
 description: "UR5 snap-fit assembly station for joining Bottom Cover and Bottom Cover PCB sub-assemblies without fasteners."
 
-asset_name: "Assembly_SnapFit"
+asset_name: "AssemblySnapFit"
 
 submodels:
   AssembleCapabilityOffered:
     SupportedComponents:
-      - "https://aausmartlab.org/Shells/Component/Bottom_Cover"
-      - "https://aausmartlab.org/Shells/SubAssembly/Bottom_Cover_PCB"
+      - "https://aausmartlab.org/Shells/Component/BottomCover"
+      - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
     Parameters:
       SupportedAssemblyTypes:
         - "snap-fit"
@@ -19,14 +19,14 @@ submodels:
       MaxComponentCount:
         min: 2
         max: 4
-      MaxAssemblyTime_s:
+      MaxAssemblyTimeS:
         min: 5.0
         max: 60.0
 
   HandoffCapabilityOffered:
     SupportedComponents:
-      - "https://aausmartlab.org/Shells/Component/Bottom_Cover"
-      - "https://aausmartlab.org/Shells/SubAssembly/Bottom_Cover_PCB"
+      - "https://aausmartlab.org/Shells/Component/BottomCover"
+      - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
     Parameters:
       TargetPosition:
         XPos: ""
@@ -35,12 +35,12 @@ submodels:
   Skills:
     Skill:
       - SkillName: "Assemble"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Assembly_SnapFit/AssembleCapabilityOffered"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/AssemblySnapFit/AssembleCapabilityOffered"
         SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
         Actors:
           - "UR5"
       - SkillName: "Handoff"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Assembly_SnapFit/HandoffCapabilityOffered"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/AssemblySnapFit/HandoffCapabilityOffered"
         SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
         Actors:
           - "UR5"

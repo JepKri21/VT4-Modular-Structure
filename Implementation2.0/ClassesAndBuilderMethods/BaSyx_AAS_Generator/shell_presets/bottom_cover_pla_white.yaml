@@ -1,8 +1,8 @@
-﻿type: "bottom_cover"
-label: "Bottom Cover â€“ PLA, White, Matte"
+type: "bottom_cover"
+label: "Bottom Cover – PLA, White, Matte"
 description: "3D-printed PLA bottom cover, white matte finish. Change SerialNumber and BatchNumber per instance."
 
-asset_name: "BottomCover_PLA_White"
+asset_name: "BottomCoverPLAWhite"
 
 submodels:
   Properties:

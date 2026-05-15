@@ -1,4 +1,4 @@
-# Category type shell for Storage Module resources.
+﻿# Category type shell for Storage Module resources.
 #
 # Shared across all storage module presets:
 #   - CapabilityCategory / CapabilityReference for Store, Retrieve, and Handoff
@@ -10,9 +10,9 @@
 
 kind: "Type"
 shell: "resource_shell"
-asset_type: "Storage_Module"
+asset_type: "StorageModule"
 asset_category: "Resource"
-id: "https://aausmartlab.org/Shells/Resources/Storage_Module"
+id: "https://aausmartlab.org/Shells/Resources/StorageModule"
 
 submodel_templates:
   StoreCapabilityOffered:    "https://aausmartlab.org/Submodels/Templates/StoreCapabilityOffered"

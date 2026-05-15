@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowLeft, CalendarClock, CheckCircle2, Factory, Package, RefreshCw, ShoppingBag, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, CalendarClock, CheckCircle2, Factory, Package, RefreshCw, ShoppingBag, Trash2 } from "lucide-react";
 import type { OrderStatus, PlacedOrder } from "@/lib/inventory";
 
 function formatPlacedAt(value: string | null): string {
@@ -224,6 +224,12 @@ export default function AasOrdersPage() {
                         </span>
                       )}
                     </div>
+                    {order.status === "cancelled" && order.cancellationReason && (
+                      <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+                        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                        <span>{order.cancellationReason}</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex gap-3">

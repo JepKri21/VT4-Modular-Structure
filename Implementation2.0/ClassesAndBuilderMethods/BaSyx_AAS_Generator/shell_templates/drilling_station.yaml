@@ -1,4 +1,4 @@
-# Category type shell for Drilling Station resources.
+﻿# Category type shell for Drilling Station resources.
 #
 # Shared across all drilling station presets:
 #   - CapabilityCategory / CapabilityReference for Drilling and Handoff
@@ -10,9 +10,9 @@
 
 kind: "Type"
 shell: "resource_shell"
-asset_type: "Drilling_Station"
+asset_type: "DrillingStation"
 asset_category: "Resource"
-id: "https://aausmartlab.org/Shells/Resources/Drilling_Station"
+id: "https://aausmartlab.org/Shells/Resources/DrillingStation"
 
 submodel_templates:
   DrillingCapabilityOffered: "https://aausmartlab.org/Submodels/Templates/DrillingCapabilityOffered"

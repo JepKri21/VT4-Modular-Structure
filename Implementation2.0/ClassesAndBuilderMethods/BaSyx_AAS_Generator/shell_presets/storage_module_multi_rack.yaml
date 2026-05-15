@@ -1,27 +1,27 @@
-type: "storage_module"
+﻿type: "storage_module"
 label: "Storage Module – Multi-Rack (AAU Lab)"
 description: "UR5 multi-rack storage module with two inventories: 10-slot rack for raw covers and 5-slot rack for drilled covers."
 
-asset_name: "Storage_MultiRack"
+asset_name: "StorageMultiRack"
 
 submodels:
   StoreCapabilityOffered:
     SupportedComponents:
-      - "https://aausmartlab.org/Shells/Component/Bottom_Cover"
-      - "https://aausmartlab.org/Shells/Component/Top_Cover"
-      - "https://aausmartlab.org/Shells/Component/Bottom_Cover_Drilled"
+      - "https://aausmartlab.org/Shells/Component/BottomCover"
+      - "https://aausmartlab.org/Shells/Component/TopCover"
+      - "https://aausmartlab.org/Shells/Component/BottomCoverDrilled"
 
   RetrieveCapabilityOffered:
     SupportedComponents:
-      - "https://aausmartlab.org/Shells/Component/Bottom_Cover"
-      - "https://aausmartlab.org/Shells/Component/Top_Cover"
-      - "https://aausmartlab.org/Shells/Component/Bottom_Cover_Drilled"
+      - "https://aausmartlab.org/Shells/Component/BottomCover"
+      - "https://aausmartlab.org/Shells/Component/TopCover"
+      - "https://aausmartlab.org/Shells/Component/BottomCoverDrilled"
 
   HandoffCapabilityOffered:
     SupportedComponents:
-      - "https://aausmartlab.org/Shells/Component/Bottom_Cover"
-      - "https://aausmartlab.org/Shells/Component/Top_Cover"
-      - "https://aausmartlab.org/Shells/Component/Bottom_Cover_Drilled"
+      - "https://aausmartlab.org/Shells/Component/BottomCover"
+      - "https://aausmartlab.org/Shells/Component/TopCover"
+      - "https://aausmartlab.org/Shells/Component/BottomCoverDrilled"
     Parameters:
       TargetPosition:
         XPos: ""
@@ -32,27 +32,27 @@ submodels:
       - Specifications:
           InventorySize: 10
         SupportedComponents:
-          - "https://aausmartlab.org/Shells/Component/Bottom_Cover"
-          - "https://aausmartlab.org/Shells/Component/Top_Cover"
+          - "https://aausmartlab.org/Shells/Component/BottomCover"
+          - "https://aausmartlab.org/Shells/Component/TopCover"
       - Specifications:
           InventorySize: 5
         SupportedComponents:
-          - "https://aausmartlab.org/Shells/Component/Bottom_Cover_Drilled"
+          - "https://aausmartlab.org/Shells/Component/BottomCoverDrilled"
 
   Skills:
     Skill:
       - SkillName: "Store"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage_MultiRack/StoreCapabilityOffered"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/StorageMultiRack/StoreCapabilityOffered"
         SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
         Actors:
           - "UR5"
       - SkillName: "Retrieve"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage_MultiRack/RetrieveCapabilityOffered"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/StorageMultiRack/RetrieveCapabilityOffered"
         SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
         Actors:
           - "UR5"
       - SkillName: "Handoff"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage_MultiRack/HandoffCapabilityOffered"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/StorageMultiRack/HandoffCapabilityOffered"
         SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
         Actors:
           - "UR5"

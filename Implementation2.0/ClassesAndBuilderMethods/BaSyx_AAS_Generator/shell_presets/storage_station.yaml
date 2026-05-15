@@ -1,4 +1,4 @@
-type: "storage_module"
+﻿type: "storage_module"
 label: "Storage Station – AAU Lab"
 description: "UR5 storage station with store, retrieve, and handoff capabilities"
 
@@ -9,9 +9,9 @@ submodels:
     CapabilityCategory: "Offered"
     CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Store"
     SupportedComponents:
-      - "BottomCover_ALU"
-      - "TopCover_ALU"
-      - "Bottom_Cover_Drilled"
+      - "BottomCoverALU"
+      - "TopCoverALU"
+      - "BottomCoverDrilled"
     AllowedMaterials:
       - "PLA"
       - "ABS"
@@ -20,9 +20,9 @@ submodels:
     CapabilityCategory: "Offered"
     CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Retrieve"
     SupportedComponents:
-      - "BottomCover_ALU"
-      - "TopCover_ALU"
-      - "Bottom_Cover_Drilled"
+      - "BottomCoverALU"
+      - "TopCoverALU"
+      - "BottomCoverDrilled"
     AllowedMaterials:
       - "PLA"
       - "ABS"
@@ -31,9 +31,9 @@ submodels:
     CapabilityCategory: "Offered"
     CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Handoff"
     SupportedComponents:
-      - "BottomCover_ALU"
-      - "TopCover_ALU"
-      - "Bottom_Cover_Drilled"
+      - "BottomCoverALU"
+      - "TopCoverALU"
+      - "BottomCoverDrilled"
     AllowedMaterials:
       - "PLA"
       - "ABS"
@@ -65,12 +65,12 @@ submodels:
       - Specifications:
           InventorySize: 10
         SupportedComponents:
-          - "Bottom_Cover"
-          - "Top_Cover"
+          - "BottomCover"
+          - "TopCover"
       - Specifications:
           InventorySize: 5
         SupportedComponents:
-          - "Bottom_Cover_Drilled"
+          - "BottomCoverDrilled"
 
   ResourceZones:
     CenterPoint:

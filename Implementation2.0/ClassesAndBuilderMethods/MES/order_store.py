@@ -38,10 +38,11 @@ def _save_to_disk() -> None:
 _load_from_disk()
 
 
-def add_order(order_id: str, line_id: Optional[str] = None) -> None:
+def add_order(order_id: str, line_id: Optional[str] = None, webshop_id: Optional[str] = None) -> None:
     with _lock:
         _orders[order_id] = {
             "order_id": order_id,
+            "webshop_id": webshop_id,
             "line_id": line_id,
             "status": "PENDING",
             "created_at": datetime.now().isoformat(),
@@ -50,7 +51,7 @@ def add_order(order_id: str, line_id: Optional[str] = None) -> None:
         _save_to_disk()
 
 
-def update_status(order_id: str, status: str, line_id: Optional[str] = None) -> None:
+def update_status(order_id: str, status: str, line_id: Optional[str] = None, error: Optional[str] = None) -> None:
     with _lock:
         if order_id not in _orders:
             _orders[order_id] = {"order_id": order_id}
@@ -58,7 +59,17 @@ def update_status(order_id: str, status: str, line_id: Optional[str] = None) -> 
         _orders[order_id]["updated_at"] = datetime.now().isoformat()
         if line_id:
             _orders[order_id]["line_id"] = line_id
+        if error:
+            _orders[order_id]["error"] = error
         _save_to_disk()
+
+
+def update_shell_iris(order_id: str, shell_iris: dict[str, str]) -> None:
+    with _lock:
+        if order_id in _orders:
+            _orders[order_id]["shell_iris"] = shell_iris
+            _orders[order_id]["updated_at"] = datetime.now().isoformat()
+            _save_to_disk()
 
 
 def get_all() -> list[dict]:
@@ -69,3 +80,11 @@ def get_all() -> list[dict]:
 def get_order(order_id: str) -> Optional[dict]:
     with _lock:
         return _orders.get(order_id)
+
+
+def get_order_by_webshop_id(webshop_id: str) -> Optional[dict]:
+    with _lock:
+        for order in _orders.values():
+            if order.get("webshop_id") == webshop_id:
+                return order
+        return None

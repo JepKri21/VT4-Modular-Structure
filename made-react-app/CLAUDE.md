@@ -32,7 +32,7 @@ The configurator spans two directories. YAML lives in `Implementation2.0/`; the 
 https://aausmartlab.org/Shells/{Category}/{Type}/{Name}
 ```
 
-Example: `https://aausmartlab.org/Shells/Component/Fuse/Fuse_16A_SB`
+Example: `https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB`
 
 ---
 
@@ -100,7 +100,7 @@ When an order is placed through the virtual store, `POST /api/inventory/order` s
 
 ## Virtual Store
 
-`app/virtual-store/page.tsx` — product configurator for the **AAU Mobile Phone**. The BOM slots are hardcoded from `final_product_example.yaml` (5 slots: Bottom Cover, Top Cover, PCB Assembly, Fuse 1, Fuse 2). On page load it fetches `GET /api/inventory` and filters items into each slot using a regex against the IRI path segment (e.g. `/\/Bottom_Cover\//i`). The "Place Order" button is enabled only when all required slots have a selection.
+`app/virtual-store/page.tsx` — product configurator for the **AAU Mobile Phone**. BOM slots are derived dynamically from `GET /api/inventory/bom-slots` (reads the final product preset YAML or BaSyx server). On page load it fetches `GET /api/inventory` and filters items into each slot by matching `c.category` against the slot's `categoryFilter` (case-insensitive). The "Place Order" button is enabled only when all required slots have a selection.
 
 ---
 

@@ -1,8 +1,8 @@
-kind: "Type"
+﻿kind: "Type"
 shell: "component_shell"
-asset_type: "Top_Cover"
+asset_type: "TopCover"
 asset_category: "Mechanical"
-id: "https://aausmartlab.org/Shells/Component/Top_Cover"
+id: "https://aausmartlab.org/Shells/Component/TopCover"
 
 submodel_templates:
   Properties:    "https://aausmartlab.org/Submodels/Templates/ProductProperties"

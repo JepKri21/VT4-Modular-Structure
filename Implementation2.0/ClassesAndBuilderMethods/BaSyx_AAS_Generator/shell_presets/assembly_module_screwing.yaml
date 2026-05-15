@@ -1,16 +1,16 @@
-type: "assembly_module"
+﻿type: "assembly_module"
 label: "Assembly Module – Screwing (AAU Lab)"
 description: "KUKA manipulator torque-controlled screwing station for fastening Fuse Module and PCB sub-assemblies to Bottom Cover."
 
-asset_name: "Assembly_Screwing"
+asset_name: "AssemblyScrewing"
 
 submodels:
   AssembleCapabilityOffered:
     SupportedComponents:
       - "https://aausmartlab.org/Shells/Component/BottomCover"
-      - "https://aausmartlab.org/Shells/SubAssembly/BottomCoverPCB"
-      - "https://aausmartlab.org/Shells/SubAssembly/BottomCoverPCBFuse"
-      - "https://aausmartlab.org/Shells/SubAssembly/FuseModule"
+      - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
+      - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
+      - "https://aausmartlab.org/Shells/Assembly/FuseModule"
       - "https://aausmartlab.org/Shells/Configuration/MobilePhone"
     Parameters:
       SupportedAssemblyTypes:
@@ -22,15 +22,15 @@ submodels:
       MaxComponentCount:
         min: 2
         max: 6
-      MaxAssemblyTime_s:
+      MaxAssemblyTimeS:
         min: 10.0
         max: 120.0
 
   HandoffCapabilityOffered:
     SupportedComponents:
       - "https://aausmartlab.org/Shells/Component/BottomCover"
-      - "https://aausmartlab.org/Shells/SubAssembly/BottomCoverPCB"
-      - "https://aausmartlab.org/Shells/SubAssembly/FuseModule"
+      - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
+      - "https://aausmartlab.org/Shells/Assembly/FuseModule"
     Parameters:
       TargetPosition:
         XPos: ""
@@ -39,7 +39,7 @@ submodels:
   Skills:
     Skill:
       - SkillName: "Assemble"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Assembly_Screwing/AssembleCapabilityOffered"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/AssemblyScrewing/AssembleCapabilityOffered"
         SkillTriggers:
           [
             "START",
@@ -55,7 +55,7 @@ submodels:
         Actors:
           - "KUKAManipulator"
       - SkillName: "Handoff"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Assembly_Screwing/HandoffCapabilityOffered"
+        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/AssemblyScrewing/HandoffCapabilityOffered"
         SkillTriggers:
           [
             "START",

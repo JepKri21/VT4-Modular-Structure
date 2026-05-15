@@ -78,3 +78,17 @@ def upload_all(
     shell_iris[asset_name] = final_iri
 
     return shell_iris, final_iri
+
+
+def delete_all(
+    shell_iris: dict[str, str],
+    basyx_url: str = basyx_client.BASYX_URL,
+) -> None:
+    """Delete all shells (and their submodels) that were uploaded for an order."""
+    for asset_name, shell_iri in shell_iris.items():
+        sm_iris = basyx_client.get_submodel_refs_for_shell(shell_iri, basyx_url)
+        for sm_iri in sm_iris:
+            basyx_client.delete_submodel(sm_iri, basyx_url)
+            log.info("Deleted submodel for %s → %s", asset_name, sm_iri)
+        basyx_client.delete_shell(shell_iri, basyx_url)
+        log.info("Deleted shell %s → %s", asset_name, shell_iri)

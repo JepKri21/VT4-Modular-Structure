@@ -8,6 +8,7 @@ submodel in BaSyx.
 
 Line matching: discover all production line shells from BaSyx by IRI prefix,
 collect their offered capabilities, return first line that covers all required.
+Raises ValueError if no lines are registered or none match the required capabilities.
 """
 
 import logging
@@ -22,9 +23,6 @@ import basyx_client
 log = logging.getLogger(__name__)
 
 _PRODUCTION_LINE_IRI_PREFIX = "https://aausmartlab.org/Shells/ProductionLine/"
-
-# Fallback used only when BaSyx returns no production line shells at all
-_FALLBACK_LINE_ID = "ProductionLine_1"
 
 
 def _discover_lines(basyx_url: str) -> list[dict]:
@@ -106,15 +104,18 @@ def select_line(
     Discover all production lines from BaSyx and return the idShort of the first
     whose ServiceOffered covers all capabilities required by the WorkOrder.
 
-    Falls back to _FALLBACK_LINE_ID if BaSyx has no line shells or none match.
+    Raises ValueError if no production lines are registered in BaSyx or if none
+    can satisfy the required capabilities.
     """
     required = _extract_required_capabilities(workorder)
     log.info("Required capabilities: %s", required)
 
     lines = _discover_lines(basyx_url)
     if not lines:
-        log.warning("No production line shells in BaSyx — using fallback %s", _FALLBACK_LINE_ID)
-        return _FALLBACK_LINE_ID
+        raise ValueError(
+            "No production line found that matches the required capabilities: "
+            f"{required}. No production line shells are registered in BaSyx."
+        )
 
     for shell in lines:
         line_id = shell.get("idShort") or shell["id"][len(_PRODUCTION_LINE_IRI_PREFIX):]
@@ -124,10 +125,7 @@ def select_line(
             log.info("Selected line: %s", line_id)
             return line_id
 
-    fallback_id = lines[0].get("idShort") or _FALLBACK_LINE_ID
-    log.warning(
-        "No line fully covers required capabilities %s — falling back to %s",
-        required,
-        fallback_id,
+    raise ValueError(
+        f"No production line found that matches the required capabilities: {required}. "
+        f"Available lines: {[s.get('idShort') for s in lines]}."
     )
-    return fallback_id

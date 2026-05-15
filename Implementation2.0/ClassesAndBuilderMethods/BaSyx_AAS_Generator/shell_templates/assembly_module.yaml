@@ -1,4 +1,4 @@
-# Category type shell for Assembly Module resources.
+﻿# Category type shell for Assembly Module resources.
 #
 # Shared across all assembly module presets:
 #   - CapabilityCategory / CapabilityReference for Assemble and Handoff
@@ -6,14 +6,14 @@
 #   - Standard PackML Communication suffixes
 #
 # Preset (type: "assembly_module") must supply:
-#   SupportedAssemblyTypes, AssemblyPosition ranges, MaxComponentCount, MaxAssemblyTime_s,
+#   SupportedAssemblyTypes, AssemblyPosition ranges, MaxComponentCount, MaxAssemblyTimeS,
 #   SupportedComponents, Actors, ResourceZones, Skills
 
 kind: "Type"
 shell: "resource_shell"
-asset_type: "Assembly_Module"
+asset_type: "AssemblyModule"
 asset_category: "Resource"
-id: "https://aausmartlab.org/Shells/Resources/Assembly_Module"
+id: "https://aausmartlab.org/Shells/Resources/AssemblyModule"
 
 submodel_templates:
   AssembleCapabilityOffered: "https://aausmartlab.org/Submodels/Templates/AssembleCapabilityOffered"

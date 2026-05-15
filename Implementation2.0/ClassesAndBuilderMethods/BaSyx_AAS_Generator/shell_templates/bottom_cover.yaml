@@ -1,8 +1,8 @@
-kind: "Type"
+﻿kind: "Type"
 shell: "component_shell"
-asset_type: "Bottom_Cover"
+asset_type: "BottomCover"
 asset_category: "Mechanical"
-id: "https://aausmartlab.org/Shells/Component/Bottom_Cover"
+id: "https://aausmartlab.org/Shells/Component/BottomCover"
 
 submodel_templates:
   Properties:    "https://aausmartlab.org/Submodels/Templates/ProductProperties"

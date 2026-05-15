@@ -1,15 +1,15 @@
-﻿# SA1 Sub-Assembly: Bottom Cover PCB Assembly
+# SA1 Sub-Assembly: Bottom Cover PCB Assembly
 # Inputs: Drilled Bottom Cover (from drilling sub-assembly) + PCB Board
 # Output: Bottom Cover with PCB mounted inside
 # ProcessType "Assemble" is used by the MES workorder_builder to create an Assemblies entry.
-# IsSubAssembly flags are MES-specific â€” ignored by form_to_aas.py template processing.
+# IsSubAssembly flags are MES-specific — ignored by form_to_aas.py template processing.
 
 type: "bottom_cover_assembly_chain"
 label: "Bottom Cover PCB Sub-Assembly"
 description: "Sub-assembly in which a drilled bottom cover has a PCB board mounted inside it."
 
-asset_type: "Bottom_Cover_PCB"
-asset_name: "BottomCoverPCB_SA"
+asset_type: "BottomCoverPCB"
+asset_name: "BottomCoverPCBSA"
 asset_category: "Electrical"
 
 submodels:
@@ -24,31 +24,31 @@ submodels:
       - language: "en"
         text: "Bottom Cover PCB Sub-Assembly"
       - language: "da"
-        text: "BundlÃ¥g PCB Samleenhed"
+        text: "Bundlåg PCB Samleenhed"
     Description:
       - language: "en"
         text: "Sub-assembly: drilled aluminium bottom cover with PCB board mounted"
       - language: "da"
-        text: "Samleenhed: boret aluminiums bundlÃ¥g med monteret PCB"
+        text: "Samleenhed: boret aluminiums bundlåg med monteret PCB"
 
   BillOfMaterials:
     BOMEntries:
       - Description: "Drilled Bottom Cover"
         Quantity: 1
         IsSubAssembly: true
-        ProductFamilyRef: "https://aausmartlab.org/Shells/Assembly/Bottom_Cover/BottomCoverDrilling_SA"
+        ProductFamilyRef: "https://aausmartlab.org/Shells/Assembly/BottomCover/BottomCoverDrillingSA"
       - Description: "PCB Board"
         Quantity: 1
         IsSubAssembly: false
-        ProductFamilyRef: "https://aausmartlab.org/Shells/Component/PCB/PCB_FuseBoxA"
+        ProductFamilyRef: "https://aausmartlab.org/Shells/Component/PCB/PCBFuseBoxA"
 
   BillOfProcesses:
     ProcessSteps:
       - Operation: "Assemble PCB"
         ProcessType: "Assemble"
         RequiredComponents:
-          - "BottomCoverDrilling_SA"
-          - "PCB_FuseBoxA"
+          - "BottomCoverDrillingSA"
+          - "PCBFuseBoxA"
         StepConstraints:
-          MaxDuration_s: 120
+          MaxDurationS: 120
           RequiresInspection: false

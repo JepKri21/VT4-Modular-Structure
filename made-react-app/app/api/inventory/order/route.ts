@@ -34,7 +34,7 @@ export async function GET() {
 
   const res = await pool.query(`
     SELECT
-      o.order_id, o.placed_at, o.cancelled_at, o.reserved_session,
+      o.order_id, o.placed_at, o.cancelled_at, o.cancellation_reason, o.reserved_session,
       o.status, o.started_at, o.fulfilled_at,
       oi.order_item_id, oi.component_type_id, oi.quantity, oi.added_at,
       ct.id, ct.category, ct.material, ct.color, ct.version, ct.name, ct.description, ct.created_at
@@ -56,6 +56,7 @@ export async function GET() {
         orderId,
         placedAt: row.placed_at instanceof Date ? row.placed_at.toISOString() : row.placed_at,
         cancelledAt: row.cancelled_at instanceof Date ? row.cancelled_at.toISOString() : (row.cancelled_at ?? null),
+        cancellationReason: row.cancellation_reason ?? null,
         reserved_session: row.reserved_session ?? null,
         status: (row.status ?? "pending") as OrderStatus,
         startedAt: row.started_at instanceof Date ? row.started_at.toISOString() : (row.started_at ?? null),
@@ -268,6 +269,7 @@ export async function POST(req: NextRequest) {
 
   const mesPayload = {
     orderNumber: `ORD-${orderId.slice(0, 8).toUpperCase()}`,
+    orderId,
     placedAt: placedAt.toISOString(),
     expectedDelivery: expectedDelivery.toISOString(),
     totalProducts: totalProducts ?? products.length,
@@ -286,7 +288,9 @@ export async function POST(req: NextRequest) {
 
 // Cancel an order: release reservations back to available
 export async function DELETE(req: NextRequest) {
-  const orderId = new URL(req.url).searchParams.get("orderId");
+  const url = new URL(req.url);
+  const orderId = url.searchParams.get("orderId");
+  const reason = url.searchParams.get("reason") ?? null;
   if (!orderId) {
     return NextResponse.json({ error: "orderId query param is required" }, { status: 400 });
   }
@@ -316,8 +320,8 @@ export async function DELETE(req: NextRequest) {
 
     // Mark order as cancelled
     await client.query(
-      `UPDATE aas_orders SET cancelled_at = NOW(), status = 'cancelled' WHERE order_id = $1`,
-      [orderId]
+      `UPDATE aas_orders SET cancelled_at = NOW(), status = 'cancelled', cancellation_reason = $2 WHERE order_id = $1`,
+      [orderId, reason]
     );
 
     await client.query("COMMIT");
@@ -330,6 +334,11 @@ export async function DELETE(req: NextRequest) {
   } finally {
     client.release();
   }
+
+  // Fire-and-forget: ask MES to delete BaSyx shells for this order
+  fetch(`http://localhost:8000/api/v1/orders/${orderId}/shells`, {
+    method: "DELETE",
+  }).catch((err) => console.warn("[order DELETE] MES shell cleanup failed:", err));
 
   return NextResponse.json({ ok: true });
 }

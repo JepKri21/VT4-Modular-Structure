@@ -1,4 +1,4 @@
-# Dropdown options and derived patterns for configurator fields.
+﻿# Dropdown options and derived patterns for configurator fields.
 #
 # "options" sections: keys match id_short of property elements.
 #   value is a list of strings → rendered as a dropdown.
@@ -77,4 +77,4 @@ operations:
 # Tokens that resolve to empty are dropped along with their separator.
 derived:
   component_documentation:
-    ModelNumber: "{AssetName}-{Material}-{Color}-{Voltage_Rating}V-{Current_Rating}A-{Type}"
+    ModelNumber: "{AssetName}-{Material}-{Color}-{VoltageRating}V-{CurrentRating}A-{Type}"

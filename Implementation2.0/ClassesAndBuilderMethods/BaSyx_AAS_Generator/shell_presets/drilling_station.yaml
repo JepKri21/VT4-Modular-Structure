@@ -1,4 +1,4 @@
-type: "drilling_station"
+﻿type: "drilling_station"
 label: "Drilling Station – AAU Lab"
 description: "KUKA Manipulator drilling station with drilling and handoff capabilities"
 
@@ -9,8 +9,8 @@ submodels:
     CapabilityCategory: "Offered"
     CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Drilling"
     SupportedComponents:
-      - "https://aausmartlab.org/Shells/Component/Bottom_Cover"
-      - "https://aausmartlab.org/Shells/Component/Top_Cover"
+      - "https://aausmartlab.org/Shells/Component/BottomCover"
+      - "https://aausmartlab.org/Shells/Component/TopCover"
     AllowedMaterials:
       - "https://aausmartlab.org/Materials/PLA"
       - "https://aausmartlab.org/Materials/ABS"
@@ -27,8 +27,8 @@ submodels:
     CapabilityCategory: "Offered"
     CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Handoff"
     SupportedComponents:
-      - "https://aausmartlab.org/Shells/Component/Bottom_Cover"
-      - "https://aausmartlab.org/Shells/Component/Top_Cover"
+      - "https://aausmartlab.org/Shells/Component/BottomCover"
+      - "https://aausmartlab.org/Shells/Component/TopCover"
     AllowedMaterials:
       - "https://aausmartlab.org/Materials/PLA"
       - "https://aausmartlab.org/Materials/ABS"

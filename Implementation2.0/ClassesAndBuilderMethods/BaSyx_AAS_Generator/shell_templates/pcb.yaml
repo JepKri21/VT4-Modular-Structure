@@ -1,4 +1,4 @@
-kind: "Type"
+﻿kind: "Type"
 shell: "component_shell"
 asset_type: "PCB"
 asset_category: "Electrical"
@@ -28,8 +28,8 @@ submodels:
       Width: 70
       Height: 2
     ElectricalProperties:
-      Voltage_Rating: 250
-      Current_Rating: 16.0
+      VoltageRating: 250
+      CurrentRating: 16.0
   Documentation:
     ManufacturerName: "AAU SmartLab"
     ProductFamily: "FuseBox Series A"

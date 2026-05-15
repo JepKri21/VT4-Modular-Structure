@@ -1,4 +1,4 @@
-id_short: "AssembleCapabilityOffered"
+﻿id_short: "AssembleCapabilityOffered"
 id: "https://aausmartlab.org/Submodels/Templates/AssembleCapabilityOffered"
 description: "Offered assembly capability — declares the assembly types, spatial envelope, and component types a resource can process"
 
@@ -59,9 +59,9 @@ elements:
         cardinality: "One"
 
       - type: range
-        id_short: "MaxAssemblyTime_s"
+        id_short: "MaxAssemblyTimeS"
         value_type: "xs:float"
-        semantic_id: "https://aausmartlab.org/Semantics/MaxAssemblyTime_s"
+        semantic_id: "https://aausmartlab.org/Semantics/MaxAssemblyTimeS"
         description: "Min and max assembly duration in seconds"
         cardinality: "One"
 

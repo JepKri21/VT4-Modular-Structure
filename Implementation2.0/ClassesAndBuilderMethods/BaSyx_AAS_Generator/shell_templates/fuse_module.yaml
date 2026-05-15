@@ -1,6 +1,6 @@
-kind: "Type"
+﻿kind: "Type"
 shell: "sub_assembly_shell"
-asset_type: "Fuse_Module"
+asset_type: "FuseModule"
 asset_category: "Electrical"
 id: "https://aausmartlab.org/Shells/Assembly/FuseModule"
 

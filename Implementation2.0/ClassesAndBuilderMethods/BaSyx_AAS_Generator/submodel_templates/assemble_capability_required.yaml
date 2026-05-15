@@ -1,4 +1,4 @@
-id_short: "AssembleCapabilityRequired"
+﻿id_short: "AssembleCapabilityRequired"
 id: "https://aausmartlab.org/Submodels/Templates/AssembleCapabilityRequired"
 description: "Required assembly capability — specifies the exact assembly operation, component types and runtime instances, and spatial target for a product assembly step"
 
@@ -37,9 +37,9 @@ elements:
             cardinality: "One"
 
       - type: property
-        id_short: "MaxAssemblyTime_s"
+        id_short: "MaxAssemblyTimeS"
         value_type: "xs:float"
-        semantic_id: "https://aausmartlab.org/Semantics/MaxAssemblyTime_s"
+        semantic_id: "https://aausmartlab.org/Semantics/MaxAssemblyTimeS"
         description: "Maximum time allowed for this assembly step in seconds"
         cardinality: "ZeroToOne"
 

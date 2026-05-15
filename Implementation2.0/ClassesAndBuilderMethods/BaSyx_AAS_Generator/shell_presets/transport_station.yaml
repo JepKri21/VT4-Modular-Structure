@@ -1,4 +1,4 @@
-type: "transport_station"
+﻿type: "transport_station"
 label: "Transport Station – AAU Lab"
 description: "Two-shuttle transport station covering the full line work area"
 
@@ -7,9 +7,9 @@ asset_name: "Transport"
 submodels:
   TransportCapabilityOffered:
     SupportedComponents:
-      - "https://aausmartlab.org/Shells/Component/Bottom_Cover"
-      - "https://aausmartlab.org/Shells/Component/Top_Cover"
-      - "https://aausmartlab.org/Shells/Component/Bottom_Cover_Drilled"
+      - "https://aausmartlab.org/Shells/Component/BottomCover"
+      - "https://aausmartlab.org/Shells/Component/TopCover"
+      - "https://aausmartlab.org/Shells/Component/BottomCoverDrilled"
     Parameters:
       TargetPosition:
         XPos: { min: 60.0, max: 660.0 }

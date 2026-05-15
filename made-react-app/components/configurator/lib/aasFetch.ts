@@ -278,25 +278,29 @@ export const fetchResourceCapabilities = async (
   resourceTypeIds: string[],
   serverUrl: string = AAS_SERVER_URL,
 ): Promise<CapabilityEntry[]> => {
-  const allSubmodels = await pagedResults<Submodel>(`${serverUrl}/submodels`);
-  const capSubmodels = allSubmodels.filter((sm) =>
-    resourceTypeIds.some(
-      (rid) => sm.id.startsWith(rid) && sm.id.endsWith("CapabilityOffered"),
-    ),
-  );
-
   const results: CapabilityEntry[] = [];
-  for (const capSm of capSubmodels) {
-    const resourceRef = resourceTypeIds.find((rid) => capSm.id.startsWith(rid)) ?? "";
-    const full = await fetch(`${serverUrl}/submodels/${b64url(capSm.id)}`);
-    if (!full.ok) continue;
-    const data = (await full.json()) as SME;
-    const capRefEl = children(data).find((c) => c.idShort === "CapabilityReference");
-    const capIri = (capRefEl?.value as string) ?? "";
-    if (!capIri) continue;
-    const capabilityType = capIri.split("/").at(-1) ?? capIri;
-    results.push({ capabilityType, resourceRef, capabilityRef: capSm.id });
+
+  for (const rid of resourceTypeIds) {
+    const shellRes = await fetch(`${serverUrl}/shells/${b64url(rid)}`);
+    if (!shellRes.ok) continue;
+    const shell = (await shellRes.json()) as Shell;
+
+    const capSmIris = (shell.submodels ?? [])
+      .map((ref) => ref.keys?.[0]?.value ?? "")
+      .filter((iri) => iri.endsWith("CapabilityOffered"));
+
+    for (const capSmIri of capSmIris) {
+      const capRes = await fetch(`${serverUrl}/submodels/${b64url(capSmIri)}`);
+      if (!capRes.ok) continue;
+      const data = (await capRes.json()) as SME;
+      const capRefEl = children(data).find((c) => c.idShort === "CapabilityReference");
+      const capIri = (capRefEl?.value as string) ?? "";
+      if (!capIri) continue;
+      const capabilityType = capIri.split("/").at(-1) ?? capIri;
+      results.push({ capabilityType, resourceRef: rid, capabilityRef: capSmIri });
+    }
   }
+
   return results;
 };
 

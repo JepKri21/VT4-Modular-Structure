@@ -13,7 +13,7 @@ export interface ComponentType {
   currentRating?: string;    // e.g. "16A" (fuses, PCB)
   voltageRating?: string;    // e.g. "250V" (fuses, PCB)
   version?: string;          // e.g. "slow-blow" (fuse type)
-  aasTypeIri?: string;       // AAS component type shell IRI, e.g. "https://aausmartlab.org/Shells/Component/Bottom_Cover/BottomCover_3DP"
+  aasTypeIri?: string;       // AAS component type shell IRI, e.g. "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover3DP"
   name: string;              // Human-readable name
   description?: string;      // Optional description
   createdAt: string;         // ISO timestamp
@@ -40,6 +40,7 @@ export interface AasOrder {
   orderId: string;
   placedAt: string;
   cancelledAt: string | null;
+  cancellationReason: string | null;
   reserved_session: string | null;
   status: OrderStatus;
   startedAt: string | null;
@@ -85,6 +86,7 @@ export const MIGRATE_ORDERS_SQL = [
   `ALTER TABLE aas_orders ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'pending'`,
   `ALTER TABLE aas_orders ADD COLUMN IF NOT EXISTS started_at TIMESTAMPTZ`,
   `ALTER TABLE aas_orders ADD COLUMN IF NOT EXISTS fulfilled_at TIMESTAMPTZ`,
+  `ALTER TABLE aas_orders ADD COLUMN IF NOT EXISTS cancellation_reason TEXT`,
 ];
 
 export const CREATE_INVENTORY_TABLE_SQL = `
@@ -172,6 +174,7 @@ export function rowToOrder(row: Record<string, any>): AasOrder {
     orderId: row.order_id,
     placedAt: placedAt instanceof Date ? placedAt.toISOString() : placedAt,
     cancelledAt: cancelledAt instanceof Date ? cancelledAt.toISOString() : (cancelledAt ?? null),
+    cancellationReason: row.cancellation_reason ?? null,
     reserved_session: row.reserved_session ?? null,
     status: (row.status ?? "pending") as OrderStatus,
     startedAt: startedAt instanceof Date ? startedAt.toISOString() : (startedAt ?? null),

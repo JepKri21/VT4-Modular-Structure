@@ -983,98 +983,31 @@ export default function AasConfiguratorPage() {
         const qty = batchQuantities[presetSummary.filename] ?? 0;
         if (qty <= 0) continue;
 
-        // Steps 1-3 happen once per preset (templates/form data are shared across instances)
+        // Fetch the resolved preset once — the API merges the type shell in server-side.
         let preset: ShellPreset;
-        let templateMap: Record<number, SubmodelTemplate>;
-        let freshOperations: Record<string, OperationCapability>;
-        let formDataMap: Record<number, FormData>;
-        let assetNameVal: string;
-        let assetCategoryVal: string;
-
         try {
-          // 1. Fetch full preset data
           const presetRes = await fetch(`/api/aas-configurator/presets/${presetSummary.filename}`);
           if (!presetRes.ok) throw new Error(`Failed to fetch preset (${presetRes.status})`);
           preset = await presetRes.json() as ShellPreset;
-
-          // 2. Load templates for every slot
-          const templateResults = await Promise.all(
-            shell.submodels.map((slot) =>
-              slot.template_file
-                ? fetch(`/api/aas-configurator/templates/${slot.template_file}`)
-                    .then((r) => r.json() as Promise<SubmodelTemplate>)
-                    .catch(() => null)
-                : Promise.resolve(null)
-            )
-          );
-          templateMap = {};
-          freshOperations = {};
-          templateResults.forEach((t, i) => {
-            if (!t) return;
-            templateMap[i] = t;
-            if (t.operations) Object.assign(freshOperations, t.operations);
-          });
-
-          // 3. Merge preset data into form state per slot
-          formDataMap = {};
-          shell.submodels.forEach((slot, i) => {
-            const presetSlotData = preset.submodels?.[slot.id_short] as Record<string, unknown> | undefined;
-            if (presetSlotData) formDataMap[i] = mergePresetIntoForm({}, presetSlotData);
-          });
-
-          assetNameVal = preset.asset_name ?? presetSummary.label;
-          // asset_type drives the {asset_type} token in the IRI pattern; fall back to asset_category
-          assetCategoryVal = (preset as unknown as Record<string, unknown>).asset_type as string ?? preset.asset_category ?? "";
         } catch (err) {
           results.push({ presetFilename: presetSummary.filename, presetLabel: presetSummary.label, shellLabel: shell.label, quantity: qty, succeeded: 0, ok: false, errors: [String(err)] });
           continue;
         }
 
-        // Steps 4-6 repeat once per instance — each gets a unique UUID
+        const assetNameVal = preset.asset_name ?? presetSummary.label;
+        const assetCategoryVal = (preset as unknown as Record<string, unknown>).asset_type as string ?? preset.asset_category ?? "";
+
         let succeeded = 0;
         const errors: string[] = [];
 
         for (let n = 0; n < qty; n++) {
           try {
-            const uuid = crypto.randomUUID();
-            const instanceShellId = applyPattern(shell.id_pattern, assetNameVal, assetCategoryVal, uuid);
-            const instanceGlobalAssetId = applyPattern(shell.global_asset_id_pattern, assetNameVal, assetCategoryVal, uuid);
-
-            const bomSlotIdx = shell.submodels.findIndex((s) => s.id_short === "BillOfMaterials");
-            const bomSubmodelId = bomSlotIdx >= 0
-              ? buildSubmodelId(instanceShellId, shell.submodels[bomSlotIdx])
-              : undefined;
-
-            let capabilitySubmodelInputs: CapabilitySubmodelInput[] = [];
-            const baseSubmodelInputs = shell.submodels
-              .map((slot, i) => {
-                const template = templateMap[i];
-                if (!template) return null;
-                const rawForm = formDataMap[i] ?? {};
-                const derivedCtx = { AssetName: assetNameVal, AssetCategory: assetCategoryVal, ...flattenFormData(rawForm) };
-                const withDerived = applyDerivedFields(template.elements, rawForm, derivedCtx);
-                let formDataFinal = withDerived;
-                if (slot.template_file === "sub_assembly_bop") {
-                  const result = resolveBopForGeneration(withDerived, freshOperations, instanceShellId, shell.submodels.length, bomSubmodelId);
-                  formDataFinal = result.bopData;
-                  capabilitySubmodelInputs = result.capabilitySubmodels;
-                }
-                return { template_file: slot.template_file, id_short: slot.id_short, id: buildSubmodelId(instanceShellId, slot), form_data: formDataFinal };
-              })
-              .filter(Boolean);
-
-            // 4. Generate
+            // Pass the full resolved preset to Python — build_environment() handles
+            // template discovery, type resolution, and all submodel generation.
             const genRes = await fetch("/api/aas-configurator/generate", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                shell_type: shell.name,
-                name: assetNameVal,
-                category: assetCategoryVal,
-                shell_id: instanceShellId,
-                global_asset_id: instanceGlobalAssetId,
-                submodels: [...baseSubmodelInputs, ...capabilitySubmodelInputs],
-              }),
+              body: JSON.stringify({ preset }),
             });
             if (!genRes.ok) {
               const err = await genRes.json() as { error?: string };
@@ -1084,7 +1017,6 @@ export default function AasConfiguratorPage() {
             const shellObj = (env.assetAdministrationShells as Record<string, unknown>[])[0];
             const envSubmodels = env.submodels as Record<string, unknown>[];
 
-            // 5. Upload to BaSyx
             const uploadRes = await fetch("/api/aas-configurator/upload", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -1094,7 +1026,6 @@ export default function AasConfiguratorPage() {
             const firstFail = uploadData.results.find((r) => !r.ok);
             if (firstFail) throw new Error(firstFail.error ?? `Upload failed (${firstFail.status})`);
 
-            // 6. Register in local inventory
             const assetInfo = (shellObj.assetInformation ?? {}) as Record<string, unknown>;
             await fetch("/api/inventory", {
               method: "POST",

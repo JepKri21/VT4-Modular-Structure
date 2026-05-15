@@ -8,6 +8,7 @@ import {
   Circle,
   ShoppingCart,
   AlertCircle,
+  AlertTriangle,
   RefreshCw,
   X,
   Server,
@@ -255,6 +256,28 @@ export default function VirtualStorePage() {
   const [mesPayload, setMesPayload] = useState<Record<string, unknown> | null>(null);
   const [mesExpanded, setMesExpanded] = useState(false);
   const [mesCopied, setMesCopied] = useState(false);
+  const [mesCancelReason, setMesCancelReason] = useState<string | null>(null);
+
+  // Poll order status after placing so MES cancellations surface immediately
+  useEffect(() => {
+    if (!orderPlaced || !currentOrderId || mesCancelReason) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/inventory/order/${currentOrderId}`);
+        if (!res.ok) return;
+        const data = (await res.json()) as { status: string; cancellationReason: string | null };
+        if (data.status === "cancelled") {
+          setMesCancelReason(
+            data.cancellationReason ?? "No production line was found that matches the required capabilities for this order."
+          );
+          clearInterval(interval);
+        }
+      } catch {
+        // ignore transient fetch errors
+      }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [orderPlaced, currentOrderId, mesCancelReason]);
 
   const emptySelections = useCallback(
     (slots: BomSlot[]) => Object.fromEntries(slots.map((s) => [s.id, null])),
@@ -396,6 +419,7 @@ export default function VirtualStorePage() {
       setOrderSummary([]);
       setMesPayload(null);
       setMesExpanded(false);
+      setMesCancelReason(null);
       setProducts([newProduct(bomSlots)]);
       await fetchComponents();
     } catch (err) {
@@ -410,6 +434,7 @@ export default function VirtualStorePage() {
     setOrderSummary([]);
     setMesPayload(null);
     setMesExpanded(false);
+    setMesCancelReason(null);
     setProducts([newProduct(bomSlots)]);
     setLoading(true);
     await fetchComponents();
@@ -426,12 +451,25 @@ export default function VirtualStorePage() {
   if (orderPlaced) {
     return (
       <div className="max-w-2xl mx-auto py-16 flex flex-col items-center gap-6 text-center">
-        <CheckCircle2 className="w-16 h-16 text-primary" />
-        <h2 className="text-2xl font-bold">Order Placed!</h2>
-        <p className="text-muted-foreground">
-          Your component order has been created and is ready for production fulfillment.
-          Specific instances will be assigned during manufacturing.
-        </p>
+        {mesCancelReason ? (
+          <AlertTriangle className="w-16 h-16 text-destructive" />
+        ) : (
+          <CheckCircle2 className="w-16 h-16 text-primary" />
+        )}
+        <h2 className="text-2xl font-bold">
+          {mesCancelReason ? "Order Cancelled by MES" : "Order Placed!"}
+        </h2>
+        {mesCancelReason ? (
+          <div className="w-full flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive text-left">
+            <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+            <span>{mesCancelReason}</span>
+          </div>
+        ) : (
+          <p className="text-muted-foreground">
+            Your component order has been created and is ready for production fulfillment.
+            Specific instances will be assigned during manufacturing.
+          </p>
+        )}
         {currentOrderId && (
           <p className="text-xs text-muted-foreground font-mono bg-muted px-3 py-1.5 rounded-md">
             Order ID: {currentOrderId.slice(0, 8).toUpperCase()}

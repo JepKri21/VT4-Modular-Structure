@@ -143,6 +143,22 @@ def get_submodel_refs_for_shell(shell_iri: str, basyx_url: str = BASYX_URL) -> l
     return iris
 
 
+# ─────────────────────────── delete ───────────────────────────────────────
+
+def delete_shell(shell_iri: str, basyx_url: str = BASYX_URL) -> None:
+    url = basyx_url.rstrip("/")
+    r = requests.delete(f"{url}/shells/{_b64(shell_iri)}")
+    if r.status_code not in (200, 204, 404):
+        log.warning("delete_shell %s → %s %s", shell_iri, r.status_code, r.text)
+
+
+def delete_submodel(submodel_iri: str, basyx_url: str = BASYX_URL) -> None:
+    url = basyx_url.rstrip("/")
+    r = requests.delete(f"{url}/submodels/{_b64(submodel_iri)}")
+    if r.status_code not in (200, 204, 404):
+        log.warning("delete_submodel %s → %s %s", submodel_iri, r.status_code, r.text)
+
+
 def find_element_by_idshort(elements: list, target: str) -> Optional[dict]:
     """Recursively find a submodel element by idShort."""
     for elem in elements:
