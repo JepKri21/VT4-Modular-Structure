@@ -67,6 +67,7 @@ elements:
     id_short: "ProcessTransformations"
     semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformations"
     description: "A collection of mappings between component inputs and resulting output"
+    cardinality: "One"
     elements:
       - type: collection
         id_short: "BottomCoverAndPCB"
@@ -77,6 +78,7 @@ elements:
             id_short: "InputTypes"
             semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation/InputTypes"
             description: "A list of the components or assemblies that can have to be used in the transformation"
+            cardinality: "One"
             elements:
               - type: list
                 id_short: "ComponentTypeReference"
@@ -91,6 +93,7 @@ elements:
             id_short: "OutputTypes"
             semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation/OutputTypes"
             description: "A list of the components or assemblies that can have to be used in the transformation"
+            cardinality: "One"
             elements:
               - type: list
                 id_short: "ComponentTypeReference"

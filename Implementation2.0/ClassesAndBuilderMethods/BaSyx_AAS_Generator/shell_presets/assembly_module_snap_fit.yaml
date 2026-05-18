@@ -22,10 +22,12 @@ submodels:
     ProcessTransformations:
       BottomCoverAndPCB:
         InputTypes:
-          - "https://aausmartlab.org/Shells/Component/BottomCover"
-          - "https://aausmartlab.org/Shells/Component/PCB"
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Component/BottomCover"
+            - "https://aausmartlab.org/Shells/Component/PCB"
         OutputTypes:
-          - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
 
   HandoffCapabilityOffered:
     SupportedComponents:

@@ -292,5 +292,85 @@
       "BottomCoverPCBFuseSA": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse/BottomCoverPCBFuseSA_7df180cd-597e-4cd7-90e1-612dad6ed625-ORD-F5689203",
       "AAUMobilePhoneV1": "https://aausmartlab.org/Shells/Configuration/MobilePhone/AAUMobilePhoneV1_bc579bec-6acc-4fd4-9692-f178b25f904b-ORD-F5689203"
     }
+  },
+  "ORD-EF90B445": {
+    "order_id": "ORD-EF90B445",
+    "webshop_id": "ef90b445-12ae-48d9-9089-c7c4af664347",
+    "line_id": null,
+    "status": "NO_LINE_AVAILABLE",
+    "created_at": "2026-05-18T14:23:18.577885",
+    "updated_at": "2026-05-18T14:23:19.353514",
+    "shell_iris": {
+      "BottomCoverPCB": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB/BottomCoverPCB_3825f258-751f-4223-b1e9-27136d0d3c97-ORD-EF90B445",
+      "BottomCoverPCBFuse": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse/BottomCoverPCBFuse_d10dc739-2d40-4208-843d-154baf1aed54-ORD-EF90B445",
+      "AAUMobilePhoneV1": "https://aausmartlab.org/Shells/Configuration/MobilePhone/AAUMobilePhoneV1_04a03636-df0f-4fdf-a0f0-7fb9ca7c56cb-ORD-EF90B445"
+    },
+    "error": "No production line found that matches the required capabilities: {'https://aausmartlab.org/Submodels/Capability/Drilling', 'https://aausmartlab.org/Submodels/Capability/Assemble'}. Available lines: ['ProductionLine']."
+  },
+  "ORD-98B1A785": {
+    "order_id": "ORD-98B1A785",
+    "webshop_id": "98b1a785-c36b-4fca-8e4b-5a82c140362f",
+    "line_id": null,
+    "status": "NO_LINE_AVAILABLE",
+    "created_at": "2026-05-18T14:23:45.810003",
+    "updated_at": "2026-05-18T14:23:46.301558",
+    "shell_iris": {
+      "BottomCoverPCB": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB/BottomCoverPCB_2392dc23-b7a5-4543-9739-40e12900ce9c-ORD-98B1A785",
+      "BottomCoverPCBFuse": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse/BottomCoverPCBFuse_54a2ca93-c25a-4c8c-9144-c6362763de8a-ORD-98B1A785",
+      "AAUMobilePhoneV1": "https://aausmartlab.org/Shells/Configuration/MobilePhone/AAUMobilePhoneV1_d7d79c6e-6b6c-4f72-b731-5f61aa04f6fb-ORD-98B1A785"
+    },
+    "error": "No production line found that matches the required capabilities: {'https://aausmartlab.org/Submodels/Capability/Drilling', 'https://aausmartlab.org/Submodels/Capability/Assemble'}. Available lines: ['ProductionLine']."
+  },
+  "ORD-309629E3": {
+    "order_id": "ORD-309629E3",
+    "webshop_id": "309629e3-01f3-4a4f-a5ba-be94bf108d78",
+    "line_id": "ProductionLine",
+    "status": "PENDING",
+    "created_at": "2026-05-18T14:26:42.761294",
+    "updated_at": "2026-05-18T14:26:43.289987",
+    "shell_iris": {
+      "BottomCoverPCB": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB/BottomCoverPCB_712788d4-e5e8-49b8-9709-2efc3e79672a-ORD-309629E3",
+      "BottomCoverPCBFuse": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse/BottomCoverPCBFuse_7df60c88-22a8-4691-a072-9228abd6d922-ORD-309629E3",
+      "AAUMobilePhoneV1": "https://aausmartlab.org/Shells/Configuration/MobilePhone/AAUMobilePhoneV1_78d7badb-3f32-4f83-84b0-8574c9ebae19-ORD-309629E3"
+    }
+  },
+  "ORD-A49E8234": {
+    "order_id": "ORD-A49E8234",
+    "webshop_id": "a49e8234-1125-42f0-b678-09b1e111a4ea",
+    "line_id": "ProductionLine",
+    "status": "PENDING",
+    "created_at": "2026-05-18T14:30:51.291858",
+    "updated_at": "2026-05-18T14:30:51.951420",
+    "shell_iris": {
+      "BottomCoverPCB": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB/BottomCoverPCB_0ac0e60a-af59-4be0-a952-66f21a861da3-ORD-A49E8234",
+      "BottomCoverPCBFuse": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse/BottomCoverPCBFuse_f09c9f5b-bb09-4458-9da0-028648e849f5-ORD-A49E8234",
+      "AAUMobilePhoneV1": "https://aausmartlab.org/Shells/Configuration/MobilePhone/AAUMobilePhoneV1_d0c57ce4-c44d-4a06-82af-ce6027f58f5b-ORD-A49E8234"
+    }
+  },
+  "ORD-45E46D8E": {
+    "order_id": "ORD-45E46D8E",
+    "webshop_id": "45e46d8e-d67e-4883-b7bf-6dc566a61f9e",
+    "line_id": "ProductionLine",
+    "status": "PENDING",
+    "created_at": "2026-05-18T14:45:45.463469",
+    "updated_at": "2026-05-18T14:45:45.990018",
+    "shell_iris": {
+      "BottomCoverPCB": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB/BottomCoverPCB_29a4d16a-ceb1-4511-8691-22f429e7d028-ORD-45E46D8E",
+      "BottomCoverPCBFuse": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse/BottomCoverPCBFuse_1db90d1d-0ac9-4314-919b-d7a7aa722187-ORD-45E46D8E",
+      "AAUMobilePhoneV1": "https://aausmartlab.org/Shells/Configuration/MobilePhone/AAUMobilePhoneV1_bb6b9889-cbf5-418d-bc41-0bd278a04fc9-ORD-45E46D8E"
+    }
+  },
+  "ORD-DBA0BC24": {
+    "order_id": "ORD-DBA0BC24",
+    "webshop_id": "dba0bc24-0d00-48f0-b466-c45af5286a1c",
+    "line_id": "ProductionLine",
+    "status": "PENDING",
+    "created_at": "2026-05-18T14:50:59.575478",
+    "updated_at": "2026-05-18T14:51:00.216591",
+    "shell_iris": {
+      "BottomCoverPCB": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB/BottomCoverPCB_2ae00e88-e20b-475b-9fad-59e0ec1e73ad-ORD-DBA0BC24",
+      "BottomCoverPCBFuse": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse/BottomCoverPCBFuse_d6e38fe5-4ec7-4002-a251-13f7cb48f040-ORD-DBA0BC24",
+      "AAUMobilePhoneV1": "https://aausmartlab.org/Shells/Configuration/MobilePhone/AAUMobilePhoneV1_67b8e3a6-c8a5-4d68-a6bf-ebc51ecf5819-ORD-DBA0BC24"
+    }
   }
 }

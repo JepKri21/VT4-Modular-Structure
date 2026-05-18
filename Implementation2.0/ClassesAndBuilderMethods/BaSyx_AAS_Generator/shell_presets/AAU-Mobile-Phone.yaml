@@ -32,7 +32,7 @@ submodels:
       - Description: "Bottom Cover PCB Fuse Sub-Assembly"
         Quantity: 1
         IsSubAssembly: true
-        ProductFamilyRef: "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse/BottomCoverPCBFuseSA"
+        ProductFamilyRef: "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse/BottomCoverPCBFuse"
       - Description: "Top Cover"
         Quantity: 1
         IsSubAssembly: false
@@ -43,8 +43,30 @@ submodels:
       - Operation: "Assemble Top Cover"
         ProcessType: "Assemble"
         RequiredComponents:
-          - "BottomCoverPCBFuseSA"
+          - "BottomCoverPCBFuse"
           - "TopCover"
         StepConstraints:
           MaxDurationS: 120
+        CapabilityParams:
+          Parameters:
+            TargetPosition:
+              XPos: 0.0
+              YPos: 0.0
+            OperationLabel:
+              - language: "en"
+                text: "Assemble top cover onto mobile phone assembly"
+              - language: "da"
+                text: "Monter toplåg på mobiltelefon samleenhed"
+          ProcessTransformations:
+            AssembleTopCover:
+              InputTypes:
+                ComponentTypeReference:
+                  - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
+                  - "https://aausmartlab.org/Shells/Component/TopCover"
+              OutputTypes:
+                ComponentTypeReference:
+                  - "https://aausmartlab.org/Shells/Configuration/MobilePhone"
+          SupportedComponents:
+            - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
+            - "https://aausmartlab.org/Shells/Component/TopCover"
 

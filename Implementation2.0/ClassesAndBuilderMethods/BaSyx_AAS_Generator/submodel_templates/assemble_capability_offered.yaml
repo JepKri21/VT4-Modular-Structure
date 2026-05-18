@@ -55,7 +55,7 @@ elements:
     id_short: "ProcessTransformations"
     semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformations"
     description: "Mappings between component input types and the resulting output type this resource can produce"
-    cardinality: "ZeroToOne"
+    cardinality: "One"
     extensible: true
     entry_template: "{Name}"
     elements:
@@ -66,20 +66,30 @@ elements:
         description: "A single input-to-output component type mapping"
         cardinality: "One"
         elements:
-          - type: list
+          - type: collection
             id_short: "InputTypes"
             semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation/InputTypes"
             description: "Component or assembly type URIs required as inputs for this transformation"
-            element_type: "property"
-            value_type: "xs:string"
-            cardinality: "OneToMany"
-          - type: list
+            cardinality: "One"
+            elements:
+              - type: list
+                id_short: "ComponentTypeReference"
+                semantic_id: "https://aausmartlab.org/Semantics/ComponentTypeReference"
+                description: "Type IRIs of the input components or assemblies"
+                element_type: "property"
+                value_type: "xs:string"
+          - type: collection
             id_short: "OutputTypes"
             semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation/OutputTypes"
             description: "Component or assembly type URIs produced by this transformation"
-            element_type: "property"
-            value_type: "xs:string"
-            cardinality: "OneToMany"
+            cardinality: "One"
+            elements:
+              - type: list
+                id_short: "ComponentTypeReference"
+                semantic_id: "https://aausmartlab.org/Semantics/ComponentTypeReference"
+                description: "Type IRIs of the output components or assemblies"
+                element_type: "property"
+                value_type: "xs:string"
 
   - type: list
     id_short: "SupportedComponents"

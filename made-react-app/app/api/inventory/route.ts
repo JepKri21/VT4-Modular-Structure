@@ -32,7 +32,7 @@ export async function GET() {
   const res = await pool.query(`
     SELECT
       ct.id, ct.category, ct.material, ct.color, ct.finish, ct.current_rating, ct.voltage_rating,
-      ct.version, ct.name, ct.description, ct.created_at,
+      ct.version, ct.weight, ct.aas_type_iri, ct.name, ct.description, ct.created_at,
       COALESCE(inv.quantity_available, 0) as quantity_available,
       COALESCE(inv.quantity_reserved, 0) as quantity_reserved
     FROM component_types ct
@@ -63,10 +63,12 @@ export async function POST(req: NextRequest) {
     // Insert a new component type
     const c = body.component;
     await pool.query(
-      `INSERT INTO component_types (id, category, material, color, finish, current_rating, voltage_rating, version, name, description, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
-       ON CONFLICT (id) DO NOTHING`,
-      [c.id, c.category, c.material ?? null, c.color ?? null, c.finish ?? null, c.currentRating ?? null, c.voltageRating ?? null, c.version ?? null, c.name, c.description ?? null]
+      `INSERT INTO component_types (id, category, material, color, finish, current_rating, voltage_rating, version, weight, aas_type_iri, name, description, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
+       ON CONFLICT (id) DO UPDATE SET
+         weight = EXCLUDED.weight,
+         aas_type_iri = EXCLUDED.aas_type_iri`,
+      [c.id, c.category, c.material ?? null, c.color ?? null, c.finish ?? null, c.currentRating ?? null, c.voltageRating ?? null, c.version ?? null, c.weight ?? null, c.aasTypeIri ?? null, c.name, c.description ?? null]
     );
 
     // Initialize inventory for this type

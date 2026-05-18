@@ -25,10 +25,12 @@ submodels:
     ProcessTransformations:
       BottomCoverPCBAndFuse:
         InputTypes:
-          - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
-          - "https://aausmartlab.org/Shells/Assembly/FuseModule"
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
+            - "https://aausmartlab.org/Shells/Assembly/FuseModule"
         OutputTypes:
-          - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
 
   HandoffCapabilityOffered:
     SupportedComponents:
