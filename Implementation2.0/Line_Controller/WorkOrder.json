@@ -5,7 +5,7 @@
   "IssueDate": "2026-05-17T10:09:03.961629",
   "ProductReference": "https://aausmartlab.org/Shells/Configuration/MobilePhone/AAUMobilePhoneV1_bc579bec-6acc-4fd4-9692-f178b25f904b-ORD-F5689203",
   "Ingredients": {
-    "BottomCover3DP": {
+    "BottomCoverABSBlack": {
       "ComponentReference": "",
       "ComponentTypeReference": "https://aausmartlab.org/Shells/Component/BottomCover"
     },
