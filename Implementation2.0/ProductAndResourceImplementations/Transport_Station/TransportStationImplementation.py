@@ -214,6 +214,10 @@ class Shuttle1Behaviour(StationBehavior):
         self.quality = None
         self.ideal_cycle_time = None
         self.actual_cycle_time = None
+        self.x_pos = None
+        self.y_pos = None
+        self.target_position = None
+        self.process_transformation = None
 
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.IDLE)
@@ -418,6 +422,10 @@ class Shuttle2Behaviour(StationBehavior):
         self.quality = None
         self.ideal_cycle_time = None
         self.actual_cycle_time = None
+        self.x_pos = None
+        self.y_pos = None
+        self.target_position = None
+        self.process_transformation = None
 
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.IDLE)

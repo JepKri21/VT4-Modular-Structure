@@ -322,6 +322,11 @@ class KUKAManipulatorBehavior(StationBehavior):
         self.quality = None
         self.ideal_cycle_time = None
         self.actual_cycle_time = None
+        self.process_transformation = None
+        self.hole_x = None
+        self.hole_y = None
+        self.drill_depth = None
+        self.hole_diameter = None
 
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.IDLE)

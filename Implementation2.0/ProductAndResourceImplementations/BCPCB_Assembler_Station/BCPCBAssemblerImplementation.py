@@ -102,7 +102,7 @@ resource_inventories = {
             "position3": "https://aausmartlab.org/Shells/Component/PCB/PCB-BC003",
             "position4": "https://aausmartlab.org/Shells/Component/PCB/PCB-BC004",
             "position5": "https://aausmartlab.org/Shells/Component/PCB/PCB-TC001",
-            "position6": "https://aausmartlab.org/Shells/Component/PCB/PCB-TC002",
+            "position6": "https://aausmartlab.org/Shells/Component/PCB/PCB_213fasd-0bfb-4171-bdf8-5ed087afd73e",
             "position7": "https://aausmartlab.org/Shells/Component/PCB/BottomCover_7ef0e4df-1b09-4d0a-9448-14ae51652a52",
             "position8": "https://aausmartlab.org/Shells/Component/PCB/BottomCover_3e06a1b6-96bf-4b44-abf6-b5e122c50427",
             "position9": "",
@@ -267,10 +267,13 @@ class KUKAManipulatorBehavior(StationBehavior):
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
         self.skill = self.command_payload.skill
         self.parameters = self.command_payload.parameters
+        self.process_transformation = self.command_payload.process_transformation
         print(f"Reading job {self.command_payload.job_id} for order {self.command_payload.order_id}")
 
 
         if self.skill == "Handoff":
+            if self.parameters is None:
+                raise ValueError("No parameters provided for Handoff skill")
             try:
                 #Loading handoff specific parameters
                 self.target_position = self.parameters.get("TargetPosition")
@@ -285,18 +288,12 @@ class KUKAManipulatorBehavior(StationBehavior):
 
             if self.parameters is None:
                 raise ValueError("No parameters provided for Assemble skill")
-
             try:
-                # Parameters the work order is allowed to set, per the
-                #Assemble capability submodel
+                # Loading Assemble Parameters
                 self.target_position = self.parameters.get("TargetPosition") or {}
                 self.XPos = self.target_position.get("XPos")
                 self.YPos = self.target_position.get("YPos")
-
-            
-
                 print("Assemble parameters loaded:", self.parameters)
-
             except Exception as e:
                 print(f"Failed to load the parameters with exception {e}")
 
@@ -315,7 +312,11 @@ class KUKAManipulatorBehavior(StationBehavior):
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
 
         if self.skill == "Handoff":
-            print(f"Handing off product: {self.command_payload.component_reference}")
+            if self.process_transformation["InputTypes"] is not None:
+                print(f"Receiving {self.process_transformation["InputTypes"]} as handoff.")
+            elif self.process_transformation["OutputTypes"] is not None:
+                print(f"Providing {self.process_transformation["OutputTypes"]} as handoff.")
+
             print(f"At position ({self.XPos},{self.YPos})")
             self.ideal_cycle_time = 4000+int(self.XPos)+int(self.YPos)
             self.actual_cycle_time = self.ideal_cycle_time + random.randint(200,800)
@@ -326,12 +327,38 @@ class KUKAManipulatorBehavior(StationBehavior):
 
             
         elif self.skill == "Assemble":
-            print(f"Executing Assemble with these parameters:  XPos: {self.XPos}, YPos: {self.YPos}, Component Reference: {self.command_payload.component_reference}")
+            transformation_allowed = False
+            print(f"Executing Assemble to perform this Process Transformation: {self.process_transformation}")
+            print(f"With these parameters: XPos: {self.XPos}, YPos: {self.YPos}")
             
-            #We need something that checks what the provided list of comonents is. Does it contain a BottomCover, or both, or only a PCB.
-            #Right now, we assume that it only sends the BottomCover, as it knows that this resource has PCB in storage
-            if self.command_payload.component_reference is not list or len(self.command_payload.component_reference) == 1:
-                retriveable_locations = find_positions(inventories=resource_inventories,query="https://aausmartlab.org/Shells/Component/PCB")
+            pcb_input = next(
+                (x for x in self.process_transformation["InputTypes"]
+                 if x.startswith("https://aausmartlab.org/Shells/Component/PCB")),
+                None
+            )
+
+            bottom_cover_input = next(
+                (x for x in self.process_transformation["InputTypes"]
+                 if x.startswith("https://aausmartlab.org/Shells/Component/BottomCover")),
+                None
+            )
+
+            bottom_cover_pcb_output = next(
+                (x for x in self.process_transformation["OutputTypes"]
+                 if x.startswith("https://aausmartlab.org/Shells/Assembly/BottomCoverPCB")),
+                None
+            )
+
+            if pcb_input and bottom_cover_input and bottom_cover_pcb_output and len(self.process_transformation["InputTypes"]) == 2 and len(self.process_transformation["OutputTypes"]) == 1:
+                print(f"The requested process transformation is supported")
+                transformation_allowed = True
+            else:
+                print(f"The requested {self.process_transformation} process transformation is not supported")
+                self.result = MS.Result.INCOMPLETE
+                self.quality = MS.Quality.NA
+
+            if transformation_allowed:
+                retriveable_locations = find_positions(inventories=resource_inventories,query=pcb_input)
 
                 if retriveable_locations:
                     retrieved_item = retriveable_locations[0]  # We just take the first one
@@ -339,26 +366,21 @@ class KUKAManipulatorBehavior(StationBehavior):
                     position = retrieved_item["position"]
                     self.retrieved_item_component = retrieved_item["item"]
                     resource_inventories[inventory_name]["Storage"][position] = ""
+                    #Generating cycle times (ms) based on parameters
+                    self.ideal_cycle_time = 8000
+                    self.actual_cycle_time = self.ideal_cycle_time + random.randint(200,1500)
+                    await asyncio.sleep(self.actual_cycle_time/1000)
 
-            #Generating cycle times (ms) based on parameters
-            self.ideal_cycle_time = 8000
-            self.actual_cycle_time = self.ideal_cycle_time + random.randint(200,1500)
-            await asyncio.sleep(self.actual_cycle_time/1000)
-
-            #Generating result and quality randomly
-            if random.randint(1,10) > 1:
-                self.result = MS.Result.COMPLETE
-                if random.randint(1,10) > 1:
+                    #Generating result and quality randomly
+                    self.result = MS.Result.COMPLETE
                     self.quality = MS.Quality.GOOD
-                else:
-                    self.quality = MS.Quality.BAD
-            else:
-                self.result = MS.Result.INCOMPLETE
-                self.quality = MS.Quality.NA
-            
+                else: 
+                    print(f"Requested PCB is not in storage")
+                    self.result = MS.Result.INCOMPLETE
+                    self.quality = MS.Quality.NA
 
         else:
-            print("This is not a skill of the resource, How did you even get here?")
+            print("This is not a skill of the actor, How did you even get here?")
             await machine.transition_to(PackMLState.STOPPING)
         
         await machine.transition_to(PackMLState.COMPLETING)
@@ -369,6 +391,14 @@ class KUKAManipulatorBehavior(StationBehavior):
         print("Finalizing Process and sending result")
 
         if self.skill == "Assemble":
+            if self.result != MS.Result.COMPLETE:
+                self.process_transformation["OutputTypes"] = None
+
+            XPos_element = MS.PropertyElement(id_short="XPos", value=self.XPos, semantic_id="https://aausmartlab.org/Semantics/mm")
+            YPos_element = MS.PropertyElement(id_short="YPos", value=self.YPos, semantic_id="https://aausmartlab.org/Semantics/mm")
+            target_position_element = MS.CollectionElement(id_short="TargetPosition", semantic_id="https://aausmartlab.org/Semantics/TargetPositon", elements=[XPos_element,YPos_element])
+            used_parameters = MS.CollectionElement(id_short="Parameters", semantic_id="https://aausmartlab.org/Semantics/Parameters", elements=[target_position_element])
+                
             job_result_message = MS.JobResultMessage(
                 timestamp=datetime.now(),
                 resource_id=CLIENT_ID, 
@@ -376,13 +406,18 @@ class KUKAManipulatorBehavior(StationBehavior):
                 job_id=self.command_payload.job_id, 
                 ideal_cycle_time_ms=self.ideal_cycle_time,
                 actual_cycle_time_ms=self.actual_cycle_time,
-                component_reference= [self.command_payload.component_reference, self.retrieved_item_component],
+                process_transformation=self.process_transformation,
                 result=self.result,
                 quality=self.quality,
-                output_parameters={"Paramters": self.target_position}
+                output_parameters=used_parameters
             )
 
         elif self.skill == "Handoff":
+            XPos_element = MS.PropertyElement(id_short="XPos", value=self.XPos, semantic_id="https://aausmartlab.org/Semantics/mm")
+            YPos_element = MS.PropertyElement(id_short="YPos", value=self.YPos, semantic_id="https://aausmartlab.org/Semantics/mm")
+            target_position_element = MS.CollectionElement(id_short="TargetPosition", semantic_id="https://aausmartlab.org/Semantics/TargetPositon", elements=[XPos_element,YPos_element])
+            used_parameters = MS.CollectionElement(id_short="Parameters", semantic_id="https://aausmartlab.org/Semantics/Parameters", elements=[target_position_element])
+
             job_result_message = MS.JobResultMessage(
                 timestamp=datetime.now(),
                 resource_id=CLIENT_ID, 
@@ -390,10 +425,10 @@ class KUKAManipulatorBehavior(StationBehavior):
                 job_id=self.command_payload.job_id, 
                 ideal_cycle_time_ms=self.ideal_cycle_time,
                 actual_cycle_time_ms=self.actual_cycle_time,
-                component_reference= self.command_payload.component_reference,
+                process_transformation=self.process_transformation,
                 result=self.result,
                 quality=self.quality,
-                output_parameters={"Paramters": self.target_position}
+                output_parameters=used_parameters
             )
         
 
@@ -415,6 +450,10 @@ class KUKAManipulatorBehavior(StationBehavior):
         self.quality = None
         self.ideal_cycle_time = None
         self.actual_cycle_time = None
+        self.process_transformation = None
+        self.XPos = None
+        self.YPos = None
+        self.target_position = None
 
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.IDLE)
@@ -560,7 +599,8 @@ test_command = MS.CommandMessage(
     skill_trigger=MS.CommandType.START,
     order_id="ORD-1",
     job_id="1xx23",
-    component_reference="https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_someUUID",
+    process_transformation={"InputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverPLABlue-264a4570-0bfb-4171-bdf8-5ed087afd73e", "https://aausmartlab.org/Shells/Component/PCB/PCB_213fasd-0bfb-4171-bdf8-5ed087afd73e"],
+                            "OutputTypes": ["https://aausmartlab.org/Shells/Assembly/BottomCoverPCB/BottomCoverPCB-as734bld-0bfb-4171-bdf8-5ed087afd73e"]},
     parameters=params
 )
 

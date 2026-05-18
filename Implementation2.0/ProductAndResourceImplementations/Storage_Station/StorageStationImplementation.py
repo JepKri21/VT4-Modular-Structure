@@ -489,6 +489,8 @@ class UR5ManipulatorBehavior(StationBehavior):
         self.ideal_cycle_time = None
         self.actual_cycle_time = None
         self.retrieved_item_component = None
+        self.product_stored = None
+        self.process_transformation = None
 
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.IDLE)
