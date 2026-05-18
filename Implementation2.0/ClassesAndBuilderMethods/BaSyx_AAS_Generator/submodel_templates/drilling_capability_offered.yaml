@@ -12,10 +12,11 @@ elements:
     cardinality: "One"
 
   - type: property
-    id_short: "CapabilityReference"
+    id_short: "CapabilityTypeReference"
     value_type: "xs:string"
-    semantic_id: "https://aausmartlab.org/Semantics/CapabilityReference"
+    semantic_id: "https://aausmartlab.org/Semantics/CapabilityTypeReference"
     description: "Semantic IRI identifying this as a Drilling capability"
+    value: "https://aausmartlab.org/Submodels/Capability/Drilling"
     cardinality: "One"
 
   - type: collection
@@ -50,6 +51,7 @@ elements:
 
       - type: collection
         id_short: "TargetPosition"
+        semantic_id: "https://aausmartlab.org/Semantics/TargetPosition"
         description: "Reachable hole placement area relative to the product placement point"
         cardinality: "One"
         elements:
@@ -70,7 +72,7 @@ elements:
         id_short: "OperationLabel"
         semantic_id: "https://aausmartlab.org/Semantics/OperationLabel"
         description: "Human-readable operation label in multiple languages"
-        cardinality: "ZeroToOne"
+        cardinality: "One"
 
   - type: list
     id_short: "SupportedComponents"
@@ -92,4 +94,4 @@ elements:
     id_short: "ResourceReference"
     semantic_id: "https://aausmartlab.org/Semantics/ResourceReference"
     description: "Reference to the AAS shell of the resource realizing this capability"
-    cardinality: "ZeroToOne"
+    cardinality: "One"

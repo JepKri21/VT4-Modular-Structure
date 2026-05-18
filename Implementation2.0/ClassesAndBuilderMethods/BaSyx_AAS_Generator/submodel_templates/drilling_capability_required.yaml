@@ -3,9 +3,24 @@ id: "https://aausmartlab.org/Submodels/Templates/DrillingCapabilityRequired"
 description: "Required capability template for a product process step â€” parameters expressed as exact property values to be matched against an offered capability"
 
 elements:
+  - type: property
+    id_short: "CapabilityCategory"
+    value_type: "xs:string"
+    semantic_id: "https://aausmartlab.org/Semantics/CapabilityCategory"
+    description: "Always 'Required' for this template"
+    cardinality: "One"
+
+  - type: property
+    id_short: "CapabilityTypeReference"
+    value_type: "xs:string"
+    semantic_id: "https://aausmartlab.org/Semantics/CapabilityTypeReference"
+    description: "Semantic IRI identifying this as a Drilling capability"
+    value: "https://aausmartlab.org/Submodels/Capability/Drilling"
+    cardinality: "One"
+
   - type: collection
-    id_short: "DrillingParameters"
-    semantic_id: "https://aausmartlab.org/Semantics/DrillingParameters"
+    id_short: "Parameters"
+    semantic_id: "https://aausmartlab.org/Semantics/Parameters"
     description: "Exact drilling parameters required to process this product"
     cardinality: "One"
     elements:
@@ -25,6 +40,7 @@ elements:
 
       - type: collection
         id_short: "TargetPosition"
+        semantic_id: "https://aausmartlab.org/Semantics/TargetPosition"
         description: "Required hole placement position relative to the product placement point"
         cardinality: "ZeroToOne"
         elements:
@@ -45,7 +61,7 @@ elements:
         id_short: "OperationLabel"
         semantic_id: "https://aausmartlab.org/Semantics/OperationLabel"
         description: "Human-readable operation label in multiple languages"
-        cardinality: "ZeroToOne"
+        cardinality: "One"
 
   - type: list
     id_short: "SupportedComponents"

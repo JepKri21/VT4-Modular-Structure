@@ -6,6 +6,7 @@ asset_name: "AssemblyScrewing"
 
 submodels:
   AssembleCapabilityOffered:
+    CapabilityCategory: "Offered"
     SupportedComponents:
       - "https://aausmartlab.org/Shells/Component/BottomCover"
       - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
@@ -13,18 +14,21 @@ submodels:
       - "https://aausmartlab.org/Shells/Assembly/FuseModule"
       - "https://aausmartlab.org/Shells/Configuration/MobilePhone"
     Parameters:
-      SupportedAssemblyTypes:
-        - "screwing"
-        - "torque-controlled"
-      AssemblyPosition:
-        XPos: { min: -60.0, max: 60.0 }
-        YPos: { min: -60.0, max: 60.0 }
-      MaxComponentCount:
-        min: 2
-        max: 6
-      MaxAssemblyTimeS:
-        min: 10.0
-        max: 120.0
+      TargetPosition:
+        XPos: ""
+        YPos: ""
+      OperationLabel:
+        - language: "en"
+          text: "Screwing assembly operation"
+        - language: "da"
+          text: "Skruesamling"
+    ProcessTransformations:
+      BottomCoverPCBAndFuse:
+        InputTypes:
+          - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
+          - "https://aausmartlab.org/Shells/Assembly/FuseModule"
+        OutputTypes:
+          - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
 
   HandoffCapabilityOffered:
     SupportedComponents:

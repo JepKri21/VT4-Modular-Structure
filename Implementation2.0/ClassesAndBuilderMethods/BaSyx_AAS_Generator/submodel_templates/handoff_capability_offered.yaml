@@ -12,10 +12,11 @@ elements:
     cardinality: "One"
 
   - type: property
-    id_short: "CapabilityReference"
+    id_short: "CapabilityTypeReference"
     value_type: "xs:string"
-    semantic_id: "https://aausmartlab.org/Semantics/CapabilityReference"
+    semantic_id: "https://aausmartlab.org/Semantics/CapabilityTypeReference"
     description: "Semantic IRI identifying this as a Handoff capability"
+    value: "https://aausmartlab.org/Submodels/Capability/Handoff"
     cardinality: "One"
 
   - type: collection
@@ -27,6 +28,7 @@ elements:
 
       - type: collection
         id_short: "TargetPosition"
+        semantic_id: "https://aausmartlab.org/Semantics/TargetPosition"
         description: "Position where the component is handed off"
         cardinality: "One"
         elements:
@@ -53,7 +55,7 @@ elements:
     description: "Component types this resource can hand off"
     element_type: "property"
     value_type: "xs:string"
-    cardinality: "OneToMany"
+    cardinality: "ZeroToMany"
 
   - type: list
     id_short: "AllowedMaterials"
@@ -61,7 +63,7 @@ elements:
     description: "Materials compatible with this handoff capability"
     element_type: "property"
     value_type: "xs:string"
-    cardinality: "OneToMany"
+    cardinality: "ZeroToMany"
 
   - type: reference_element
     id_short: "ResourceReference"

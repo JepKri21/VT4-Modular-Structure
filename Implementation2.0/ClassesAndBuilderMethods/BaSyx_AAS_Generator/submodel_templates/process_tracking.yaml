@@ -25,8 +25,8 @@ elements:
             cardinality: "One"
 
           - type: reference_element
-            id_short: "CapabilityReference"
-            semantic_id: "https://aausmartlab.org/Semantics/CapabilityReference"
+            id_short: "CapabilityInstanceReference"
+            semantic_id: "https://aausmartlab.org/Semantics/CapabilityInstanceReference"
             description: "Reference to the required capability submodel instance for this step (e.g. DrillingCapabilityRequired on the product AAS) — carries the actual parameter values used"
             cardinality: "ZeroToOne"
             reference_type: "model"

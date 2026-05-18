@@ -1,50 +1,104 @@
-﻿id_short: "BaseCapabilityOffered"
+# =============================================================================
+# BASE CAPABILITY OFFERED — Human-readable spec (not machine-consumed)
+# =============================================================================
+# This file defines the canonical structure that every *_capability_offered.yaml
+# template must follow. It is NOT referenced by the generator — it exists to
+# document conventions and serve as a checklist when creating new templates.
+#
+# ARCHITECTURAL SPLIT
+#   Offered  — models the resource envelope (what the machine CAN do).
+#              Use this template. No ResourceReference on required side.
+#   Required — models the product's exact need (what the product NEEDS done).
+#              Use base_capability_required.yaml. No ResourceReference.
+#
+# TYPE GUIDE FOR PARAMETERS
+#   type: range
+#       The resource operates continuously across a min–max envelope.
+#       Example: DrillDepth — the spindle can stop at any depth in [min, max].
+#
+#   type: property  +  qualifiers (range_min / range_max)
+#       One exact configured value, bounded by physical limits.
+#       The qualifiers express what values are valid (e.g. which bit sizes fit
+#       the chuck). They are stored and visible in BaSyx but are only enforced
+#       if the capability-matching logic explicitly reads them.
+#       Example: HoleDiameter — one bit loaded at a time; qualifiers bound the
+#       set of valid bit sizes.
+#
+#   type: property  (no qualifiers)
+#       Exact single value. Always used on the required side.
+#
+# ASSEMBLY SCOPE
+#   For assemble capabilities, ProcessTransformations (top-level, outside
+#   Parameters) defines which input component types produce which output type.
+#   AllowedMaterials is therefore omitted on assemble templates — scope is
+#   already covered by ProcessTransformations.
+# =============================================================================
+
+id_short: "BaseCapabilityOffered"
 id: "https://aausmartlab.org/Submodels/Templates/BaseCapabilityOffered"
-description: "Base structure for all CapabilityOffered submodels â€” extend with resource-specific parameters inside the Parameters collection"
+description: "Canonical structure for all CapabilityOffered submodels — extend with resource-specific parameters inside the Parameters collection"
 
 elements:
+
+  - type: property
+    id_short: "CapabilityCategory"
+    value_type: "xs:string"
+    semantic_id: "https://aausmartlab.org/Semantics/CapabilityCategory"
+    description: "Always 'Offered' for offered templates; 'Required' for required templates"
+    cardinality: "One"
+
+  - type: property
+    id_short: "CapabilityTypeReference"
+    value_type: "xs:string"
+    semantic_id: "https://aausmartlab.org/Semantics/CapabilityTypeReference"
+    description: "Semantic IRI identifying the capability type (e.g. https://aausmartlab.org/Submodels/Capability/Drilling)"
+    cardinality: "One"
 
   - type: collection
     id_short: "Parameters"
     semantic_id: "https://aausmartlab.org/Semantics/Parameters"
-    description: "Parameters defining the capability envelope â€” add resource-specific entries here"
+    description: "Parameters defining the capability envelope — add resource-specific entries here"
     cardinality: "One"
     elements:
 
-      # REQUIRED in every capability: human-readable label shown in the UI
+      # Add resource-specific parameters here (ranges for offered, properties for required).
+      # Examples:
+      #   Drilling  → HoleDiameter (property + qualifiers), DrillDepth (range),
+      #               TargetPosition (collection with XPos/YPos ranges)
+      #   Transport → TargetPosition (collection with XPos/YPos ranges)
+      #   Assemble  → TargetPosition (collection with XPos/YPos properties)
+      #   Store / Retrieve → no additional parameters beyond OperationLabel
+
       - type: multi_language_property
         id_short: "OperationLabel"
         semantic_id: "https://aausmartlab.org/Semantics/OperationLabel"
         description: "Human-readable operation label in multiple languages"
         cardinality: "One"
 
-      # OPTIONAL â€” add resource-specific parameters below this line.
-      # Examples:
-      #   Drilling  â†’ BitDiameter_mm (property/range), DrillDepth_mm (range),
-      #               SpindleSpeed_RPM (range), SpindleFeed_mm_per_s (range),
-      #               HolePlacement_x_mm (range), HolePlacement_y_mm (range)
-      #   Transport â†’ SpeedConstraint_m_per_s (range), AccelerationConstraint_m_per_s2 (range),
-      #               TargetPosition (collection of XPos/YPos ranges)
-      #   Store / Retrieve â†’ no additional parameters beyond OperationLabel
+  # ProcessTransformations — assemble templates only (top-level, outside Parameters)
+  # - type: collection
+  #   id_short: "ProcessTransformations"
+  #   semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformations"
+  #   ...
 
   - type: list
     id_short: "SupportedComponents"
     semantic_id: "https://aausmartlab.org/Semantics/SupportedComponents"
-    description: "Component types this capability can process"
+    description: "Component type URIs this capability can process"
     element_type: "property"
     value_type: "xs:string"
-    cardinality: "OneToMany"
+    cardinality: "ZeroToMany"
 
   - type: list
     id_short: "AllowedMaterials"
     semantic_id: "https://aausmartlab.org/Semantics/AllowedMaterials"
-    description: "Materials compatible with this capability"
+    description: "Material type URIs compatible with this capability (omit for assemble — use ProcessTransformations instead)"
     element_type: "property"
     value_type: "xs:string"
-    cardinality: "OneToMany"
+    cardinality: "ZeroToMany"
 
   - type: reference_element
     id_short: "ResourceReference"
     semantic_id: "https://aausmartlab.org/Semantics/ResourceReference"
-    description: "Reference to the AAS shell of the resource realizing this capability"
+    description: "Reference to the AAS shell of the resource realizing this capability (offered side only)"
     cardinality: "One"

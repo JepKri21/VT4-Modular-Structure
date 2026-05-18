@@ -53,11 +53,11 @@ submodels:
           RequiresInspection: true
           RequiredComponentState: "Raw"
         CapabilityParams:
-          DrillingParameters:
+          Parameters:
             HoleDiameter: 5.0
             DrillDepth: 3.0
             TargetPosition:
-              XPos: 75.0
+              XPos: 40.0
               YPos: 40.0
             OperationLabel:
               - language: "en"
