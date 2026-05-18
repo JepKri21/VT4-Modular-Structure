@@ -92,3 +92,25 @@ submodels:
         StepConstraints:
           MaxDurationS: 120
           RequiresInspection: false
+        CapabilityParams:
+          Parameters:
+            TargetPosition:
+              XPos: 0.0
+              YPos: 10.0
+            OperationLabel:
+              - language: "en"
+                text: "Assemble PCB onto bottom cover"
+              - language: "da"
+                text: "Monter PCB på bundlåg"
+          ProcessTransformations:
+            AssemblePCB:
+              InputTypes:
+                ComponentTypeReference:
+                  - "https://aausmartlab.org/Shells/Component/BottomCover"
+                  - "https://aausmartlab.org/Shells/Component/PCB"
+              OutputTypes:
+                ComponentTypeReference:
+                  - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
+          SupportedComponents:
+            - "https://aausmartlab.org/Shells/Component/BottomCover"
+            - "https://aausmartlab.org/Shells/Component/PCB"

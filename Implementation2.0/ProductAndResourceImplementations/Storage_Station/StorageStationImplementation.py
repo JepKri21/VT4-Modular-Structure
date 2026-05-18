@@ -103,7 +103,7 @@ resource_inventories = {
         {
             "position1": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover-BC001",
             "position2": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover-BC002",
-            "position3": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover-BC003",
+            "position3": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverPLABlue-264a4570-0bfb-4171-bdf8-5ed087afd73e",
             "position4": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover-BC004",
             "position5": "https://aausmartlab.org/Shells/Component/TopCover/TopCover-TC001",
             "position6": "https://aausmartlab.org/Shells/Component/TopCover/TopCover-TC002",
@@ -292,13 +292,15 @@ class UR5ManipulatorBehavior(StationBehavior):
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
         self.skill = self.command_payload.skill
         self.parameters = self.command_payload.parameters
+        self.process_transformation = self.command_payload.process_transformation
         print(f"Reading job {self.command_payload.job_id} for order {self.command_payload.order_id}")
 
 
         if self.skill == "Handoff":
+            if self.parameters is None:
+                raise ValueError("No parameters provided for Handoff skill")
             try:
                 #Loading handoff specific parameters
-                #self.component_reference = self.parameters.get("ComponentReference")
                 self.target_position = self.parameters.get("TargetPosition")
                 self.XPos = self.target_position.get("XPos")
                 self.YPos = self.target_position.get("YPos")
@@ -308,30 +310,16 @@ class UR5ManipulatorBehavior(StationBehavior):
 
 
         elif self.skill == "Retrieve":
-
-            if self.parameters is None:
-                raise ValueError("No parameters provided for Retrieve skill")
-
             try:
-                # unpack for readability
-                #self.component_reference = self.parameters.get("ComponentReference")
-
+                #Loading Retrieve specific parameters
                 print("Retrieve parameters loaded:", self.parameters)
-
             except Exception as e:
                 print(f"Failed to load the parameters with exception {e}")
         
         elif self.skill == "Store":
-
-            if self.parameters is None:
-                raise ValueError("No parameters provided for Drilling skill")
-
             try:
-                # unpack for readability
-                #self.component_reference = self.parameters.get("ComponentReference")
-
+                #Loading Store specific parameters
                 print("Store parameters loaded:", self.parameters)
-
             except Exception as e:
                 print(f"Failed to load the parameters with exception {e}")
 
@@ -350,7 +338,11 @@ class UR5ManipulatorBehavior(StationBehavior):
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
 
         if self.skill == "Handoff":
-            print(f"Handing off product: {self.command_payload.process_transformation}")
+            if self.process_transformation["InputTypes"] is not None:
+                print(f"Receiving {self.process_transformation["InputTypes"]} as handoff.")
+            elif self.process_transformation["OutputTypes"] is not None:
+                print(f"Providing {self.process_transformation["OutputTypes"]} as handoff.")
+
             print(f"At position ({self.XPos},{self.YPos})")
             self.ideal_cycle_time = 4000+int(self.XPos)+int(self.YPos)
             self.actual_cycle_time = self.ideal_cycle_time + random.randint(200,800)
@@ -361,12 +353,12 @@ class UR5ManipulatorBehavior(StationBehavior):
 
             
         elif self.skill == "Retrieve":
-            component_reference = self.parameters.get("ComponentReference")
-            print(f"Executing Retrieve with product {component_reference}")
+            product_to_retrive = self.process_transformation["OutputTypes"][0]
+            print(f"Executing Retrieve with product {product_to_retrive}")
 
             retriveable_locations = (
-                find_positions(inventories=resource_inventories, query=component_reference)
-                if component_reference else []
+                find_positions(inventories=resource_inventories, query=product_to_retrive)
+                if product_to_retrive else []
             )
 
             if retriveable_locations:
@@ -383,7 +375,8 @@ class UR5ManipulatorBehavior(StationBehavior):
                 self.result = MS.Result.COMPLETE
                 self.quality = MS.Quality.GOOD
             else:
-                print(f"[Retrieve] no inventory match for '{component_reference}' — failing job")
+                print(f"[Retrieve] no inventory match for '{product_to_retrive}' — failing job")
+                self.retrieved_item_component = None
                 self.result = MS.Result.INCOMPLETE
                 self.quality = MS.Quality.BAD
                 self.ideal_cycle_time = 0
@@ -391,13 +384,13 @@ class UR5ManipulatorBehavior(StationBehavior):
 
 
         elif self.skill == "Store":
-            component_reference = self.parameters.get("ComponentReference")
-            print(f"Executing Store with product {component_reference}")
+            product_to_store = self.process_transformation["InputTypes"][0]
+            print(f"Executing Store with product {product_to_store}")
 
             #This should automatically find available positions and then place it into one
             #It also returns the specific inventory and position, but we don't need that right now
 
-            stored_item_position = place_item(resource_inventories, component_reference)
+            stored_item_position = place_item(resource_inventories, product_to_store)
             
             if stored_item_position is not None:
                 #Generating cycle times based on parameters
@@ -407,9 +400,11 @@ class UR5ManipulatorBehavior(StationBehavior):
                 #Generating result and quality
                 self.result = MS.Result.COMPLETE
                 self.quality = MS.Quality.GOOD
+                self.product_stored = product_to_store
             else:
                 self.result = MS.Result.INCOMPLETE
                 self.quality = MS.Quality.BAD
+                self.product_stored = None
                 self.ideal_cycle_time = 0
                 self.actual_cycle_time = 0
             
@@ -424,7 +419,7 @@ class UR5ManipulatorBehavior(StationBehavior):
         state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=PackMLState.COMPLETING)
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
         print("Finalizing Process and sending result")
-
+        
         if self.skill == "Retrieve":
             job_result_message = MS.JobResultMessage(
                 timestamp=datetime.now(),
@@ -433,16 +428,14 @@ class UR5ManipulatorBehavior(StationBehavior):
                 job_id=self.command_payload.job_id, 
                 ideal_cycle_time_ms=self.ideal_cycle_time,
                 actual_cycle_time_ms=self.actual_cycle_time,
-                process_transformation={
-                    "InputTypes": None,
-                    "OutputTypes": [self.retrieved_item_component] if self.retrieved_item_component else None,
-                },
+                process_transformation= {"InputTypes": None,
+                                         "OutputTypes": [self.retrieved_item_component]},
                 result=self.result,
                 quality=self.quality,
-                output_parameters={"ComponentReference": self.retrieved_item_component} if self.retrieved_item_component else {},
+                output_parameters=None
             )
 
-        elif self.skill == "Store" or self.skill == "Handoff":
+        elif self.skill == "Store":
             job_result_message = MS.JobResultMessage(
                 timestamp=datetime.now(),
                 resource_id=CLIENT_ID, 
@@ -450,10 +443,30 @@ class UR5ManipulatorBehavior(StationBehavior):
                 job_id=self.command_payload.job_id, 
                 ideal_cycle_time_ms=self.ideal_cycle_time,
                 actual_cycle_time_ms=self.actual_cycle_time,
-                process_transformation=self.command_payload.process_transformation,
+                process_transformation= {"InputTypes": [self.product_stored],
+                                         "OutputTypes": None},
                 result=self.result,
                 quality=self.quality,
-                output_parameters={}
+                output_parameters=None
+            )
+
+        elif self.skill == "Handoff":
+            XPos_element = MS.PropertyElement(id_short="XPos", value=self.XPos, semantic_id="https://aausmartlab.org/Semantics/mm")
+            YPos_element = MS.PropertyElement(id_short="YPos", value=self.YPos, semantic_id="https://aausmartlab.org/Semantics/mm")
+            target_position_element = MS.CollectionElement(id_short="TargetPosition", semantic_id="https://aausmartlab.org/Semantics/TargetPositon", elements=[XPos_element,YPos_element])
+            used_parameters = MS.CollectionElement(id_short="Parameters", semantic_id="https://aausmartlab.org/Semantics/Parameters", elements=[target_position_element])
+            
+            job_result_message = MS.JobResultMessage(
+                timestamp=datetime.now(),
+                resource_id=CLIENT_ID, 
+                order_id=self.command_payload.order_id, 
+                job_id=self.command_payload.job_id, 
+                ideal_cycle_time_ms=self.ideal_cycle_time,
+                actual_cycle_time_ms=self.actual_cycle_time,
+                process_transformation= self.process_transformation,
+                result=self.result,
+                quality=self.quality,
+                output_parameters=used_parameters
             )
         
 
@@ -565,6 +578,7 @@ def handle_command(msg: MS.CommandMessage):
     print(f"Actor: {msg.actor_name}")
     print(f"Order ID: {msg.order_id}")
     print(f"Parameters: {msg.parameters}")
+    print(f"Process Transformation: {msg.process_transformation}")
 
     for StateMachine in StateMachines:
         if msg.actor_name == StateMachine.behavior.actor_name:
@@ -612,14 +626,12 @@ def handle_request(msg: MS.RequestMessage):
 mqtt_client.register_subscriber(command_suffix, MS.CommandMessage,handle_command)
 mqtt_client.register_subscriber(info_request_suffix, MS.RequestMessage,handle_request)
 
-params = {
-    "ComponentReference": "BottomCover_PLA"
-}
+params = {"TargetPosition": {"XPos": 20.0, "YPos": 10.0}}
 
 test_command = MS.CommandMessage(
     timestamp=datetime.now(),
     resource_id=CLIENT_ID,
-    skill="Retrieve",
+    skill="Handoff",
     actor_name=Actor,
     process_transformation={
         "InputTypes": None,
@@ -627,17 +639,18 @@ test_command = MS.CommandMessage(
     },
     skill_trigger=MS.CommandType.START,
     order_id="ORD-1",
-    job_id="RET13V3",
+    job_id="H4ND0FF",
+    process_transformation={"InputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverPLABlue-264a4570-0bfb-4171-bdf8-5ed087afd73e"], "OutputTypes": None},
     parameters=params
 )
 
 
 print("Test Command: ", test_command.model_dump_json(indent=2))
 
-test_request = MS.RequestMessage(timestamp=datetime.now(),requested_topic_update="AAUSmartLab/ProductionLine1/Storage_12345678/InventoryLevel",resource_id=CLIENT_ID)
+#test_request = MS.RequestMessage(timestamp=datetime.now(),requested_topic_update="AAUSmartLab/ProductionLine1/Storage_12345678/InventoryLevel",resource_id=CLIENT_ID)
 
 
-print("Test Request: ", test_request.model_dump_json(indent=2))
+#print("Test Request: ", test_request.model_dump_json(indent=2))
 
 #=============
 #Main loop where the full machine runs

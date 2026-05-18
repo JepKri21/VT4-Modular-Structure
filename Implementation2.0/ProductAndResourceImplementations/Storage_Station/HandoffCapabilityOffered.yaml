@@ -26,16 +26,18 @@ elements:
       - type: collection
         id_short: "TargetPosition"
         elements:
-          - type: property
+          - type: range
             id_short: "XPos"
             value_type: "xs:float"
             semantic_id: "https://aausmartlab.org/Semantics/mm"
-            value: ""
-          - type: property
+            min: -50.0
+            max: 50.0
+          - type: range
             id_short: "YPos"
             value_type: "xs:float"
             semantic_id: "https://aausmartlab.org/Semantics/mm"
-            value: ""
+            min: -50.0
+            max: 50.0
 
       - type: multi_language_property
         id_short: "OperationLabel"

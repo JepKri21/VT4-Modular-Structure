@@ -1,3 +1,4 @@
+from __future__ import annotations
 import enum
 from pydantic import BaseModel, model_validator, field_validator
 from uuid import UUID
@@ -193,7 +194,7 @@ class RangeElement(BaseModel):
 
 class CollectionElement(BaseModel):
     id_short: str
-    elements: List[PropertyElement | RangeElement]
+    elements: List[PropertyElement | RangeElement | CollectionElement]
     semantic_id: str | None = None
 
 
@@ -219,12 +220,8 @@ class JobResultMessage(BaseModel):
     actual_cycle_time_ms: int
     result: Result
     quality: Quality
-    # process_transformation: Dict[str, Dict[str, List[str]]] <-- Before
-    # Same shape as CommandMessage.process_transformation — a flat
-    # {"InputTypes": [...], "OutputTypes": [...]} where either side may be
-    # None when that leg of the transformation carries no cargo.
     process_transformation: Dict[str, List[str] | None]
-    output_parameters: Dict[str, str | int | float | Dict] | None = None
+    output_parameters: CollectionElement | None = None
     seq_no: int | None = None
 
 #=============================================================================

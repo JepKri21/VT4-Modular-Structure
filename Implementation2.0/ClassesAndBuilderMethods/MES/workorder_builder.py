@@ -500,16 +500,13 @@ def build_workorder(
                 cap_ref = "https://aausmartlab.org/Submodels/Capability/Assemble"
                 step_name = f"ProcessStep{_step_counter[0]}"
                 deps = [_last_step_id[0]] if _last_step_id[0] else []
+                operation = step.get("Operation", "Assemble")
+                params = _fetch_required_cap_params(instance_iri, operation, basyx_url) if basyx_url else {}
                 process_steps[output_id][step_name] = {
                     "CapabilityReference": cap_ref,
                     "ProcessStepId": step_id,
                     "Dependencies": deps,
-                    "Parameters": {
-                        "TargetPosition": {
-                            "XPos": {"SemanticId": "https://aausmartlab.org/Semantics/mm", "value": 0.0},
-                            "YPos": {"SemanticId": "https://aausmartlab.org/Semantics/mm", "value": 0.0},
-                        }
-                    },
+                    "Parameters": params,
                     "ProcessTransformations": {
                         "InputTypes": list(step_inputs),
                         "OutputTypes": [output_id],
@@ -579,17 +576,21 @@ def build_workorder(
         required_comps: list[str],
         ingredients: dict[str, dict],
     ) -> list[str]:
-        """Return all ingredient IDs from input_ids that match any required component."""
+        """Return ingredient IDs from input_ids matching required_comps, one per requirement."""
         if not required_comps:
             return []
         matched: list[str] = []
+        unmatched_reqs = list(required_comps)
         for ing_id in input_ids:
-            ing = ingredients[ing_id]
+            if not unmatched_reqs:
+                break
+            ing = ingredients.get(ing_id, {})
             ref = ing.get("ComponentTypeReference") or ing.get("ComponentReference", "")
-            for req in required_comps:
+            for req in list(unmatched_reqs):
                 req_l = req.lower()
                 if req_l in ref.lower() or ref.endswith(req) or req_l in ing_id.lower():
                     matched.append(ing_id)
+                    unmatched_reqs.remove(req)
                     break
         return matched
 
