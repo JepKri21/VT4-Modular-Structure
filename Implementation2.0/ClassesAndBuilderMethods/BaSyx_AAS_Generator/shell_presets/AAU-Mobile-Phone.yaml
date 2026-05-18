@@ -32,7 +32,7 @@ submodels:
       - Description: "Bottom Cover PCB Fuse Sub-Assembly"
         Quantity: 1
         IsSubAssembly: true
-        ProductFamilyRef: "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse/BottomCoverPCBFuseSA"
+        ProductFamilyRef: "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse/BottomCoverPCBFuse"
       - Description: "Top Cover"
         Quantity: 1
         IsSubAssembly: false
@@ -43,7 +43,7 @@ submodels:
       - Operation: "Assemble Top Cover"
         ProcessType: "Assemble"
         RequiredComponents:
-          - "BottomCoverPCBFuseSA"
+          - "BottomCoverPCBFuse"
           - "TopCover"
         StepConstraints:
           MaxDurationS: 120

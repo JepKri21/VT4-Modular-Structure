@@ -25,6 +25,7 @@ submodel_templates:
 include:
   AssembleCapabilityOffered:
     - Parameters
+    - ProcessTransformations
     - SupportedComponents
     - AllowedMaterials
   HandoffCapabilityOffered:

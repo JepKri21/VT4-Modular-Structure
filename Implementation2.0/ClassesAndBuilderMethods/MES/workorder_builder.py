@@ -28,9 +28,8 @@ PRESETS_DIR = Path(__file__).parent.parent / "BaSyx_AAS_Generator" / "shell_pres
 
 # Maps the last IRI segment (asset_name) to a preset file name
 ASSET_NAME_TO_PRESET: dict[str, str] = {
-    "BottomCoverDrillingSA": "bottom_cover_drilling_assembly",
-    "BottomCoverPCBSA":      "bottom_cover_pcb_assembly",
-    "BottomCoverPCBFuseSA":  "bottom_cover_pcb_fuse_assembly",
+    "BottomCoverPCB":      "bottom_cover_pcb_assembly",
+    "BottomCoverPCBFuse":  "bottom_cover_pcb_fuse_assembly",
 }
 
 # Cache: component variant IRI → all property sections fetched from BaSyx
@@ -165,23 +164,33 @@ def _fetch_required_cap_params(shell_iri: str, operation: str, basyx_url: str) -
         log.warning("Required capability submodel not found: %s", cap_sm_iri)
         return {}
 
-    result: dict = {}
-
-    def _walk(elements: list) -> None:
+    def _parse_elements(elements: list) -> dict:
+        """Parse BaSyx elements into a dict, preserving collection nesting."""
+        parsed: dict = {}
         for elem in elements:
-            if elem.get("modelType") == "Property" and elem.get("value") is not None:
-                id_short = elem.get("idShort", "")
-                if id_short:
-                    result[id_short] = {
-                        "semanticId": _elem_semantic_id(elem),
-                        "value": _coerce_value(elem.get("value"), elem.get("valueType", "")),
-                    }
-            children = elem.get("value", [])
-            if isinstance(children, list):
-                _walk(children)
+            model_type = elem.get("modelType", "")
+            id_short = elem.get("idShort", "")
+            if not id_short:
+                continue
+            if model_type == "Property" and elem.get("value") is not None:
+                parsed[id_short] = {
+                    "SemanticId": _elem_semantic_id(elem),
+                    "value": _coerce_value(elem.get("value"), elem.get("valueType", "")),
+                }
+            elif model_type == "SubmodelElementCollection":
+                children = elem.get("value", [])
+                if isinstance(children, list):
+                    nested = _parse_elements(children)
+                    if nested:
+                        parsed[id_short] = nested
+        return parsed
 
-    _walk(cap_sm.get("submodelElements", []))
-    return result
+    params_coll = basyx_client.find_element_by_idshort(
+        cap_sm.get("submodelElements", []), "Parameters"
+    )
+    if not params_coll:
+        return {}
+    return _parse_elements(params_coll.get("value", []))
 
 
 
@@ -354,6 +363,13 @@ def build_workorder(
         log.warning("no slot match for %s — properties will be empty", asset_name)
         return {}
 
+    def _component_type_iri(component_ref_iri: str) -> str:
+        """Strip the last path segment to get the category type IRI.
+
+        e.g. …/Component/BottomCover/BottomCoverABSBlack → …/Component/BottomCover
+        """
+        return component_ref_iri.rstrip("/").rsplit("/", 1)[0]
+
     def resolve(preset: dict) -> list[str]:
         """
         Process one preset level.
@@ -398,11 +414,14 @@ def build_workorder(
                 slot_cfg = _find_slot_config(ref_iri)
                 type_iri = (slot_cfg.get("aasTypeIri") if slot_cfg else None) or ref_iri
                 component_ref_iri = _type_iri_from_full(type_iri)
-                category_iri = component_ref_iri.rstrip("/").rsplit("/", 1)[0]
+                category_iri = _component_type_iri(component_ref_iri)
 
                 ing_id = _make_ing_id(_asset_name_from_iri(component_ref_iri))
 
-                ingredients[ing_id] = {"ComponentReference": category_iri}
+                ingredients[ing_id] = {
+                    "ComponentReference": "",
+                    "ComponentTypeReference": category_iri,
+                }
 
                 # Static defaults from the category type shell in BaSyx
                 # (e.g. .../Component/Fuse → Length/Width/Height).
@@ -426,74 +445,119 @@ def build_workorder(
             level_iri_template = (
                 f"https://aausmartlab.org/Shells/Configuration/{asset_type}/{asset_name}"
             )
+            type_iri_template = (
+                f"https://aausmartlab.org/Shells/Configuration/{asset_type}"
+            )
         else:
             level_iri_template = (
                 f"https://aausmartlab.org/Shells/Assembly/{asset_type}/{asset_name}"
             )
+            type_iri_template = (
+                f"https://aausmartlab.org/Shells/Assembly/{asset_type}"
+            )
 
         instance_iri = shell_iris.get(asset_name, level_iri_template)
 
-        output_id: str | None = None
+        # Pre-allocate the output ingredient for this level so non-assemble steps
+        # can attach their process steps to it (they don't create a new ingredient).
+        output_id = _make_ing_id(asset_name)
+        ingredients[output_id] = {
+            "ComponentReference": instance_iri,
+            "ComponentTypeReference": type_iri_template,
+        }
+        properties[output_id] = {}
+        process_steps[output_id] = {}
+
+        has_assemble_step = False
+        assemble_count = [0]
+        remaining_inputs = list(input_ids)  # tracks inputs not yet consumed by an assemble step
 
         for step in bop_steps:
             process_type = step.get("ProcessType", "")
             required_comps = step.get("RequiredComponents", [])
 
             if process_type == "Assemble":
-                # Create output ingredient representing the assembled result
-                output_id = _make_ing_id(asset_name)
-                ingredients[output_id] = {"ComponentReference": instance_iri}
-                properties[output_id] = {}
-                assemblies[output_id] = {"Ingredients": list(input_ids)}
+                has_assemble_step = True
+                assemble_count[0] += 1
+
+                # Record all initial inputs in Assemblies once (first assemble step)
+                if assemble_count[0] == 1:
+                    assemblies[output_id] = {"Ingredients": list(input_ids)}
+
+                # Find which remaining inputs this step explicitly requires
+                step_inputs = _find_all_step_inputs(remaining_inputs, required_comps, ingredients)
+                if not step_inputs:
+                    step_inputs = list(remaining_inputs)
+                for sid in step_inputs:
+                    if sid in remaining_inputs:
+                        remaining_inputs.remove(sid)
+
+                # Subsequent steps prepend the previous output (partial assembly) as first input
+                if assemble_count[0] > 1:
+                    step_inputs = [output_id] + step_inputs
 
                 step_id = _next_step()
                 cap_ref = "https://aausmartlab.org/Submodels/Capability/Assemble"
-                if output_id not in process_steps:
-                    process_steps[output_id] = {}
                 step_name = f"ProcessStep{_step_counter[0]}"
                 deps = [_last_step_id[0]] if _last_step_id[0] else []
                 process_steps[output_id][step_name] = {
                     "CapabilityReference": cap_ref,
                     "ProcessStepId": step_id,
                     "Dependencies": deps,
-                    "Parameters": {"InputComponents": list(input_ids)},
+                    "Parameters": {
+                        "TargetPosition": {
+                            "XPos": {"SemanticId": "https://aausmartlab.org/Semantics/mm", "value": 0.0},
+                            "YPos": {"SemanticId": "https://aausmartlab.org/Semantics/mm", "value": 0.0},
+                        }
+                    },
+                    "ProcessTransformations": {
+                        "InputTypes": list(step_inputs),
+                        "OutputTypes": [output_id],
+                    },
                 }
                 _last_step_id[0] = step_id
 
             else:
-                # Non-assemble step (e.g. Drilling) — targets a specific raw ingredient
+                # Non-assemble step (e.g. Drilling) — operates in-place on a raw ingredient.
+                # Step is stored under the target ingredient's key (not the output assembly).
                 target_id = _find_target_ingredient(input_ids, required_comps, ingredients)
                 if target_id is None and input_ids:
                     target_id = input_ids[0]
 
                 if target_id:
                     step_id = _next_step()
-                    # Use ProcessType if explicit, else fall back to Operation field
                     cap_name = process_type or step.get("Operation", "")
                     cap_ref = f"https://aausmartlab.org/Submodels/Capability/{cap_name}"
                     params = _fetch_required_cap_params(instance_iri, cap_name, basyx_url) if basyx_url else {}
 
-                    if target_id not in process_steps:
-                        process_steps[target_id] = {}
                     step_name = f"ProcessStep{_step_counter[0]}"
                     deps = [_last_step_id[0]] if _last_step_id[0] else []
+                    if target_id not in process_steps:
+                        process_steps[target_id] = {}
                     process_steps[target_id][step_name] = {
                         "CapabilityReference": cap_ref,
                         "ProcessStepId": step_id,
                         "Dependencies": deps,
                         "Parameters": params,
+                        "ProcessTransformations": {
+                            "InputTypes": [target_id],
+                            "OutputTypes": [target_id],
+                        },
                     }
                     _last_step_id[0] = step_id
 
-                    # Create output ingredient for the processed component
-                    output_id = _make_ing_id(asset_name)
-                    ingredients[output_id] = {"ComponentReference": instance_iri}
-                    properties[output_id] = {}
-                    assemblies[output_id] = {"Ingredients": [target_id]}
+        # Clean up: if no steps were added, remove the empty process_steps entry
+        if not process_steps[output_id]:
+            del process_steps[output_id]
 
-        if output_id:
-            return [output_id]
-        return list(input_ids)
+        # If no assemble step produced the output, return the raw inputs instead
+        if not has_assemble_step:
+            del ingredients[output_id]
+            del properties[output_id]
+            process_steps.pop(output_id, None)
+            return list(input_ids)
+
+        return [output_id]
 
     def _find_target_ingredient(
         input_ids: list[str],
@@ -501,12 +565,33 @@ def build_workorder(
         ingredients: dict[str, dict],
     ) -> str | None:
         for ing_id in input_ids:
-            ref = ingredients[ing_id]["ComponentReference"]
+            ing = ingredients[ing_id]
+            # Match against ComponentTypeReference (preferred) or ComponentReference
+            ref = ing.get("ComponentTypeReference") or ing.get("ComponentReference", "")
             for req in required_comps:
                 req_l = req.lower()
                 if req_l in ref.lower() or ref.endswith(req) or req_l in ing_id.lower():
                     return ing_id
         return None
+
+    def _find_all_step_inputs(
+        input_ids: list[str],
+        required_comps: list[str],
+        ingredients: dict[str, dict],
+    ) -> list[str]:
+        """Return all ingredient IDs from input_ids that match any required component."""
+        if not required_comps:
+            return []
+        matched: list[str] = []
+        for ing_id in input_ids:
+            ing = ingredients[ing_id]
+            ref = ing.get("ComponentTypeReference") or ing.get("ComponentReference", "")
+            for req in required_comps:
+                req_l = req.lower()
+                if req_l in ref.lower() or ref.endswith(req) or req_l in ing_id.lower():
+                    matched.append(ing_id)
+                    break
+        return matched
 
     # ── Build the full WorkOrder ────────────────────────────────────────────
     final_output_ids = resolve(final_preset)

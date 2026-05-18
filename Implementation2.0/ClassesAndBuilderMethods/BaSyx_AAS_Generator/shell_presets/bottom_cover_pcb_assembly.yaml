@@ -1,15 +1,16 @@
 # SA1 Sub-Assembly: Bottom Cover PCB Assembly
-# Inputs: Drilled Bottom Cover (from drilling sub-assembly) + PCB Board
+# Inputs: Raw Bottom Cover + PCB Board
 # Output: Bottom Cover with PCB mounted inside
+# Drilling happens as Step 1 (in-place machining), assembly as Step 2.
 # ProcessType "Assemble" is used by the MES workorder_builder to create an Assemblies entry.
 # IsSubAssembly flags are MES-specific — ignored by form_to_aas.py template processing.
 
 type: "bottom_cover_assembly_chain"
 label: "Bottom Cover PCB Sub-Assembly"
-description: "Sub-assembly in which a drilled bottom cover has a PCB board mounted inside it."
+description: "Sub-assembly in which a bottom cover is drilled and then has a PCB board mounted inside it."
 
 asset_type: "BottomCoverPCB"
-asset_name: "BottomCoverPCBSA"
+asset_name: "BottomCoverPCB"
 asset_category: "Electrical"
 
 submodels:
@@ -27,27 +28,66 @@ submodels:
         text: "Bundlåg PCB Samleenhed"
     Description:
       - language: "en"
-        text: "Sub-assembly: drilled aluminium bottom cover with PCB board mounted"
+        text: "Sub-assembly: bottom cover drilled and fitted with PCB board"
       - language: "da"
-        text: "Samleenhed: boret aluminiums bundlåg med monteret PCB"
+        text: "Samleenhed: bundlåg boret og monteret med PCB"
 
   BillOfMaterials:
     BOMEntries:
-      - Description: "Drilled Bottom Cover"
+      - Description: "Bottom Cover – PLA"
         Quantity: 1
-        IsSubAssembly: true
-        ProductFamilyRef: "https://aausmartlab.org/Shells/Assembly/BottomCover/BottomCoverDrillingSA"
+        IsSubAssembly: false
+        ProductFamilyRef: "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover3DP"
       - Description: "PCB Board"
         Quantity: 1
         IsSubAssembly: false
         ProductFamilyRef: "https://aausmartlab.org/Shells/Component/PCB/PCBFuseBoxA"
 
   BillOfProcesses:
+    ProcessTracking:
+      - StepRef: "Drilling_1"
+        StepStatus: "Pending"
+      - StepRef: "Assemble_PCB_2"
+        StepStatus: "Pending"
+
     ProcessSteps:
+      - Operation: "Drilling"
+        ProcessType: "Drilling"
+        RequiredComponents:
+          - "BottomCover"
+        StepConstraints:
+          MaxDurationS: 180
+          RequiresInspection: true
+          RequiredComponentState: "Raw"
+        CapabilityParams:
+          Parameters:
+            HoleDiameter: 5.0
+            DrillDepth: 3.0
+            TargetPosition:
+              XPos: 40.0
+              YPos: 40.0
+            OperationLabel:
+              - language: "en"
+                text: "Drill mounting holes in bottom cover"
+              - language: "da"
+                text: "Bor monteringshuller i bundlåg"
+          ProcessTransformations:
+            BottomCoverDrilling:
+              InputTypes:
+                ComponentTypeReference:
+                  - "https://aausmartlab.org/Shells/Component/BottomCover"
+              OutputTypes:
+                ComponentTypeReference:
+                  - "https://aausmartlab.org/Shells/Component/BottomCover"
+          SupportedComponents:
+            - "https://aausmartlab.org/Shells/Component/BottomCover"
+          AllowedMaterials:
+            - "https://aausmartlab.org/Materials/PLA"
+
       - Operation: "Assemble PCB"
         ProcessType: "Assemble"
         RequiredComponents:
-          - "BottomCoverDrillingSA"
+          - "BottomCover"
           - "PCBFuseBoxA"
         StepConstraints:
           MaxDurationS: 120

@@ -24,6 +24,7 @@ submodel_templates:
 include:
   DrillingCapabilityOffered:
     - Parameters
+    - ProcessTransformations
     - SupportedComponents
     - AllowedMaterials
   HandoffCapabilityOffered:

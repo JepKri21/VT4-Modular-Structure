@@ -23,7 +23,6 @@ PRESETS_DIR = Path(__file__).parent.parent / "BaSyx_AAS_Generator" / "shell_pres
 
 # Sub-assembly presets to upload for every AAU Mobile Phone order (bottom-up order)
 SUB_ASSEMBLY_PRESET_NAMES = [
-    "bottom_cover_drilling_assembly",
     "bottom_cover_pcb_assembly",
     "bottom_cover_pcb_fuse_assembly",
 ]

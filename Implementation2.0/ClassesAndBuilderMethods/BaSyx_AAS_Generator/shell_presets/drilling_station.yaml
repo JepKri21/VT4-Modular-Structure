@@ -22,6 +22,21 @@ submodels:
       TargetPosition:
         XPos: { min: -60.0, max: 60.0 }
         YPos: { min: -60.0, max: 60.0 }
+    ProcessTransformations:
+      BottomCoverDrilling:
+        InputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Component/BottomCover"
+        OutputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Component/BottomCover"
+      TopCoverDrilling:
+        InputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Component/TopCover"
+        OutputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Component/TopCover"
 
   HandoffCapabilityOffered:
     CapabilityCategory: "Offered"
