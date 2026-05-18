@@ -425,76 +425,124 @@ class ResourceManager:
     #===========
     #Methods to read the Capability submodels
     #===========
-    def get_capability_parameters(self,capability_submodel_reference:str):
-        #Should read the capability submodel and extract the parameters, the supported components and the allowed materials
-        #Return them as seperate variables
+    def get_capability_parameters(self, capability_submodel_reference: str):
+        """Read a capability submodel and return its declared envelope.
 
+        Returns a 4-tuple:
+            (parameters, supported_components, allowed_materials, process_transformations)
+
+        - parameters: list of parsed Property / Range / Collection elements
+          (the Parameters submodel element collection).
+        - supported_components: list[str] of ComponentTypeReference IRIs.
+          Empty/missing = no restriction (treated as "any" by the matcher).
+        - allowed_materials: list[str] of material IRIs.
+          Empty/missing = no restriction (treated as "any" by the matcher).
+        - process_transformations: list[{"name", "input_types", "output_types"}]
+          enumerating the discrete input/output transformations this
+          capability supports. Empty list = no declared transformations.
+
+        Returns None only if the submodel cannot be fetched.
+        """
         parameters = []
         supported_components = []
         allowed_materials = []
-
-        """
-        allowed_materials = ["https://aausmartlab.org/Materials/PLA",
-                            "https://aausmartlab.org/Materials/ABS"]
-        supported_components = ["https://aausmartlab.org/Shells/Component/Bottom_Cover,
-                                "https://aausmartlab.org/Shells/Component/Top_Cover]
-        parameters = [PropertyElement, RangeElement, RangeElement, CollectionElement]
-        """
+        process_transformations: list[dict] = []
 
         encoded_resource_submodel_id = self.base64encode(f"{capability_submodel_reference}")
         response = requests.get(f"{self.SUBMODEL_ENDPOINT}/{encoded_resource_submodel_id}")
 
-        #We are reading the capability submodel (that is the data), we want Parameters, AllowedMaterials and SupportedComponents
-        #We could create smaller helper functions and then use those in here. 
-        # That would significantly reduce the size of this method
-        if response.ok:
-            data = response.json()
-            parameters_node = self.find_by_idshort(data, "Parameters")
-
-            #If there are parameters, we continue looking deeper
-            if parameters_node:
-                for element in parameters_node.get("value",[]):
-                    parameter = self.parse_element(element)
-                    if parameter:
-                        parameters.append(parameter)
-                        
-            else:
-                print("Parameters is None for some reason")
-
-            allowed_materials_node = self.find_by_idshort(data, "AllowedMaterials")
-            if allowed_materials_node:
-                for element in allowed_materials_node.get("value"):
-                    allowed_materials.append(element.get("value"))
-
-            else:
-                print("AllowedMaterials is None for some reason")
-
-            supported_components_node = self.find_by_idshort(data, "SupportedComponents")
-            if supported_components_node:
-                for element in supported_components_node.get("value"):
-                    supported_components.append(element.get("value"))
-
-            else:
-                print("SupportedComponents is None for some reason")
-
-
-
-            if parameters is not None:
-                if supported_components is not None:
-                    if allowed_materials is not None:
-                        return parameters, supported_components, allowed_materials
-                    else:
-                        print("No 'AllowedMaterials' present in the capability submodel")
-                        return None
-                else:
-                    print("No 'SupportedComponents' present in the capability submodel")
-                    return None
-            else:
-                print("No 'Parameters' present in the capability submodel")
-                return None
-        
         if not response.ok:
-            raise Exception(f"Failed to fetch Capability submodel: {response.status_code}")
+            print(f"Failed to fetch Capability submodel: {response.status_code}")
+            return None
+
+        data = response.json()
+        parameters_node = self.find_by_idshort(data, "Parameters")
+        if parameters_node:
+            for element in parameters_node.get("value", []) or []:
+                parameter = self.parse_element(element)
+                if parameter:
+                    parameters.append(parameter)
+
+        allowed_materials_node = self.find_by_idshort(data, "AllowedMaterials")
+        if allowed_materials_node:
+            for element in allowed_materials_node.get("value", []) or []:
+                allowed_materials.append(element.get("value"))
+
+        supported_components_node = self.find_by_idshort(data, "SupportedComponents")
+        if supported_components_node:
+            for element in supported_components_node.get("value", []) or []:
+                supported_components.append(element.get("value"))
+
+        process_transformations_node = self.find_by_idshort(data, "ProcessTransformations")
+        if process_transformations_node:
+            process_transformations = self._parse_process_transformations(
+                process_transformations_node
+            )
+
+        return parameters, supported_components, allowed_materials, process_transformations
+
+    def _parse_process_transformations(self, node: Dict) -> List[Dict]:
+        """Parse a ProcessTransformations SubmodelElementCollection.
+
+        Expected shape (after the AAS server's JSON serialisation):
+
+            ProcessTransformations (SubmodelElementCollection)
+              value:
+                <NamedTransformation> (SubmodelElementCollection)
+                  value:
+                    InputTypes (SubmodelElementCollection)
+                      value:
+                        ComponentTypeReference (SubmodelElementList | list of Property)
+                    OutputTypes (SubmodelElementCollection)
+                      value:
+                        ComponentTypeReference (SubmodelElementList | list of Property)
+
+        Returns a list like:
+            [{"name": "BottomCoverAndPCB", "input_types": [iri, iri], "output_types": [iri]}, ...]
+
+        Tolerates both the SubmodelElementList wrapper (`ComponentTypeReference`)
+        and bare Property children inside the InputTypes / OutputTypes
+        collections.
+        """
+        results: List[Dict] = []
+        for transformation in node.get("value", []) or []:
+            name = transformation.get("idShort")
+            inner = transformation.get("value", []) or []
+
+            input_types = self._extract_component_type_refs(
+                self.find_by_idshort(inner, "InputTypes")
+            )
+            output_types = self._extract_component_type_refs(
+                self.find_by_idshort(inner, "OutputTypes")
+            )
+            results.append({
+                "name": name,
+                "input_types": input_types,
+                "output_types": output_types,
+            })
+        return results
+
+    def _extract_component_type_refs(self, types_node) -> List[str]:
+        """Pull the leaf value strings out of an InputTypes/OutputTypes node.
+
+        The capability template wraps the list in a `ComponentTypeReference`
+        SubmodelElementList, but we accept bare Property children too so
+        small schema variations don't break parsing.
+        """
+        if not types_node:
+            return []
+        values: List[str] = []
+        for element in types_node.get("value", []) or []:
+            if element.get("modelType") in ("SubmodelElementList", "SubmodelElementCollection"):
+                for prop in element.get("value", []) or []:
+                    v = prop.get("value")
+                    if v is not None:
+                        values.append(v)
+            else:
+                v = element.get("value")
+                if v is not None and not isinstance(v, (list, dict)):
+                    values.append(v)
+        return values
 
     #The get_capability_parameters method works pretty well. 
     # We just need to figure out how to handle empty spots in value of parameters

@@ -82,6 +82,35 @@ def _flatten_parameters(params: dict) -> dict:
     return walk(params or {})
 
 
+def _pre_process_transformation(skill: str, component_reference: str) -> dict:
+    """Build the CMD's process_transformation block for a pre/post-process
+    step (Retrieve / Handoff / Store / Transport).
+
+    Shapes follow the docstring in MessageStructure.CommandMessage —
+    a leg with no cargo is encoded as the whole value being None, not
+    as `[None]`:
+      - Retrieve : InputTypes=None,    OutputTypes=[<iri>]
+      - Store    : InputTypes=[<iri>], OutputTypes=None
+      - Transport: InputTypes=[<iri>], OutputTypes=[<iri>]  (loaded)
+                   InputTypes=None,    OutputTypes=None     (empty travel)
+      - Handoff  : symmetric form here; precise None-vs-iri depends on
+                   which side has the Handoff capability.
+
+    component_reference may be an instance IRI or empty. Empty signals
+    "no cargo on this side" and is encoded as None on the relevant leg.
+    """
+    iri = component_reference or None
+    if skill == "Retrieve":
+        return {"InputTypes": None, "OutputTypes": [iri] if iri else None}
+    if skill == "Store":
+        return {"InputTypes": [iri] if iri else None, "OutputTypes": None}
+    # Transport / Handoff / anything else: pass the part through. If the
+    # leg has no cargo (e.g. empty shuttle travelling to storage), encode
+    # both sides as None.
+    side = [iri] if iri else None
+    return {"InputTypes": side, "OutputTypes": side}
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Scheduler
 # ─────────────────────────────────────────────────────────────────────────────
@@ -209,6 +238,35 @@ class Scheduler:
     async def _execute_bop_step(self, handler: WorkOrderHandler, bop: dict) -> None:
         order_id = handler.workorder["OrderId"]
         info = handler.get_step_execution_info(bop["step_id"])
+
+        # If this step's ingredient is a raw input (ComponentReference still
+        # empty), bind it to a concrete instance via the ProductMatcher *now*,
+        # before planning or sending any CMD. The pre-process plan and the
+        # Retrieve CMD both need a real instance IRI to look up in storage.
+        if not info.get("ComponentReference") and info.get("ComponentTypeReference"):
+            ingredient_name = info["Ingredient"]
+            resolved = self._resolve_input_instance(handler, {
+                "name": ingredient_name,
+                "ComponentTypeReference": info["ComponentTypeReference"],
+                "ComponentReference": "",
+                "Properties": (handler.workorder.get("Properties", {}) or {}).get(ingredient_name, {}),
+            })
+            if resolved:
+                info["ComponentReference"] = resolved
+                # Refresh the InputIngredients view so subsequent uses (e.g.
+                # _build_process_transformation for the BoP CMD) see the bound
+                # reference rather than the stale "" we initially got.
+                for ing in info.get("InputIngredients") or []:
+                    if ing.get("name") == ingredient_name and not ing.get("ComponentReference"):
+                        ing["ComponentReference"] = resolved
+            else:
+                print(
+                    f"[bop] no inventory match for '{ingredient_name}' "
+                    f"(type={info['ComponentTypeReference']}) — pausing step"
+                )
+                await asyncio.sleep(TICK_INTERVAL_S)
+                return
+
         print(
             f"\n[bop] step {bop['step_id']}  "
             f"capability={info['CapabilityReference']}  "
@@ -329,11 +387,15 @@ class Scheduler:
         chosen: dict,
     ) -> None:
         order_id = handler.workorder["OrderId"]
-        component_ref = info.get("ComponentReference") or ""
 
         bop_skill = chosen["skill_name"]
         bop_params = _flatten_parameters(bop["parameters"])
-        bop_params["ComponentReference"] = component_ref
+
+        process_transformation = self._build_process_transformation(handler, info)
+        if process_transformation is None:
+            print(f"[bop] step {bop['step_id']} cannot build process_transformation "
+                  "(unresolved inputs) — pausing")
+            return
 
         bop_job_id = f"{order_id}-{bop['step_id']}"
         handler.update_step(bop["step_id"], StepStates.IN_PROGRESS)
@@ -347,10 +409,12 @@ class Scheduler:
             order_id=order_id,
             job_id=bop_job_id,
             parameters=bop_params,
+            process_transformation=process_transformation,
             timeout=BOP_TIMEOUT_S,
         )
 
         if result.result == MS.Result.COMPLETE:
+            self._apply_output_traceability(handler, info, result)
             handler.update_step(bop["step_id"], StepStates.COMPLETED)
             print(f"[ok]  BoP step {bop['step_id']} -> COMPLETED")
         else:
@@ -413,6 +477,9 @@ class Scheduler:
             order_id=order_id,
             job_id=job_id,
             parameters=step.parameters,
+            process_transformation=_pre_process_transformation(
+                step.skill, step.component_reference
+            ),
             timeout=PRE_PROCESS_TIMEOUT_S,
         )
 
@@ -442,9 +509,16 @@ class Scheduler:
         order_id: str,
         job_id: str,
         parameters: dict,
+        process_transformation: dict,
         timeout: float,
     ) -> MS.JobResultMessage:
-        """Wait until idle (best-effort), publish CMD, wait for JobResult."""
+        """Wait until idle (best-effort), publish CMD, wait for JobResult.
+
+        `process_transformation` is the full {InputTypes: [...], OutputTypes: [...]}
+        block with **instance** IRIs (or None for the no-cargo legs of a
+        Handoff/Retrieve/Store). The matcher works on types; the scheduler
+        resolves to instances right before issuing the CMD.
+        """
         idle = await self._wait_for_idle(resource_topic, actor_name, timeout=IDLE_WAIT_S)
         if not idle:
             print(
@@ -460,12 +534,102 @@ class Scheduler:
             skill_trigger=MS.CommandType.START,
             order_id=order_id,
             job_id=job_id,
+            process_transformation=process_transformation,
             parameters=parameters,
         )
         print(f"[cmd]       -> {resource_topic}/{actor_name}  skill={skill}  job={job_id}")
         self.controller.publish_message(target_iri, cmd)
 
         return await self.jobs.wait_for(job_id, timeout=timeout)
+
+    # ── Transformation: ingredient names → instance IRIs ────────────────────
+
+    def _resolve_input_instance(
+        self,
+        handler: WorkOrderHandler,
+        ingredient: dict,
+    ) -> str | None:
+        """Resolve one InputIngredients entry to its concrete instance IRI.
+
+        - If the ingredient already has a ComponentReference, use it.
+        - Otherwise ask the ProductMatcher with the ingredient's properties.
+          On a hit, persist the choice via handler.update_component_reference
+          so subsequent steps see the same instance.
+
+        Returns None if no instance can be resolved.
+        """
+        existing = ingredient.get("ComponentReference") or ""
+        if existing:
+            return existing
+
+        type_ref = ingredient.get("ComponentTypeReference")
+        if not type_ref:
+            return None
+
+        try:
+            matches = self.product_matcher.find_matching_components(
+                component_type_reference=type_ref,
+                order_properties=ingredient.get("Properties") or {},
+            )
+        except Exception as exc:
+            print(f"[trans] product matcher lookup failed for {ingredient.get('name')}: {exc}")
+            return None
+        if not matches:
+            print(f"[trans] no inventory match for ingredient '{ingredient.get('name')}' "
+                  f"(type={type_ref})")
+            return None
+        instance = matches[0].component_id
+        handler.update_component_reference(ingredient["name"], instance)
+        print(f"[trans] resolved {ingredient.get('name')} -> {instance}")
+        return instance
+
+    def _build_process_transformation(
+        self,
+        handler: WorkOrderHandler,
+        info: dict,
+    ) -> dict | None:
+        """Build the {InputTypes: [...], OutputTypes: [...]} CMD payload.
+
+        Inputs and outputs are full instance IRIs (or None for legs that
+        don't carry a component, per MessageStructure.CommandMessage docs).
+        Returns None if any required input cannot be resolved — the caller
+        should treat that as "no candidate" and pause the step.
+        """
+        input_iris: list[str | None] = []
+        for ing in info.get("InputIngredients") or []:
+            iri = self._resolve_input_instance(handler, ing)
+            if iri is None:
+                # No instance available for a required input. Caller pauses.
+                return None
+            input_iris.append(iri)
+
+        output_iris: list[str | None] = []
+        for ing in info.get("OutputIngredients") or []:
+            iri = ing.get("ComponentReference") or None
+            output_iris.append(iri)
+
+        return {"InputTypes": input_iris, "OutputTypes": output_iris}
+
+    def _apply_output_traceability(
+        self,
+        handler: WorkOrderHandler,
+        info: dict,
+        result: MS.JobResultMessage,
+    ) -> None:
+        """After a JobResult lands, fill in any output ingredient's
+        ComponentReference that was empty in the work order.
+
+        The station's authoritative answer is in
+        `result.process_transformation["OutputTypes"]` (full instance IRIs,
+        same order as the step's OutputIngredients).
+        """
+        output_iris = (result.process_transformation or {}).get("OutputTypes") or []
+        for ing, iri in zip(info.get("OutputIngredients") or [], output_iris):
+            if not iri:
+                continue
+            if not ing.get("ComponentReference"):
+                handler.update_component_reference(ing["name"], iri)
+                print(f"[trans] output {ing['name']} -> {iri}")
 
     # ── Endpoint resolution ─────────────────────────────────────────────────
 
@@ -620,7 +784,7 @@ class Scheduler:
         cap_data = self.rm.get_capability_parameters(cap_ref)
         if not cap_data:
             return False
-        _params, supported, allowed_materials = cap_data
+        _params, supported, allowed_materials, _transformations = cap_data
 
         # 1) SupportedComponents check
         if supported and not any(

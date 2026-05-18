@@ -185,13 +185,13 @@ class KUKAManipulatorBehavior(StationBehavior):
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
         self.skill = self.command_payload.skill
         self.parameters = self.command_payload.parameters
+        self.process_transformation = self.command_payload.process_transformation
         print(f"Reading job {self.command_payload.job_id} for order {self.command_payload.order_id}")
 
 
         if self.skill == "Handoff":
             try:
                 #Loading handoff specific parameters
-                self.component_reference = self.parameters.get("ComponentReference")
                 self.target_position = self.parameters.get("TargetPosition")
                 self.XPos = self.target_position.get("XPos")
                 self.YPos = self.target_position.get("YPos")
@@ -213,7 +213,6 @@ class KUKAManipulatorBehavior(StationBehavior):
                 target_position = self.parameters.get("TargetPosition") or {}
                 self.hole_x = target_position.get("XPos")
                 self.hole_y = target_position.get("YPos")
-                self.component_reference = self.parameters.get("ComponentReference")
 
                 # Internal resource settings — not in the capability, the
                 # resource decides its own best feed/speed for the given bit.
@@ -240,7 +239,11 @@ class KUKAManipulatorBehavior(StationBehavior):
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
 
         if self.skill == "Handoff":
-            print(f"Handing off product: {self.component_reference}")
+            if self.process_transformation["InputTypes"] is not None:
+                print(f"Receiving {self.process_transformation["InputTypes"]} as handoff.")
+            elif self.process_transformation["OutputTypes"] is not None:
+                print(f"Providing {self.process_transformation["OutputTypes"]} as handoff.")
+
             print(f"At position ({self.XPos},{self.YPos})")
             self.ideal_cycle_time = 4000+int(self.XPos)+int(self.YPos)
             self.actual_cycle_time = self.ideal_cycle_time + random.randint(200,800)
@@ -251,12 +254,13 @@ class KUKAManipulatorBehavior(StationBehavior):
 
             
         elif self.skill == "Drilling":
-            print(f"Executing drilling with these parameters: Hole Diameter: {self.hole_diameter}, Drill Depth: {self.drill_depth}, Spindle Speed: {self.spindle_speed}, Spindle Feed: {self.spindle_feed}, Hole X: {self.hole_x}, Hole Y: {self.hole_y}, Component Reference: {self.component_reference}")
+            print(f"Executing drilling with these parameters: Hole Diameter: {self.hole_diameter}, Drill Depth: {self.drill_depth}, Spindle Speed: {self.spindle_speed}, Spindle Feed: {self.spindle_feed}, Hole X: {self.hole_x}, Hole Y: {self.hole_y}, InputType: {self.process_transformation["InputTypes"]}, OutputType: {self.process_transformation["OutputTypes"]}")
             
             #Generating cycle times based on parameters
             self.ideal_cycle_time = int((self.drill_depth/self.spindle_feed)*1000)
             self.actual_cycle_time = self.ideal_cycle_time + random.randint(200,1500)
             await asyncio.sleep(self.actual_cycle_time/1000)
+            print(f"Processing {self.process_transformation["InputTypes"]} into {self.process_transformation["OutputTypes"]}")
 
             #Generating result and quality randomly
             if random.randint(1,10) > 1:
@@ -266,6 +270,7 @@ class KUKAManipulatorBehavior(StationBehavior):
                 else:
                     self.quality = MS.Quality.BAD
             else:
+                self.process_transformation["OutputTypes"] = None
                 self.result = MS.Result.INCOMPLETE
                 self.quality = MS.Quality.NA
             
@@ -279,9 +284,14 @@ class KUKAManipulatorBehavior(StationBehavior):
     async def completing(self, machine):
         state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=PackMLState.COMPLETING)
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
+        hole_diameter_element = MS.PropertyElement(id_short="HoleDiameter", value=self.hole_diameter, semantic_id="https://aausmartlab.org/Semantics/mm")
+        drill_depth_element = MS.PropertyElement(id_short="DrillDepth", value=self.drill_depth, semantic_id="https://aausmartlab.org/Semantics/mm")
         spindle_speed_element = MS.PropertyElement(id_short="SpindleSpeed", value=self.spindle_speed, semantic_id="https://aausmartlab.org/Semantics/RPM")
         spindle_feed_element =MS.PropertyElement(id_short="SpindleFeed", value=self.spindle_feed, semantic_id="https://aausmartlab.org/Semantics/mm_per_s")
-        used_parameters = MS.CollectionElement(id_short="Parameters", semantic_id="https://aausmartlab.org/Semantics/Parameters", elements=[spindle_speed_element, spindle_feed_element])
+        XPos_element = MS.PropertyElement(id_short="XPos", value=self.hole_x, semantic_id="https://aausmartlab.org/Semantics/mm")
+        YPos_element = MS.PropertyElement(id_short="YPos", value=self.hole_y, semantic_id="https://aausmartlab.org/Semantics/mm")
+        target_position_element = MS.CollectionElement(id_short="TargetPosition", semantic_id="https://aausmartlab.org/Semantics/TargetPositon", elements=[XPos_element,YPos_element])
+        used_parameters = MS.CollectionElement(id_short="Parameters", semantic_id="https://aausmartlab.org/Semantics/Parameters", elements=[hole_diameter_element, drill_depth_element, spindle_speed_element, spindle_feed_element, target_position_element])
         print("Finalizing Process and sending result")
         #This should also input the parameters it used to perform the process, so that they can be recorded.
         job_result_message = MS.JobResultMessage(
@@ -291,7 +301,7 @@ class KUKAManipulatorBehavior(StationBehavior):
             job_id=self.command_payload.job_id, 
             ideal_cycle_time_ms=self.ideal_cycle_time,
             actual_cycle_time_ms=self.actual_cycle_time,
-            component_reference=self.command_payload.component_reference,
+            process_transformation=self.process_transformation,
             output_parameters=used_parameters,
             result=self.result,
             quality=self.quality
@@ -400,6 +410,7 @@ def handle_command(msg: MS.CommandMessage):
     print(f"Actor: {msg.actor_name}")
     print(f"Order ID: {msg.order_id}")
     print(f"Parameters: {msg.parameters}")
+    print(f"Process Transformation: {msg.process_transformation}")
 
     if msg.actor_name == Actor:
         KUKAManipulator.behavior.command_payload = msg
@@ -437,10 +448,7 @@ mqtt_client.register_subscriber(info_request_suffix, MS.RequestMessage,handle_re
 params = {
     "BitDiameter": 5.0,
     "DrillDepth": 50.0,
-    "SpindleSpeed": 800.0,
-    "SpindleFeed": 20.0,
-    "TargetPosition": {"XPos": 20.0, "YPos": 10.0},
-    "ComponentReference": "BottomCover_ALU"
+    "TargetPosition": {"XPos": 20.0, "YPos": 10.0}
 }
 
 test_command = MS.CommandMessage(
@@ -448,10 +456,16 @@ test_command = MS.CommandMessage(
     resource_id=CLIENT_ID,
     skill="Drilling",
     actor_name=Actor,
+    process_transformation={
+        "InputType": ["BottomCover_ALU"],
+        "OutputType": ["BottomCover_ALU_Drilled"]
+    },
     skill_trigger=MS.CommandType.START,
-    order_id=None,
-    job_id=None,
-    parameters=params
+    order_id="ORD-12345",
+    job_id="Drilling_2x2",
+    parameters=params,
+    process_transformation={"InputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverPLABlue-264a4570-0bfb-4171-bdf8-5ed087afd73e"],
+                            "OutputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverPLABlue-264a4570-0bfb-4171-bdf8-5ed087afd73e"]}
 )
 
 print("Test Command: ", test_command.model_dump_json(indent=2))

@@ -1,3 +1,4 @@
+from __future__ import annotations
 import enum
 from pydantic import BaseModel, model_validator, field_validator
 from uuid import UUID
@@ -71,15 +72,15 @@ Transformations:
     }
     Retrieve:
     {
-        "InputTypes": [None],
+        "InputTypes": None,
         "OutputTypes": ["https://aausmartlab.org/Shells/Assembly/BottomCover/BottomCover_id"]
     },
     {
-        "InputTypes": [None],
+        "InputTypes": None,
         "OutputTypes": ["https://aausmartlab.org/Shells/Assembly/TopCover/TopCover_id"]
     },
     {
-        "InputTypes": [None],
+        "InputTypes": None,
         "OutputTypes": ["https://aausmartlab.org/Shells/Assembly/BCPCB/BCPCB_id"]
     }
     Transport:
@@ -96,40 +97,40 @@ Transformations:
         "OutputTypes": ["https://aausmartlab.org/Shells/Assembly/BCPCB/BCPCB_id"]
     },
     {
-        "InputTypes": [None],
-        "OutputTypes": [None]
+        "InputTypes": None,
+        "OutputTypes": None
     }
     Store:
     {
         "InputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_id"],
-        "OutputTypes": [None]
+        "OutputTypes": None
     },
     {
         "InputTypes": ["https://aausmartlab.org/Shells/Component/TopCover/TopCover_id"],
-        "OutputTypes": [None]
+        "OutputTypes": None
     },
     {
         "InputTypes": ["https://aausmartlab.org/Shells/Component/BCPCB/BCPCB_id"],
-        "OutputTypes": [None]
+        "OutputTypes": None
     }
     Handoff:
     IF BOTH RESOURCES HAVE HANDOFF:
     { #This resource currently has the product
-        "InputTypes": [None],
+        "InputTypes": None,
         "OutputTypes": [https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_id]
     },
     { #This resource currently does NOT have the product
         "InputTypes": [https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_id],
-        "OutputTypes": [None]
+        "OutputTypes": None
     }
     IF RECIEVING RESOURCE HAS HANDOFF:
     { #This resource currently does NOT have the product BUT it has a handoff capability 
         "InputTypes": [https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_id],
-        "OutputTypes": [None]
+        "OutputTypes": None
     }
     IF PROVIDING RESOURCE HAS HANDOFF:
     { #This resource currently has the product AND a handoff capability 
-        "InputTypes": [None],
+        "InputTypes": None,
         "OutputTypes": [https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_id]
     }
 
@@ -193,7 +194,7 @@ class RangeElement(BaseModel):
 
 class CollectionElement(BaseModel):
     id_short: str
-    elements: List[PropertyElement | RangeElement]
+    elements: List[PropertyElement | RangeElement | CollectionElement]
     semantic_id: str | None = None
 
 
@@ -219,8 +220,8 @@ class JobResultMessage(BaseModel):
     actual_cycle_time_ms: int
     result: Result
     quality: Quality
-    process_transformation: Dict[str, Dict[str, List[str]]]
-    output_parameters: Dict[str, str | int | float | Dict] | None = None
+    process_transformation: Dict[str, List[str] | None]
+    output_parameters: CollectionElement | None = None
     seq_no: int | None = None
 
 #=============================================================================

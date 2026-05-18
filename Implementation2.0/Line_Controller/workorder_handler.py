@@ -89,6 +89,9 @@ class WorkOrderHandler:
                     "required_capability": step_data["CapabilityReference"],
                     "parameters": step_data.get("Parameters", {}),
                     "dependencies": step_data.get("Dependencies", []),
+                    # Raw transformation spec (uses ingredient names — resolved
+                    # to type IRIs by get_step_execution_info).
+                    "process_transformations": step_data.get("ProcessTransformations", {}),
 
                     "precedence": precedence_map.get(ingredient, 0),
 
@@ -260,27 +263,86 @@ class WorkOrderHandler:
 
         ingredient_data = ingredients.get(ingredient_name, {})
         component_reference = ingredient_data.get("ComponentReference")
-        # Optional type/family IRI used for capability matching. When the
+        # Family/type IRI used for capability matching. When the
         # ComponentReference is a per-order instance IRI (e.g. an Assembly
-        # shell created for this specific order), ComponentType points at
-        # the family-level shell IRI declared in the resource's
+        # shell created for this specific order), ComponentTypeReference
+        # points at the family-level shell IRI declared in the resource's
         # SupportedComponents list.
-        component_type = ingredient_data.get("ComponentType")
+        component_type_reference = ingredient_data.get("ComponentTypeReference")
 
         material = None
         material_block = properties.get(ingredient_name, {}).get("MaterialProperties", {})
         if isinstance(material_block, dict):
             material = material_block.get("Material", {}).get("value")
 
+        # Resolve the step's ProcessTransformations: turn ingredient-name
+        # tokens into ComponentTypeReference IRIs for the matcher, and also
+        # surface the original ingredient names + properties so the scheduler
+        # can resolve them to instance IRIs at command time.
+        transformations_raw = step.get("process_transformations") or {}
+        input_ingredient_names = list(transformations_raw.get("InputTypes") or [])
+        output_ingredient_names = list(transformations_raw.get("OutputTypes") or [])
+
+        def _type_iri(name):
+            return ingredients.get(name, {}).get("ComponentTypeReference")
+
+        input_type_iris = [_type_iri(n) for n in input_ingredient_names]
+        output_type_iris = [_type_iri(n) for n in output_ingredient_names]
+
+        # Per-input properties so the scheduler can pass them to
+        # ProductMatcher.find_matching_components for raw inputs that have
+        # no ComponentReference yet.
+        input_ingredient_details = [
+            {
+                "name": n,
+                "ComponentTypeReference": _type_iri(n),
+                "ComponentReference": ingredients.get(n, {}).get("ComponentReference") or "",
+                "Properties": properties.get(n, {}),
+            }
+            for n in input_ingredient_names
+        ]
+        output_ingredient_details = [
+            {
+                "name": n,
+                "ComponentTypeReference": _type_iri(n),
+                "ComponentReference": ingredients.get(n, {}).get("ComponentReference") or "",
+            }
+            for n in output_ingredient_names
+        ]
+
         return {
             "CapabilityReference": step["required_capability"],
             "Parameters": step["parameters"],
             "Ingredient": ingredient_name,
             "ComponentReference": component_reference,
-            "ComponentType": component_type,
+            "ComponentTypeReference": component_type_reference,
             "Material": material,
+            # Transformation surfaced two ways: resolved type IRIs for the
+            # matcher, and ingredient-keyed details for the scheduler.
+            "ProcessTransformation": {
+                "InputTypes": input_type_iris,
+                "OutputTypes": output_type_iris,
+            },
+            "InputIngredients": input_ingredient_details,
+            "OutputIngredients": output_ingredient_details,
         }
-    
+
+    # =============================
+    # UPDATE COMPONENT REFERENCE
+    # =============================
+    def update_component_reference(self, ingredient_name: str, instance_iri: str) -> None:
+        """Record the specific physical instance bound to an ingredient.
+
+        Called by the scheduler when:
+        - The ProductMatcher resolves a raw input (ComponentReference
+          initially "") to a concrete instance for this order, or
+        - A JobResult lands and an output ingredient that wasn't pre-bound
+          at order time learns its IRI.
+        """
+        ingredients = self.workorder.setdefault("Ingredients", {})
+        ingredient = ingredients.setdefault(ingredient_name, {})
+        ingredient["ComponentReference"] = instance_iri
+
 
 if __name__ == "__main__":
 

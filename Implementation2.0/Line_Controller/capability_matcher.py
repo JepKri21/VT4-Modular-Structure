@@ -2,18 +2,20 @@ class CapabilityMatcher:
     """
     Filter resources whose declared capability is compatible with a given
     process step. Identity is matched on capability semanticId. The matcher
-    only filters — it never picks a winner. The scheduler does that.
+    is a pure type-vs-type check — it never looks at inventory state and
+    never resolves instance IRIs. That is the scheduler's job.
     """
 
     def __init__(self, resource_manager):
         self.resource_manager = resource_manager
 
     def match(self, step_info):
-        """
+        """Filter resources whose capability is compatible with the step.
+
         Args:
             step_info: dict from WorkOrderHandler.get_step_execution_info().
-                Expected keys: CapabilityReference, Parameters,
-                ComponentReference, Material.
+                Required keys: CapabilityReference, Parameters,
+                ComponentTypeReference, ProcessTransformation, Material.
 
         Returns:
             List of viable candidates, each:
@@ -38,13 +40,22 @@ class CapabilityMatcher:
             print(f"          - {c['resource_id']}  (skill={c['skill_name']})")
 
         params = step_info.get("Parameters", {})
-        # Prefer the family/type IRI for the SupportedComponents check; fall
-        # back to the per-instance ComponentReference if no ComponentType is
-        # provided. This lets the work order carry a per-order instance IRI
-        # while still matching a resource that advertises support at the
-        # family level.
-        component = step_info.get("ComponentType") or step_info.get("ComponentReference")
         material = step_info.get("Material")
+
+        # ProcessTransformation: step's resolved type IRIs for the inputs and
+        # outputs of this transformation. Compared as sets (order-independent)
+        # against the resource's declared ProcessTransformations.
+        step_transformation = step_info.get("ProcessTransformation") or {}
+        step_input_types = [t for t in (step_transformation.get("InputTypes") or []) if t]
+        step_output_types = [t for t in (step_transformation.get("OutputTypes") or []) if t]
+
+        # Components to check against the resource's SupportedComponents:
+        # every input type IRI, plus the step's main output (the ingredient
+        # being produced/operated on, exposed as ComponentTypeReference).
+        primary_type = step_info.get("ComponentTypeReference")
+        component_types_to_check = list({
+            t for t in ([*step_input_types, *step_output_types, primary_type]) if t
+        })
 
         viable = []
         for cand in candidates:
@@ -56,10 +67,10 @@ class CapabilityMatcher:
 
             cap_data = self.resource_manager.get_capability_parameters(cap_ref)
             if not cap_data:
-                print(f"[match] [{tag}] rejected: capability submodel had no parameters")
+                print(f"[match] [{tag}] rejected: capability submodel could not be read")
                 continue
 
-            cap_parameters, supported_components, allowed_materials = cap_data
+            cap_parameters, supported_components, allowed_materials, cap_transformations = cap_data
 
             ok, reason = self._check_parameters(params, cap_parameters)
             if not ok:
@@ -69,11 +80,15 @@ class CapabilityMatcher:
                     f"capability leaves={list(self._flatten_cap_parameters(cap_parameters))})"
                 )
                 continue
-            if not self._check_component(component, supported_components):
-                print(
-                    f"[match] [{tag}] rejected: component '{component}' not in "
-                    f"supported list {supported_components}"
-                )
+            ok, reason = self._check_process_transformation(
+                step_input_types, step_output_types, cap_transformations
+            )
+            if not ok:
+                print(f"[match] [{tag}] rejected: transformation check failed — {reason}")
+                continue
+            ok, reason = self._check_components(component_types_to_check, supported_components)
+            if not ok:
+                print(f"[match] [{tag}] rejected: component check failed — {reason}")
                 continue
             if not self._check_material(material, allowed_materials):
                 print(
@@ -97,31 +112,12 @@ class CapabilityMatcher:
         "HolePlacement_Y": "YPos",
     }
 
-    # Workorder parameter names that are runtime payload (e.g. the list of
-    # components to assemble), not capability-envelope parameters. They are
-    # not expected to appear as leaves in the capability submodel. If a
-    # capability leaf is configured to derive a value from one of these,
-    # the mapping in PAYLOAD_PARAM_DERIVATIONS handles it; otherwise the
-    # payload value is passed to the resource at execute time.
-    PAYLOAD_PARAM_NAMES = {"InputComponents"}
-
-    # How to derive a numeric capability-check value from a payload param.
-    # For each payload param, maps capability-leaf name -> callable(value) -> number.
-    PAYLOAD_PARAM_DERIVATIONS = {
-        "InputComponents": {
-            "MaxComponentCount": lambda v: len(v) if isinstance(v, list) else None,
-        },
-    }
-
     def _check_parameters(self, step_params, cap_parameters):
-        """
-        Validate every workorder parameter against the capability. Both sides
-        are flattened to leaf id_shorts, so nested structures (e.g.
-        TargetPosition.XPos in the work order matched against the capability's
-        Parameters.TargetPosition.XPos) compare cleanly. If the capability
-        declares a Range for a leaf, the workorder value must fall inside it.
-        Property declarations are accepted as-is. Unknown parameters on the
-        workorder are rejected.
+        """Validate every workorder parameter against the capability.
+
+        Both sides are flattened to leaf id_shorts. If the capability declares
+        a Range for a leaf, the workorder value must fall inside it. Property
+        declarations are accepted as-is. Unknown work-order parameters reject.
 
         Returns (ok, reason). `reason` is a short human-readable string when
         ok is False, otherwise empty.
@@ -130,35 +126,6 @@ class CapabilityMatcher:
         step_by_name = self._flatten_step_params(step_params)
 
         for name, value in step_by_name.items():
-            # Payload params (e.g. InputComponents) are not capability-envelope
-            # parameters. If a derivation is defined, run it against the
-            # corresponding capability leaf; otherwise skip the param entirely.
-            if name in self.PAYLOAD_PARAM_NAMES:
-                derivations = self.PAYLOAD_PARAM_DERIVATIONS.get(name, {})
-                for leaf_name, fn in derivations.items():
-                    cap_param = cap_by_name.get(leaf_name)
-                    if cap_param is None:
-                        continue
-                    derived = fn(value)
-                    if derived is None:
-                        continue
-                    if hasattr(cap_param, "min") and hasattr(cap_param, "max"):
-                        try:
-                            v = float(derived)
-                            lo = float(cap_param.min)
-                            hi = float(cap_param.max)
-                        except (TypeError, ValueError):
-                            return False, (
-                                f"derived '{leaf_name}' from payload '{name}' could not be coerced to float "
-                                f"(derived={derived!r})"
-                            )
-                        if not (lo <= v <= hi):
-                            return False, (
-                                f"derived '{leaf_name}'={v} from payload '{name}' "
-                                f"outside allowed range [{lo}, {hi}]"
-                            )
-                continue
-
             cap_param = cap_by_name.get(name)
             resolved_name = name
             if cap_param is None:
@@ -186,6 +153,35 @@ class CapabilityMatcher:
                     )
 
         return True, ""
+
+    def _check_process_transformation(self, step_inputs, step_outputs, cap_transformations):
+        """Step's transformation must exactly match one of the capability's.
+
+        Match is set equality on InputTypes and OutputTypes — order is not
+        significant. The resource lists every transformation it supports;
+        the matcher just asks "does my (inputs, outputs) appear in there?".
+
+        A capability with no declared ProcessTransformations is treated as
+        no constraint along this dimension (so simple capabilities like
+        Drilling on the older schema still match). Once your stations all
+        declare transformations explicitly, you can tighten this.
+        """
+        if not cap_transformations:
+            return True, ""
+        if not step_inputs and not step_outputs:
+            # No transformation requested by the step; nothing to check.
+            return True, ""
+        wanted_in = set(step_inputs)
+        wanted_out = set(step_outputs)
+        for t in cap_transformations:
+            if (set(t.get("input_types") or []) == wanted_in
+                    and set(t.get("output_types") or []) == wanted_out):
+                return True, ""
+        return False, (
+            f"no capability transformation matches step inputs={sorted(wanted_in)} "
+            f"outputs={sorted(wanted_out)} "
+            f"(capability offers: {[t.get('name') for t in cap_transformations]})"
+        )
 
     def _flatten_step_params(self, step_params):
         """Walk the work-order parameter tree, returning {leaf_idShort: value}.
@@ -231,21 +227,28 @@ class CapabilityMatcher:
         if name:
             flat[name] = node
 
-    def _check_component(self, component, supported_components):
-        """
-        Compare components by their type IRI ('/Shells/<Category>/<Type>'),
-        not by per-instance IRI. The work order's ComponentReference for
-        sub-assemblies includes a trailing instance segment + UUID; the
-        capability's SupportedComponents declares the type-level IRI only.
-        Both sides are reduced to the same prefix before comparison.
+    def _check_components(self, components, supported_components):
+        """Every component type IRI must be in the resource's SupportedComponents.
+
+        Empty/None `supported_components` means "no restriction" — the
+        resource hasn't constrained which types it accepts. Components
+        are compared at the type level: anything beyond `/Shells/<Cat>/<Type>`
+        is trimmed off so per-instance IRIs match family declarations.
+
+        Returns (ok, reason).
         """
         if not supported_components:
-            return True
-        if component is None:
-            return False
-        normalized = self._component_type(component)
-        supported = {self._component_type(s) for s in supported_components}
-        return normalized in supported
+            return True, ""
+        if not components:
+            return True, ""
+        supported_types = {self._component_type(s) for s in supported_components}
+        for c in components:
+            if self._component_type(c) not in supported_types:
+                return False, (
+                    f"component '{c}' (type '{self._component_type(c)}') not in "
+                    f"supported list {sorted(supported_types)}"
+                )
+        return True, ""
 
     def _component_type(self, url):
         """Reduce a Shells URL to '/Shells/<Category>/<Type>', dropping any
@@ -261,16 +264,18 @@ class CapabilityMatcher:
         return "/".join(parts[: idx + 3])
 
     def _check_material(self, material, allowed_materials):
-        """
-        Capability AllowedMaterials are full URLs (e.g.
-        'https://aausmartlab.org/Materials/PLA'). The workorder may hold
-        either the same full URL or just the short name as its Material
-        value (e.g. 'PLA'). Accept both: compare full URLs directly, and
-        fall back to comparing against the URL basename.
+        """Material must be in the resource's AllowedMaterials.
+
+        Empty/None `allowed_materials` means "no restriction". The capability
+        AllowedMaterials are full URLs (e.g. 'https://aausmartlab.org/Materials/PLA').
+        The workorder may hold either the same full URL or just the short
+        name ('PLA') — both forms are accepted.
         """
         if not allowed_materials:
             return True
         if material is None:
+            # Material unspecified on the workorder side — if the resource has
+            # declared a list, we can't prove compatibility, so reject.
             return False
         if material in allowed_materials:
             return True
