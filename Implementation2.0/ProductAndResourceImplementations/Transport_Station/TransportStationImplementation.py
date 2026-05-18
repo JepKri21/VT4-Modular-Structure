@@ -77,83 +77,6 @@ Actors = [Actor1, Actor2]
 mqtt_client = MQTTClientResource(BROKER, MQTT_PORT, CLIENT_ID, BASE_TOPIC)
 
 
-
-"""
-Since there will occasionally be more than 1 actor on a station, it is important to know the different states of each actor individually.
-Each actor may also have slightly different implementations of PackML
-
-We think the smartest way would be to setup topics like this:
-
-#========
-#STATE
-#========
-
-ProductionLine1/Transport-12345678/Data/State/Shuttle1/value
-ProductionLine1/Transport-12345678/Data/State/Shuttle2/value
-Contoller subscribes to ProductionLine1/Transport-12345678/Data/State/+/value
-
-#========
-#COMMAND
-#========
-
-ProductionLine1/Transport-12345678/Data/CMD/Shuttle1/value
-ProductionLine1/Transport-12345678/Data/CMD/Shuttle2/value
-Resoruce subscribes to ProductionLine1/Transport-12345678/Data/CMD/+/value
-
-OR MAYBE IT IS BETTER TO:
-
-ProductionLine1/Transport-12345678/Data/CMD/value           #CMD message specifies the actor
-Resoruce subscribes to ProductionLine1/Transport-12345678/Data/CMD/value
-
-#========
-#JOBRESULT
-#========
-
-ProductionLine1/Transport-12345678/Data/JobResult/Shuttle1/value
-ProductionLine1/Transport-12345678/Data/JobResult/Shuttle2/value
-Controller subscribes to ProductionLine1/Transport-12345678/Data/JobResult/+/value
-
-#========
-#ALARMS
-#========
-
-ProductionLine1/Transport-12345678/Data/Alarms/value        #Alarm payload specifies which actor has the alarm and if the resource itself maybe has an alarm
-Controller subscribes to ProductionLine1/Transport-12345678/Data/Alarms/value
-
-#========
-#ACKNOWLEDGEMENTS
-#========
-
-ProductionLine1/Transport-12345678/Data/ResourceAck/value        #Acknowledgement is handled on the resource itself when commands or similar messages are published (not actor specific)
-Controller subscribes to ProductionLine1/Transport-12345678/Data/Resource_ack/value
-
-ProductionLine1/Transport-12345678/Data/ControllerAck/value        
-Resource subscribes to ProductionLine1/Transport-12345678/Data/Controller_ack/value
-
-#========
-#INVENTORY
-#========
-
-ProductionLine1/Transport-12345678/Data/InventoryLevel/value       #The payload specifies the number of products in each inventory (Not actor specific)
-Controller subscribes to ProductionLine1/Transport-12345678/Data/InventoryLevel/value
-
-#========
-#REQUEST
-#========
-
-ProductionLine1/Transport-12345678/Data/InfoRequest/value
-Resource subscribes to ProductionLine1/Transport-12345678/Data/InfoRequest/value
-#The controller does not need to subscribe to an additional response message, just all the topics from the submodel
-
-"""
-
-
-"""
-Since there can be multiple actors 
-"""
-
-
-
 class Shuttle1Behaviour(StationBehavior):
 
     def __init__(self, actor_name: str, mqtt_client):
@@ -179,6 +102,7 @@ class Shuttle1Behaviour(StationBehavior):
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
         self.skill = self.command_payload.skill
         self.parameters = self.command_payload.parameters
+        self.process_transformation = self.command_payload.process_transformation
         print(f"Reading job {self.command_payload.job_id} for order {self.command_payload.order_id}")
 
 
@@ -189,12 +113,9 @@ class Shuttle1Behaviour(StationBehavior):
 
             try:
                 # unpack for readability
-                self.speed_constraint = self.parameters.get("SpeedConstraint")
-                self.acceleration_constraint = self.parameters.get("AccelerationConstraint")
                 self.target_position = self.parameters.get("TargetPosition")
                 self.x_pos = self.target_position.get("XPos")
                 self.y_pos = self.target_position.get("YPos")
-                #self.component_reference = self.parameters.get("ComponentReference")
 
                 print("Transport parameters loaded:", self.parameters)
 
@@ -216,8 +137,14 @@ class Shuttle1Behaviour(StationBehavior):
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
 
         if self.skill == "Transport":
-            print(f"Executing Transport with parameters:  Speed Constraint: {self.speed_constraint}, Acceleration Constraint: {self.acceleration_constraint}, Target Position: { self.target_position}, Component Reference: {self.command_payload.component_reference}")
+            self.speed_constraint = 0.5
+            self.acceleration_constraint = 2.0
             
+            if self.process_transformation["InputTypes"] == self.process_transformation["OutputTypes"]:
+                print(f"Transporting {self.process_transformation["InputTypes"]} to new position.")
+                print(f"With parameters:  Speed Constraint: {self.speed_constraint}, Acceleration Constraint: {self.acceleration_constraint}, Target Position: { self.target_position}")
+            else:
+                raise ValueError(f"Cannot transform {self.process_transformation["InputTypes"]} to {self.process_transformation["OutputTypes"]}")
             #Generating cycle times based on parameters
 
             target_position = [self.x_pos, self.y_pos]
@@ -243,7 +170,7 @@ class Shuttle1Behaviour(StationBehavior):
             self.current_position = target_position
 
         else:
-            print("How did you even get here?")
+            print("Skill not available for this actor, How did you even get here?")
             await machine.transition_to(PackMLState.STOPPING)
         
         await machine.transition_to(PackMLState.COMPLETING)
@@ -252,6 +179,13 @@ class Shuttle1Behaviour(StationBehavior):
         state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=PackMLState.COMPLETING)
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
         print("Finalizing Process and sending result")
+        XPos_element = MS.PropertyElement(id_short="XPos", value=self.x_pos, semantic_id="https://aausmartlab.org/Semantics/mm")
+        YPos_element = MS.PropertyElement(id_short="YPos", value=self.y_pos, semantic_id="https://aausmartlab.org/Semantics/mm")
+        target_position_element = MS.CollectionElement(id_short="TargetPosition", semantic_id="https://aausmartlab.org/Semantics/TargetPositon", elements=[XPos_element,YPos_element])
+        speed_constraint_element = MS.PropertyElement(id_short="SpeedConstraint", value=self.speed_constraint, semantic_id="https://aausmartlab.org/Semantics/mm_per_s")
+        acceleration_constraint_element = MS.PropertyElement(id_short="SpeedConstraint", value=self.acceleration_constraint, semantic_id="https://aausmartlab.org/Semantics/mm_per_s2")
+        used_parameters = MS.CollectionElement(id_short="Parameters", semantic_id="https://aausmartlab.org/Semantics/Parameters", elements=[target_position_element, speed_constraint_element, acceleration_constraint_element])
+            
 
         job_result_message = MS.JobResultMessage(
             timestamp=datetime.now(),
@@ -260,8 +194,10 @@ class Shuttle1Behaviour(StationBehavior):
             job_id=self.command_payload.job_id, 
             ideal_cycle_time_ms=self.ideal_cycle_time,
             actual_cycle_time_ms=self.actual_cycle_time,
+            process_transformation=self.process_transformation,
             result=self.result,
-            quality=self.quality
+            quality=self.quality,
+            output_parameters=used_parameters
         )
         self.mqtt_client.publish(f"{job_result_suffix}/{self.actor_name}",job_result_message)
 
@@ -370,6 +306,7 @@ class Shuttle2Behaviour(StationBehavior):
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
         self.skill = self.command_payload.skill
         self.parameters = self.command_payload.parameters
+        self.process_transformation = self.command_payload.process_transformation
         print(f"Reading job {self.command_payload.job_id} for order {self.command_payload.order_id}")
 
 
@@ -380,12 +317,9 @@ class Shuttle2Behaviour(StationBehavior):
 
             try:
                 # unpack for readability
-                self.speed_constraint = self.parameters.get("SpeedConstraint")
-                self.acceleration_constraint = self.parameters.get("AccelerationConstraint")
                 self.target_position = self.parameters.get("TargetPosition")
                 self.x_pos = self.target_position.get("XPos")
                 self.y_pos = self.target_position.get("YPos")
-                #self.component_reference = self.parameters.get("ComponentReference")
 
                 print("Transport parameters loaded:", self.parameters)
 
@@ -407,13 +341,18 @@ class Shuttle2Behaviour(StationBehavior):
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
 
         if self.skill == "Transport":
-            print(f"Current Position Is: ({self.current_position[0]},{self.current_position[1]})")
-            print(f"Executing Transport with parameters:  Speed Constraint: {self.speed_constraint}, Acceleration Constraint: {self.acceleration_constraint}, Target Position: { self.target_position}, Component Reference: {self.command_payload.component_reference}")
+            self.speed_constraint = 0.5
+            self.acceleration_constraint = 2.0
             
+            if self.process_transformation["InputTypes"] == self.process_transformation["OutputTypes"]:
+                print(f"Transporting {self.process_transformation["InputTypes"]} to new position.")
+                print(f"With parameters:  Speed Constraint: {self.speed_constraint}, Acceleration Constraint: {self.acceleration_constraint}, Target Position: { self.target_position}")
+            else:
+                raise ValueError(f"Cannot transform {self.process_transformation["InputTypes"]} to {self.process_transformation["OutputTypes"]}")
             #Generating cycle times based on parameters
+
             target_position = [self.x_pos, self.y_pos]
             distance = dist(self.current_position, target_position)/1000
-            
 
             t_acc = self.speed_constraint/self.acceleration_constraint
             d_acc = 0.5*self.acceleration_constraint*t_acc**2
@@ -435,7 +374,7 @@ class Shuttle2Behaviour(StationBehavior):
             self.current_position = target_position
 
         else:
-            print("How did you even get here?")
+            print("Skill not available for this actor, How did you even get here?")
             await machine.transition_to(PackMLState.STOPPING)
         
         await machine.transition_to(PackMLState.COMPLETING)
@@ -444,6 +383,13 @@ class Shuttle2Behaviour(StationBehavior):
         state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=PackMLState.COMPLETING)
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
         print("Finalizing Process and sending result")
+        XPos_element = MS.PropertyElement(id_short="XPos", value=self.x_pos, semantic_id="https://aausmartlab.org/Semantics/mm")
+        YPos_element = MS.PropertyElement(id_short="YPos", value=self.y_pos, semantic_id="https://aausmartlab.org/Semantics/mm")
+        target_position_element = MS.CollectionElement(id_short="TargetPosition", semantic_id="https://aausmartlab.org/Semantics/TargetPositon", elements=[XPos_element,YPos_element])
+        speed_constraint_element = MS.PropertyElement(id_short="SpeedConstraint", value=self.speed_constraint, semantic_id="https://aausmartlab.org/Semantics/mm_per_s")
+        acceleration_constraint_element = MS.PropertyElement(id_short="SpeedConstraint", value=self.acceleration_constraint, semantic_id="https://aausmartlab.org/Semantics/mm_per_s2")
+        used_parameters = MS.CollectionElement(id_short="Parameters", semantic_id="https://aausmartlab.org/Semantics/Parameters", elements=[target_position_element, speed_constraint_element, acceleration_constraint_element])
+            
 
         job_result_message = MS.JobResultMessage(
             timestamp=datetime.now(),
@@ -452,8 +398,10 @@ class Shuttle2Behaviour(StationBehavior):
             job_id=self.command_payload.job_id, 
             ideal_cycle_time_ms=self.ideal_cycle_time,
             actual_cycle_time_ms=self.actual_cycle_time,
+            process_transformation=self.process_transformation,
             result=self.result,
-            quality=self.quality
+            quality=self.quality,
+            output_parameters=used_parameters
         )
         self.mqtt_client.publish(f"{job_result_suffix}/{self.actor_name}",job_result_message)
 
@@ -560,6 +508,7 @@ def handle_command(msg: MS.CommandMessage):
     print(f"Actor: {msg.actor_name}")
     print(f"Order ID: {msg.order_id}")
     print(f"Parameters: {msg.parameters}")
+    print(f"Process Transformation: {msg.process_transformation}")
 
     for StateMachine in StateMachines:
         if msg.actor_name == StateMachine.behavior.actor_name:
@@ -593,12 +542,7 @@ def handle_request(msg: MS.RequestMessage):
 mqtt_client.register_subscriber(command_suffix, MS.CommandMessage,handle_command)
 mqtt_client.register_subscriber(info_request_suffix, MS.RequestMessage,handle_request)
 
-params = {
-    "SpeedConstraint": 0.2,
-    "AccelerationConstraint": 0.5,
-    "TargetPosition": {"XPos": 120.5, "YPos": 290.5},
-    "ComponentReference": "BottomCover_ALU"
-}
+params = {"TargetPosition": {"XPos": 120.5, "YPos": 290.5}}
 
 test_command = MS.CommandMessage(
     timestamp=datetime.now(),
@@ -608,6 +552,8 @@ test_command = MS.CommandMessage(
     skill_trigger=MS.CommandType.START,
     order_id="ORD-1",
     job_id="TRANS1",
+    process_transformation={"InputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverPLABlue-264a4570-0bfb-4171-bdf8-5ed087afd73e"], 
+                            "OutputTypes":["https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverPLABlue-264a4570-0bfb-4171-bdf8-5ed087afd73e"]},
     parameters=params
 )
 
