@@ -7,7 +7,7 @@ asset_name: "Drilling"
 submodels:
   DrillingCapabilityOffered:
     CapabilityCategory: "Offered"
-    CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Drilling"
+    CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Drilling"
     SupportedComponents:
       - "https://aausmartlab.org/Shells/Component/BottomCover"
       - "https://aausmartlab.org/Shells/Component/TopCover"
@@ -25,7 +25,7 @@ submodels:
 
   HandoffCapabilityOffered:
     CapabilityCategory: "Offered"
-    CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Handoff"
+    CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Handoff"
     SupportedComponents:
       - "https://aausmartlab.org/Shells/Component/BottomCover"
       - "https://aausmartlab.org/Shells/Component/TopCover"

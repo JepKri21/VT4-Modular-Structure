@@ -12,10 +12,11 @@ elements:
     cardinality: "One"
 
   - type: property
-    id_short: "CapabilityReference"
+    id_short: "CapabilityTypeReference"
     value_type: "xs:string"
-    semantic_id: "https://aausmartlab.org/Semantics/CapabilityReference"
+    semantic_id: "https://aausmartlab.org/Semantics/CapabilityTypeReference"
     description: "Semantic IRI identifying this as a Retrieve capability"
+    value: "https://aausmartlab.org/Submodels/Capability/Retrieve"
     cardinality: "One"
 
   - type: collection
@@ -37,7 +38,7 @@ elements:
     description: "Component types this resource can retrieve"
     element_type: "property"
     value_type: "xs:string"
-    cardinality: "OneToMany"
+    cardinality: "ZeroToMany"
 
   - type: list
     id_short: "AllowedMaterials"
@@ -45,7 +46,7 @@ elements:
     description: "Materials compatible with this retrieve capability"
     element_type: "property"
     value_type: "xs:string"
-    cardinality: "OneToMany"
+    cardinality: "ZeroToMany"
 
   - type: reference_element
     id_short: "ResourceReference"

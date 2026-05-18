@@ -7,7 +7,7 @@ asset_name: "Storage"
 submodels:
   StoreCapabilityOffered:
     CapabilityCategory: "Offered"
-    CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Store"
+    CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Store"
     SupportedComponents:
       - "BottomCoverALU"
       - "TopCoverALU"
@@ -18,7 +18,7 @@ submodels:
 
   RetrieveCapabilityOffered:
     CapabilityCategory: "Offered"
-    CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Retrieve"
+    CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Retrieve"
     SupportedComponents:
       - "BottomCoverALU"
       - "TopCoverALU"
@@ -29,7 +29,7 @@ submodels:
 
   HandoffCapabilityOffered:
     CapabilityCategory: "Offered"
-    CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Handoff"
+    CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Handoff"
     SupportedComponents:
       - "BottomCoverALU"
       - "TopCoverALU"

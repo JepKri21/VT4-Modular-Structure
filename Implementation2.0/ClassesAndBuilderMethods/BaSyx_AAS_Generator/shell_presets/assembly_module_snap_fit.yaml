@@ -6,22 +6,26 @@ asset_name: "AssemblySnapFit"
 
 submodels:
   AssembleCapabilityOffered:
+    CapabilityCategory: "Offered"
     SupportedComponents:
       - "https://aausmartlab.org/Shells/Component/BottomCover"
       - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
     Parameters:
-      SupportedAssemblyTypes:
-        - "snap-fit"
-        - "press-fit"
-      AssemblyPosition:
-        XPos: { min: -55.0, max: 55.0 }
-        YPos: { min: -55.0, max: 55.0 }
-      MaxComponentCount:
-        min: 2
-        max: 4
-      MaxAssemblyTimeS:
-        min: 5.0
-        max: 60.0
+      TargetPosition:
+        XPos: ""
+        YPos: ""
+      OperationLabel:
+        - language: "en"
+          text: "Snap-fit assembly operation"
+        - language: "da"
+          text: "Snap-fit samling"
+    ProcessTransformations:
+      BottomCoverAndPCB:
+        InputTypes:
+          - "https://aausmartlab.org/Shells/Component/BottomCover"
+          - "https://aausmartlab.org/Shells/Component/PCB"
+        OutputTypes:
+          - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
 
   HandoffCapabilityOffered:
     SupportedComponents:
