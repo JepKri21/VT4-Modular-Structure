@@ -362,9 +362,12 @@ class AASPropertyResolver:
             if not keys:
                 continue
 
-            submodel_reference = keys[0].get("value")
+            submodel_reference = keys[0].get("value", "")
 
-            if "/Submodel/Properties/" in submodel_reference:
+            # The Properties submodel's IRI ends with the segment "Properties"
+            # (e.g. ".../<instance_id>/Properties"). idShort is also
+            # "Properties" but isn't exposed in the shell's submodel refs.
+            if submodel_reference.rstrip("/").rsplit("/", 1)[-1] == "Properties":
                 return submodel_reference
 
         raise Exception("Properties submodel reference not found")
@@ -500,10 +503,17 @@ class ConstraintEvaluator:
 
             for (property_name,property_data) in collection_data.items():
 
+                # Work orders use PascalCase "SemanticId"; tolerate the AAS-
+                # style "semanticId" too.
+                semantic_id = (
+                    property_data.get("SemanticId")
+                    or property_data.get("semanticId")
+                )
+
                 properties[property_name] = (
                     MS.RequestedProperty(
                         name=property_name,
-                        semantic_id=(property_data.get("semanticId")),
+                        semantic_id=semantic_id,
                         value=(property_data.get("value"))
                     )
                 )
@@ -533,6 +543,31 @@ class ProductMatcher:
         self.inventory_indexer = InventoryIndexer()
         self.property_resolver = AASPropertyResolver(self.AAS_BROKER,AAS_PORT)
         self.constraint_evaluator = ConstraintEvaluator()
+
+    def find_in_resource_inventory(
+        self,
+        resource_shell_id: str,
+        component_type_reference: str,
+    ) -> list[MS.ComponentLocation]:
+        """Type-only lookup scoped to one resource's inventory.
+
+        Use when picking from a resource we trust (typically the target
+        resource itself): no AAS Properties fetch, no constraint check —
+        just "does this resource hold a component of this type?".
+        Returns ComponentLocations in storage order.
+        """
+        results = []
+        for candidate in self.inventory_indexer.find_by_component_type(component_type_reference):
+            if candidate.resource_shell_id != resource_shell_id:
+                continue
+            results.append(MS.ComponentLocation(
+                component_id=candidate.component_id,
+                resource_shell_id=candidate.resource_shell_id,
+                inventory_name=candidate.inventory_name,
+                slot_id=candidate.slot_id,
+                actor_names=(candidate.accessible_actors if candidate.accessible_actors else None),
+            ))
+        return results
 
     def find_component_location(self, component_id: str):
 
@@ -567,7 +602,22 @@ class ProductMatcher:
         candidates = self.inventory_indexer.find_by_component_type(component_type_reference)
         #print("[CANDIDATES]",candidates)
 
+        no_constraints = not requested_constraints.collections
+
         for candidate in candidates:
+
+            if no_constraints:
+                # Nothing to evaluate — accept by type alone. Avoids hitting
+                # the AAS server for Properties that the order doesn't care
+                # about (and that may not exist).
+                results.append(
+                    MS.ComponentLocation(
+                        component_id=candidate.component_id,
+                        resource_shell_id=candidate.resource_shell_id,
+                        inventory_name=candidate.inventory_name,
+                        slot_id=candidate.slot_id,
+                        actor_names=(candidate.accessible_actors if candidate.accessible_actors else None)))
+                continue
 
             # 3. Get AAS properties
             properties = (self.property_resolver.get_component_properties(candidate.component_id))

@@ -371,21 +371,37 @@ class ResourceManager:
             encoded_resource_submodel_id = self.base64encode(f"{capability_submodel_reference}")
             response = requests.get(f"{self.SUBMODEL_ENDPOINT}/{encoded_resource_submodel_id}")
 
-            # The capability's identity is the submodel's top-level semanticId,
-            # not an inner element. Read it directly from the response.
+            # Two shapes for the capability identity:
+            #   A) the submodel's top-level semanticId (older template), or
+            #   B) a child Property element with idShort
+            #      "CapabilityTypeReference" (current generator).
             if response.ok:
                 data = response.json()
+                capability_reference = None
                 semantic_keys = (data.get("semanticId") or {}).get("keys", [])
                 if semantic_keys:
-                    result[skill_name]["CapabilityReference"] = semantic_keys[0].get("value")
+                    capability_reference = semantic_keys[0].get("value")
+                if not capability_reference:
+                    for el in data.get("submodelElements", []) or []:
+                        if (el.get("idShort") == "CapabilityTypeReference"
+                                and el.get("modelType") == "Property"):
+                            capability_reference = el.get("value")
+                            break
+                if capability_reference:
+                    result[skill_name]["CapabilityReference"] = capability_reference
                 else:
                     print(
-                        f"No semanticId on capability submodel for skill "
-                        f"'{skill_name}' ({capability_submodel_reference})"
+                        f"No CapabilityTypeReference / top-level semanticId on "
+                        f"capability submodel for skill '{skill_name}' "
+                        f"({capability_submodel_reference})"
                     )
             else:
                 #There was a problem finding the id or bad connection
-                print(f"There was a problem retrieving the Capability submodel: Response Status Code {response.status_code}")
+                print(
+                    f"There was a problem retrieving the Capability submodel: "
+                    f"Response Status Code {response.status_code} "
+                    f"(skill='{skill_name}', ref='{capability_submodel_reference}')"
+                )
 
 
         #If it is able to find the submodel, then it returns the dictionary, else it returns and empty one
@@ -466,12 +482,21 @@ class ResourceManager:
         allowed_materials_node = self.find_by_idshort(data, "AllowedMaterials")
         if allowed_materials_node:
             for element in allowed_materials_node.get("value", []) or []:
-                allowed_materials.append(element.get("value"))
+                v = element.get("value")
+                # Skip placeholder Property entries with no value — the
+                # template often ships a single empty Property to advertise
+                # the list's shape. Empty list ⇒ "no restriction".
+                if v is None or v == "":
+                    continue
+                allowed_materials.append(v)
 
         supported_components_node = self.find_by_idshort(data, "SupportedComponents")
         if supported_components_node:
             for element in supported_components_node.get("value", []) or []:
-                supported_components.append(element.get("value"))
+                v = element.get("value")
+                if v is None or v == "":
+                    continue
+                supported_components.append(v)
 
         process_transformations_node = self.find_by_idshort(data, "ProcessTransformations")
         if process_transformations_node:

@@ -82,7 +82,11 @@ def _flatten_parameters(params: dict) -> dict:
     return walk(params or {})
 
 
-def _pre_process_transformation(skill: str, component_reference: str) -> dict:
+def _pre_process_transformation(
+    skill: str,
+    component_reference: str,
+    handoff_role: str | None = None,
+) -> dict:
     """Build the CMD's process_transformation block for a pre/post-process
     step (Retrieve / Handoff / Store / Transport).
 
@@ -93,8 +97,10 @@ def _pre_process_transformation(skill: str, component_reference: str) -> dict:
       - Store    : InputTypes=[<iri>], OutputTypes=None
       - Transport: InputTypes=[<iri>], OutputTypes=[<iri>]  (loaded)
                    InputTypes=None,    OutputTypes=None     (empty travel)
-      - Handoff  : symmetric form here; precise None-vs-iri depends on
-                   which side has the Handoff capability.
+      - Handoff  : per-side. "sender" releases the part
+                   (InputTypes=None, OutputTypes=[<iri>]);
+                   "receiver" acquires it
+                   (InputTypes=[<iri>], OutputTypes=None).
 
     component_reference may be an instance IRI or empty. Empty signals
     "no cargo on this side" and is encoded as None on the relevant leg.
@@ -104,9 +110,17 @@ def _pre_process_transformation(skill: str, component_reference: str) -> dict:
         return {"InputTypes": None, "OutputTypes": [iri] if iri else None}
     if skill == "Store":
         return {"InputTypes": [iri] if iri else None, "OutputTypes": None}
-    # Transport / Handoff / anything else: pass the part through. If the
-    # leg has no cargo (e.g. empty shuttle travelling to storage), encode
-    # both sides as None.
+    if skill == "Handoff":
+        side = [iri] if iri else None
+        if handoff_role == "sender":
+            return {"InputTypes": None, "OutputTypes": side}
+        if handoff_role == "receiver":
+            return {"InputTypes": side, "OutputTypes": None}
+        # No role provided — fall back to symmetric for safety.
+        return {"InputTypes": side, "OutputTypes": side}
+    # Transport / anything else: pass the part through. If the leg has
+    # no cargo (e.g. empty shuttle travelling to storage), encode both
+    # sides as None.
     side = [iri] if iri else None
     return {"InputTypes": side, "OutputTypes": side}
 
@@ -296,86 +310,200 @@ class Scheduler:
 
         handler.update_step(bop["step_id"], StepStates.ASSIGNED, resource=target_iri)
 
-        # 2) Resolve storage + shuttle
-        component_ref = info["ComponentReference"] or ""
-        ingredient_name = info.get("Ingredient")
+        # 2) Per-input arrival planning.
+        # For each input ingredient, decide how to get it to `target`:
+        #   - Already at target → no-op.
+        #   - Held by a Transport actor (e.g. shuttle from a prior step) →
+        #     transport + handoff only; no storage trip.
+        #   - Otherwise → storage Retrieve + handoffs + transport + handoff
+        #     into target (the classic path).
+        inputs = info.get("InputIngredients") or [{
+            # Fallback for older shapes: synthesise a single-input list from
+            # the step's main ingredient.
+            "name": info.get("Ingredient"),
+            "ComponentReference": info.get("ComponentReference"),
+            "ComponentTypeReference": info.get("ComponentTypeReference"),
+            "Properties": (handler.workorder.get("Properties", {}) or {}).get(info.get("Ingredient"), {}),
+        }]
+
         material = info.get("Material")
-        try:
-            storage, storage_iri, picked_instance = self._resolve_storage_for(
-                component_ref, ingredient_name=ingredient_name
-            )
-            shuttle, shuttle_iri = self._pick_shuttle(
-                component_ref,
-                material=material,
-                _target_iri=target_iri,
-                _storage_iri=storage_iri,
-            )
-        except RuntimeError as exc:
-            print(f"[bop] cannot resolve endpoints: {exc}")
-            return
+        combined_steps: list[PreProcessStep] = []
+        combined_occupies: list[tuple[str, str]] = []
+        iri_by_topic: dict[str, str] = {target.resource_id: target_iri}
+        reservations: list[tuple[str, str]] = [(target.resource_id, target.actor_name)]
+        shuttles_used: list[tuple[str, str]] = []
 
-        # Record the specific instance picked by the matcher (for traceability).
-        if picked_instance and ingredient_name:
-            self._traceability.setdefault(order_id, {})[ingredient_name] = picked_instance
-            print(f"[trace] {order_id}: {ingredient_name} -> {picked_instance}")
-        print(f"[bop] storage = {storage}")
-        print(f"[bop] shuttle = {shuttle}")
+        for ing in inputs:
+            try:
+                sub_plan, sub_iris, sub_reservations = self._plan_arrival_for_input(
+                    handler=handler,
+                    ingredient=ing,
+                    bop_step_id=bop["step_id"],
+                    order_id=order_id,
+                    target=target,
+                    target_iri=target_iri,
+                    material=material,
+                )
+            except RuntimeError as exc:
+                print(f"[bop] cannot plan arrival for input '{ing.get('name')}': {exc}")
+                return
+            if sub_plan is None:
+                # Already at target; nothing to transport.
+                continue
+            combined_steps.extend(sub_plan.steps)
+            combined_occupies.extend(sub_plan.occupies_through_bop)
+            iri_by_topic.update(sub_iris)
+            for res in sub_reservations:
+                if res not in reservations:
+                    reservations.append(res)
+                    if res not in shuttles_used and res[0] != target.resource_id:
+                        shuttles_used.append(res)
 
-        iri_by_topic = {
-            target.resource_id:  target_iri,
-            storage.resource_id: storage_iri,
-            shuttle.resource_id: shuttle_iri,
-        }
+        plan = PreProcessPlan(
+            bop_step_id=bop["step_id"],
+            order_id=order_id,
+            target=target,
+            shuttle=None,
+            steps=combined_steps,
+            occupies_through_bop=combined_occupies,
+        )
 
-        # 3) Decide the release sequence from the source (data-driven via
-        #    inventory state + AAS skills). For a normal storage pickup
-        #    this returns ["Retrieve", "Handoff"]; for a part that's
-        #    already sitting at a non-inventory station it would return
-        #    just ["Handoff"].
-        try:
-            release_skills = release_sequence_for(
-                storage,
-                component_ref,
-                shell_iri=storage_iri,
-                rm=self.rm,
-            )
-            print(f"[plan] release sequence at source: {release_skills}")
-        except NoReleaseSequence as exc:
-            print(f"[bop] {exc}")
-            return
-
-        # 4) Build + execute pre-process plan
-        try:
-            plan = self.planner.plan(
-                bop_step_id=bop["step_id"],
-                order_id=order_id,
-                component_reference=component_ref,
-                current_location=storage,
-                target=target,
-                shuttle=shuttle,
-                release_skills=release_skills,
-            )
-        except NoShuttleAvailable as exc:
-            print(f"[bop] {exc}")
-            return
-
-        # Reserve the shuttle (and target actor) for this order while the plan runs.
-        reservations = [(shuttle.resource_id, shuttle.actor_name),
-                        (target.resource_id, target.actor_name)]
+        # Reserve all involved actors for this order while the plan runs.
         self.occupancy.commit(order_id, reservations)
 
         try:
             await self._print_and_execute_plan(plan, iri_by_topic, "pre-process")
 
-            # 4) Execute the BoP step
+            # 3) Execute the BoP step
             await self._execute_bop_command(handler, bop, info, target, target_iri, chosen)
 
         finally:
-            # Release shuttle now that the BoP step is done (target stays until
-            # the post-process plan, which we drive separately if this was the
-            # last BoP step).
-            self.occupancy.release_one(shuttle.resource_id, shuttle.actor_name, order_id)
+            # Release shuttles now that the BoP step is done. release_one is a
+            # no-op when an actor still carries cargo, so a shuttle that kept
+            # the output (or another input not consumed by this step) stays
+            # held for the next BoP step.
+            for resource_id, actor_name in shuttles_used:
+                self.occupancy.release_one(resource_id, actor_name, order_id)
             self.occupancy.release_one(target.resource_id, target.actor_name, order_id)
+
+    def _plan_arrival_for_input(
+        self,
+        *,
+        handler: WorkOrderHandler,
+        ingredient: dict,
+        bop_step_id: str,
+        order_id: str,
+        target: ResourceEndpoint,
+        target_iri: str,
+        material: str | None,
+    ) -> tuple[PreProcessPlan | None, dict[str, str], list[tuple[str, str]]]:
+        """Build a PreProcessPlan that gets one input ingredient to `target`.
+
+        Returns (plan, iri_by_topic_additions, reservations). `plan` is None
+        when the input is already at the target (no transport needed).
+        """
+        ingredient_name = ingredient.get("name")
+        iris: dict[str, str] = {}
+        reservations: list[tuple[str, str]] = []
+
+        # Case A0: the target resource already has a component of the right
+        # type in its OWN inventory. Trust the local inventory (type-only
+        # lookup, no Properties evaluation) and bind the ingredient to it —
+        # the target will self-source it during the BoP CMD, so no transport
+        # plan is needed.
+        type_ref = ingredient.get("ComponentTypeReference")
+        existing_ref = ingredient.get("ComponentReference") or ""
+        if not existing_ref and type_ref:
+            local_matches = self.product_matcher.find_in_resource_inventory(
+                resource_shell_id=target_iri,
+                component_type_reference=type_ref,
+            )
+            if local_matches:
+                local_iri = local_matches[0].component_id
+                if ingredient_name:
+                    handler.update_component_reference(ingredient_name, local_iri)
+                    self._traceability.setdefault(order_id, {})[ingredient_name] = local_iri
+                ingredient["ComponentReference"] = local_iri
+                print(
+                    f"[plan] '{ingredient_name}' found in target's own inventory "
+                    f"({target.resource_id}); skipping transport"
+                )
+                print(f"[trace] {order_id}: {ingredient_name} -> {local_iri}")
+                return None, iris, reservations
+
+        # Make sure we have a concrete instance IRI to plan around.
+        component_ref = self._resolve_input_instance(handler, ingredient)
+        if not component_ref:
+            raise RuntimeError(
+                f"input '{ingredient_name}' could not be resolved to an instance"
+            )
+
+        # Case A: already on the target actor — nothing to do.
+        holder = self.occupancy.find_holder(component_ref)
+        if holder is not None and holder[0] == target.resource_id:
+            return None, iris, reservations
+
+        # Case A2: instance lives in the target's own inventory (not on an
+        # actor). Same outcome as A0 — target self-sources, no arrival plan.
+        location = self.product_matcher.find_component_location(component_ref)
+        if location is not None and location.resource_shell_id == target_iri:
+            print(
+                f"[plan] '{ingredient_name}' ({component_ref}) is in target's own "
+                f"inventory ({target.resource_id}); skipping transport"
+            )
+            return None, iris, reservations
+
+        # Case B: held by a Transport actor (shuttle) — reuse it.
+        held = self._find_shuttle_holding(component_ref, order_id)
+        if held is not None:
+            shuttle, shuttle_iri = held
+            print(
+                f"[plan] reusing shuttle {shuttle.resource_id}/{shuttle.actor_name} "
+                f"already carrying {component_ref}"
+            )
+            iris[shuttle.resource_id] = shuttle_iri
+            reservations.append((shuttle.resource_id, shuttle.actor_name))
+            plan = self.planner.plan_shuttle_to_target(
+                bop_step_id=bop_step_id,
+                order_id=order_id,
+                component_reference=component_ref,
+                shuttle=shuttle,
+                target=target,
+            )
+            return plan, iris, reservations
+
+        # Case C: classic — fetch from storage.
+        storage, storage_iri, picked_instance = self._resolve_storage_for(
+            component_ref, ingredient_name=ingredient_name
+        )
+        shuttle, shuttle_iri = self._pick_shuttle(
+            component_ref,
+            material=material,
+            _target_iri=target_iri,
+            _storage_iri=storage_iri,
+        )
+        if picked_instance and ingredient_name:
+            self._traceability.setdefault(order_id, {})[ingredient_name] = picked_instance
+            print(f"[trace] {order_id}: {ingredient_name} -> {picked_instance}")
+
+        iris[storage.resource_id] = storage_iri
+        iris[shuttle.resource_id] = shuttle_iri
+        reservations.append((shuttle.resource_id, shuttle.actor_name))
+
+        release_skills = release_sequence_for(
+            storage, component_ref, shell_iri=storage_iri, rm=self.rm
+        )
+        print(f"[plan] release sequence at source for '{ingredient_name}': {release_skills}")
+        plan = self.planner.plan(
+            bop_step_id=bop_step_id,
+            order_id=order_id,
+            component_reference=component_ref,
+            current_location=storage,
+            target=target,
+            shuttle=shuttle,
+            release_skills=release_skills,
+        )
+        return plan, iris, reservations
 
     async def _execute_bop_command(
         self,
@@ -478,7 +606,7 @@ class Scheduler:
             job_id=job_id,
             parameters=step.parameters,
             process_transformation=_pre_process_transformation(
-                step.skill, step.component_reference
+                step.skill, step.component_reference, step.handoff_role
             ),
             timeout=PRE_PROCESS_TIMEOUT_S,
         )
@@ -603,9 +731,17 @@ class Scheduler:
                 return None
             input_iris.append(iri)
 
+        # For outputs, prefer the cached info value but fall back to the
+        # workorder's current Ingredients dict — _resolve_input_instance
+        # may have written an instance IRI there after info was built.
+        ingredients = (handler.workorder or {}).get("Ingredients", {}) or {}
         output_iris: list[str | None] = []
         for ing in info.get("OutputIngredients") or []:
-            iri = ing.get("ComponentReference") or None
+            iri = (
+                ing.get("ComponentReference")
+                or ingredients.get(ing.get("name"), {}).get("ComponentReference")
+                or None
+            )
             output_iris.append(iri)
 
         return {"InputTypes": input_iris, "OutputTypes": output_iris}
@@ -658,6 +794,17 @@ class Scheduler:
         storage_iri: str | None = None
 
         if component_ref:
+            # Preferred path: component_ref is a concrete instance IRI
+            # (already resolved by _resolve_input_instance). Look it up in
+            # the inventory index directly.
+            location = self.product_matcher.find_component_location(component_ref)
+            if location is not None:
+                storage_iri = location.resource_shell_id
+                picked_instance = location.component_id
+
+        if storage_iri is None and component_ref:
+            # Fallback: treat component_ref as a TYPE IRI (e.g. when the
+            # caller hasn't pre-resolved to an instance).
             props = (
                 (self.workorder or {})
                 .get("Properties", {})
@@ -714,6 +861,39 @@ class Scheduler:
             has_handoff=self.rm.has_handoff(storage_iri),
         )
         return endpoint, storage_iri, picked_instance
+
+    def _find_shuttle_holding(
+        self,
+        component_ref: str,
+        order_id: str | None,
+    ) -> tuple[ResourceEndpoint, str] | None:
+        """If some Transport actor already carries `component_ref`, return it.
+
+        Honored only when the actor is unowned OR owned by the same order —
+        we never poach a held shuttle from another order. Returns None when
+        no Transport actor holds the part.
+        """
+        if not component_ref:
+            return None
+        holder = self.occupancy.find_holder(component_ref)
+        if holder is None:
+            return None
+        topic, actor = holder
+        # The holder may or may not be a shuttle. Only treat as such if a
+        # Transport-offering resource matches this topic.
+        for shuttle_iri, shuttle_topic, actors in self.rm.find_skill_offering("Transport"):
+            if shuttle_topic != topic or actor not in actors:
+                continue
+            owner = self.occupancy.owner_of(topic, actor)
+            if owner not in (None, order_id):
+                return None
+            endpoint = ResourceEndpoint(
+                resource_id=topic,
+                actor_name=actor,
+                has_handoff=self.rm.has_handoff(shuttle_iri),
+            )
+            return endpoint, shuttle_iri
+        return None
 
     def _pick_shuttle(
         self,
@@ -795,11 +975,13 @@ class Scheduler:
 
         # 2) AllowedMaterials check (mirrors CapabilityMatcher._check_material)
         if material and allowed_materials:
-            if material in allowed_materials:
-                return True
-            basenames = {url.rsplit("/", 1)[-1] for url in allowed_materials}
-            if material not in basenames:
-                return False
+            allowed = [m for m in allowed_materials if m]
+            if allowed:
+                if material in allowed:
+                    return True
+                basenames = {url.rsplit("/", 1)[-1] for url in allowed}
+                if material not in basenames:
+                    return False
 
         return True
 

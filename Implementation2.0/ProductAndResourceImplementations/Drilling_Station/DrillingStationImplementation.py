@@ -263,7 +263,7 @@ class KUKAManipulatorBehavior(StationBehavior):
             print(f"Processing {self.process_transformation["InputTypes"]} into {self.process_transformation["OutputTypes"]}")
 
             #Generating result and quality randomly
-            if random.randint(1,10) > 1:
+            if random.randint(1,100) > 1:
                 self.result = MS.Result.COMPLETE
                 if random.randint(1,10) > 1:
                     self.quality = MS.Quality.GOOD
@@ -456,10 +456,6 @@ test_command = MS.CommandMessage(
     resource_id=CLIENT_ID,
     skill="Drilling",
     actor_name=Actor,
-    process_transformation={
-        "InputType": ["BottomCover_ALU"],
-        "OutputType": ["BottomCover_ALU_Drilled"]
-    },
     skill_trigger=MS.CommandType.START,
     order_id="ORD-12345",
     job_id="Drilling_2x2",

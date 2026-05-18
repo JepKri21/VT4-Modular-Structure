@@ -69,7 +69,6 @@ elements:
                   - "https://aausmartlab.org/Shells/Component/BottomCover"
                   - "https://aausmartlab.org/Shells/Component/PCB"
 
-
           - type: collection
             id_short: "OutputTypes"
             semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation/OutputTypes"
@@ -82,7 +81,7 @@ elements:
                 element_type: "property"
                 value_type: "xs:string"
                 items:
-                  - "https://aausmartlab.org/Shells/Component/BottomCoverPCB"
+                  - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
 
   - type: list
     id_short: "SupportedComponents"

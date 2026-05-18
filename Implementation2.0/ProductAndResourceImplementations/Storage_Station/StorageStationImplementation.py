@@ -633,10 +633,6 @@ test_command = MS.CommandMessage(
     resource_id=CLIENT_ID,
     skill="Handoff",
     actor_name=Actor,
-    process_transformation={
-        "InputTypes": None,
-        "OutputTypes": ["https://aausmartlab.org/Shells/Assembly/BottomCover/BottomCover_id"]
-    },
     skill_trigger=MS.CommandType.START,
     order_id="ORD-1",
     job_id="H4ND0FF",

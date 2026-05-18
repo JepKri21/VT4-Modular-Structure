@@ -43,7 +43,7 @@
     }
   },
   "Properties": {
-    "BottomCover3DP": {
+    "BottomCoverABSBlack": {
       "MaterialProperties": {
         "Material": {
           "semanticId": "https://aausmartlab.org/Semantics/Material",

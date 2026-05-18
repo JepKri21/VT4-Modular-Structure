@@ -548,10 +548,6 @@ test_command = MS.CommandMessage(
     timestamp=datetime.now(),
     resource_id=CLIENT_ID,
     skill="Transport",
-    process_transformation={
-        "InputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_id"],
-        "OutputTypes": ["https://aausmartlab.org/Shells/Assembly/BottomCover/BottomCover_id"]
-    },
     actor_name=Shuttle1.behavior.actor_name,
     skill_trigger=MS.CommandType.START,
     order_id="ORD-1",

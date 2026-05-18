@@ -79,6 +79,12 @@ class PreProcessStep:
     assigned_resource: str | None = None
     job_id: str | None = None
     cargo_transfers: tuple[CargoTransfer, ...] = ()
+    # For Handoff steps only: which side of the handoff this CMD targets.
+    # "sender" = currently holds the part and will release it (encodes as
+    # InputTypes=None, OutputTypes=[iri]). "receiver" = will acquire the
+    # part (encodes as InputTypes=[iri], OutputTypes=None). None for
+    # non-Handoff steps.
+    handoff_role: str | None = None
     timestamps: dict = field(default_factory=lambda: {
         StepStates.ASSIGNED: None,
         StepStates.IN_PROGRESS: None,
@@ -389,7 +395,7 @@ class PreProcessPlanner:
             skill="Store",
             resource_id=store_destination.resource_id,
             actor_name=store_destination.actor_name,
-            parameters={"ComponentReference": component_reference},
+            parameters={},
             component_reference=component_reference,
             depends_on=steps[-1].step_id,
             # After Store, the storage actor has filed the part — it no
@@ -406,6 +412,65 @@ class PreProcessPlanner:
             shuttle=shuttle,
             steps=steps,
             occupies_through_bop=[],
+        )
+
+    def plan_shuttle_to_target(
+        self,
+        *,
+        bop_step_id: str,
+        order_id: str,
+        component_reference: str,
+        shuttle: ResourceEndpoint,
+        target: ResourceEndpoint,
+    ) -> PreProcessPlan:
+        """Plan an arrival when the shuttle already carries the cargo.
+
+        Used when a prior BoP step left the input part on a shuttle and the
+        next BoP step on the same order needs it elsewhere. Skips Retrieve
+        and the source-side handoff entirely — just transport to the target
+        and (if applicable) hand off into the target.
+
+        Returns a PreProcessPlan with Transport + zero/one/two Handoff steps,
+        following the same 4-case rule as the full plan() path.
+        """
+        builder = _StepIdBuilder(bop_step_id)
+        steps: list[PreProcessStep] = []
+
+        target_pos = self.transport.handoff_position(target.resource_id)
+
+        # 1) Move the shuttle (already carrying cargo) to the target.
+        steps.append(self._transport_step(
+            builder=builder,
+            shuttle=shuttle,
+            target_position=target_pos,
+            component_reference=component_reference,
+            depends_on=None,
+        ))
+
+        # 2) Handoff: shuttle → target (rules applied).
+        handoffs = self._build_handoff_steps(
+            builder=builder,
+            sender=shuttle,
+            receiver=target,
+            position=target_pos,
+            component_reference=component_reference,
+            depends_on=steps[-1].step_id,
+        )
+        steps.extend(handoffs)
+
+        # If no physical handoff was produced (neither side has Handoff),
+        # the shuttle must stay clamped under the target through the BoP.
+        occupies = []
+        if not handoffs:
+            occupies = [(shuttle.resource_id, shuttle.actor_name)]
+
+        return PreProcessPlan(
+            bop_step_id=bop_step_id,
+            order_id=order_id,
+            target=target,
+            shuttle=shuttle,
+            steps=steps,
+            occupies_through_bop=occupies,
         )
 
     # ── Step constructors ────────────────────────────────────────────────────
@@ -442,7 +507,7 @@ class PreProcessPlanner:
             skill="Retrieve",
             resource_id=storage.resource_id,
             actor_name=storage.actor_name,
-            parameters={"ComponentReference": component_reference},
+            parameters={},
             component_reference=component_reference,
             depends_on=depends_on,
             # After Retrieve, the storage actor is physically holding the part.
@@ -459,6 +524,7 @@ class PreProcessPlanner:
         position: tuple[float, float],
         component_reference: str,
         depends_on: str | None,
+        role: str,
     ) -> PreProcessStep:
         return PreProcessStep(
             step_id=builder.next("handoff"),
@@ -468,6 +534,7 @@ class PreProcessPlanner:
             parameters=self.transport.handoff_params(position, component_reference),
             component_reference=component_reference,
             depends_on=depends_on,
+            handoff_role=role,
         )
 
     # ── Handoff rules ────────────────────────────────────────────────────────
@@ -506,6 +573,7 @@ class PreProcessPlanner:
                 step = self._handoff_step(
                     builder=builder, performer=receiver, position=position,
                     component_reference=component_reference, depends_on=depends_on,
+                    role="receiver",
                 )
                 step.cargo_transfers = cargo_after
                 return [step]
@@ -513,6 +581,7 @@ class PreProcessPlanner:
                 step = self._handoff_step(
                     builder=builder, performer=sender, position=position,
                     component_reference=component_reference, depends_on=depends_on,
+                    role="sender",
                 )
                 step.cargo_transfers = cargo_after
                 return [step]
@@ -522,10 +591,12 @@ class PreProcessPlanner:
                 first = self._handoff_step(
                     builder=builder, performer=sender, position=position,
                     component_reference=component_reference, depends_on=depends_on,
+                    role="sender",
                 )
                 second = self._handoff_step(
                     builder=builder, performer=receiver, position=position,
                     component_reference=component_reference, depends_on=first.step_id,
+                    role="receiver",
                 )
                 second.cargo_transfers = cargo_after
                 return [first, second]

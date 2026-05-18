@@ -81,7 +81,12 @@ json_str = json.dumps(builder.get(),cls=basyx.aas.adapter.json.AASToJsonEncoder,
 result = yaml_to_instance.upload_submodel(json_str, SERVER_BASE)
 print(result)  # "created" or "updated"
 
-Actor = "KUKAManipulator_KR_Agilus_ultra"
+builder = yaml_to_instance.load_instance_from_yaml(f"{script_dir}/Inventory.yaml")
+json_str = json.dumps(builder.get(),cls=basyx.aas.adapter.json.AASToJsonEncoder,indent=2,ensure_ascii=False,)
+result = yaml_to_instance.upload_submodel(json_str, SERVER_BASE)
+print(result)  # "created" or "updated"
+
+Actor = "KUKAManipulator"
 
 mqtt_client = MQTTClientResource(BROKER, MQTT_PORT, CLIENT_ID, BASE_TOPIC)
 
@@ -97,15 +102,15 @@ resource_inventories = {
         "AccessibleActors" : [Actor],
         "Storage" : 
         {
-            "position1": "https://aausmartlab.org/Shells/Component/PCB/PCB-BC001",
-            "position2": "https://aausmartlab.org/Shells/Component/PCB/PCB-BC002",
-            "position3": "https://aausmartlab.org/Shells/Component/PCB/PCB-BC003",
-            "position4": "https://aausmartlab.org/Shells/Component/PCB/PCB-BC004",
-            "position5": "https://aausmartlab.org/Shells/Component/PCB/PCB-TC001",
-            "position6": "https://aausmartlab.org/Shells/Component/PCB/PCB-TC002",
-            "position7": "https://aausmartlab.org/Shells/Component/PCB/BottomCover_7ef0e4df-1b09-4d0a-9448-14ae51652a52",
-            "position8": "https://aausmartlab.org/Shells/Component/PCB/BottomCover_3e06a1b6-96bf-4b44-abf6-b5e122c50427",
-            "position9": "",
+            "position1": "",
+            "position2": "",
+            "position3": "",
+            "position4": "",
+            "position5": "",
+            "position6": "",
+            "position7": "",
+            "position8": "",
+            "position9": "https://aausmartlab.org/Shells/Component/PCB/PCBFuseBoxA-a30d0e20-d9c7-4f66-a2d8-0045ac564a1c",
             "position10": ""
         }
     }
@@ -281,7 +286,7 @@ class KUKAManipulatorBehavior(StationBehavior):
                 print(f"Failed to load the parameters with exception {e}")
 
 
-        elif self.skill == "Assemble":
+        elif self.skill == "BCPCBAssembly":
 
             if self.parameters is None:
                 raise ValueError("No parameters provided for Assemble skill")
@@ -325,7 +330,7 @@ class KUKAManipulatorBehavior(StationBehavior):
             self.quality = MS.Quality.GOOD
 
             
-        elif self.skill == "Assemble":
+        elif self.skill == "BCPCBAssembly":
             print(f"Executing Assemble with these parameters:  XPos: {self.XPos}, YPos: {self.YPos}, ProcessTransformation: {self.command_payload.process_transformation}")
 
             #We need something that checks what the provided list of comonents is. Does it contain a BottomCover, or both, or only a PCB.
@@ -347,7 +352,7 @@ class KUKAManipulatorBehavior(StationBehavior):
             await asyncio.sleep(self.actual_cycle_time/1000)
 
             #Generating result and quality randomly
-            if random.randint(1,10) > 1:
+            if random.randint(1,100) > 1:
                 self.result = MS.Result.COMPLETE
                 if random.randint(1,10) > 1:
                     self.quality = MS.Quality.GOOD
@@ -369,7 +374,7 @@ class KUKAManipulatorBehavior(StationBehavior):
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
         print("Finalizing Process and sending result")
 
-        if self.skill == "Assemble":
+        if self.skill == "BCPCBAssembly":
             job_result_message = MS.JobResultMessage(
                 timestamp=datetime.now(),
                 resource_id=CLIENT_ID, 
@@ -380,7 +385,7 @@ class KUKAManipulatorBehavior(StationBehavior):
                 process_transformation=self.command_payload.process_transformation,
                 result=self.result,
                 quality=self.quality,
-                output_parameters={"Paramters": self.target_position}
+                output_parameters=None
             )
 
         elif self.skill == "Handoff":
@@ -394,7 +399,7 @@ class KUKAManipulatorBehavior(StationBehavior):
                 process_transformation=self.command_payload.process_transformation,
                 result=self.result,
                 quality=self.quality,
-                output_parameters={"Paramters": self.target_position}
+                output_parameters=None
             )
         
 

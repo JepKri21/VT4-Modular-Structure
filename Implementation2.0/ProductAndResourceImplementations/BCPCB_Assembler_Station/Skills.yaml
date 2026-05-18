@@ -11,8 +11,8 @@ elements:
     elements:
       - type: reference_element
         id_short: "CapabilitySubmodelReference"
-        value: "https://aausmartlab.org/Shells/Resources/BCPCBAssembler_12345678/DrillingCapabilityOffered"
-      
+        value: "https://aausmartlab.org/Shells/Resources/BCPCBAssembler_12345678/BCPCBAssemblyCapabilityOffered"
+
       - type: list
         id_short: "SkillTriggers"
         semantic_id: "https://aausmartlab.org/Semantics/SkillTriggers"
@@ -38,7 +38,6 @@ elements:
         value_type: "xs:string"
         items:
           - "KUKAManipulator"
-
 
   - type: collection
     id_short: "Handoff"
@@ -49,7 +48,7 @@ elements:
       - type: reference_element
         id_short: "CapabilitySubmodelReference"
         value: "https://aausmartlab.org/Shells/Resources/BCPCBAssembler_12345678/HandoffCapabilityOffered"
-      
+
       - type: list
         id_short: "SkillTriggers"
         semantic_id: "https://aausmartlab.org/Semantics/SkillTriggers"
@@ -75,4 +74,3 @@ elements:
         value_type: "xs:string"
         items:
           - "KUKAManipulator"
-     

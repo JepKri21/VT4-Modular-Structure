@@ -39,7 +39,7 @@
     }
   },
   "Properties": {
-    "BottomCover_ABS_White": {
+    "BottomCoverABSBlack": {
       "PhysicalDimensions": {
         "Length": {
           "SemanticId": "https://aausmartlab.org/Semantics/mm",
@@ -55,17 +55,17 @@
         },
         "Weight": {
           "SemanticId": "https://aausmartlab.org/Semantics/gram",
-          "value": 130.0
+          "value": 131.0
         }
       },
       "MaterialProperties": {
         "Material": {
-          "semanticId": "https://aausmartlab.org/Semantics/Material",
-          "value": "Plastic (ABS)"
+          "SemanticId": "https://aausmartlab.org/Semantics/Material",
+          "value": "ABS"
         },
         "Color": {
           "SemanticId": "https://aausmartlab.org/Semantics/Color",
-          "value": "White"
+          "value": "Black"
         },
         "Finish": {
           "SemanticId": "https://aausmartlab.org/Semantics/SurfaceFinish",
@@ -240,7 +240,7 @@
     "AAU_Mobile_Phone_v1": {}
   },
   "Assemblies": {
-    "BottomCoverDrilling_SA": { "Ingredients": ["BottomCover_ABS_White"] },
+    "BottomCoverDrilling_SA": { "Ingredients": ["BottomCoverABSBlack"] },
     "BottomCoverPCB_SA": {
       "Ingredients": ["BottomCoverDrilling_SA", "PCB_FuseBoxA"]
     },
@@ -252,7 +252,7 @@
     }
   },
   "ProcessSteps": {
-    "BottomCover_ABS_White": {
+    "BottomCoverABSBlack": {
       "ProcessStep1": {
         "CapabilityReference": "https://aausmartlab.org/Submodels/Capability/Drilling",
         "ProcessStepId": "1x1",
@@ -278,8 +278,8 @@
           }
         },
         "ProcessTransformations": {
-          "InputTypes": ["BottomCover_ABS_White"],
-          "OutputTypes": ["BottomCover_ABS_White"]
+          "InputTypes": ["BottomCoverABSBlack"],
+          "OutputTypes": ["BottomCoverABSBlack"]
         }
       }
     },
@@ -301,7 +301,7 @@
           }
         },
         "ProcessTransformations": {
-          "InputTypes": ["BottomCover_ABS_White", "PCB_FuseBoxA"],
+          "InputTypes": ["BottomCoverABSBlack", "PCB_FuseBoxA"],
           "OutputTypes": ["BottomCoverPCB_SA"]
         }
       }
