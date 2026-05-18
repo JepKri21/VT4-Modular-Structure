@@ -102,6 +102,8 @@ def build_elements_from_form(
 
         if etype == "property":
             if val is None:
+                val = elem.get("value")  # fall back to template-level default
+            if val is None:
                 continue
             vt = XS_TYPE_MAP.get(elem.get("value_type", "xs:string"))
             if vt is None:
@@ -134,11 +136,6 @@ def build_elements_from_form(
 
         elif etype == "collection":
             if elem.get("extensible"):
-                entries = val if isinstance(val, list) else []
-                if not entries:
-                    continue
-                col = builder.add_collection(parent, id_short, sem_id)
-                entry_template = elem.get("entry_template", "Entry{N}")
                 child_elems = elem.get("elements", [])
                 # Unwrap single non-extensible collection wrapper (e.g. BOMEntry inside
                 # BOMEntries) so flat preset dicts map directly to the inner fields.
@@ -146,27 +143,44 @@ def build_elements_from_form(
                         and child_elems[0].get("type") == "collection"
                         and not child_elems[0].get("extensible")):
                     child_elems = child_elems[0].get("elements", [])
-                for i, entry in enumerate(entries):
-                    entry_dict = entry if isinstance(entry, dict) else {}
 
-                    def _fill(m, _d=entry_dict, _i=i):
-                        token = m.group(1)
-                        if token == "N":
+                if isinstance(val, dict) and val:
+                    # Dict form: {entryName: {fields...}} — key becomes entry id_short directly.
+                    # Used by ProcessTransformations in capability presets.
+                    col = builder.add_collection(parent, id_short, sem_id)
+                    for entry_name, entry_data in val.items():
+                        entry_col = builder.add_collection(col, entry_name)
+                        build_elements_from_form(
+                            builder, entry_col, child_elems,
+                            entry_data if isinstance(entry_data, dict) else {},
+                        )
+                else:
+                    entries = val if isinstance(val, list) else []
+                    if not entries:
+                        continue
+                    col = builder.add_collection(parent, id_short, sem_id)
+                    entry_template = elem.get("entry_template", "Entry{N}")
+                    for i, entry in enumerate(entries):
+                        entry_dict = entry if isinstance(entry, dict) else {}
+
+                        def _fill(m, _d=entry_dict, _i=i):
+                            token = m.group(1)
+                            if token == "N":
+                                return str(_i + 1)
+                            val = _d.get(token)
+                            if val is not None and str(val).strip():
+                                return re.sub(r"[^A-Za-z0-9]", "_", str(val))
                             return str(_i + 1)
-                        val = _d.get(token)
-                        if val is not None and str(val).strip():
-                            return re.sub(r"[^A-Za-z0-9]", "_", str(val))
-                        return str(_i + 1)
 
-                    raw = re.sub(r"\{(\w+)\}", _fill, entry_template)
-                    label = re.sub(r"_+", "_", raw).strip("_")
-                    if not label or not label[0].isalpha():
-                        label = f"Entry{i + 1}"
-                    entry_col = builder.add_collection(col, label)
-                    build_elements_from_form(
-                        builder, entry_col, child_elems,
-                        entry if isinstance(entry, dict) else {},
-                    )
+                        raw = re.sub(r"\{(\w+)\}", _fill, entry_template)
+                        label = re.sub(r"_+", "_", raw).strip("_")
+                        if not label or not label[0].isalpha():
+                            label = f"Entry{i + 1}"
+                        entry_col = builder.add_collection(col, label)
+                        build_elements_from_form(
+                            builder, entry_col, child_elems,
+                            entry if isinstance(entry, dict) else {},
+                        )
             else:
                 if not isinstance(val, dict) or not val:
                     continue
@@ -314,12 +328,21 @@ def _extract_capability_submodels(
         if not cap_params:
             continue
         operation = step.get("Operation", "")
-        if not operation:
+        process_type = (step.get("ProcessType") or "").strip()
+        if not operation and not process_type:
             continue
-        sm_id_short = f"{operation}CapabilityRequired"
-        template_file = SM_TEMPLATE_MAP.get(sm_id_short)
+        # Use ProcessType for template lookup so "Assemble PCB" / "Assemble Fuse 1"
+        # all resolve to "AssembleCapabilityRequired". Fall back to Operation for
+        # presets that omit ProcessType (e.g. legacy single-word operations).
+        lookup_key = f"{process_type}CapabilityRequired" if process_type else f"{operation}CapabilityRequired"
+        template_file = SM_TEMPLATE_MAP.get(lookup_key)
         if not template_file:
             continue
+        # Sanitize Operation into a valid id_short so each step gets a unique
+        # capability submodel IRI even when multiple steps share the same ProcessType.
+        sanitized_op = re.sub(r"[^A-Za-z0-9]", "_", operation)
+        sanitized_op = re.sub(r"_+", "_", sanitized_op).strip("_")
+        sm_id_short = f"{sanitized_op}CapabilityRequired" if sanitized_op else lookup_key
         cap_iri = f"{shell_id}/{sm_id_short}"
         cap_sm = build_submodel(template_file, cap_iri, sm_id_short, cap_params)
         extra.append(cap_sm)
