@@ -28,6 +28,18 @@ class CommandType(str, enum.Enum):
     UNSUSPEND = "UNSUSPEND"
 
 
+#class CommandMessage(BaseModel):
+#    timestamp: datetime
+#    resource_id: str
+#    skill: str
+#    actor_name: str
+#    skill_trigger: CommandType
+#    order_id: str | None
+#    job_id: str | None
+#    component_reference: str| List[str] | None = None
+#    parameters: Dict[str, str | int | float | Dict] | None
+#    seq_no: int | None = None
+
 class CommandMessage(BaseModel):
     timestamp: datetime
     resource_id: str
@@ -36,9 +48,94 @@ class CommandMessage(BaseModel):
     skill_trigger: CommandType
     order_id: str | None
     job_id: str | None
-    component_reference: str| List[str] | None = None
+    process_transformation: Dict[str, List[str] | None]
     parameters: Dict[str, str | int | float | Dict] | None
     seq_no: int | None = None
+
+"""
+NOTE that capabilities will require ComponentTypeReferences to check if the capability is compatible
+WHILE actual ComponentReferences are required in the command, it has to be full shell ids of the component/assembly/product
+ALSO resource require ALL fields defined in the capability to be filled out in the command, both input and output
+BELOW are examples of what the process_transformation varaible can look like when sending a command:
+
+Transformations:
+    Drilling:
+    {
+        "InputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_id"],
+        "OutputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_id"]
+    }
+    Assemble:
+    {
+        "InputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_id", "https://aausmartlab.org/Shells/Component/PCB/PCB_id"],
+        "OutputTypes": ["https://aausmartlab.org/Shells/Assembly/BCPCB/BCPCB_id"]
+    }
+    Retrieve:
+    {
+        "InputTypes": [None],
+        "OutputTypes": ["https://aausmartlab.org/Shells/Assembly/BottomCover/BottomCover_id"]
+    },
+    {
+        "InputTypes": [None],
+        "OutputTypes": ["https://aausmartlab.org/Shells/Assembly/TopCover/TopCover_id"]
+    },
+    {
+        "InputTypes": [None],
+        "OutputTypes": ["https://aausmartlab.org/Shells/Assembly/BCPCB/BCPCB_id"]
+    }
+    Transport:
+    {
+        "InputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_id"],
+        "OutputTypes": ["https://aausmartlab.org/Shells/Assembly/BottomCover/BottomCover_id"]
+    },
+    {
+        "InputTypes": ["https://aausmartlab.org/Shells/Component/TopCover/TopCover_id"],
+        "OutputTypes": ["https://aausmartlab.org/Shells/Assembly/TopCover/TopCover_id"]
+    },
+    {
+        "InputTypes": ["https://aausmartlab.org/Shells/Component/BCPCB/BCPCB_id"],
+        "OutputTypes": ["https://aausmartlab.org/Shells/Assembly/BCPCB/BCPCB_id"]
+    },
+    {
+        "InputTypes": [None],
+        "OutputTypes": [None]
+    }
+    Store:
+    {
+        "InputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_id"],
+        "OutputTypes": [None]
+    },
+    {
+        "InputTypes": ["https://aausmartlab.org/Shells/Component/TopCover/TopCover_id"],
+        "OutputTypes": [None]
+    },
+    {
+        "InputTypes": ["https://aausmartlab.org/Shells/Component/BCPCB/BCPCB_id"],
+        "OutputTypes": [None]
+    }
+    Handoff:
+    IF BOTH RESOURCES HAVE HANDOFF:
+    { #This resource currently has the product
+        "InputTypes": [None],
+        "OutputTypes": [https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_id]
+    },
+    { #This resource currently does NOT have the product
+        "InputTypes": [https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_id],
+        "OutputTypes": [None]
+    }
+    IF RECIEVING RESOURCE HAS HANDOFF:
+    { #This resource currently does NOT have the product BUT it has a handoff capability 
+        "InputTypes": [https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_id],
+        "OutputTypes": [None]
+    }
+    IF PROVIDING RESOURCE HAS HANDOFF:
+    { #This resource currently has the product AND a handoff capability 
+        "InputTypes": [None],
+        "OutputTypes": [https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_id]
+    }
+
+
+
+"""
 
 
 #=============================================================================
@@ -122,7 +219,7 @@ class JobResultMessage(BaseModel):
     actual_cycle_time_ms: int
     result: Result
     quality: Quality
-    component_reference: str| List[str] | None = None
+    process_transformation: Dict[str, Dict[str, List[str]]]
     output_parameters: Dict[str, str | int | float | Dict] | None = None
     seq_no: int | None = None
 
