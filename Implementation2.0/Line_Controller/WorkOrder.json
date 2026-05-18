@@ -5,32 +5,41 @@
   "IssueDate": "2026-05-17T10:09:03.961629",
   "ProductReference": "https://aausmartlab.org/Shells/Configuration/MobilePhone/AAUMobilePhoneV1_bc579bec-6acc-4fd4-9692-f178b25f904b-ORD-F5689203",
   "Ingredients": {
-    "BottomCover3DP": {
-      "ComponentReference": "https://aausmartlab.org/Shells/Component/BottomCover"
+    "BottomCoverABSBlack": {
+      "ComponentReference": "",
+      "ComponentTypeReference": "https://aausmartlab.org/Shells/Component/BottomCover"
     },
     "BottomCoverDrillingSA": {
-      "ComponentReference": "https://aausmartlab.org/Shells/Assembly/BottomCoverDrilling/BottomCoverDrillingSA_a1cdac26-10f0-4db4-8ad0-3e38c0ab02e3-ORD-F5689203"
+      "ComponentReference": "https://aausmartlab.org/Shells/Assembly/BottomCoverDrilling/BottomCoverDrillingSA_a1cdac26-10f0-4db4-8ad0-3e38c0ab02e3-ORD-F5689203",
+      "ComponentTypeReference": "https://aausmartlab.org/Shells/Assembly/BottomCoverDrilling"
     },
     "PCBFuseBoxA": {
-      "ComponentReference": "https://aausmartlab.org/Shells/Component/PCB"
+      "ComponentReference": "",
+      "ComponentTypeReference": "https://aausmartlab.org/Shells/Component/PCB"
     },
     "BottomCoverPCBSA": {
-      "ComponentReference": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB/BottomCoverPCBSA_9dc31b2d-4f1c-4c91-b681-5922d767b4d5-ORD-F5689203"
+      "ComponentReference": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB/BottomCoverPCBSA_9dc31b2d-4f1c-4c91-b681-5922d767b4d5-ORD-F5689203",
+      "ComponentTypeReference": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
     },
     "Fuse16ASB": {
-      "ComponentReference": "https://aausmartlab.org/Shells/Component/Fuse"
+      "ComponentReference": "",
+      "ComponentTypeReference": "https://aausmartlab.org/Shells/Component/Fuse"
     },
     "Fuse16ASB_2": {
-      "ComponentReference": "https://aausmartlab.org/Shells/Component/Fuse"
+      "ComponentReference": "",
+      "ComponentTypeReference": "https://aausmartlab.org/Shells/Component/Fuse"
     },
     "BottomCoverPCBFuseSA": {
-      "ComponentReference": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse/BottomCoverPCBFuseSA_7df180cd-597e-4cd7-90e1-612dad6ed625-ORD-F5689203"
+      "ComponentReference": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse/BottomCoverPCBFuseSA_7df180cd-597e-4cd7-90e1-612dad6ed625-ORD-F5689203",
+      "ComponentTypeReference": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
     },
     "TopCoverABSBlack": {
-      "ComponentReference": "https://aausmartlab.org/Shells/Component/TopCover"
+      "ComponentReference": "",
+      "ComponentTypeReference": "https://aausmartlab.org/Shells/Component/TopCover"
     },
     "AAUMobilePhoneV1": {
-      "ComponentReference": "https://aausmartlab.org/Shells/Configuration/MobilePhone/AAUMobilePhoneV1_bc579bec-6acc-4fd4-9692-f178b25f904b-ORD-F5689203"
+      "ComponentReference": "https://aausmartlab.org/Shells/Configuration/MobilePhone/AAUMobilePhoneV1_bc579bec-6acc-4fd4-9692-f178b25f904b-ORD-F5689203",
+      "ComponentTypeReference": "https://aausmartlab.org/Shells/Configuration/MobilePhone"
     }
   },
   "Properties": {
@@ -180,6 +189,10 @@
             "semanticId": "https://aausmartlab.org/Semantics/mm",
             "value": 40.0
           }
+        },
+        "ProcessTransformations": {
+          "InputTypes": ["BottomCover3DP"],
+          "OutputTypes": ["BottomCover3DP"]
         }
       }
     },
@@ -188,8 +201,10 @@
         "CapabilityReference": "https://aausmartlab.org/Submodels/Capability/Assemble",
         "ProcessStepId": "2x1",
         "Dependencies": ["1x1"],
-        "Parameters": {
-          "InputComponents": ["BottomCoverDrillingSA", "PCBFuseBoxA"]
+        "Parameters": {},
+        "ProcessTransformations": {
+          "InputTypes": ["BottomCover3DP", "PCBFuseBoxA"],
+          "OutputTypes": ["BottomCoverPCBSA"]
         }
       }
     },
@@ -198,8 +213,10 @@
         "CapabilityReference": "https://aausmartlab.org/Submodels/Capability/Assemble",
         "ProcessStepId": "3x1",
         "Dependencies": ["2x1"],
-        "Parameters": {
-          "InputComponents": ["BottomCoverPCBSA", "Fuse16ASB", "Fuse16ASB_2"]
+        "Parameters": {},
+        "ProcessTransformations": {
+          "InputTypes": ["BottomCoverPCBSA", "Fuse16ASB", "Fuse16ASB_2"],
+          "OutputTypes": ["BottomCoverPCBFuseSA"]
         }
       }
     },
@@ -208,8 +225,10 @@
         "CapabilityReference": "https://aausmartlab.org/Submodels/Capability/Assemble",
         "ProcessStepId": "4x1",
         "Dependencies": ["3x1"],
-        "Parameters": {
-          "InputComponents": ["BottomCoverPCBFuseSA", "TopCoverABSBlack"]
+        "Parameters": {},
+        "ProcessTransformations": {
+          "InputTypes": ["BottomCoverPCBFuseSA", "TopCoverABSBlack"],
+          "OutputTypes": ["AAUMobilePhoneV1"]
         }
       }
     }

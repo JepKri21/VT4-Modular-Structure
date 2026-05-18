@@ -1,11 +1,11 @@
 {
-  "Timestamp": "2026-05-18T14:51:00.192705",
-  "OrderId": "ORD-DBA0BC24",
+  "Timestamp": "2026-05-18T15:19:48.347866",
+  "OrderId": "ORD-9DD47B4D",
   "Priority": 0,
-  "IssueDate": "2026-05-18T14:51:00.192705",
-  "ProductReference": "https://aausmartlab.org/Shells/Configuration/MobilePhone/AAUMobilePhoneV1_67b8e3a6-c8a5-4d68-a6bf-ebc51ecf5819-ORD-DBA0BC24",
+  "IssueDate": "2026-05-18T15:19:48.347866",
+  "ProductReference": "https://aausmartlab.org/Shells/Configuration/MobilePhone/AAUMobilePhoneV1_c18f77b9-eeca-4c7e-bae7-602ef56761dc-ORD-9DD47B4D",
   "Ingredients": {
-    "BottomCoverPLABlue": {
+    "BottomCoverPLAWhite": {
       "ComponentReference": "",
       "ComponentTypeReference": "https://aausmartlab.org/Shells/Component/BottomCover"
     },
@@ -14,7 +14,7 @@
       "ComponentTypeReference": "https://aausmartlab.org/Shells/Component/PCB"
     },
     "BottomCoverPCB": {
-      "ComponentReference": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB/BottomCoverPCB_2ae00e88-e20b-475b-9fad-59e0ec1e73ad-ORD-DBA0BC24",
+      "ComponentReference": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB/BottomCoverPCB_971484dc-342c-433b-bfce-43b432cb9326-ORD-9DD47B4D",
       "ComponentTypeReference": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
     },
     "Fuse16ASB": {
@@ -26,20 +26,20 @@
       "ComponentTypeReference": "https://aausmartlab.org/Shells/Component/Fuse"
     },
     "BottomCoverPCBFuse": {
-      "ComponentReference": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse/BottomCoverPCBFuse_d6e38fe5-4ec7-4002-a251-13f7cb48f040-ORD-DBA0BC24",
+      "ComponentReference": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse/BottomCoverPCBFuse_2079b015-9ca1-42fc-aae1-2331bb242b69-ORD-9DD47B4D",
       "ComponentTypeReference": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
     },
-    "TopCoverPLABlack": {
+    "TopCoverPLARed": {
       "ComponentReference": "",
       "ComponentTypeReference": "https://aausmartlab.org/Shells/Component/TopCover"
     },
     "AAUMobilePhoneV1": {
-      "ComponentReference": "https://aausmartlab.org/Shells/Configuration/MobilePhone/AAUMobilePhoneV1_67b8e3a6-c8a5-4d68-a6bf-ebc51ecf5819-ORD-DBA0BC24",
+      "ComponentReference": "https://aausmartlab.org/Shells/Configuration/MobilePhone/AAUMobilePhoneV1_c18f77b9-eeca-4c7e-bae7-602ef56761dc-ORD-9DD47B4D",
       "ComponentTypeReference": "https://aausmartlab.org/Shells/Configuration/MobilePhone"
     }
   },
   "Properties": {
-    "BottomCoverPLABlue": {
+    "BottomCoverPLAWhite": {
       "MaterialProperties": {
         "Material": {
           "semanticId": "https://aausmartlab.org/Semantics/Material",
@@ -47,11 +47,11 @@
         },
         "Color": {
           "semanticId": "https://aausmartlab.org/Semantics/Color",
-          "value": "Blue"
+          "value": "White"
         },
         "Finish": {
           "semanticId": "https://aausmartlab.org/Semantics/SurfaceFinish",
-          "value": "Textured"
+          "value": "Matte"
         }
       },
       "PhysicalDimensions": {
@@ -69,21 +69,11 @@
         },
         "Weight": {
           "semanticId": "https://aausmartlab.org/Semantics/gram",
-          "value": 119
+          "value": 118
         }
       }
     },
     "PCBFuseBoxA": {
-      "MaterialProperties": {
-        "Material": {
-          "semanticId": "https://aausmartlab.org/Semantics/Material",
-          "value": "FR4"
-        },
-        "Color": {
-          "semanticId": "https://aausmartlab.org/Semantics/Color",
-          "value": "Green"
-        }
-      },
       "ElectricalProperties": {
         "VoltageRating": {
           "semanticId": "https://aausmartlab.org/Semantics/VoltageRating",
@@ -92,6 +82,16 @@
         "CurrentRating": {
           "semanticId": "https://aausmartlab.org/Semantics/CurrentRating",
           "value": 16
+        }
+      },
+      "MaterialProperties": {
+        "Material": {
+          "semanticId": "https://aausmartlab.org/Semantics/Material",
+          "value": "FR4"
+        },
+        "Color": {
+          "semanticId": "https://aausmartlab.org/Semantics/Color",
+          "value": "Green"
         }
       },
       "PhysicalDimensions": {
@@ -115,16 +115,6 @@
     },
     "BottomCoverPCB": {},
     "Fuse16ASB": {
-      "MaterialProperties": {
-        "Material": {
-          "semanticId": "https://aausmartlab.org/Semantics/Material",
-          "value": "Glass"
-        },
-        "Color": {
-          "semanticId": "https://aausmartlab.org/Semantics/Color",
-          "value": "Clear"
-        }
-      },
       "ElectricalProperties": {
         "VoltageRating": {
           "semanticId": "https://aausmartlab.org/Semantics/VoltageRating",
@@ -137,6 +127,16 @@
         "Type": {
           "semanticId": "https://aausmartlab.org/Semantics/ElectricalType",
           "value": "slow-blow"
+        }
+      },
+      "MaterialProperties": {
+        "Material": {
+          "semanticId": "https://aausmartlab.org/Semantics/Material",
+          "value": "Glass"
+        },
+        "Color": {
+          "semanticId": "https://aausmartlab.org/Semantics/Color",
+          "value": "Clear"
         }
       },
       "PhysicalDimensions": {
@@ -159,16 +159,6 @@
       }
     },
     "Fuse16ASB_2": {
-      "MaterialProperties": {
-        "Material": {
-          "semanticId": "https://aausmartlab.org/Semantics/Material",
-          "value": "Glass"
-        },
-        "Color": {
-          "semanticId": "https://aausmartlab.org/Semantics/Color",
-          "value": "Clear"
-        }
-      },
       "ElectricalProperties": {
         "VoltageRating": {
           "semanticId": "https://aausmartlab.org/Semantics/VoltageRating",
@@ -181,6 +171,16 @@
         "Type": {
           "semanticId": "https://aausmartlab.org/Semantics/ElectricalType",
           "value": "slow-blow"
+        }
+      },
+      "MaterialProperties": {
+        "Material": {
+          "semanticId": "https://aausmartlab.org/Semantics/Material",
+          "value": "Glass"
+        },
+        "Color": {
+          "semanticId": "https://aausmartlab.org/Semantics/Color",
+          "value": "Clear"
         }
       },
       "PhysicalDimensions": {
@@ -203,7 +203,7 @@
       }
     },
     "BottomCoverPCBFuse": {},
-    "TopCoverPLABlack": {
+    "TopCoverPLARed": {
       "MaterialProperties": {
         "Material": {
           "semanticId": "https://aausmartlab.org/Semantics/Material",
@@ -211,11 +211,11 @@
         },
         "Color": {
           "semanticId": "https://aausmartlab.org/Semantics/Color",
-          "value": "Black"
+          "value": "Red"
         },
         "Finish": {
           "semanticId": "https://aausmartlab.org/Semantics/SurfaceFinish",
-          "value": "Matte"
+          "value": "Textured"
         }
       },
       "PhysicalDimensions": {
@@ -233,19 +233,19 @@
         },
         "Weight": {
           "semanticId": "https://aausmartlab.org/Semantics/gram",
-          "value": 53.5
+          "value": 54
         }
       }
     },
     "AAUMobilePhoneV1": {}
   },
   "Assemblies": {
-    "BottomCoverPCB": { "Ingredients": ["BottomCoverPLABlue", "PCBFuseBoxA"] },
+    "BottomCoverPCB": { "Ingredients": ["BottomCoverPLAWhite", "PCBFuseBoxA"] },
     "BottomCoverPCBFuse": {
       "Ingredients": ["BottomCoverPCB", "Fuse16ASB", "Fuse16ASB_2"]
     },
     "AAUMobilePhoneV1": {
-      "Ingredients": ["BottomCoverPCBFuse", "TopCoverPLABlack"]
+      "Ingredients": ["BottomCoverPCBFuse", "TopCoverPLARed"]
     }
   },
   "ProcessSteps": {
@@ -254,14 +254,25 @@
         "CapabilityReference": "https://aausmartlab.org/Submodels/Capability/Assemble",
         "ProcessStepId": "2x1",
         "Dependencies": ["1x1"],
-        "Parameters": {},
+        "Parameters": {
+          "TargetPosition": {
+            "XPos": {
+              "SemanticId": "https://aausmartlab.org/Semantics/mm",
+              "value": 0.0
+            },
+            "YPos": {
+              "SemanticId": "https://aausmartlab.org/Semantics/mm",
+              "value": 10.0
+            }
+          }
+        },
         "ProcessTransformations": {
-          "InputTypes": ["BottomCoverPLABlue", "PCBFuseBoxA"],
+          "InputTypes": ["BottomCoverPLAWhite", "PCBFuseBoxA"],
           "OutputTypes": ["BottomCoverPCB"]
         }
       }
     },
-    "BottomCoverPLABlue": {
+    "BottomCoverPLAWhite": {
       "ProcessStep1": {
         "CapabilityReference": "https://aausmartlab.org/Submodels/Capability/Drilling",
         "ProcessStepId": "1x1",
@@ -287,8 +298,8 @@
           }
         },
         "ProcessTransformations": {
-          "InputTypes": ["BottomCoverPLABlue"],
-          "OutputTypes": ["BottomCoverPLABlue"]
+          "InputTypes": ["BottomCoverPLAWhite"],
+          "OutputTypes": ["BottomCoverPLAWhite"]
         }
       }
     },
@@ -297,7 +308,18 @@
         "CapabilityReference": "https://aausmartlab.org/Submodels/Capability/Assemble",
         "ProcessStepId": "3x1",
         "Dependencies": ["2x1"],
-        "Parameters": {},
+        "Parameters": {
+          "TargetPosition": {
+            "XPos": {
+              "SemanticId": "https://aausmartlab.org/Semantics/mm",
+              "value": 5.0
+            },
+            "YPos": {
+              "SemanticId": "https://aausmartlab.org/Semantics/mm",
+              "value": -10.0
+            }
+          }
+        },
         "ProcessTransformations": {
           "InputTypes": ["BottomCoverPCB", "Fuse16ASB"],
           "OutputTypes": ["BottomCoverPCBFuse"]
@@ -307,7 +329,18 @@
         "CapabilityReference": "https://aausmartlab.org/Submodels/Capability/Assemble",
         "ProcessStepId": "4x1",
         "Dependencies": ["3x1"],
-        "Parameters": {},
+        "Parameters": {
+          "TargetPosition": {
+            "XPos": {
+              "SemanticId": "https://aausmartlab.org/Semantics/mm",
+              "value": 5.0
+            },
+            "YPos": {
+              "SemanticId": "https://aausmartlab.org/Semantics/mm",
+              "value": 10.0
+            }
+          }
+        },
         "ProcessTransformations": {
           "InputTypes": ["BottomCoverPCBFuse", "Fuse16ASB_2"],
           "OutputTypes": ["BottomCoverPCBFuse"]
@@ -319,9 +352,20 @@
         "CapabilityReference": "https://aausmartlab.org/Submodels/Capability/Assemble",
         "ProcessStepId": "5x1",
         "Dependencies": ["4x1"],
-        "Parameters": {},
+        "Parameters": {
+          "TargetPosition": {
+            "XPos": {
+              "SemanticId": "https://aausmartlab.org/Semantics/mm",
+              "value": 0.0
+            },
+            "YPos": {
+              "SemanticId": "https://aausmartlab.org/Semantics/mm",
+              "value": 0.0
+            }
+          }
+        },
         "ProcessTransformations": {
-          "InputTypes": ["BottomCoverPCBFuse", "TopCoverPLABlack"],
+          "InputTypes": ["BottomCoverPCBFuse", "TopCoverPLARed"],
           "OutputTypes": ["AAUMobilePhoneV1"]
         }
       }

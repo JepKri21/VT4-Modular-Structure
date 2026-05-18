@@ -189,9 +189,9 @@ class Shuttle1Behaviour(StationBehavior):
 
         job_result_message = MS.JobResultMessage(
             timestamp=datetime.now(),
-            resource_id=CLIENT_ID, 
-            order_id=self.command_payload.order_id, 
-            job_id=self.command_payload.job_id, 
+            resource_id=CLIENT_ID,
+            order_id=self.command_payload.order_id,
+            job_id=self.command_payload.job_id,
             ideal_cycle_time_ms=self.ideal_cycle_time,
             actual_cycle_time_ms=self.actual_cycle_time,
             process_transformation=self.process_transformation,
@@ -397,9 +397,9 @@ class Shuttle2Behaviour(StationBehavior):
 
         job_result_message = MS.JobResultMessage(
             timestamp=datetime.now(),
-            resource_id=CLIENT_ID, 
-            order_id=self.command_payload.order_id, 
-            job_id=self.command_payload.job_id, 
+            resource_id=CLIENT_ID,
+            order_id=self.command_payload.order_id,
+            job_id=self.command_payload.job_id,
             ideal_cycle_time_ms=self.ideal_cycle_time,
             actual_cycle_time_ms=self.actual_cycle_time,
             process_transformation=self.process_transformation,
@@ -556,6 +556,10 @@ test_command = MS.CommandMessage(
     timestamp=datetime.now(),
     resource_id=CLIENT_ID,
     skill="Transport",
+    process_transformation={
+        "InputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_id"],
+        "OutputTypes": ["https://aausmartlab.org/Shells/Assembly/BottomCover/BottomCover_id"]
+    },
     actor_name=Shuttle1.behavior.actor_name,
     skill_trigger=MS.CommandType.START,
     order_id="ORD-1",

@@ -109,7 +109,7 @@ resource_inventories = {
             "position6": "https://aausmartlab.org/Shells/Component/TopCover/TopCover-TC002",
             "position7": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_7ef0e4df-1b09-4d0a-9448-14ae51652a52",
             "position8": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_3e06a1b6-96bf-4b44-abf6-b5e122c50427",
-            "position9": "",
+            "position9": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverABSBlack-771672b9-ba6b-4e44-8a55-3796401462e6",
             "position10": ""
         }
     },
@@ -635,6 +635,10 @@ test_command = MS.CommandMessage(
     resource_id=CLIENT_ID,
     skill="Handoff",
     actor_name=Actor,
+    process_transformation={
+        "InputTypes": None,
+        "OutputTypes": ["https://aausmartlab.org/Shells/Assembly/BottomCover/BottomCover_id"]
+    },
     skill_trigger=MS.CommandType.START,
     order_id="ORD-1",
     job_id="H4ND0FF",
