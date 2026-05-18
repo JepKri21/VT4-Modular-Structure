@@ -322,6 +322,11 @@ class KUKAManipulatorBehavior(StationBehavior):
         self.quality = None
         self.ideal_cycle_time = None
         self.actual_cycle_time = None
+        self.process_transformation = None
+        self.hole_x = None
+        self.hole_y = None
+        self.drill_depth = None
+        self.hole_diameter = None
 
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.IDLE)
@@ -459,9 +464,7 @@ test_command = MS.CommandMessage(
     skill_trigger=MS.CommandType.START,
     order_id="ORD-12345",
     job_id="Drilling_2x2",
-    parameters=params,
-    process_transformation={"InputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverPLABlue-264a4570-0bfb-4171-bdf8-5ed087afd73e"],
-                            "OutputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverPLABlue-264a4570-0bfb-4171-bdf8-5ed087afd73e"]}
+    parameters=params
 )
 
 print("Test Command: ", test_command.model_dump_json(indent=2))

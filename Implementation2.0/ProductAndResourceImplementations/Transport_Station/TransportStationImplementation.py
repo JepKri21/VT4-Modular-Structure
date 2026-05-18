@@ -214,6 +214,10 @@ class Shuttle1Behaviour(StationBehavior):
         self.quality = None
         self.ideal_cycle_time = None
         self.actual_cycle_time = None
+        self.x_pos = None
+        self.y_pos = None
+        self.target_position = None
+        self.process_transformation = None
 
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.IDLE)
@@ -418,6 +422,10 @@ class Shuttle2Behaviour(StationBehavior):
         self.quality = None
         self.ideal_cycle_time = None
         self.actual_cycle_time = None
+        self.x_pos = None
+        self.y_pos = None
+        self.target_position = None
+        self.process_transformation = None
 
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.IDLE)
@@ -552,8 +560,6 @@ test_command = MS.CommandMessage(
     skill_trigger=MS.CommandType.START,
     order_id="ORD-1",
     job_id="TRANS1",
-    process_transformation={"InputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverPLABlue-264a4570-0bfb-4171-bdf8-5ed087afd73e"], 
-                            "OutputTypes":["https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverPLABlue-264a4570-0bfb-4171-bdf8-5ed087afd73e"]},
     parameters=params
 )
 

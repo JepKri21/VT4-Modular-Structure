@@ -25,8 +25,7 @@ include:
     - Parameters
     - SupportedComponents
     - AllowedMaterials
-  Skills:
-    - Skill
+  Skills: []
   ResourceZones:
     - CenterPoint
     - ResourceGeometry
@@ -35,7 +34,7 @@ include:
 submodels:
   TransportCapabilityOffered:
     CapabilityCategory: "Offered"
-    CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Transport"
+    CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Transport"
     AllowedMaterials:
       - "https://aausmartlab.org/Materials/PLA"
       - "https://aausmartlab.org/Materials/ABS"

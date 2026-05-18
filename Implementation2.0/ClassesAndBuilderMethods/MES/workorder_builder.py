@@ -458,15 +458,12 @@ def build_workorder(
 
         instance_iri = shell_iris.get(asset_name, level_iri_template)
 
-        # Pre-allocate the output ingredient for this level so non-assemble steps
-        # can attach their process steps to it (they don't create a new ingredient).
         output_id = _make_ing_id(asset_name)
         ingredients[output_id] = {
             "ComponentReference": instance_iri,
             "ComponentTypeReference": type_iri_template,
         }
         properties[output_id] = {}
-        process_steps[output_id] = {}
 
         has_assemble_step = False
         assemble_count = [0]
@@ -502,6 +499,8 @@ def build_workorder(
                 deps = [_last_step_id[0]] if _last_step_id[0] else []
                 operation = step.get("Operation", "Assemble")
                 params = _fetch_required_cap_params(instance_iri, operation, basyx_url) if basyx_url else {}
+                if output_id not in process_steps:
+                    process_steps[output_id] = {}
                 process_steps[output_id][step_name] = {
                     "CapabilityReference": cap_ref,
                     "ProcessStepId": step_id,
@@ -542,10 +541,6 @@ def build_workorder(
                         },
                     }
                     _last_step_id[0] = step_id
-
-        # Clean up: if no steps were added, remove the empty process_steps entry
-        if not process_steps[output_id]:
-            del process_steps[output_id]
 
         # If no assemble step produced the output, return the raw inputs instead
         if not has_assemble_step:

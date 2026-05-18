@@ -43,17 +43,16 @@ submodels:
         YPos: ""
 
   Skills:
-    Skill:
-      - SkillName: "Drilling"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/DrillingKUKA/DrillingCapabilityOffered"
-        SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
-        Actors:
-          - "KUKAManipulator"
-      - SkillName: "Handoff"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/DrillingKUKA/HandoffCapabilityOffered"
-        SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
-        Actors:
-          - "KUKAManipulator"
+    Drilling:
+      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/DrillingKUKA/DrillingCapabilityOffered"
+      SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+      Actors:
+        - "KUKAManipulator"
+    Handoff:
+      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/DrillingKUKA/HandoffCapabilityOffered"
+      SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+      Actors:
+        - "KUKAManipulator"
 
   ResourceZones:
     CenterPoint:

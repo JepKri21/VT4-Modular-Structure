@@ -23,7 +23,7 @@
         },
         "Material": {
           "semanticId": "https://aausmartlab.org/Semantics/Material",
-          "value": "Plastic (ABS)"
+          "value": "ABS"
         },
         "Finish": {
           "semanticId": "https://aausmartlab.org/Semantics/SurfaceFinish",

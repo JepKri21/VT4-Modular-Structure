@@ -12,8 +12,8 @@ elements:
     value: "Offered"
 
   - type: property
-    id_short: "CapabilityReference"
-    semantic_id: "https://aausmartlab.org/Semantics/CapabilityReference"
+    id_short: "CapabilityTypeReference"
+    semantic_id: "https://aausmartlab.org/Semantics/CapabilityTypeReference"
     description: "Describes the specific cabaility offered by a resource or required by a product"
     value_type: "xs:string"
     value: "https://aausmartlab.org/Submodels/Capability/Transport"

@@ -489,6 +489,8 @@ class UR5ManipulatorBehavior(StationBehavior):
         self.ideal_cycle_time = None
         self.actual_cycle_time = None
         self.retrieved_item_component = None
+        self.product_stored = None
+        self.process_transformation = None
 
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.IDLE)
@@ -636,7 +638,6 @@ test_command = MS.CommandMessage(
     skill_trigger=MS.CommandType.START,
     order_id="ORD-1",
     job_id="H4ND0FF",
-    process_transformation={"InputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverPLABlue-264a4570-0bfb-4171-bdf8-5ed087afd73e"], "OutputTypes": None},
     parameters=params
 )
 

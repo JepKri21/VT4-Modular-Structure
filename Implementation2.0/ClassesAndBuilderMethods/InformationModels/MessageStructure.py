@@ -216,8 +216,8 @@ class JobResultMessage(BaseModel):
     resource_id: str
     order_id: str
     job_id: str
-    ideal_cycle_time_ms: int
-    actual_cycle_time_ms: int
+    ideal_cycle_time_ms: int | None
+    actual_cycle_time_ms: int | None
     result: Result
     quality: Quality
     process_transformation: Dict[str, List[str] | None]
