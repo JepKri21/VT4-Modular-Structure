@@ -315,7 +315,7 @@ class KUKAManipulatorBehavior(StationBehavior):
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
 
         if self.skill == "Handoff":
-            print(f"Handing off product: {self.command_payload.component_reference}")
+            print(f"Handing off product: {self.command_payload.process_transformation}")
             print(f"At position ({self.XPos},{self.YPos})")
             self.ideal_cycle_time = 4000+int(self.XPos)+int(self.YPos)
             self.actual_cycle_time = self.ideal_cycle_time + random.randint(200,800)
@@ -326,11 +326,12 @@ class KUKAManipulatorBehavior(StationBehavior):
 
             
         elif self.skill == "Assemble":
-            print(f"Executing Assemble with these parameters:  XPos: {self.XPos}, YPos: {self.YPos}, Component Reference: {self.command_payload.component_reference}")
-            
+            print(f"Executing Assemble with these parameters:  XPos: {self.XPos}, YPos: {self.YPos}, ProcessTransformation: {self.command_payload.process_transformation}")
+
             #We need something that checks what the provided list of comonents is. Does it contain a BottomCover, or both, or only a PCB.
             #Right now, we assume that it only sends the BottomCover, as it knows that this resource has PCB in storage
-            if self.command_payload.component_reference is not list or len(self.command_payload.component_reference) == 1:
+            cmd_input_types = (self.command_payload.process_transformation or {}).get("InputTypes") or []
+            if len(cmd_input_types) <= 1:
                 retriveable_locations = find_positions(inventories=resource_inventories,query="https://aausmartlab.org/Shells/Component/PCB")
 
                 if retriveable_locations:
@@ -376,7 +377,7 @@ class KUKAManipulatorBehavior(StationBehavior):
                 job_id=self.command_payload.job_id, 
                 ideal_cycle_time_ms=self.ideal_cycle_time,
                 actual_cycle_time_ms=self.actual_cycle_time,
-                component_reference= [self.command_payload.component_reference, self.retrieved_item_component],
+                process_transformation=self.command_payload.process_transformation,
                 result=self.result,
                 quality=self.quality,
                 output_parameters={"Paramters": self.target_position}
@@ -390,7 +391,7 @@ class KUKAManipulatorBehavior(StationBehavior):
                 job_id=self.command_payload.job_id, 
                 ideal_cycle_time_ms=self.ideal_cycle_time,
                 actual_cycle_time_ms=self.actual_cycle_time,
-                component_reference= self.command_payload.component_reference,
+                process_transformation=self.command_payload.process_transformation,
                 result=self.result,
                 quality=self.quality,
                 output_parameters={"Paramters": self.target_position}
@@ -558,9 +559,12 @@ test_command = MS.CommandMessage(
     skill="Assemble",
     actor_name=Actor,
     skill_trigger=MS.CommandType.START,
+    process_transformation= {
+        "InputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_id", "https://aausmartlab.org/Shells/Component/PCB/PCB_id"],
+        "OutputTypes": ["https://aausmartlab.org/Shells/Assembly/BCPCB/BCPCB_id"]
+    },
     order_id="ORD-1",
     job_id="1xx23",
-    component_reference="https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_someUUID",
     parameters=params
 )
 

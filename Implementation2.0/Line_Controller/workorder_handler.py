@@ -263,7 +263,11 @@ class WorkOrderHandler:
 
         ingredient_data = ingredients.get(ingredient_name, {})
         component_reference = ingredient_data.get("ComponentReference")
+<<<<<<< Updated upstream
         # Family/type IRI used for capability matching. When the
+=======
+        # Type/family IRI used for capability matching. When the
+>>>>>>> Stashed changes
         # ComponentReference is a per-order instance IRI (e.g. an Assembly
         # shell created for this specific order), ComponentTypeReference
         # points at the family-level shell IRI declared in the resource's
@@ -289,6 +293,12 @@ class WorkOrderHandler:
         input_type_iris = [_type_iri(n) for n in input_ingredient_names]
         output_type_iris = [_type_iri(n) for n in output_ingredient_names]
 
+<<<<<<< Updated upstream
+=======
+        # Per-input properties so the scheduler can pass them to
+        # ProductMatcher.find_matching_components for raw inputs that have
+        # no ComponentReference yet.
+>>>>>>> Stashed changes
         input_ingredient_details = [
             {
                 "name": n,
@@ -314,6 +324,11 @@ class WorkOrderHandler:
             "ComponentReference": component_reference,
             "ComponentTypeReference": component_type_reference,
             "Material": material,
+<<<<<<< Updated upstream
+=======
+            # Transformation surfaced two ways: resolved type IRIs for the
+            # matcher, and ingredient-keyed details for the scheduler.
+>>>>>>> Stashed changes
             "ProcessTransformation": {
                 "InputTypes": input_type_iris,
                 "OutputTypes": output_type_iris,
@@ -328,14 +343,27 @@ class WorkOrderHandler:
     def update_component_reference(self, ingredient_name: str, instance_iri: str) -> None:
         """Record the specific physical instance bound to an ingredient.
 
+<<<<<<< Updated upstream
         Called by the scheduler when the ProductMatcher picks a concrete
         instance for a raw input, and after a JobResult lands so any output
         ingredient that wasn't pre-bound at order time learns its IRI.
+=======
+        Called by the scheduler after the first JobResult message arrives:
+        - For raw inputs (ComponentReference initially ""), this records the
+          instance that the ProductMatcher chose for this order.
+        - For step outputs whose ingredient was already pre-bound in the
+          work order (sub-assembly shells created at order time), this is
+          a no-op against an equal value.
+>>>>>>> Stashed changes
         """
         ingredients = self.workorder.setdefault("Ingredients", {})
         ingredient = ingredients.setdefault(ingredient_name, {})
         ingredient["ComponentReference"] = instance_iri
+<<<<<<< Updated upstream
 
+=======
+    
+>>>>>>> Stashed changes
 
 if __name__ == "__main__":
 

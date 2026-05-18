@@ -431,6 +431,7 @@ class ResourceManager:
         Returns a 4-tuple:
             (parameters, supported_components, allowed_materials, process_transformations)
 
+<<<<<<< Updated upstream
         - parameters: list of parsed Property / Range / Collection elements.
         - supported_components: list[str] of ComponentTypeReference IRIs.
             Empty/missing = no restriction (treated as "any" by the matcher).
@@ -438,6 +439,17 @@ class ResourceManager:
         - process_transformations: list[{"name", "input_types", "output_types"}]
           enumerating the discrete transformations this capability supports.
           Empty list = no declared transformations.
+=======
+        - parameters: nested list of parsed Property / Range / Collection elements
+          (the Parameters submodel element collection).
+        - supported_components: list[str] of ComponentTypeReference IRIs.
+            Empty/missing = no restriction (treated as "any" by the matcher).
+        - allowed_materials: list[str] of material IRIs.
+            Empty/missing = no restriction (treated as "any" by the matcher).
+        - process_transformations: list[{"name", "input_types", "output_types"}]
+          enumerating the discrete input/output transformations this
+          capability supports. Empty list = no declared transformations.
+>>>>>>> Stashed changes
 
         Returns None only if the submodel cannot be fetched.
         """
@@ -456,7 +468,11 @@ class ResourceManager:
         data = response.json()
         parameters_node = self.find_by_idshort(data, "Parameters")
         if parameters_node:
+<<<<<<< Updated upstream
             for element in parameters_node.get("value", []) or []:
+=======
+            for element in parameters_node.get("value", []):
+>>>>>>> Stashed changes
                 parameter = self.parse_element(element)
                 if parameter:
                     parameters.append(parameter)
@@ -480,10 +496,30 @@ class ResourceManager:
         return parameters, supported_components, allowed_materials, process_transformations
 
     def _parse_process_transformations(self, node: Dict) -> List[Dict]:
+<<<<<<< Updated upstream
         """Parse a ProcessTransformations SubmodelElementCollection into a list
         of {name, input_types, output_types} dicts. Tolerates both the
         SubmodelElementList wrapper (`ComponentTypeReference`) and bare Property
         children inside the InputTypes / OutputTypes collections.
+=======
+        """Parse a ProcessTransformations SubmodelElementCollection.
+
+        Expected shape (after the AAS server's JSON serialisation):
+
+            ProcessTransformations (SubmodelElementCollection)
+              value:
+                <NamedTransformation> (SubmodelElementCollection)
+                  value:
+                    InputTypes (SubmodelElementCollection)
+                      value:
+                        ComponentTypeReference (SubmodelElementList | list of Property)
+                    OutputTypes (SubmodelElementCollection)
+                      value:
+                        ComponentTypeReference (SubmodelElementList | list of Property)
+
+        Returns a list like:
+            [{"name": "BottomCoverAndPCB", "input_types": [iri, iri], "output_types": [iri]}, ...]
+>>>>>>> Stashed changes
         """
         results: List[Dict] = []
         for transformation in node.get("value", []) or []:
@@ -504,6 +540,15 @@ class ResourceManager:
         return results
 
     def _extract_component_type_refs(self, types_node) -> List[str]:
+<<<<<<< Updated upstream
+=======
+        """Pull the leaf value strings out of an InputTypes/OutputTypes node.
+
+        The capability template wraps the list in a `ComponentTypeReference`
+        SubmodelElementList, but we accept bare Property children too so
+        small schema variations don't break parsing.
+        """
+>>>>>>> Stashed changes
         if not types_node:
             return []
         values: List[str] = []

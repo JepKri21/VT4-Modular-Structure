@@ -216,8 +216,8 @@ class Shuttle1Behaviour(StationBehavior):
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
 
         if self.skill == "Transport":
-            print(f"Executing Transport with parameters:  Speed Constraint: {self.speed_constraint}, Acceleration Constraint: {self.acceleration_constraint}, Target Position: { self.target_position}, Component Reference: {self.command_payload.component_reference}")
-            
+            print(f"Executing Transport with parameters:  Speed Constraint: {self.speed_constraint}, Acceleration Constraint: {self.acceleration_constraint}, Target Position: { self.target_position}, ProcessTransformation: {self.command_payload.process_transformation}")
+
             #Generating cycle times based on parameters
 
             target_position = [self.x_pos, self.y_pos]
@@ -255,13 +255,14 @@ class Shuttle1Behaviour(StationBehavior):
 
         job_result_message = MS.JobResultMessage(
             timestamp=datetime.now(),
-            resource_id=CLIENT_ID, 
-            order_id=self.command_payload.order_id, 
-            job_id=self.command_payload.job_id, 
+            resource_id=CLIENT_ID,
+            order_id=self.command_payload.order_id,
+            job_id=self.command_payload.job_id,
             ideal_cycle_time_ms=self.ideal_cycle_time,
             actual_cycle_time_ms=self.actual_cycle_time,
             result=self.result,
-            quality=self.quality
+            quality=self.quality,
+            process_transformation=self.command_payload.process_transformation,
         )
         self.mqtt_client.publish(f"{job_result_suffix}/{self.actor_name}",job_result_message)
 
@@ -408,8 +409,8 @@ class Shuttle2Behaviour(StationBehavior):
 
         if self.skill == "Transport":
             print(f"Current Position Is: ({self.current_position[0]},{self.current_position[1]})")
-            print(f"Executing Transport with parameters:  Speed Constraint: {self.speed_constraint}, Acceleration Constraint: {self.acceleration_constraint}, Target Position: { self.target_position}, Component Reference: {self.command_payload.component_reference}")
-            
+            print(f"Executing Transport with parameters:  Speed Constraint: {self.speed_constraint}, Acceleration Constraint: {self.acceleration_constraint}, Target Position: { self.target_position}, ProcessTransformation: {self.command_payload.process_transformation}")
+
             #Generating cycle times based on parameters
             target_position = [self.x_pos, self.y_pos]
             distance = dist(self.current_position, target_position)/1000
@@ -447,13 +448,14 @@ class Shuttle2Behaviour(StationBehavior):
 
         job_result_message = MS.JobResultMessage(
             timestamp=datetime.now(),
-            resource_id=CLIENT_ID, 
-            order_id=self.command_payload.order_id, 
-            job_id=self.command_payload.job_id, 
+            resource_id=CLIENT_ID,
+            order_id=self.command_payload.order_id,
+            job_id=self.command_payload.job_id,
             ideal_cycle_time_ms=self.ideal_cycle_time,
             actual_cycle_time_ms=self.actual_cycle_time,
             result=self.result,
-            quality=self.quality
+            quality=self.quality,
+            process_transformation=self.command_payload.process_transformation,
         )
         self.mqtt_client.publish(f"{job_result_suffix}/{self.actor_name}",job_result_message)
 
@@ -604,6 +606,10 @@ test_command = MS.CommandMessage(
     timestamp=datetime.now(),
     resource_id=CLIENT_ID,
     skill="Transport",
+    process_transformation={
+        "InputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_id"],
+        "OutputTypes": ["https://aausmartlab.org/Shells/Assembly/BottomCover/BottomCover_id"]
+    },
     actor_name=Shuttle1.behavior.actor_name,
     skill_trigger=MS.CommandType.START,
     order_id="ORD-1",

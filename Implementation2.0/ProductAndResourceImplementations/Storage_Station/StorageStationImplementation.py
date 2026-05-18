@@ -109,7 +109,7 @@ resource_inventories = {
             "position6": "https://aausmartlab.org/Shells/Component/TopCover/TopCover-TC002",
             "position7": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_7ef0e4df-1b09-4d0a-9448-14ae51652a52",
             "position8": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_3e06a1b6-96bf-4b44-abf6-b5e122c50427",
-            "position9": "",
+            "position9": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverABSBlack-771672b9-ba6b-4e44-8a55-3796401462e6",
             "position10": ""
         }
     },
@@ -350,7 +350,7 @@ class UR5ManipulatorBehavior(StationBehavior):
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
 
         if self.skill == "Handoff":
-            print(f"Handing off product: {self.command_payload.component_reference}")
+            print(f"Handing off product: {self.command_payload.process_transformation}")
             print(f"At position ({self.XPos},{self.YPos})")
             self.ideal_cycle_time = 4000+int(self.XPos)+int(self.YPos)
             self.actual_cycle_time = self.ideal_cycle_time + random.randint(200,800)
@@ -433,10 +433,13 @@ class UR5ManipulatorBehavior(StationBehavior):
                 job_id=self.command_payload.job_id, 
                 ideal_cycle_time_ms=self.ideal_cycle_time,
                 actual_cycle_time_ms=self.actual_cycle_time,
-                component_reference= self.retrieved_item_component,
+                process_transformation={
+                    "InputTypes": None,
+                    "OutputTypes": [self.retrieved_item_component] if self.retrieved_item_component else None,
+                },
                 result=self.result,
                 quality=self.quality,
-                output_parameters={}
+                output_parameters={"ComponentReference": self.retrieved_item_component} if self.retrieved_item_component else {},
             )
 
         elif self.skill == "Store" or self.skill == "Handoff":
@@ -447,7 +450,7 @@ class UR5ManipulatorBehavior(StationBehavior):
                 job_id=self.command_payload.job_id, 
                 ideal_cycle_time_ms=self.ideal_cycle_time,
                 actual_cycle_time_ms=self.actual_cycle_time,
-                component_reference= self.command_payload.component_reference,
+                process_transformation=self.command_payload.process_transformation,
                 result=self.result,
                 quality=self.quality,
                 output_parameters={}
@@ -618,6 +621,10 @@ test_command = MS.CommandMessage(
     resource_id=CLIENT_ID,
     skill="Retrieve",
     actor_name=Actor,
+    process_transformation={
+        "InputTypes": None,
+        "OutputTypes": ["https://aausmartlab.org/Shells/Assembly/BottomCover/BottomCover_id"]
+    },
     skill_trigger=MS.CommandType.START,
     order_id="ORD-1",
     job_id="RET13V3",

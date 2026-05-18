@@ -291,7 +291,7 @@ class KUKAManipulatorBehavior(StationBehavior):
             job_id=self.command_payload.job_id, 
             ideal_cycle_time_ms=self.ideal_cycle_time,
             actual_cycle_time_ms=self.actual_cycle_time,
-            component_reference=self.command_payload.component_reference,
+            process_transformation=self.command_payload.process_transformation,
             output_parameters=used_parameters,
             result=self.result,
             quality=self.quality
@@ -448,6 +448,10 @@ test_command = MS.CommandMessage(
     resource_id=CLIENT_ID,
     skill="Drilling",
     actor_name=Actor,
+    process_transformation={
+        "InputType": ["BottomCover_ALU"],
+        "OutputType": ["BottomCover_ALU_Drilled"]
+    },
     skill_trigger=MS.CommandType.START,
     order_id=None,
     job_id=None,
