@@ -9,6 +9,7 @@ elements:
     value_type: "xs:string"
     semantic_id: "https://aausmartlab.org/Semantics/CapabilityCategory"
     description: "Always 'Required' for this template"
+    value: "Required"
     cardinality: "One"
 
   - type: property
