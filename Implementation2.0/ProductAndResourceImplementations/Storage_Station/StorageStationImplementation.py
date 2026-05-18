@@ -361,9 +361,13 @@ class UR5ManipulatorBehavior(StationBehavior):
 
             
         elif self.skill == "Retrieve":
-            print(f"Executing Retrieve with product {self.command_payload.component_reference}")
+            component_reference = self.parameters.get("ComponentReference")
+            print(f"Executing Retrieve with product {component_reference}")
 
-            retriveable_locations = find_positions(inventories=resource_inventories,query=self.command_payload.component_reference)
+            retriveable_locations = (
+                find_positions(inventories=resource_inventories, query=component_reference)
+                if component_reference else []
+            )
 
             if retriveable_locations:
                 retrieved_item = retriveable_locations[0]  # We just take the first one
@@ -378,16 +382,22 @@ class UR5ManipulatorBehavior(StationBehavior):
                 #Generating result and quality randomly
                 self.result = MS.Result.COMPLETE
                 self.quality = MS.Quality.GOOD
-            
-            
-        
+            else:
+                print(f"[Retrieve] no inventory match for '{component_reference}' — failing job")
+                self.result = MS.Result.INCOMPLETE
+                self.quality = MS.Quality.BAD
+                self.ideal_cycle_time = 0
+                self.actual_cycle_time = 0
+
+
         elif self.skill == "Store":
-            print(f"Executing Store with product {self.command_payload.component_reference}")
-            
+            component_reference = self.parameters.get("ComponentReference")
+            print(f"Executing Store with product {component_reference}")
+
             #This should automatically find available positions and then place it into one
             #It also returns the specific inventory and position, but we don't need that right now
 
-            stored_item_position = place_item(resource_inventories, self.command_payload.component_reference)
+            stored_item_position = place_item(resource_inventories, component_reference)
             
             if stored_item_position is not None:
                 #Generating cycle times based on parameters
