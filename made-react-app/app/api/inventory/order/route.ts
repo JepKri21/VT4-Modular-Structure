@@ -221,7 +221,7 @@ export async function POST(req: NextRequest) {
     Array.from(allTypeIds).map(async (id) => {
       const row = (
         await pool.query(
-          `SELECT category, material, color, finish, current_rating, voltage_rating, version, aas_type_iri
+          `SELECT category, material, color, finish, current_rating, voltage_rating, version, weight, aas_type_iri
            FROM component_types WHERE id = $1`,
           [id]
         )

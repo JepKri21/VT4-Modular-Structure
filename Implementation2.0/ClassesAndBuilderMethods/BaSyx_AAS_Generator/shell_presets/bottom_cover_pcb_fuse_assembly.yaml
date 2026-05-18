@@ -63,6 +63,28 @@ submodels:
         StepConstraints:
           MaxDurationS: 90
           RequiresInspection: false
+        CapabilityParams:
+          Parameters:
+            TargetPosition:
+              XPos: 5.0
+              YPos: -10.0
+            OperationLabel:
+              - language: "en"
+                text: "Assemble first fuse onto PCB"
+              - language: "da"
+                text: "Monter første sikring på PCB"
+          ProcessTransformations:
+            AssembleFuse1:
+              InputTypes:
+                ComponentTypeReference:
+                  - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
+                  - "https://aausmartlab.org/Shells/Component/Fuse"
+              OutputTypes:
+                ComponentTypeReference:
+                  - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
+          SupportedComponents:
+            - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
+            - "https://aausmartlab.org/Shells/Component/Fuse"
 
       - Operation: "Assemble Fuse 2"
         ProcessType: "Assemble"
@@ -71,3 +93,25 @@ submodels:
         StepConstraints:
           MaxDurationS: 90
           RequiresInspection: false
+        CapabilityParams:
+          Parameters:
+            TargetPosition:
+              XPos: 5.0
+              YPos: 10.0
+            OperationLabel:
+              - language: "en"
+                text: "Assemble second fuse onto PCB"
+              - language: "da"
+                text: "Monter anden sikring på PCB"
+          ProcessTransformations:
+            AssembleFuse2:
+              InputTypes:
+                ComponentTypeReference:
+                  - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
+                  - "https://aausmartlab.org/Shells/Component/Fuse"
+              OutputTypes:
+                ComponentTypeReference:
+                  - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
+          SupportedComponents:
+            - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
+            - "https://aausmartlab.org/Shells/Component/Fuse"

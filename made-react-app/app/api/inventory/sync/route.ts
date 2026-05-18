@@ -15,6 +15,7 @@ type ParsedProperties = {
   currentRating?: string;
   voltageRating?: string;
   version?: string;
+  weight?: number;
 };
 
 function getCollectionValue(
@@ -72,6 +73,8 @@ async function fetchComponentProperties(base: string, shellId: string): Promise<
     const fuseType = getCollectionValue(elems, "ElectricalProperties", "Type");
     const currentRating = formatAmpere(getCollectionValue(elems, "ElectricalProperties", "CurrentRating"));
     const voltageRating = formatVolt(getCollectionValue(elems, "ElectricalProperties", "VoltageRating"));
+    const rawWeight = getCollectionValue(elems, "PhysicalDimensions", "Weight");
+    const weight = rawWeight != null ? parseFloat(rawWeight) : undefined;
 
     return {
       material,
@@ -80,6 +83,7 @@ async function fetchComponentProperties(base: string, shellId: string): Promise<
       currentRating,
       voltageRating,
       version: fuseType,
+      weight: weight != null && !isNaN(weight) ? weight : undefined,
     };
   } catch {
     return {};
@@ -173,8 +177,8 @@ export async function POST(req: NextRequest) {
 
       // Ensure component type exists and keep the live properties in sync
       const typeRes = await pool.query(
-        `INSERT INTO component_types (id, category, material, color, finish, current_rating, voltage_rating, version, aas_type_iri, name, description, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+        `INSERT INTO component_types (id, category, material, color, finish, current_rating, voltage_rating, version, weight, aas_type_iri, name, description, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
          ON CONFLICT (id) DO UPDATE SET
            category = EXCLUDED.category,
            material = EXCLUDED.material,
@@ -183,6 +187,7 @@ export async function POST(req: NextRequest) {
            current_rating = EXCLUDED.current_rating,
            voltage_rating = EXCLUDED.voltage_rating,
            version = EXCLUDED.version,
+           weight = EXCLUDED.weight,
            aas_type_iri = EXCLUDED.aas_type_iri,
            name = EXCLUDED.name,
            description = EXCLUDED.description
@@ -191,27 +196,22 @@ export async function POST(req: NextRequest) {
           componentTypeId, info.category,
           properties.material ?? null, properties.color ?? null,
           properties.finish ?? null, properties.currentRating ?? null, properties.voltageRating ?? null,
-          properties.version ?? null,
+          properties.version ?? null, properties.weight ?? null,
           typeIri,
           info.name, `Synced from ${base}`,
         ]
       );
       if (typeRes.rows.length > 0) created++;
 
-      // SET inventory to the actual count from AAS server (not increment)
-      const invRes = await pool.query(
-        `UPDATE inventory SET quantity_available = $1, last_updated = NOW() WHERE component_type_id = $2`,
-        [info.count, componentTypeId]
+      // SET inventory to the actual count from AAS server (atomic upsert)
+      await pool.query(
+        `INSERT INTO inventory (component_type_id, quantity_available, quantity_reserved, last_updated)
+         VALUES ($1, $2, 0, NOW())
+         ON CONFLICT (component_type_id) DO UPDATE SET
+           quantity_available = EXCLUDED.quantity_available,
+           last_updated = EXCLUDED.last_updated`,
+        [componentTypeId, info.count]
       );
-
-      // If no row was updated, insert a new one
-      if (invRes.rowCount === 0) {
-        await pool.query(
-          `INSERT INTO inventory (component_type_id, quantity_available, quantity_reserved, last_updated)
-           VALUES ($1, $2, 0, NOW())`,
-          [componentTypeId, info.count]
-        );
-      }
     }
 
     // Remove stale synced entries that are no longer present on the AAS server

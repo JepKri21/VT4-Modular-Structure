@@ -293,10 +293,16 @@ export const fetchResourceCapabilities = async (
       const capRes = await fetch(`${serverUrl}/submodels/${b64url(capSmIri)}`);
       if (!capRes.ok) continue;
       const data = (await capRes.json()) as SME;
-      const capRefEl = children(data).find((c) => c.idShort === "CapabilityReference");
-      const capIri = (capRefEl?.value as string) ?? "";
-      if (!capIri) continue;
-      const capabilityType = capIri.split("/").at(-1) ?? capIri;
+
+      // CapabilityTypeReference holds the IRI identifying the capability type,
+      // e.g. "https://aausmartlab.org/Submodels/Capability/Assemble"
+      const capTypeRefEl = children(data).find((c) => c.idShort === "CapabilityTypeReference");
+      const capTypeIri = (capTypeRefEl?.value as string) ?? "";
+      const capabilityType = capTypeIri
+        ? (capTypeIri.split("/").at(-1) ?? capTypeIri)
+        : data.idShort.replace(/CapabilityOffered$/, "");
+
+      if (!capabilityType) continue;
       results.push({ capabilityType, resourceRef: rid, capabilityRef: capSmIri });
     }
   }
