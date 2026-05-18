@@ -31,6 +31,112 @@ elements:
           dk: "Dette er en retrieve operation for en ressource"
           en: "This is a retrieve operation for a resource"
 
+  - type: collection
+    id_short: "ProcessTransformations"
+    semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformations"
+    description: "A collection of mappings between component inputs and resulting output"
+    elements:
+
+      - type: collection
+        id_short: "ProvideBottomCover"
+        semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation"
+        description: "A single mapping between component inputs and resulting output"
+        elements:
+
+          - type: collection
+            id_short: "InputTypes"
+            semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation/InputTypes"
+            description: "A list of the components or assemblies that have to be used in the transformation"
+            elements:
+              - type: list
+                id_short: "ComponentTypeReference"
+                semantic_id: "https://aausmartlab.org/Semantics/ComponentTypeReference"
+                description: "A list of component type references"
+                element_type: "property"
+                value_type: "xs:string"
+                items:
+                  - null
+          - type: collection
+            id_short: "OutputTypes"
+            semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation/OutputTypes"
+            description: "A list of the components or assemblies resulting from the transformation of the input types"
+            elements:
+              - type: list
+                id_short: "ComponentTypeReference"
+                semantic_id: "https://aausmartlab.org/Semantics/ComponentTypeReference"
+                description: "A list of component type references"
+                element_type: "property"
+                value_type: "xs:string"
+                items:
+                  - "https://aausmartlab.org/Shells/Component/BottomCover"
+
+      - type: collection
+        id_short: "ProvideTopCover"
+        semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation"
+        description: "A single mapping between component inputs and resulting output"
+        elements:
+
+          - type: collection
+            id_short: "InputTypes"
+            semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation/InputTypes"
+            description: "A list of the components or assemblies that have to be used in the transformation"
+            elements:
+              - type: list
+                id_short: "ComponentTypeReference"
+                semantic_id: "https://aausmartlab.org/Semantics/ComponentTypeReference"
+                description: "A list of component type references"
+                element_type: "property"
+                value_type: "xs:string"
+                items:
+                  - null
+          - type: collection
+            id_short: "OutputTypes"
+            semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation/OutputTypes"
+            description: "A list of the components or assemblies resulting from the transformation of the input types"
+            elements:
+              - type: list
+                id_short: "ComponentTypeReference"
+                semantic_id: "https://aausmartlab.org/Semantics/ComponentTypeReference"
+                description: "A list of component type references"
+                element_type: "property"
+                value_type: "xs:string"
+                items:
+                  - "https://aausmartlab.org/Shells/Component/TopCover"
+
+      - type: collection
+        id_short: "ProvideBottomCoverPCB"
+        semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation"
+        description: "A single mapping between component inputs and resulting output"
+        elements:
+
+          - type: collection
+            id_short: "InputTypes"
+            semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation/InputTypes"
+            description: "A list of the components or assemblies that have to be used in the transformation"
+            elements:
+              - type: list
+                id_short: "ComponentTypeReference"
+                semantic_id: "https://aausmartlab.org/Semantics/ComponentTypeReference"
+                description: "A list of component type references"
+                element_type: "property"
+                value_type: "xs:string"
+                items:
+                  - null
+          - type: collection
+            id_short: "OutputTypes"
+            semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation/OutputTypes"
+            description: "A list of the components or assemblies resulting from the transformation of the input types"
+            elements:
+              - type: list
+                id_short: "ComponentTypeReference"
+                semantic_id: "https://aausmartlab.org/Semantics/ComponentTypeReference"
+                description: "A list of component type references"
+                element_type: "property"
+                value_type: "xs:string"
+                items:
+                  - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
+
+
   - type: list
     id_short: "SupportedComponents"
     semantic_id: "https://aausmartlab.org/Semantics/SupportedComponents"
@@ -40,6 +146,7 @@ elements:
     items:
       - "https://aausmartlab.org/Shells/Component/BottomCover"
       - "https://aausmartlab.org/Shells/Component/TopCover"
+      - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
 
   - type: list
     id_short: "AllowedMaterials"
@@ -48,8 +155,7 @@ elements:
     element_type: "property"
     value_type: "xs:string"
     items:
-      - "https://aausmartlab.org/Materials/Plastic (PLA)"
-      - "https://aausmartlab.org/Materials/Plastic (ABS)"
+      - null
 
   - type: reference_element
     id_short: "ResourceReference"

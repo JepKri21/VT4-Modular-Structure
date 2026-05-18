@@ -1,5 +1,5 @@
 id_short: "HandoffCapabilityOffered"
-id: "https://aausmartlab.org/Shells/Resources/Drilling_12345678/HandoffCapabilityOffered"
+id: "https://aausmartlab.org/Shells/Resources/BCPCBAssembler_12345678/HandoffCapabilityOffered"
 description: "Offered capability template for a handoff capability — parameters expressed as ranges defining the operational envelope"
 semantic_id: "https://aausmartlab.org/Submodels/Capability/Handoff"
 
@@ -45,6 +45,77 @@ elements:
           dk: "Dette er en afleveringsoperation for en ressource"
           en: "This is a handoff operation for a resource"
 
+  - type: collection
+    id_short: "ProcessTransformations"
+    semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformations"
+    description: "A collection of mappings between component inputs and resulting output"
+    elements:
+      - type: collection
+        id_short: "Recieve"
+        semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation"
+        description: "A single mapping between component inputs and resulting output"
+        elements:
+
+          - type: collection
+            id_short: "InputTypes"
+            semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation/InputTypes"
+            description: "A list of the components or assemblies that have to be used in the transformation"
+            elements:
+              - type: list
+                id_short: "ComponentTypeReference"
+                semantic_id: "https://aausmartlab.org/Semantics/ComponentTypeReference"
+                description: "A list of component type references"
+                element_type: "property"
+                value_type: "xs:string"
+                items:
+                  - "https://aausmartlab.org/Shells/Component/BottomCover"
+          - type: collection
+            id_short: "OutputTypes"
+            semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation/OutputTypes"
+            description: "A list of the components or assemblies resulting from the transformation of the input types"
+            elements:
+              - type: list
+                id_short: "ComponentTypeReference"
+                semantic_id: "https://aausmartlab.org/Semantics/ComponentTypeReference"
+                description: "A list of component type references"
+                element_type: "property"
+                value_type: "xs:string"
+                items:
+                  - null
+
+      - type: collection
+        id_short: "Provide"
+        semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation"
+        description: "A single mapping between component inputs and resulting output"
+        elements:
+
+          - type: collection
+            id_short: "InputTypes"
+            semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation/InputTypes"
+            description: "A list of the components or assemblies that have to be used in the transformation"
+            elements:
+              - type: list
+                id_short: "ComponentTypeReference"
+                semantic_id: "https://aausmartlab.org/Semantics/ComponentTypeReference"
+                description: "A list of component type references"
+                element_type: "property"
+                value_type: "xs:string"
+                items:
+                  - null
+          - type: collection
+            id_short: "OutputTypes"
+            semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation/OutputTypes"
+            description: "A list of the components or assemblies resulting from the transformation of the input types"
+            elements:
+              - type: list
+                id_short: "ComponentTypeReference"
+                semantic_id: "https://aausmartlab.org/Semantics/ComponentTypeReference"
+                description: "A list of component type references"
+                element_type: "property"
+                value_type: "xs:string"
+                items:
+                  - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
+
   - type: list
     id_short: "SupportedComponents"
     semantic_id: "https://aausmartlab.org/Semantics/SupportedComponents"
@@ -53,7 +124,7 @@ elements:
     value_type: "xs:string"
     items:
       - "https://aausmartlab.org/Shells/Component/BottomCover"
-      - "https://aausmartlab.org/Shells/Component/TopCover"
+      - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
 
   - type: list
     id_short: "AllowedMaterials"
@@ -62,11 +133,10 @@ elements:
     element_type: "property"
     value_type: "xs:string"
     items:
-      - "https://aausmartlab.org/Materials/Plastic (PLA)"
-      - "https://aausmartlab.org/Materials/Plastic (ABS)"
+      - null
 
   - type: reference_element
     id_short: "ResourceReference"
     semantic_id: "https://aausmartlab.org/Semantics/ResourceReference"
     description: "Reference to the physical resource realizing this capability"
-    value: "https://aausmartlab.org/Shells/Resources/Drilling-12345678"
+    value: "https://aausmartlab.org/Shells/Resources/BCPCBAssembler_12345678"
