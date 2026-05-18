@@ -57,12 +57,12 @@ elements:
           - type: collection
             id_short: "InputTypes"
             semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation/InputTypes"
-            description: "A list of the components or assemblies that can have to be used in the transformation"
+            description: "A list of the components or assemblies that have to be used in the transformation"
             elements:
               - type: list
                 id_short: "ComponentTypeReference"
                 semantic_id: "https://aausmartlab.org/Semantics/ComponentTypeReference"
-                description: "A list of the components or assemblies resulting from the transformation of the input types"
+                description: "A list of component type references"
                 element_type: "property"
                 value_type: "xs:string"
                 items:
@@ -78,7 +78,7 @@ elements:
               - type: list
                 id_short: "ComponentTypeReference"
                 semantic_id: "https://aausmartlab.org/Semantics/ComponentTypeReference"
-                description: "A list of the components or assemblies resulting from the transformation of the input types"
+                description: "A list of component type references"
                 element_type: "property"
                 value_type: "xs:string"
                 items:
@@ -94,6 +94,15 @@ elements:
       - "https://aausmartlab.org/Shells/Component/BottomCover"
       - "https://aausmartlab.org/Shells/Component/PCB"
       - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
+
+  - type: list
+    id_short: "AllowedMaterials"
+    semantic_id: "https://aausmartlab.org/Semantics/AllowedMaterials"
+    description: "Materials that can be drilled by this capability"
+    element_type: "property"
+    value_type: "xs:string"
+    items:
+      - null
 
   - type: reference_element
     id_short: "ResourceReference"
