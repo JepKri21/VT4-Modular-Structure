@@ -12,9 +12,9 @@ elements:
     value: "Offered"
 
   - type: property
-    id_short: "CapabilityReference"
-    semantic_id: "https://aausmartlab.org/Semantics/CapabilityReference"
-    description: "Describes the specific cabaility offered by a resource or required by a product"
+    id_short: "CapabilityTypeReference"
+    semantic_id: "https://aausmartlab.org/Semantics/CapabilityTypeReference"
+    description: "Describes the specific capability offered by a resource or required by a product"
     value_type: "xs:string"
     value: "https://aausmartlab.org/Submodels/Capability/Store"
 
@@ -155,8 +155,8 @@ elements:
     element_type: "property"
     value_type: "xs:string"
     items:
-      - "https://aausmartlab.org/Materials/Plastic (PLA)"
-      - "https://aausmartlab.org/Materials/Plastic (ABS)"
+      - "https://aausmartlab.org/Materials/PLA"
+      - "https://aausmartlab.org/Materials/ABS"
 
   - type: reference_element
     id_short: "ResourceReference"

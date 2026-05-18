@@ -14,15 +14,17 @@ submodels:
       TargetPosition:
         XPos: { min: 60.0, max: 660.0 }
         YPos: { min: 60.0, max: 900.0 }
+      OperationLabel:
+        en: "Transport operation"
+        dk: "Transportoperation"
 
   Skills:
-    Skill:
-      - SkillName: "Transport"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Transport/TransportCapabilityOffered"
-        SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
-        Actors:
-          - "Shuttle1"
-          - "Shuttle2"
+    Transport:
+      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Transport/TransportCapabilityOffered"
+      SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+      Actors:
+        - "Shuttle1"
+        - "Shuttle2"
 
   ResourceZones:
     CenterPoint:

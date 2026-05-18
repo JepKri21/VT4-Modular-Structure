@@ -288,23 +288,43 @@ def _derive_service_required(shell_id: str, bop_form_data: dict):
 # ────────────────── skills reference rewrite ──────────────────
 
 def _rewrite_skills_capability_refs(skills_form_data: dict, shell_id: str) -> dict:
-    """Rewrite each Skill's CapabilitySubmodelReference so its prefix matches
-    the resolved `shell_id`. The preset YAML can author the reference with
-    the asset_name (no UUID), and this fixer points it at the actually
-    uploaded capability submodel id (`<shell_id>/<CapabilitySubmodelIdShort>`).
+    """Rewrite each skill's CapabilitySubmodelReference so its prefix matches
+    the resolved shell_id. The preset YAML authors the reference with the
+    asset_name (no UUID); this fixer points it at the actually uploaded
+    capability submodel IRI (<shell_id>/<CapabilitySubmodelIdShort>).
 
-    Only the trailing path segment is preserved; everything before it is
-    replaced with shell_id.
+    Format: {SkillName: {CapabilitySubmodelReference: ..., ...}, ...}
     """
     if not isinstance(skills_form_data, dict):
         return skills_form_data
     fixed = copy.deepcopy(skills_form_data)
-    for skill in fixed.get("Skill", []) or []:
-        ref = skill.get("CapabilitySubmodelReference")
+    for skill_data in fixed.values():
+        if not isinstance(skill_data, dict):
+            continue
+        ref = skill_data.get("CapabilitySubmodelReference")
         if isinstance(ref, str) and "/" in ref:
             sm_id_short = ref.rsplit("/", 1)[-1]
-            skill["CapabilitySubmodelReference"] = f"{shell_id}/{sm_id_short}"
+            skill_data["CapabilitySubmodelReference"] = f"{shell_id}/{sm_id_short}"
     return fixed
+
+
+def _build_skills_submodel(
+    builder: "AASInstanceBuilder",
+    skill_schema: list,
+    skills_form_data: dict,
+) -> None:
+    """Build skill collections directly on the submodel root (no wrapper).
+
+    Each key in skills_form_data is a skill name; its value is the field dict.
+    skill_schema contains the element definitions for each skill collection
+    (CapabilitySubmodelReference, SkillTriggers, Actors).
+    """
+    sm = builder.get()
+    for skill_name, skill_data in (skills_form_data or {}).items():
+        if not isinstance(skill_data, dict):
+            continue
+        skill_col = builder.add_collection(sm, skill_name)
+        build_elements_from_form(builder, skill_col, skill_schema, skill_data)
 
 
 # ────────────────── capability params extraction ──────────────────
@@ -365,13 +385,15 @@ def build_submodel(
     # Top-level semantic_id on the submodel itself — used by capability
     # submodels so consumers (e.g. the Line Controller's capability matcher)
     # can identify the capability without parsing inner elements. We drive
-    # it off the CapabilityReference property already supplied in form_data
-    # (injected by the resource type shell), so no submodel-template schema
-    # change is needed.
-    cap_ref = (form_data or {}).get("CapabilityReference")
+    # it off CapabilityTypeReference (injected by the resource type shell);
+    # CapabilityReference is kept as a fallback for any legacy data.
+    cap_ref = (form_data or {}).get("CapabilityTypeReference") or (form_data or {}).get("CapabilityReference")
     if isinstance(cap_ref, str) and cap_ref:
         builder.submodel.semantic_id = _ext_ref(cap_ref)
-    build_elements_from_form(builder, builder.get(), tmpl.get("elements", []), form_data or {})
+    if id_short == "Skills":
+        _build_skills_submodel(builder, tmpl.get("elements", []), form_data or {})
+    else:
+        build_elements_from_form(builder, builder.get(), tmpl.get("elements", []), form_data or {})
     return builder.get()
 
 

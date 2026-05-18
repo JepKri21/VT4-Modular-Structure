@@ -32,8 +32,7 @@ include:
     - Parameters
     - SupportedComponents
     - AllowedMaterials
-  Skills:
-    - Skill
+  Skills: []
   ResourceZones:
     - CenterPoint
     - ResourceGeometry
@@ -42,7 +41,7 @@ include:
 submodels:
   AssembleCapabilityOffered:
     CapabilityCategory: "Offered"
-    CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Assemble"
+    CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Assemble"
     AllowedMaterials:
       - "https://aausmartlab.org/Materials/PLA"
       - "https://aausmartlab.org/Materials/ABS"
@@ -50,7 +49,7 @@ submodels:
 
   HandoffCapabilityOffered:
     CapabilityCategory: "Offered"
-    CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Handoff"
+    CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Handoff"
     AllowedMaterials:
       - "https://aausmartlab.org/Materials/PLA"
       - "https://aausmartlab.org/Materials/ABS"

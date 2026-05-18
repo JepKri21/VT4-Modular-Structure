@@ -597,14 +597,10 @@ test_command = MS.CommandMessage(
     skill="Assemble",
     actor_name=Actor,
     skill_trigger=MS.CommandType.START,
-    process_transformation= {
-        "InputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_id", "https://aausmartlab.org/Shells/Component/PCB/PCB_id"],
-        "OutputTypes": ["https://aausmartlab.org/Shells/Assembly/BCPCB/BCPCB_id"]
-    },
-    order_id="ORD-1",
-    job_id="1xx23",
     process_transformation={"InputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverPLABlue-264a4570-0bfb-4171-bdf8-5ed087afd73e", "https://aausmartlab.org/Shells/Component/PCB/PCB_213fasd-0bfb-4171-bdf8-5ed087afd73e"],
                             "OutputTypes": ["https://aausmartlab.org/Shells/Assembly/BottomCoverPCB/BottomCoverPCB-as734bld-0bfb-4171-bdf8-5ed087afd73e"]},
+    order_id="ORD-1",
+    job_id="1xx23",
     parameters=params
 )
 

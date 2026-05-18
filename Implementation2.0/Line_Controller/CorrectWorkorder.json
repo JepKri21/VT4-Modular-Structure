@@ -61,7 +61,7 @@
       "MaterialProperties": {
         "Material": {
           "semanticId": "https://aausmartlab.org/Semantics/Material",
-          "value": "Plastic (ABS)"
+          "value": "ABS"
         },
         "Color": {
           "SemanticId": "https://aausmartlab.org/Semantics/Color",

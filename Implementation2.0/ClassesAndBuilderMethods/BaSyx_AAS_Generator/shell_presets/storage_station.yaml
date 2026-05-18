@@ -15,6 +15,10 @@ submodels:
     AllowedMaterials:
       - "PLA"
       - "ABS"
+    Parameters:
+      OperationLabel:
+        en: "Store operation"
+        dk: "Lageroperation"
 
   RetrieveCapabilityOffered:
     CapabilityCategory: "Offered"
@@ -26,6 +30,10 @@ submodels:
     AllowedMaterials:
       - "PLA"
       - "ABS"
+    Parameters:
+      OperationLabel:
+        en: "Retrieve operation"
+        dk: "Henteoperation"
 
   HandoffCapabilityOffered:
     CapabilityCategory: "Offered"
@@ -41,24 +49,26 @@ submodels:
       TargetPosition:
         XPos: ""
         YPos: ""
+      OperationLabel:
+        en: "Handoff operation"
+        dk: "Afleveringsoperation"
 
   Skills:
-    Skill:
-      - SkillName: "Store"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage/StoreCapabilityOffered"
-        SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
-        Actors:
-          - "UR5"
-      - SkillName: "Retrieve"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage/RetrieveCapabilityOffered"
-        SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
-        Actors:
-          - "UR5"
-      - SkillName: "Handoff"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage/HandoffCapabilityOffered"
-        SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
-        Actors:
-          - "UR5"
+    Store:
+      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage/StoreCapabilityOffered"
+      SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+      Actors:
+        - "UR5"
+    Retrieve:
+      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage/RetrieveCapabilityOffered"
+      SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+      Actors:
+        - "UR5"
+    Handoff:
+      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage/HandoffCapabilityOffered"
+      SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+      Actors:
+        - "UR5"
 
   Inventory:
     Inventories:

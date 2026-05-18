@@ -424,5 +424,18 @@
       "BottomCoverPCBFuse": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse/BottomCoverPCBFuse_2079b015-9ca1-42fc-aae1-2331bb242b69-ORD-9DD47B4D",
       "AAUMobilePhoneV1": "https://aausmartlab.org/Shells/Configuration/MobilePhone/AAUMobilePhoneV1_c18f77b9-eeca-4c7e-bae7-602ef56761dc-ORD-9DD47B4D"
     }
+  },
+  "ORD-4590BE0B": {
+    "order_id": "ORD-4590BE0B",
+    "webshop_id": "4590be0b-11f7-41fb-a0c3-e7c9b93ec530",
+    "line_id": "ProductionLine",
+    "status": "PENDING",
+    "created_at": "2026-05-18T22:24:36.987851",
+    "updated_at": "2026-05-18T22:24:45.412670",
+    "shell_iris": {
+      "BottomCoverPCB": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB/BottomCoverPCB_b1cbd2c1-88f5-4a27-93e3-66a162f25e20-ORD-4590BE0B",
+      "BottomCoverPCBFuse": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse/BottomCoverPCBFuse_81e8c2e7-ae75-4852-9454-a57f4e64a178-ORD-4590BE0B",
+      "AAUMobilePhoneV1": "https://aausmartlab.org/Shells/Configuration/MobilePhone/AAUMobilePhoneV1_43d6bc88-bcac-4c14-9b09-6dcb3d970dab-ORD-4590BE0B"
+    }
   }
 }

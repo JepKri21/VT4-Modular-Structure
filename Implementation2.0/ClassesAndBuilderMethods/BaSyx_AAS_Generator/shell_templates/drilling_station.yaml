@@ -1,7 +1,7 @@
 ﻿# Category type shell for Drilling Station resources.
 #
 # Shared across all drilling station presets:
-#   - CapabilityCategory / CapabilityReference for Drilling and Handoff
+#   - CapabilityCategory / CapabilityTypeReference for Drilling and Handoff
 #   - AllowedMaterials (PLA and ABS)
 #   - Standard PackML Communication suffixes
 #
@@ -31,8 +31,7 @@ include:
     - Parameters
     - SupportedComponents
     - AllowedMaterials
-  Skills:
-    - Skill
+  Skills: []
   ResourceZones:
     - CenterPoint
     - ResourceGeometry
@@ -41,14 +40,14 @@ include:
 submodels:
   DrillingCapabilityOffered:
     CapabilityCategory: "Offered"
-    CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Drilling"
+    CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Drilling"
     AllowedMaterials:
       - "https://aausmartlab.org/Materials/PLA"
       - "https://aausmartlab.org/Materials/ABS"
 
   HandoffCapabilityOffered:
     CapabilityCategory: "Offered"
-    CapabilityReference: "https://aausmartlab.org/Submodels/Capability/Handoff"
+    CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Handoff"
     AllowedMaterials:
       - "https://aausmartlab.org/Materials/PLA"
       - "https://aausmartlab.org/Materials/ABS"

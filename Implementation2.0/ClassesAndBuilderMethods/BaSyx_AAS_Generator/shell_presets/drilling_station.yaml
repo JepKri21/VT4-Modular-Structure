@@ -22,6 +22,9 @@ submodels:
       TargetPosition:
         XPos: { min: -60.0, max: 60.0 }
         YPos: { min: -60.0, max: 60.0 }
+      OperationLabel:
+        en: "Drilling operation"
+        dk: "Boreoperation"
     ProcessTransformations:
       BottomCoverDrilling:
         InputTypes:
@@ -51,19 +54,21 @@ submodels:
       TargetPosition:
         XPos: ""
         YPos: ""
+      OperationLabel:
+        en: "Handoff operation"
+        dk: "Afleveringsoperation"
 
   Skills:
-    Skill:
-      - SkillName: "Drilling"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Drilling/DrillingCapabilityOffered"
-        SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
-        Actors:
-          - "KUKAManipulator"
-      - SkillName: "Handoff"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Drilling/HandoffCapabilityOffered"
-        SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
-        Actors:
-          - "KUKAManipulator"
+    Drilling:
+      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Drilling/DrillingCapabilityOffered"
+      SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+      Actors:
+        - "KUKAManipulator"
+    Handoff:
+      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Drilling/HandoffCapabilityOffered"
+      SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+      Actors:
+        - "KUKAManipulator"
 
   ResourceZones:
     CenterPoint:

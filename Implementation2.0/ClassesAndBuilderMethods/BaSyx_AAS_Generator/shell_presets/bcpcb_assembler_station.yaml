@@ -1,24 +1,23 @@
-﻿type: "assembly_module"
-label: "Assembly Module – Snap-Fit (AAU Lab)"
-description: "UR5 snap-fit assembly station for joining Bottom Cover and Bottom Cover PCB sub-assemblies without fasteners."
+type: "assembly_module"
+label: "BCPCB Assembler Station – AAU Lab"
+description: "KUKA Manipulator station for assembling Bottom Cover and PCB into BCPCB sub-assembly"
 
-asset_name: "AssemblySnapFit"
+asset_name: "BCPCBAssembler"
 
 submodels:
   AssembleCapabilityOffered:
     CapabilityCategory: "Offered"
     SupportedComponents:
       - "https://aausmartlab.org/Shells/Component/BottomCover"
+      - "https://aausmartlab.org/Shells/Component/PCB"
       - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
     Parameters:
       TargetPosition:
         XPos: ""
         YPos: ""
       OperationLabel:
-        - language: "en"
-          text: "Snap-fit assembly operation"
-        - language: "da"
-          text: "Snap-fit samling"
+        en: "Assembly operation"
+        dk: "Samleroperation"
     ProcessTransformations:
       BottomCoverAndPCB:
         InputTypes:
@@ -32,35 +31,46 @@ submodels:
   HandoffCapabilityOffered:
     SupportedComponents:
       - "https://aausmartlab.org/Shells/Component/BottomCover"
+      - "https://aausmartlab.org/Shells/Component/PCB"
       - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
     Parameters:
       TargetPosition:
         XPos: ""
         YPos: ""
+      OperationLabel:
+        en: "Handoff operation"
+        dk: "Afleveringsoperation"
 
   Skills:
     Assemble:
-      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/AssemblySnapFit/AssembleCapabilityOffered"
+      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/BCPCBAssembler/AssembleCapabilityOffered"
       SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
       Actors:
-        - "UR5"
+        - "KUKAManipulator"
     Handoff:
-      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/AssemblySnapFit/HandoffCapabilityOffered"
+      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/BCPCBAssembler/HandoffCapabilityOffered"
       SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
       Actors:
-        - "UR5"
+        - "KUKAManipulator"
+
+  Inventory:
+    Inventories:
+      - Specifications:
+          InventorySize: 10
+        SupportedComponents:
+          - "https://aausmartlab.org/Shells/Component/PCB"
 
   ResourceZones:
     CenterPoint:
       XPos: 0.0
       YPos: 0.0
     ResourceGeometry:
-      Point1: { XPos: -65.0, YPos: -65.0 }
-      Point2: { XPos:  65.0, YPos: -65.0 }
-      Point3: { XPos:  65.0, YPos:  65.0 }
-      Point4: { XPos: -65.0, YPos:  65.0 }
+      Point1: { XPos: -50.0, YPos: -50.0 }
+      Point2: { XPos:  50.0, YPos: -50.0 }
+      Point3: { XPos:  50.0, YPos:  50.0 }
+      Point4: { XPos: -50.0, YPos:  50.0 }
     InOutputZones:
-      - Point1: { XPos: -55.0, YPos:  65.0 }
-        Point2: { XPos:  55.0, YPos:  65.0 }
-        Point3: { XPos:  55.0, YPos: 155.0 }
-        Point4: { XPos: -55.0, YPos: 155.0 }
+      - Point1: { XPos: -40.0, YPos:  50.0 }
+        Point2: { XPos:  40.0, YPos:  50.0 }
+        Point3: { XPos:  40.0, YPos: 130.0 }
+        Point4: { XPos: -40.0, YPos: 130.0 }

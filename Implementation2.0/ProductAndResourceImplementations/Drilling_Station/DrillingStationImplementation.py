@@ -461,16 +461,12 @@ test_command = MS.CommandMessage(
     resource_id=CLIENT_ID,
     skill="Drilling",
     actor_name=Actor,
-    process_transformation={
-        "InputType": ["BottomCover_ALU"],
-        "OutputType": ["BottomCover_ALU_Drilled"]
-    },
+    process_transformation={"InputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverPLABlue-264a4570-0bfb-4171-bdf8-5ed087afd73e"],
+                            "OutputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverPLABlue-264a4570-0bfb-4171-bdf8-5ed087afd73e"]},
     skill_trigger=MS.CommandType.START,
     order_id="ORD-12345",
     job_id="Drilling_2x2",
-    parameters=params,
-    process_transformation={"InputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverPLABlue-264a4570-0bfb-4171-bdf8-5ed087afd73e"],
-                            "OutputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverPLABlue-264a4570-0bfb-4171-bdf8-5ed087afd73e"]}
+    parameters=params
 )
 
 print("Test Command: ", test_command.model_dump_json(indent=2))

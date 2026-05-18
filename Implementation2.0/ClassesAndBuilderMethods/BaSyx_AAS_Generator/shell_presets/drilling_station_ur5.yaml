@@ -34,17 +34,16 @@ submodels:
         YPos: ""
 
   Skills:
-    Skill:
-      - SkillName: "Drilling"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/DrillingUR5/DrillingCapabilityOffered"
-        SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
-        Actors:
-          - "UR5"
-      - SkillName: "Handoff"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/DrillingUR5/HandoffCapabilityOffered"
-        SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
-        Actors:
-          - "UR5"
+    Drilling:
+      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/DrillingUR5/DrillingCapabilityOffered"
+      SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+      Actors:
+        - "UR5"
+    Handoff:
+      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/DrillingUR5/HandoffCapabilityOffered"
+      SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+      Actors:
+        - "UR5"
 
   ResourceZones:
     CenterPoint:

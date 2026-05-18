@@ -43,39 +43,16 @@ submodels:
         YPos: ""
 
   Skills:
-    Skill:
-      - SkillName: "Assemble"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/AssemblyScrewing/AssembleCapabilityOffered"
-        SkillTriggers:
-          [
-            "START",
-            "STOP",
-            "RESET",
-            "ABORT",
-            "CLEAR",
-            "HOLD",
-            "UNHOLD",
-            "SUSPEND",
-            "UNSUSPEND",
-          ]
-        Actors:
-          - "KUKAManipulator"
-      - SkillName: "Handoff"
-        CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/AssemblyScrewing/HandoffCapabilityOffered"
-        SkillTriggers:
-          [
-            "START",
-            "STOP",
-            "RESET",
-            "ABORT",
-            "CLEAR",
-            "HOLD",
-            "UNHOLD",
-            "SUSPEND",
-            "UNSUSPEND",
-          ]
-        Actors:
-          - "KUKAManipulator"
+    Assemble:
+      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/AssemblyScrewing/AssembleCapabilityOffered"
+      SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+      Actors:
+        - "KUKAManipulator"
+    Handoff:
+      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/AssemblyScrewing/HandoffCapabilityOffered"
+      SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+      Actors:
+        - "KUKAManipulator"
 
   ResourceZones:
     CenterPoint:

@@ -556,16 +556,12 @@ test_command = MS.CommandMessage(
     timestamp=datetime.now(),
     resource_id=CLIENT_ID,
     skill="Transport",
-    process_transformation={
-        "InputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_id"],
-        "OutputTypes": ["https://aausmartlab.org/Shells/Assembly/BottomCover/BottomCover_id"]
-    },
+    process_transformation={"InputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverPLABlue-264a4570-0bfb-4171-bdf8-5ed087afd73e"],
+                            "OutputTypes":["https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverPLABlue-264a4570-0bfb-4171-bdf8-5ed087afd73e"]},
     actor_name=Shuttle1.behavior.actor_name,
     skill_trigger=MS.CommandType.START,
     order_id="ORD-1",
     job_id="TRANS1",
-    process_transformation={"InputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverPLABlue-264a4570-0bfb-4171-bdf8-5ed087afd73e"], 
-                            "OutputTypes":["https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverPLABlue-264a4570-0bfb-4171-bdf8-5ed087afd73e"]},
     parameters=params
 )
 
