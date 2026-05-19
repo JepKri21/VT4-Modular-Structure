@@ -1,5 +1,5 @@
-id_short: "BCPCBAssemblyCapabilityOffered"
-id: "https://aausmartlab.org/Shells/Resources/BCPCBAssembler_12345678/BCPCBAssemblyCapabilityOffered"
+id_short: "BCPCBFuseAssemblyCapabilityOffered"
+id: "https://aausmartlab.org/Shells/Resources/PhoneAssembler_12345678/PhoneAssemblyCapabilityOffered"
 description: "Offered capability template for a drilling capability — parameters expressed as ranges defining the operational envelope"
 
 elements:
@@ -54,7 +54,7 @@ elements:
     description: "A collection of mappings between component inputs and resulting output"
     elements:
       - type: collection
-        id_short: "BottomCoverAndPCB"
+        id_short: "BottomCoverPCBFuseAndTopCover"
         semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation"
         description: "A single mapping between component inputs and resulting output"
         elements:
@@ -70,8 +70,8 @@ elements:
                 element_type: "property"
                 value_type: "xs:string"
                 items:
-                  - "https://aausmartlab.org/Shells/Component/BottomCover"
-                  - "https://aausmartlab.org/Shells/Component/PCB"
+                  - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
+                  - "https://aausmartlab.org/Shells/Component/TopCover"
 
           - type: collection
             id_short: "OutputTypes"
@@ -85,7 +85,8 @@ elements:
                 element_type: "property"
                 value_type: "xs:string"
                 items:
-                  - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
+                  - "https://aausmartlab.org/Shells/Product/MobilePhone"
+
 
   - type: list
     id_short: "SupportedComponents"
@@ -94,9 +95,9 @@ elements:
     element_type: "property"
     value_type: "xs:string"
     items:
-      - "https://aausmartlab.org/Shells/Component/BottomCover"
-      - "https://aausmartlab.org/Shells/Component/PCB"
-      - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
+      - "https://aausmartlab.org/Shells/Component/TopCover"
+      - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
+      - "https://aausmartlab.org/Shells/Product/MobilePhone"
 
   - type: list
     id_short: "AllowedMaterials"
@@ -111,4 +112,4 @@ elements:
     id_short: "ResourceReference"
     semantic_id: "https://aausmartlab.org/Semantics/ResourceReference"
     description: "Reference to the physical resource realizing this capability"
-    value: "https://aausmartlab.org/Shells/Resources/BCPCBAssembler_12345678"
+    value: "https://aausmartlab.org/Shells/Resources/PhoneAssembler_12345678"

@@ -560,7 +560,11 @@ test_command = MS.CommandMessage(
     skill_trigger=MS.CommandType.START,
     order_id="ORD-1",
     job_id="TRANS1",
-    parameters=params
+    parameters=params,
+    process_transformation= {
+        "InputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_id"],
+        "OutputTypes": ["https://aausmartlab.org/Shells/Assembly/BottomCover/BottomCover_id"]
+    }
 )
 
 print("Test Command: ", test_command.model_dump_json(indent=2))

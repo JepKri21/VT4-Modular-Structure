@@ -567,6 +567,10 @@ class ProductMatcher:
                 slot_id=candidate.slot_id,
                 actor_names=(candidate.accessible_actors if candidate.accessible_actors else None),
             ))
+        print(
+            f"[product_matcher] scope={resource_shell_id} type={component_type_reference} "
+            f"-> {len(results)} local match(es)"
+        )
         return results
 
     def find_component_location(self, component_id: str):
@@ -600,9 +604,15 @@ class ProductMatcher:
 
         # 2. Get candidates from inventory
         candidates = self.inventory_indexer.find_by_component_type(component_type_reference)
-        #print("[CANDIDATES]",candidates)
 
         no_constraints = not requested_constraints.collections
+        print(
+            f"[product_matcher] looking up type={component_type_reference} "
+            f"constraints={list(requested_constraints.collections)} "
+            f"-> {len(candidates)} indexed candidate(s)"
+        )
+        for c in candidates:
+            print(f"[product_matcher]   - {c.component_id} @ {c.resource_shell_id}")
 
         for candidate in candidates:
 
@@ -610,6 +620,10 @@ class ProductMatcher:
                 # Nothing to evaluate — accept by type alone. Avoids hitting
                 # the AAS server for Properties that the order doesn't care
                 # about (and that may not exist).
+                print(
+                    f"[product_matcher] accept (type-only, no constraints): "
+                    f"{candidate.component_id}"
+                )
                 results.append(
                     MS.ComponentLocation(
                         component_id=candidate.component_id,
@@ -623,13 +637,20 @@ class ProductMatcher:
             properties = (self.property_resolver.get_component_properties(candidate.component_id))
 
             if properties is None:
+                print(
+                    f"[product_matcher] skip {candidate.component_id}: "
+                    f"no AAS Properties available"
+                )
                 continue
 
             # 4. Evaluate constraints
             result_eval = self.constraint_evaluator.evaluate_constraints(requested_constraints,properties)
 
             if result_eval.matches:
-
+                print(
+                    f"[product_matcher] accept {candidate.component_id}: "
+                    f"matched {result_eval.matched_properties}"
+                )
                 results.append(
                     MS.ComponentLocation(
                         component_id=candidate.component_id,
@@ -637,7 +658,17 @@ class ProductMatcher:
                         inventory_name=candidate.inventory_name,
                         slot_id=candidate.slot_id,
                         actor_names=(candidate.accessible_actors if candidate.accessible_actors else None)))
+            else:
+                failures = [f"{f.collection_name}.{f.property_name}({f.reason})"
+                            for f in (result_eval.failed_properties or [])]
+                missing = [f"{m.collection_name}.{m.property_name}({m.reason})"
+                           for m in (result_eval.missing_properties or [])]
+                print(
+                    f"[product_matcher] reject {candidate.component_id}: "
+                    f"failed={failures} missing={missing}"
+                )
 
+        print(f"[product_matcher] -> {len(results)} match(es)")
         return results
     
 

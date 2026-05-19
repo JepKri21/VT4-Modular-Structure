@@ -92,7 +92,7 @@ mqtt_client = MQTTClientResource(BROKER, MQTT_PORT, CLIENT_ID, BASE_TOPIC)
 
 
 resource_inventories = {
-    "Inventory1": 
+    "Inventory_1": 
     {
         "InventorySize": 10,
         "SupportedComponents": 
@@ -385,6 +385,7 @@ class KUKAManipulatorBehavior(StationBehavior):
                     print(f"Requested PCB is not in storage")
                     self.result = MS.Result.INCOMPLETE
                     self.quality = MS.Quality.NA
+                    self.process_transformation["OutputTypes"] = None
 
         else:
             print("This is not a skill of the actor, How did you even get here?")
@@ -398,6 +399,11 @@ class KUKAManipulatorBehavior(StationBehavior):
         print("Finalizing Process and sending result")
 
         if self.skill == "BCPCBAssembly":
+            XPos_element = MS.PropertyElement(id_short="XPos", value=self.XPos, semantic_id="https://aausmartlab.org/Semantics/mm")
+            YPos_element = MS.PropertyElement(id_short="YPos", value=self.YPos, semantic_id="https://aausmartlab.org/Semantics/mm")
+            target_position_element = MS.CollectionElement(id_short="TargetPosition", semantic_id="https://aausmartlab.org/Semantics/TargetPositon", elements=[XPos_element,YPos_element])
+            used_parameters = MS.CollectionElement(id_short="Parameters", semantic_id="https://aausmartlab.org/Semantics/Parameters", elements=[target_position_element])
+
             job_result_message = MS.JobResultMessage(
                 timestamp=datetime.now(),
                 resource_id=CLIENT_ID, 
@@ -408,7 +414,7 @@ class KUKAManipulatorBehavior(StationBehavior):
                 process_transformation=self.process_transformation,
                 result=self.result,
                 quality=self.quality,
-                output_parameters=None
+                output_parameters=used_parameters
             )
 
         elif self.skill == "Handoff":
@@ -427,14 +433,14 @@ class KUKAManipulatorBehavior(StationBehavior):
                 process_transformation=self.process_transformation,
                 result=self.result,
                 quality=self.quality,
-                output_parameters=None
+                output_parameters=used_parameters
             )
         
 
         self.mqtt_client.publish(f"{job_result_suffix}/{self.actor_name}",job_result_message)
         inventory_build = build_inventory(resource_inventories)
         inventory_message = MS.InventoryLevelMessage(timestamp=datetime.now(), resource_id=CLIENT_ID,inventory=inventory_build)
-        mqtt_client.publish(f"{inventory_suffix}", inventory_message)
+        self.mqtt_client.publish(f"{inventory_suffix}", inventory_message)
 
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.COMPLETE)

@@ -1,3 +1,8 @@
+#This should first create the shell and submodels from the yaml files and publish them to the server.
+
+#It should also contain the PackML implementation, aka, this should be the main script for this resource
+
+
 import asyncio
 import time
 import random
@@ -19,7 +24,7 @@ from ClassesAndBuilderMethods.BaSyx_AAS_Generator import yaml_to_instance, yaml_
 
 BROKER = "localhost"
 MQTT_PORT = 1883
-BASE_TOPIC = "AAUSmartLab/ProductionLine1"
+BASE_TOPIC = "AAUSmartLab/ProductionLine1" 
 
 AAS_PORT = "8081"
 SERVER_BASE = f"http://{BROKER}:{AAS_PORT}"  # your server base URL
@@ -56,18 +61,12 @@ controller_ack_suffix = MS.find_by_idshort(suffixes["value"],"ControllerAcknowle
 inventory_suffix = MS.find_by_idshort(suffixes["value"],"InventoryLevelSuffix")["value"]
 
 
-
-builder = yaml_to_instance.load_instance_from_yaml(f"{script_dir}/RetrieveCapabilityOffered.yaml")
+builder = yaml_to_instance.load_instance_from_yaml(f"{script_dir}/AssemblyCapabilityOffered.yaml")
 json_str = json.dumps(builder.get(),cls=basyx.aas.adapter.json.AASToJsonEncoder,indent=2,ensure_ascii=False,)
 result = yaml_to_instance.upload_submodel(json_str, SERVER_BASE)
 print(result)  # "created" or "updated"
 
 builder = yaml_to_instance.load_instance_from_yaml(f"{script_dir}/HandoffCapabilityOffered.yaml")
-json_str = json.dumps(builder.get(),cls=basyx.aas.adapter.json.AASToJsonEncoder,indent=2,ensure_ascii=False,)
-result = yaml_to_instance.upload_submodel(json_str, SERVER_BASE)
-print(result)  # "created" or "updated"
-
-builder = yaml_to_instance.load_instance_from_yaml(f"{script_dir}/StoreCapabilityOffered.yaml")
 json_str = json.dumps(builder.get(),cls=basyx.aas.adapter.json.AASToJsonEncoder,indent=2,ensure_ascii=False,)
 result = yaml_to_instance.upload_submodel(json_str, SERVER_BASE)
 print(result)  # "created" or "updated"
@@ -87,47 +86,42 @@ json_str = json.dumps(builder.get(),cls=basyx.aas.adapter.json.AASToJsonEncoder,
 result = yaml_to_instance.upload_submodel(json_str, SERVER_BASE)
 print(result)  # "created" or "updated"
 
-Actor = "UR5"
+Actor = "KUKAManipulator"
+
+mqtt_client = MQTTClientResource(BROKER, MQTT_PORT, CLIENT_ID, BASE_TOPIC)
+
 
 resource_inventories = {
-    "Inventory1": 
+    "Inventory_1": 
     {
-        "InventorySize": 10,
+        "InventorySize": 20,
         "SupportedComponents": 
         [
-           "https://aausmartlab.org/Shells/Component/BottomCover", 
-           "https://aausmartlab.org/Shells/Component/TopCover"
+           "https://aausmartlab.org/Shells/Component/Fuse"
         ],
         "AccessibleActors" : [Actor],
         "Storage" : 
         {
-            "position1": "https://aausmartlab.org/Shells/Component/TopCover/TopCoverABSBlack-2b7d8fe5-6fba-45a1-b88c-a38f85c947dc",
-            "position2": "",
-            "position3": "",
-            "position4": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover-BC004",
-            "position5": "https://aausmartlab.org/Shells/Component/TopCover/TopCover-TC001",
-            "position6": "https://aausmartlab.org/Shells/Component/TopCover/TopCoverABSBlack-1939d42b-e4f4-4bde-9519-eef6c7e30089",
-            "position7": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_7ef0e4df-1b09-4d0a-9448-14ae51652a52",
-            "position8": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_3e06a1b6-96bf-4b44-abf6-b5e122c50427",
-            "position9": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverABSBlack-771672b9-ba6b-4e44-8a55-3796401462e6",
-            "position10": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverABSBlack-b0a74448-913c-4d86-9158-df551fe0c09b"
-        }
-    },
-    "Inventory2": 
-    {
-        "InventorySize" : 5,
-        "SupportedComponents": 
-        [
-            "https://aausmartlab.org/Shells/Product/MobilePhone"
-        ],   
-        "AccessibleActors" : [Actor],
-        "Storage": 
-        {
-            "position1" : "",
-            "position2" : "",
-            "position3" : "",
-            "position4" : "",
-            "position5" : "",
+            "position1": "",
+            "position2": "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB-3a384db0-1f9a-4496-9364-a19621200979",
+            "position3": "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB-a70fc860-70c2-4132-bd8f-87a275b253e0",
+            "position4": "",
+            "position5": "",
+            "position6": "",
+            "position7": "",
+            "position8": "",
+            "position9": "",
+            "position10": "",
+            "position11": "",
+            "position12": "",
+            "position13": "",
+            "position14": "",
+            "position15": "",
+            "position16": "",
+            "position17": "",
+            "position18": "",
+            "position19": "https://aausmartlab.org/Shells/Component/Fuse/",
+            "position20": ""
         }
     }
 }
@@ -263,11 +257,7 @@ def place_item(inventories, item_url):
 
 
 
-
-mqtt_client = MQTTClientResource(BROKER, MQTT_PORT, CLIENT_ID, BASE_TOPIC)
-
-
-class UR5ManipulatorBehavior(StationBehavior):
+class KUKAManipulatorBehavior(StationBehavior):
 
     def __init__(self, actor_name: str, mqtt_client):
         # Station-specific variables live HERE
@@ -279,13 +269,13 @@ class UR5ManipulatorBehavior(StationBehavior):
         self.quality = None
         self.ideal_cycle_time = None
         self.actual_cycle_time = None
-        self.retrieved_item_component = None
+        self.retrived_item_component = None
         
 
     async def idle(self, machine):
         state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=PackMLState.IDLE)
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
-        print("Resource Is Idle")
+        print("Assembler Is Idle")
 
     async def starting(self, machine):
         state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=PackMLState.STARTING)
@@ -309,17 +299,16 @@ class UR5ManipulatorBehavior(StationBehavior):
                 print(f"Failed to load the parameters with exception {e}")
 
 
-        elif self.skill == "Retrieve":
+        elif self.skill == "BCPCBFuseAssembly":
+
+            if self.parameters is None:
+                raise ValueError("No parameters provided for Assemble skill")
             try:
-                #Loading Retrieve specific parameters
-                print("Retrieve parameters loaded:", self.parameters)
-            except Exception as e:
-                print(f"Failed to load the parameters with exception {e}")
-        
-        elif self.skill == "Store":
-            try:
-                #Loading Store specific parameters
-                print("Store parameters loaded:", self.parameters)
+                # Loading Assemble Parameters
+                self.target_position = self.parameters.get("TargetPosition") or {}
+                self.XPos = self.target_position.get("XPos")
+                self.YPos = self.target_position.get("YPos")
+                print("Assemble parameters loaded:", self.parameters)
             except Exception as e:
                 print(f"Failed to load the parameters with exception {e}")
 
@@ -352,65 +341,80 @@ class UR5ManipulatorBehavior(StationBehavior):
             self.quality = MS.Quality.GOOD
 
             
-        elif self.skill == "Retrieve":
-            product_to_retrive = self.process_transformation["OutputTypes"][0]
-            print(f"Executing Retrieve with product {product_to_retrive}")
-
-            retriveable_locations = (
-                find_positions(inventories=resource_inventories, query=product_to_retrive)
-                if product_to_retrive else []
+        elif self.skill == "BCPCBFuseAssembly":
+            transformation_allowed = False
+            print(f"Executing Assemble to perform this Process Transformation: {self.process_transformation}")
+            print(f"With these parameters: XPos: {self.XPos}, YPos: {self.YPos}")
+            
+            fuse_input = next(
+                (x for x in self.process_transformation["InputTypes"]
+                 if x.startswith("https://aausmartlab.org/Shells/Component/Fuse")),
+                None
             )
 
-            if retriveable_locations:
-                retrieved_item = retriveable_locations[0]  # We just take the first one
-                inventory_name = retrieved_item["inventory"]
-                position = retrieved_item["position"]
-                self.retrieved_item_component = retrieved_item["item"]
-                resource_inventories[inventory_name]["Storage"][position] = ""
-                #Generating cycle times based on parameters
-                self.ideal_cycle_time = 4000
-                self.actual_cycle_time = self.ideal_cycle_time + random.randint(200,800)
-                await asyncio.sleep(self.actual_cycle_time/1000)
-                #Generating result and quality randomly
-                self.result = MS.Result.COMPLETE
-                self.quality = MS.Quality.GOOD
-            else:
-                print(f"[Retrieve] no inventory match for '{product_to_retrive}' — failing job")
-                self.retrieved_item_component = None
-                self.result = MS.Result.INCOMPLETE
-                self.quality = MS.Quality.BAD
-                self.ideal_cycle_time = 0
-                self.actual_cycle_time = 0
+            bottom_cover_pcb_input = next(
+                (x for x in self.process_transformation["InputTypes"]
+                 if x.startswith("https://aausmartlab.org/Shells/Assembly/BottomCoverPCB")),
+                None
+            )
 
+            bottom_cover_pcb_fuse_output = next(
+                (x for x in self.process_transformation["OutputTypes"]
+                 if x.startswith("https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse")),
+                None
+            )
 
-        elif self.skill == "Store":
-            product_to_store = self.process_transformation["InputTypes"][0]
-            print(f"Executing Store with product {product_to_store}")
+            bottom_cover_pcb_fuse_input = next(
+                (x for x in self.process_transformation["InputTypes"]
+                 if x.startswith("https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse")),
+                None
+            )
 
-            #This should automatically find available positions and then place it into one
-            #It also returns the specific inventory and position, but we don't need that right now
-
-            stored_item_position = place_item(resource_inventories, product_to_store)
+            if fuse_input and bottom_cover_pcb_input and bottom_cover_pcb_fuse_output and len(self.process_transformation["InputTypes"]) == 2 and len(self.process_transformation["OutputTypes"]) == 1:
+                print(f"The requested process transformation is supported")
+                transformation_allowed = True
+            elif fuse_input and bottom_cover_pcb_fuse_input and bottom_cover_pcb_fuse_output and len(self.process_transformation["InputTypes"]) == 2 and len(self.process_transformation["OutputTypes"]) == 1: 
+                print(f"The requested process transformation is supported")
+                transformation_allowed = True
             
-            if stored_item_position is not None:
-                #Generating cycle times based on parameters
-                self.ideal_cycle_time = 4000
-                self.actual_cycle_time = self.ideal_cycle_time + random.randint(200,800)
-                await asyncio.sleep(self.actual_cycle_time/1000)
-                #Generating result and quality
-                self.result = MS.Result.COMPLETE
-                self.quality = MS.Quality.GOOD
-                self.product_stored = product_to_store
             else:
+                print(f"The requested {self.process_transformation} process transformation is not supported")
                 self.result = MS.Result.INCOMPLETE
-                self.quality = MS.Quality.BAD
-                self.product_stored = None
-                self.ideal_cycle_time = 0
-                self.actual_cycle_time = 0
-            
+                self.quality = MS.Quality.NA
+                self.process_transformation["OutputTypes"] = None
+
+            if transformation_allowed:
+                retriveable_locations = find_positions(inventories=resource_inventories,query=fuse_input)
+
+                if retriveable_locations:
+                    retrieved_item = retriveable_locations[0]  # We just take the first one
+                    inventory_name = retrieved_item["inventory"]
+                    position = retrieved_item["position"]
+                    self.retrieved_item_component = retrieved_item["item"]
+                    resource_inventories[inventory_name]["Storage"][position] = ""
+                    #Generating cycle times (ms) based on parameters
+                    self.ideal_cycle_time = 8000
+                    self.actual_cycle_time = self.ideal_cycle_time + random.randint(200,1500)
+                    await asyncio.sleep(self.actual_cycle_time/1000)
+                    #Generating result and quality randomly
+                    if random.randint(1,100) > 1:
+                        self.result = MS.Result.COMPLETE
+                        if random.randint(1,100) > 1:
+                            self.quality = MS.Quality.GOOD
+                        else:
+                            self.quality = MS.Quality.BAD
+                    else:
+                        self.result = MS.Result.INCOMPLETE
+                        self.quality = MS.Quality.NA
+
+                else:
+                    print(f"Requested Fuse is not in storage")
+                    self.result = MS.Result.INCOMPLETE
+                    self.quality = MS.Quality.NA
+                    self.process_transformation["OutputTypes"] = None
 
         else:
-            print("How did you even get here?")
+            print("This is not a skill of the actor, How did you even get here?")
             await machine.transition_to(PackMLState.STOPPING)
         
         await machine.transition_to(PackMLState.COMPLETING)
@@ -419,23 +423,15 @@ class UR5ManipulatorBehavior(StationBehavior):
         state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=PackMLState.COMPLETING)
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
         print("Finalizing Process and sending result")
-        
-        if self.skill == "Retrieve":
-            job_result_message = MS.JobResultMessage(
-                timestamp=datetime.now(),
-                resource_id=CLIENT_ID, 
-                order_id=self.command_payload.order_id, 
-                job_id=self.command_payload.job_id, 
-                ideal_cycle_time_ms=self.ideal_cycle_time,
-                actual_cycle_time_ms=self.actual_cycle_time,
-                process_transformation= {"InputTypes": None,
-                                         "OutputTypes": [self.retrieved_item_component]},
-                result=self.result,
-                quality=self.quality,
-                output_parameters=None
-            )
 
-        elif self.skill == "Store":
+        
+
+        if self.skill == "BCPCBFuseAssembly":
+            XPos_element = MS.PropertyElement(id_short="XPos", value=self.XPos, semantic_id="https://aausmartlab.org/Semantics/mm")
+            YPos_element = MS.PropertyElement(id_short="YPos", value=self.YPos, semantic_id="https://aausmartlab.org/Semantics/mm")
+            target_position_element = MS.CollectionElement(id_short="TargetPosition", semantic_id="https://aausmartlab.org/Semantics/TargetPositon", elements=[XPos_element,YPos_element])
+            used_parameters = MS.CollectionElement(id_short="Parameters", semantic_id="https://aausmartlab.org/Semantics/Parameters", elements=[target_position_element])
+
             job_result_message = MS.JobResultMessage(
                 timestamp=datetime.now(),
                 resource_id=CLIENT_ID, 
@@ -443,11 +439,10 @@ class UR5ManipulatorBehavior(StationBehavior):
                 job_id=self.command_payload.job_id, 
                 ideal_cycle_time_ms=self.ideal_cycle_time,
                 actual_cycle_time_ms=self.actual_cycle_time,
-                process_transformation= {"InputTypes": [self.product_stored],
-                                         "OutputTypes": None},
+                process_transformation=self.process_transformation,
                 result=self.result,
                 quality=self.quality,
-                output_parameters=None
+                output_parameters=used_parameters
             )
 
         elif self.skill == "Handoff":
@@ -455,7 +450,7 @@ class UR5ManipulatorBehavior(StationBehavior):
             YPos_element = MS.PropertyElement(id_short="YPos", value=self.YPos, semantic_id="https://aausmartlab.org/Semantics/mm")
             target_position_element = MS.CollectionElement(id_short="TargetPosition", semantic_id="https://aausmartlab.org/Semantics/TargetPositon", elements=[XPos_element,YPos_element])
             used_parameters = MS.CollectionElement(id_short="Parameters", semantic_id="https://aausmartlab.org/Semantics/Parameters", elements=[target_position_element])
-            
+
             job_result_message = MS.JobResultMessage(
                 timestamp=datetime.now(),
                 resource_id=CLIENT_ID, 
@@ -463,7 +458,7 @@ class UR5ManipulatorBehavior(StationBehavior):
                 job_id=self.command_payload.job_id, 
                 ideal_cycle_time_ms=self.ideal_cycle_time,
                 actual_cycle_time_ms=self.actual_cycle_time,
-                process_transformation= self.process_transformation,
+                process_transformation=self.process_transformation,
                 result=self.result,
                 quality=self.quality,
                 output_parameters=used_parameters
@@ -481,16 +476,17 @@ class UR5ManipulatorBehavior(StationBehavior):
     async def resetting(self, machine):
         state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=PackMLState.RESETTING)
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
-        print("Resetting Storage")
+        print("Resetting Assembler")
 
         self.command_payload = None
         self.result = None
         self.quality = None
         self.ideal_cycle_time = None
         self.actual_cycle_time = None
-        self.retrieved_item_component = None
-        self.product_stored = None
         self.process_transformation = None
+        self.XPos = None
+        self.YPos = None
+        self.target_position = None
 
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.IDLE)
@@ -498,7 +494,7 @@ class UR5ManipulatorBehavior(StationBehavior):
     async def stopping(self, machine):
         state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=PackMLState.STOPPING)
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
-        print("Stopping Storage")
+        print("Stopping Assembler")
 
         #Stop command, should maybe just wait like 2 seconds
         
@@ -508,7 +504,7 @@ class UR5ManipulatorBehavior(StationBehavior):
     async def holding(self, machine): 
         state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=PackMLState.HOLDING)
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
-        print("Holding Storage")
+        print("Holding Assembler")
 
         # Why holding? Maybe not relevant at the moment
 
@@ -518,42 +514,41 @@ class UR5ManipulatorBehavior(StationBehavior):
     async def unholding(self, machine): 
         state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=PackMLState.UNHOLDING)
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
-        print("Unholding Storage")
+        print("Unholding Assembler")
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.EXECUTE)
 
     async def suspending(self, machine):
         state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=PackMLState.SUSPENDING)
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
-        print("Suspending Storage")
+        print("Suspending Assembler")
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.SUSPENDED)
 
     async def unsuspending(self, machine):
         state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=PackMLState.UNSUSPENDING)
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
-        print("Unsuspending Storage")
+        print("Unsuspending Assembler")
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.EXECUTE)
 
     async def aborting(self, machine): 
         state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=PackMLState.ABORTING)
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
-        print("Aborting Storage")
+        print("Aborting Assembler")
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.ABORTED)
 
     async def clearing(self, machine): 
         state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=PackMLState.CLEARING)
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
-        print("Clearing Drill")
+        print("Clearing Assembler")
 
         self.command_payload = None
         self.result = None
         self.quality = None
         self.ideal_cycle_time = None
         self.actual_cycle_time = None
-        self.retrieved_item_component = None
 
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.STOPPED)
@@ -563,10 +558,10 @@ class UR5ManipulatorBehavior(StationBehavior):
 # Generating Actors from their behavior
 #=============
 
-ur5_manipulator_behavior = UR5ManipulatorBehavior(Actor,mqtt_client)
-UR5Manipulator = PackMLStateMachine(ur5_manipulator_behavior)
+KR_Agilus_behavior = KUKAManipulatorBehavior(Actor,mqtt_client)
+KR_Agilus = PackMLStateMachine(KR_Agilus_behavior)
 
-StateMachines = [UR5Manipulator]
+StateMachines = [KR_Agilus]
 
 main_loop: asyncio.AbstractEventLoop | None = None
 
@@ -628,30 +623,23 @@ def handle_request(msg: MS.RequestMessage):
 mqtt_client.register_subscriber(command_suffix, MS.CommandMessage,handle_command)
 mqtt_client.register_subscriber(info_request_suffix, MS.RequestMessage,handle_request)
 
-params = {"TargetPosition": {"XPos": 20.0, "YPos": 10.0}}
+params = {"TargetPosition": {"XPos": 80.0, "YPos": 40.0}}
 
 test_command = MS.CommandMessage(
     timestamp=datetime.now(),
     resource_id=CLIENT_ID,
-    skill="Handoff",
+    skill="Assemble",
     actor_name=Actor,
     skill_trigger=MS.CommandType.START,
+    process_transformation={"InputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverPLABlue-264a4570-0bfb-4171-bdf8-5ed087afd73e", "https://aausmartlab.org/Shells/Component/PCB/PCB_213fasd-0bfb-4171-bdf8-5ed087afd73e"],
+                            "OutputTypes": ["https://aausmartlab.org/Shells/Assembly/BottomCoverPCB/BottomCoverPCB-as734bld-0bfb-4171-bdf8-5ed087afd73e"]},
     order_id="ORD-1",
-    job_id="H4ND0FF",
-    parameters=params,
-    process_transformation={
-        "InputTypes": None,
-        "OutputTypes": ["https://aausmartlab.org/Shells/Assembly/BottomCover/BottomCover_id"]
-    }
+    job_id="1xx23",
+    parameters=params
 )
 
 
-print("Test Command: ", test_command.model_dump_json(indent=2))
-
-#test_request = MS.RequestMessage(timestamp=datetime.now(),requested_topic_update="AAUSmartLab/ProductionLine1/Storage_12345678/InventoryLevel",resource_id=CLIENT_ID)
-
-
-#print("Test Request: ", test_request.model_dump_json(indent=2))
+print("Test Command (WILL NOT WORK FOR THIS RESOURCE): ", test_command.model_dump_json(indent=2))
 
 #=============
 #Main loop where the full machine runs
