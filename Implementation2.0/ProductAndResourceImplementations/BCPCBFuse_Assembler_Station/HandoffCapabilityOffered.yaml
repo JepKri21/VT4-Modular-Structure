@@ -158,7 +158,7 @@ elements:
     element_type: "property"
     value_type: "xs:string"
     items:
-      - "https://aausmartlab.org/Shells/Component/BottomCoverPCB"
+      - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
       - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
 
   - type: list

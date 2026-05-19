@@ -1,17 +1,17 @@
 id_short: "Skills"
-id: "https://aausmartlab.org/Shells/Resources/BCPCBFuseAssembler_12345678/Skills"
+id: "https://aausmartlab.org/Shells/Resources/PhoneAssembler_12345678/Skills"
 description: "Submodel of skills and capabilities provided by this resource"
 
 elements:
   - type: collection
-    id_short: "BCPCBFuseAssembly"
+    id_short: "PhoneAssembly"
     semantic_id: "https://aausmartlab.org/Semantics/Skill"
     description: "Name of skill offered by this resource"
 
     elements:
       - type: reference_element
         id_short: "CapabilitySubmodelReference"
-        value: "https://aausmartlab.org/Shells/Resources/BCPCBAssembler_12345678/BCPCBFuseAssemblyCapabilityOffered"
+        value: "https://aausmartlab.org/Shells/Resources/PhoneAssembler_12345678/PhoneAssemblyCapabilityOffered"
 
       - type: list
         id_short: "SkillTriggers"

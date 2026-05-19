@@ -25,16 +25,20 @@ elements:
       - type: collection
         id_short: "TargetPosition"
         elements:
-          - type: property
+          - type: range
             id_short: "XPos"
             value_type: "xs:float"
             semantic_id: "https://aausmartlab.org/Semantics/mm"
-            value: ""
-          - type: property
+            description: "Possible range of X-coordinate position of hole relative to product placement point"
+            min: -50.0
+            max: 50.0
+          - type: range
             id_short: "YPos"
             value_type: "xs:float"
             semantic_id: "https://aausmartlab.org/Semantics/mm"
-            value: ""
+            description: "Possible range of Y-coordinate position of hole relative to product placement point"
+            min: -50.0
+            max: 50.0
 
       - type: multi_language_property
         id_short: "OperationLabel"

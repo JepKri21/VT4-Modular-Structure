@@ -58,7 +58,6 @@ job_result_suffix = MS.find_by_idshort(suffixes["value"],"JobResultSuffix")["val
 info_request_suffix = MS.find_by_idshort(suffixes["value"],"InfoRequestSuffix")["value"]
 resource_ack_suffix = MS.find_by_idshort(suffixes["value"],"ResourceAcknowledgementSuffix")["value"]
 controller_ack_suffix = MS.find_by_idshort(suffixes["value"],"ControllerAcknowledgementSuffix")["value"]
-inventory_suffix = MS.find_by_idshort(suffixes["value"],"InventoryLevelSuffix")["value"]
 
 
 builder = yaml_to_instance.load_instance_from_yaml(f"{script_dir}/AssemblyCapabilityOffered.yaml")
@@ -81,179 +80,9 @@ json_str = json.dumps(builder.get(),cls=basyx.aas.adapter.json.AASToJsonEncoder,
 result = yaml_to_instance.upload_submodel(json_str, SERVER_BASE)
 print(result)  # "created" or "updated"
 
-builder = yaml_to_instance.load_instance_from_yaml(f"{script_dir}/Inventory.yaml")
-json_str = json.dumps(builder.get(),cls=basyx.aas.adapter.json.AASToJsonEncoder,indent=2,ensure_ascii=False,)
-result = yaml_to_instance.upload_submodel(json_str, SERVER_BASE)
-print(result)  # "created" or "updated"
-
 Actor = "KUKAManipulator"
 
 mqtt_client = MQTTClientResource(BROKER, MQTT_PORT, CLIENT_ID, BASE_TOPIC)
-
-
-resource_inventories = {
-    "Inventory_1": 
-    {
-        "InventorySize": 20,
-        "SupportedComponents": 
-        [
-           "https://aausmartlab.org/Shells/Component/Fuse"
-        ],
-        "AccessibleActors" : [Actor],
-        "Storage" : 
-        {
-            "position1": "",
-            "position2": "",
-            "position3": "",
-            "position4": "",
-            "position5": "",
-            "position6": "",
-            "position7": "",
-            "position8": "",
-            "position9": "https://aausmartlab.org/Shells/Component/Fuse/",
-            "position10": "",
-            "position11": "",
-            "position12": "",
-            "position13": "",
-            "position14": "",
-            "position15": "",
-            "position16": "",
-            "position17": "",
-            "position18": "",
-            "position19": "https://aausmartlab.org/Shells/Component/Fuse/",
-            "position20": ""
-        }
-    }
-}
-
-def build_inventory(resource_inventories):
-
-    inventory_models = {}
-
-    for inventory_name, inventory_data in (
-        resource_inventories.items()
-    ):
-
-        # =====================================
-        # Convert storage slots
-        # =====================================
-        storage_models = {}
-
-        for position, component_id in (
-            inventory_data["Storage"].items()
-        ):
-
-            if component_id == "":
-                component_id = None
-
-            storage_models[position] = (
-                MS.InventorySlot(
-                    component_id=component_id
-                )
-            )
-
-        # =====================================
-        # Build InventoryData model
-        # =====================================
-        inventory_models[inventory_name] = (
-            MS.InventoryData(
-                inventory_size=inventory_data[
-                    "InventorySize"
-                ],
-
-                supported_components=inventory_data[
-                    "SupportedComponents"
-                ],
-
-                accessible_actors=inventory_data[
-                    "AccessibleActors"
-                ],
-
-                storage=storage_models
-            )
-        )
-
-    # =========================================
-    # Build final InventoryLevelMessage
-    # =========================================
-    return inventory_models
-
-
-def find_positions(inventories, query):
-    results = []
-
-    for inv_name, inv_data in inventories.items():
-        storage = inv_data.get("Storage", {})
-
-        for position, item in storage.items():
-            if not item:
-                continue
-
-            # Case 1: exact match (specific ID)
-            if item == query:
-                results.append({
-                    "inventory": inv_name,
-                    "position": position,
-                    "item": item
-                })
-
-            # Case 2: type match (base URL)
-            elif item.startswith(query + "/"):
-                results.append({
-                    "inventory": inv_name,
-                    "position": position,
-                    "item": item
-                })
-
-    return results
-
-
-def find_available_slots(inventories, query):
-    results = {}
-
-    # --- Extract base reference ---
-    parts = query.rstrip("/").split("/")
-
-    if "-" in parts[-1]:
-        # Has ID → remove last part
-        base_ref = "/".join(parts[:-1])
-    else:
-        # Already a base reference
-        base_ref = query.rstrip("/")
-
-    # --- Search inventories ---
-    for inv_name, inv_data in inventories.items():
-        supported = inv_data.get("SupportedComponents", [])
-
-        # ✅ Compare full reference, not just name
-        if base_ref not in supported:
-            continue
-
-        storage = inv_data.get("Storage", {})
-
-        free_positions = [
-            pos for pos, val in storage.items() if not val
-        ]
-
-        if free_positions:
-            results[inv_name] = free_positions
-
-    return results
-
-
-def place_item(inventories, item_url):
-    slots = find_available_slots(inventories, item_url)
-
-    for inv_name, positions in slots.items():
-        pos = positions[0]  # take first free slot
-        inventories[inv_name]["Storage"][pos] = item_url
-
-        return {
-            "inventory": inv_name,
-            "position": pos
-        }
-
-    return None  # no space available
 
 
 
@@ -299,7 +128,7 @@ class KUKAManipulatorBehavior(StationBehavior):
                 print(f"Failed to load the parameters with exception {e}")
 
 
-        elif self.skill == "BCPCBFuseAssembly":
+        elif self.skill == "PhoneAssembly":
 
             if self.parameters is None:
                 raise ValueError("No parameters provided for Assemble skill")
@@ -341,26 +170,20 @@ class KUKAManipulatorBehavior(StationBehavior):
             self.quality = MS.Quality.GOOD
 
             
-        elif self.skill == "BCPCBFuseAssembly":
+        elif self.skill == "PhoneAssembly":
             transformation_allowed = False
             print(f"Executing Assemble to perform this Process Transformation: {self.process_transformation}")
             print(f"With these parameters: XPos: {self.XPos}, YPos: {self.YPos}")
             
-            fuse_input = next(
+            top_cover_input = next(
                 (x for x in self.process_transformation["InputTypes"]
-                 if x.startswith("https://aausmartlab.org/Shells/Component/Fuse")),
+                 if x.startswith("https://aausmartlab.org/Shells/Component/TopCover")),
                 None
             )
 
-            bottom_cover_pcb_input = next(
-                (x for x in self.process_transformation["InputTypes"]
-                 if x.startswith("https://aausmartlab.org/Shells/Component/BottomCoverPCB")),
-                None
-            )
-
-            bottom_cover_pcb_fuse_output = next(
+            phone_output = next(
                 (x for x in self.process_transformation["OutputTypes"]
-                 if x.startswith("https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse")),
+                 if x.startswith("https://aausmartlab.org/Shells/Product/MobilePhone")),
                 None
             )
 
@@ -370,10 +193,7 @@ class KUKAManipulatorBehavior(StationBehavior):
                 None
             )
 
-            if fuse_input and bottom_cover_pcb_input and bottom_cover_pcb_fuse_output and len(self.process_transformation["InputTypes"]) == 2 and len(self.process_transformation["OutputTypes"]) == 1:
-                print(f"The requested process transformation is supported")
-                transformation_allowed = True
-            elif fuse_input and bottom_cover_pcb_fuse_input and bottom_cover_pcb_fuse_output and len(self.process_transformation["InputTypes"]) == 2 and len(self.process_transformation["OutputTypes"]) == 1: 
+            if top_cover_input and bottom_cover_pcb_fuse_input and phone_output and len(self.process_transformation["InputTypes"]) == 2 and len(self.process_transformation["OutputTypes"]) == 1:
                 print(f"The requested process transformation is supported")
                 transformation_allowed = True
             
@@ -384,24 +204,14 @@ class KUKAManipulatorBehavior(StationBehavior):
                 self.process_transformation["OutputTypes"] = None
 
             if transformation_allowed:
-                retriveable_locations = find_positions(inventories=resource_inventories,query=fuse_input)
-
-                if retriveable_locations:
-                    retrieved_item = retriveable_locations[0]  # We just take the first one
-                    inventory_name = retrieved_item["inventory"]
-                    position = retrieved_item["position"]
-                    self.retrieved_item_component = retrieved_item["item"]
-                    resource_inventories[inventory_name]["Storage"][position] = ""
-                    #Generating cycle times (ms) based on parameters
-                    self.ideal_cycle_time = 8000
-                    self.actual_cycle_time = self.ideal_cycle_time + random.randint(200,1500)
-                    await asyncio.sleep(self.actual_cycle_time/1000)
-                    #Generating result and quality randomly
-                    if random.randint(1,100) > 1:
-                        self.result = MS.Result.COMPLETE
-                        if random.randint(1,10) > 1:
-                            self.quality = MS.Quality.GOOD
-
+                self.ideal_cycle_time = 8000
+                self.actual_cycle_time = self.ideal_cycle_time + random.randint(200,1500)
+                await asyncio.sleep(self.actual_cycle_time/1000)
+                #Generating result and quality randomly
+                if random.randint(1,100) > 1:
+                    self.result = MS.Result.COMPLETE
+                    if random.randint(1,10) > 1:
+                        self.quality = MS.Quality.GOOD
                 else: 
                     print(f"Requested Fuse is not in storage")
                     self.result = MS.Result.INCOMPLETE
@@ -421,7 +231,7 @@ class KUKAManipulatorBehavior(StationBehavior):
 
         
 
-        if self.skill == "BCPCBFuseAssembly":
+        if self.skill == "PhoneAssembly":
             XPos_element = MS.PropertyElement(id_short="XPos", value=self.XPos, semantic_id="https://aausmartlab.org/Semantics/mm")
             YPos_element = MS.PropertyElement(id_short="YPos", value=self.YPos, semantic_id="https://aausmartlab.org/Semantics/mm")
             target_position_element = MS.CollectionElement(id_short="TargetPosition", semantic_id="https://aausmartlab.org/Semantics/TargetPositon", elements=[XPos_element,YPos_element])
@@ -461,9 +271,6 @@ class KUKAManipulatorBehavior(StationBehavior):
         
 
         self.mqtt_client.publish(f"{job_result_suffix}/{self.actor_name}",job_result_message)
-        inventory_build = build_inventory(resource_inventories)
-        inventory_message = MS.InventoryLevelMessage(timestamp=datetime.now(), resource_id=CLIENT_ID,inventory=inventory_build)
-        self.mqtt_client.publish(f"{inventory_suffix}", inventory_message)
 
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.COMPLETE)
@@ -594,16 +401,7 @@ def handle_request(msg: MS.RequestMessage):
 
         for StateMachine in StateMachines:
             state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=CLIENT_ID, state=StateMachine.state)
-            mqtt_client.publish(f"{state_suffix}/{StateMachine.behavior.actor_name}", state_message)
-            
-
-    #Checking if the request is for the inventory level
-    elif inventory_suffix in elements:
-        #We could also send a list of all unique ids in the storage, allowing the controller to at least see and choose a specific one
-        inventory_build = build_inventory(resource_inventories)
-        inventory_message = MS.InventoryLevelMessage(timestamp=datetime.now(), resource_id=CLIENT_ID,inventory=inventory_build)
-        mqtt_client.publish(f"{inventory_suffix}", inventory_message)
-        
+            mqtt_client.publish(f"{state_suffix}/{StateMachine.behavior.actor_name}", state_message)  
 
     else:
         print("Unable to find the requested topic, we are not yet sending an error message back")

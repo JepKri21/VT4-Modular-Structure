@@ -440,7 +440,7 @@ class KUKAManipulatorBehavior(StationBehavior):
         self.mqtt_client.publish(f"{job_result_suffix}/{self.actor_name}",job_result_message)
         inventory_build = build_inventory(resource_inventories)
         inventory_message = MS.InventoryLevelMessage(timestamp=datetime.now(), resource_id=CLIENT_ID,inventory=inventory_build)
-        mqtt_client.publish(f"{inventory_suffix}", inventory_message)
+        self.mqtt_client.publish(f"{inventory_suffix}", inventory_message)
 
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.COMPLETE)
