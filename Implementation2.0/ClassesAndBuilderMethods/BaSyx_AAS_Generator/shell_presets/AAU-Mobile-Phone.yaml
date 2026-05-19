@@ -65,8 +65,7 @@ submodels:
                   - "https://aausmartlab.org/Shells/Component/TopCover"
               OutputTypes:
                 ComponentTypeReference:
-                  - "https://aausmartlab.org/Shells/Configuration/MobilePhone"
+                  - "https://aausmartlab.org/Shells/Product/MobilePhone"
           SupportedComponents:
             - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
             - "https://aausmartlab.org/Shells/Component/TopCover"
-
