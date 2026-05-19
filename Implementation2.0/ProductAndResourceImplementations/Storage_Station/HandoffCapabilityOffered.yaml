@@ -70,6 +70,7 @@ elements:
                 value_type: "xs:string"
                 items:
                   - "https://aausmartlab.org/Shells/Component/BottomCover"
+
           - type: collection
             id_short: "OutputTypes"
             semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation/OutputTypes"
@@ -211,6 +212,37 @@ elements:
                 value_type: "xs:string"
                 items:
                   - null
+      - type: collection
+        id_short: "RecieveMobilePhone"
+        semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation"
+        description: "A single mapping between component inputs and resulting output"
+        elements:
+          - type: collection
+            id_short: "InputTypes"
+            semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation/InputTypes"
+            description: "A list of the components or assemblies that have to be used in the transformation"
+            elements:
+              - type: list
+                id_short: "ComponentTypeReference"
+                semantic_id: "https://aausmartlab.org/Semantics/ComponentTypeReference"
+                description: "A list of component type references"
+                element_type: "property"
+                value_type: "xs:string"
+                items:
+                  - "https://aausmartlab.org/Shells/Product/MobilePhone"
+          - type: collection
+            id_short: "OutputTypes"
+            semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation/OutputTypes"
+            description: "A list of the components or assemblies resulting from the transformation of the input types"
+            elements:
+              - type: list
+                id_short: "ComponentTypeReference"
+                semantic_id: "https://aausmartlab.org/Semantics/ComponentTypeReference"
+                description: "A list of component type references"
+                element_type: "property"
+                value_type: "xs:string"
+                items:
+                  - null
 
       - type: collection
         id_short: "ProvideBottomCoverPCB"
@@ -230,6 +262,7 @@ elements:
                 value_type: "xs:string"
                 items:
                   - null
+
           - type: collection
             id_short: "OutputTypes"
             semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation/OutputTypes"
@@ -243,6 +276,38 @@ elements:
                 value_type: "xs:string"
                 items:
                   - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
+      - type: collection
+        id_short: "ProvideMobilePhone"
+        semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation"
+        description: "A single mapping between component inputs and resulting output"
+        elements:
+          - type: collection
+            id_short: "InputTypes"
+            semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation/InputTypes"
+            description: "A list of the components or assemblies that have to be used in the transformation"
+            elements:
+              - type: list
+                id_short: "ComponentTypeReference"
+                semantic_id: "https://aausmartlab.org/Semantics/ComponentTypeReference"
+                description: "A list of component type references"
+                element_type: "property"
+                value_type: "xs:string"
+                items:
+                  - null
+
+          - type: collection
+            id_short: "OutputTypes"
+            semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation/OutputTypes"
+            description: "A list of the components or assemblies resulting from the transformation of the input types"
+            elements:
+              - type: list
+                id_short: "ComponentTypeReference"
+                semantic_id: "https://aausmartlab.org/Semantics/ComponentTypeReference"
+                description: "A list of component type references"
+                element_type: "property"
+                value_type: "xs:string"
+                items:
+                  - "https://aausmartlab.org/Shells/Product/MobilePhone"
 
   - type: list
     id_short: "SupportedComponents"
@@ -254,6 +319,7 @@ elements:
       - "https://aausmartlab.org/Shells/Component/BottomCover"
       - "https://aausmartlab.org/Shells/Component/TopCover"
       - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
+      - "https://aausmartlab.org/Shells/Product/MobilePhone"
 
   - type: list
     id_short: "AllowedMaterials"

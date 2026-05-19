@@ -101,12 +101,12 @@ resource_inventories = {
         "AccessibleActors" : [Actor],
         "Storage" : 
         {
-            "position1": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover-BC001",
-            "position2": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover-BC002",
-            "position3": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverPLABlue-264a4570-0bfb-4171-bdf8-5ed087afd73e",
+            "position1": "https://aausmartlab.org/Shells/Component/TopCover/TopCoverABSBlack-2b7d8fe5-6fba-45a1-b88c-a38f85c947dc",
+            "position2": "",
+            "position3": "",
             "position4": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover-BC004",
             "position5": "https://aausmartlab.org/Shells/Component/TopCover/TopCover-TC001",
-            "position6": "https://aausmartlab.org/Shells/Component/TopCover/TopCover-TC002",
+            "position6": "https://aausmartlab.org/Shells/Component/TopCover/TopCoverABSBlack-1939d42b-e4f4-4bde-9519-eef6c7e30089",
             "position7": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_7ef0e4df-1b09-4d0a-9448-14ae51652a52",
             "position8": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_3e06a1b6-96bf-4b44-abf6-b5e122c50427",
             "position9": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverABSBlack-771672b9-ba6b-4e44-8a55-3796401462e6",
@@ -118,12 +118,12 @@ resource_inventories = {
         "InventorySize" : 5,
         "SupportedComponents": 
         [
-            "https://aausmartlab.org/Shells/Assembly/Bottom_Cover_Drilled"
+            "https://aausmartlab.org/Shells/Product/MobilePhone"
         ],   
         "AccessibleActors" : [Actor],
         "Storage": 
         {
-            "position1" : "https://aausmartlab.org/Shells/Assembly/Bottom_Cover_Drilled/Bottom_Cover_Drilled-BCD001",
+            "position1" : "",
             "position2" : "",
             "position3" : "",
             "position4" : "",

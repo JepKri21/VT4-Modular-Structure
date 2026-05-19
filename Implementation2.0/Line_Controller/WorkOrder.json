@@ -1,9 +1,9 @@
 {
-  "Timestamp": "2026-05-19T09:45:33.579813",
-  "OrderId": "ORD-73C87B4B",
+  "Timestamp": "2026-05-19T12:05:14.249707",
+  "OrderId": "ORD-99456117",
   "Priority": 0,
-  "IssueDate": "2026-05-19T09:45:33.579815",
-  "ProductReference": "https://aausmartlab.org/Shells/Configuration/MobilePhone/AAUMobilePhoneV1_a579e619-5c7a-4c0c-93f9-fca24dab6bef-ORD-73C87B4B",
+  "IssueDate": "2026-05-19T12:05:14.249710",
+  "ProductReference": "https://aausmartlab.org/Shells/Product/MobilePhone/AAUMobilePhoneV1_f5adce0a-12c1-4ed6-8618-9d21517d26c4-ORD-99456117",
   "Ingredients": {
     "BottomCoverABSBlack": {
       "ComponentReference": "",
@@ -14,7 +14,7 @@
       "ComponentTypeReference": "https://aausmartlab.org/Shells/Component/PCB"
     },
     "BottomCoverPCB": {
-      "ComponentReference": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB/BottomCoverPCB_42c3a0fc-40d5-426a-a652-77edc7459174-ORD-73C87B4B",
+      "ComponentReference": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB/BottomCoverPCB_73fef249-9393-423b-81cf-e8948b58a862-ORD-99456117",
       "ComponentTypeReference": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
     },
     "Fuse16ASB": {
@@ -26,7 +26,7 @@
       "ComponentTypeReference": "https://aausmartlab.org/Shells/Component/Fuse"
     },
     "BottomCoverPCBFuse": {
-      "ComponentReference": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse/BottomCoverPCBFuse_12a33fb8-89d6-43bf-b1ed-cbb56508a3a7-ORD-73C87B4B",
+      "ComponentReference": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse/BottomCoverPCBFuse_f808f172-b260-4485-822f-a69698acb75e-ORD-99456117",
       "ComponentTypeReference": "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
     },
     "TopCoverABSBlack": {
@@ -34,8 +34,8 @@
       "ComponentTypeReference": "https://aausmartlab.org/Shells/Component/TopCover"
     },
     "AAUMobilePhoneV1": {
-      "ComponentReference": "https://aausmartlab.org/Shells/Configuration/MobilePhone/AAUMobilePhoneV1_a579e619-5c7a-4c0c-93f9-fca24dab6bef-ORD-73C87B4B",
-      "ComponentTypeReference": "https://aausmartlab.org/Shells/Configuration/MobilePhone"
+      "ComponentReference": "https://aausmartlab.org/Shells/Product/MobilePhone/AAUMobilePhoneV1_f5adce0a-12c1-4ed6-8618-9d21517d26c4-ORD-99456117",
+      "ComponentTypeReference": "https://aausmartlab.org/Shells/Product/MobilePhone"
     }
   },
   "Properties": {
@@ -92,16 +92,6 @@
           "value": 45
         }
       },
-      "ElectricalProperties": {
-        "VoltageRating": {
-          "semanticId": "https://aausmartlab.org/Semantics/VoltageRating",
-          "value": 250
-        },
-        "CurrentRating": {
-          "semanticId": "https://aausmartlab.org/Semantics/CurrentRating",
-          "value": 16
-        }
-      },
       "MaterialProperties": {
         "Material": {
           "semanticId": "https://aausmartlab.org/Semantics/Material",
@@ -110,6 +100,16 @@
         "Color": {
           "semanticId": "https://aausmartlab.org/Semantics/Color",
           "value": "Green"
+        }
+      },
+      "ElectricalProperties": {
+        "VoltageRating": {
+          "semanticId": "https://aausmartlab.org/Semantics/VoltageRating",
+          "value": 250
+        },
+        "CurrentRating": {
+          "semanticId": "https://aausmartlab.org/Semantics/CurrentRating",
+          "value": 16
         }
       }
     },
@@ -133,6 +133,16 @@
           "value": 3.2
         }
       },
+      "MaterialProperties": {
+        "Material": {
+          "semanticId": "https://aausmartlab.org/Semantics/Material",
+          "value": "Glass"
+        },
+        "Color": {
+          "semanticId": "https://aausmartlab.org/Semantics/Color",
+          "value": "Clear"
+        }
+      },
       "ElectricalProperties": {
         "VoltageRating": {
           "semanticId": "https://aausmartlab.org/Semantics/VoltageRating",
@@ -145,16 +155,6 @@
         "Type": {
           "semanticId": "https://aausmartlab.org/Semantics/ElectricalType",
           "value": "slow-blow"
-        }
-      },
-      "MaterialProperties": {
-        "Material": {
-          "semanticId": "https://aausmartlab.org/Semantics/Material",
-          "value": "Glass"
-        },
-        "Color": {
-          "semanticId": "https://aausmartlab.org/Semantics/Color",
-          "value": "Clear"
         }
       }
     },
@@ -177,6 +177,16 @@
           "value": 3.2
         }
       },
+      "MaterialProperties": {
+        "Material": {
+          "semanticId": "https://aausmartlab.org/Semantics/Material",
+          "value": "Glass"
+        },
+        "Color": {
+          "semanticId": "https://aausmartlab.org/Semantics/Color",
+          "value": "Clear"
+        }
+      },
       "ElectricalProperties": {
         "VoltageRating": {
           "semanticId": "https://aausmartlab.org/Semantics/VoltageRating",
@@ -189,16 +199,6 @@
         "Type": {
           "semanticId": "https://aausmartlab.org/Semantics/ElectricalType",
           "value": "slow-blow"
-        }
-      },
-      "MaterialProperties": {
-        "Material": {
-          "semanticId": "https://aausmartlab.org/Semantics/Material",
-          "value": "Glass"
-        },
-        "Color": {
-          "semanticId": "https://aausmartlab.org/Semantics/Color",
-          "value": "Clear"
         }
       }
     },

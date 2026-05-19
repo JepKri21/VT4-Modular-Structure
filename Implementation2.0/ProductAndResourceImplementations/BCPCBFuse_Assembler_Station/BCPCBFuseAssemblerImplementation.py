@@ -103,14 +103,14 @@ resource_inventories = {
         "Storage" : 
         {
             "position1": "",
-            "position2": "",
-            "position3": "",
+            "position2": "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB-3a384db0-1f9a-4496-9364-a19621200979",
+            "position3": "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB-a70fc860-70c2-4132-bd8f-87a275b253e0",
             "position4": "",
             "position5": "",
             "position6": "",
             "position7": "",
             "position8": "",
-            "position9": "https://aausmartlab.org/Shells/Component/Fuse/",
+            "position9": "",
             "position10": "",
             "position11": "",
             "position12": "",
@@ -354,7 +354,7 @@ class KUKAManipulatorBehavior(StationBehavior):
 
             bottom_cover_pcb_input = next(
                 (x for x in self.process_transformation["InputTypes"]
-                 if x.startswith("https://aausmartlab.org/Shells/Component/BottomCoverPCB")),
+                 if x.startswith("https://aausmartlab.org/Shells/Assembly/BottomCoverPCB")),
                 None
             )
 
@@ -399,10 +399,15 @@ class KUKAManipulatorBehavior(StationBehavior):
                     #Generating result and quality randomly
                     if random.randint(1,100) > 1:
                         self.result = MS.Result.COMPLETE
-                        if random.randint(1,10) > 1:
+                        if random.randint(1,100) > 1:
                             self.quality = MS.Quality.GOOD
+                        else:
+                            self.quality = MS.Quality.BAD
+                    else:
+                        self.result = MS.Result.INCOMPLETE
+                        self.quality = MS.Quality.NA
 
-                else: 
+                else:
                     print(f"Requested Fuse is not in storage")
                     self.result = MS.Result.INCOMPLETE
                     self.quality = MS.Quality.NA

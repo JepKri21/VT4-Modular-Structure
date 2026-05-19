@@ -443,10 +443,10 @@ def build_workorder(
         # ── Step 2: process BOP steps ───────────────────────────────────────
         if shell_type == "final_product_shell":
             level_iri_template = (
-                f"https://aausmartlab.org/Shells/Configuration/{asset_type}/{asset_name}"
+                f"https://aausmartlab.org/Shells/Product/{asset_type}/{asset_name}"
             )
             type_iri_template = (
-                f"https://aausmartlab.org/Shells/Configuration/{asset_type}"
+                f"https://aausmartlab.org/Shells/Product/{asset_type}"
             )
         else:
             level_iri_template = (

@@ -210,13 +210,18 @@ class KUKAManipulatorBehavior(StationBehavior):
                 #Generating result and quality randomly
                 if random.randint(1,100) > 1:
                     self.result = MS.Result.COMPLETE
-                    if random.randint(1,10) > 1:
+                    if random.randint(1,100) > 1:
                         self.quality = MS.Quality.GOOD
-                else: 
-                    print(f"Requested Fuse is not in storage")
+                    else:
+                            self.quality = MS.Quality.BAD
+                else:
                     self.result = MS.Result.INCOMPLETE
                     self.quality = MS.Quality.NA
-                    self.process_transformation["OutputTypes"] = None
+            else: 
+                print(f"Requested Fuse is not in storage")
+                self.result = MS.Result.INCOMPLETE
+                self.quality = MS.Quality.NA
+                self.process_transformation["OutputTypes"] = None
 
         else:
             print("This is not a skill of the actor, How did you even get here?")

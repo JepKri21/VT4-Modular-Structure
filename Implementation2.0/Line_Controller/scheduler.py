@@ -472,6 +472,46 @@ class Scheduler:
             )
             return plan, iris, reservations
 
+        # Case B2: held by a non-shuttle actor with Handoff capability
+        # (e.g. an upstream process resource that just produced this part).
+        # Pick a shuttle, handoff from the holder to the shuttle, transport,
+        # then handoff to target.
+        if holder is not None:
+            holder_topic, holder_actor = holder
+            holder_iri = self._iri_for_topic(holder_topic)
+            if holder_iri and self.rm.has_handoff(holder_iri):
+                source = ResourceEndpoint(
+                    resource_id=holder_topic,
+                    actor_name=holder_actor,
+                    has_handoff=True,
+                )
+                shuttle, shuttle_iri = self._pick_shuttle(
+                    component_ref,
+                    material=material,
+                    _target_iri=target_iri,
+                    _storage_iri=holder_iri,
+                )
+                iris[holder_topic] = holder_iri
+                iris[shuttle.resource_id] = shuttle_iri
+                reservations.append((shuttle.resource_id, shuttle.actor_name))
+                release_skills = release_sequence_for(
+                    source, component_ref, shell_iri=holder_iri, rm=self.rm
+                )
+                print(
+                    f"[plan] picking up '{ingredient_name}' from "
+                    f"{source.resource_id}/{source.actor_name} (release={release_skills})"
+                )
+                plan = self.planner.plan(
+                    bop_step_id=bop_step_id,
+                    order_id=order_id,
+                    component_reference=component_ref,
+                    current_location=source,
+                    target=target,
+                    shuttle=shuttle,
+                    release_skills=release_skills,
+                )
+                return plan, iris, reservations
+
         # Case C: classic — fetch from storage.
         storage, storage_iri, picked_instance = self._resolve_storage_for(
             component_ref, ingredient_name=ingredient_name
@@ -543,6 +583,7 @@ class Scheduler:
 
         if result.result == MS.Result.COMPLETE:
             self._apply_output_traceability(handler, info, result)
+            self._apply_bop_cargo_transformation(info, result)
             handler.update_step(bop["step_id"], StepStates.COMPLETED)
             print(f"[ok]  BoP step {bop['step_id']} -> COMPLETED")
         else:
@@ -746,6 +787,43 @@ class Scheduler:
 
         return {"InputTypes": input_iris, "OutputTypes": output_iris}
 
+    def _apply_bop_cargo_transformation(
+        self,
+        info: dict,
+        result: MS.JobResultMessage,
+    ) -> None:
+        """Reflect the BoP's input→output transformation in the cargo ledger.
+
+        After a transforming BoP step (e.g. Assemble: BottomCover + PCB →
+        BottomCoverPCB) completes, any actor still carrying one of the
+        consumed input IRIs should now carry the output IRI instead — the
+        physical part *is* the output now. Without this, the next BoP step
+        would still see the old input on the target and fail to find the
+        output anywhere on the line.
+
+        Uses the JobResult's process_transformation if present (station's
+        authoritative answer), else falls back to the step's declared
+        ProcessTransformation. No-op if there's no output IRI or if input
+        and output are the same.
+        """
+        process_t = (result.process_transformation
+                     or info.get("ProcessTransformation")
+                     or {})
+        input_iris = {i for i in (process_t.get("InputTypes") or []) if i}
+        output_iris = [o for o in (process_t.get("OutputTypes") or []) if o]
+        if not output_iris or not input_iris:
+            return
+        output_iri = output_iris[0]
+        if output_iri in input_iris and len(input_iris) == 1:
+            return  # identity transformation (e.g. Drilling)
+        for resource_id, actor_name, cargo in list(self.occupancy.all_cargo()):
+            if cargo in input_iris and cargo != output_iri:
+                self.occupancy.set_cargo(resource_id, actor_name, output_iri)
+                print(
+                    f"[cargo]     {resource_id}/{actor_name}: "
+                    f"{cargo} -> {output_iri} (transformation)"
+                )
+
     def _apply_output_traceability(
         self,
         handler: WorkOrderHandler,
@@ -861,6 +939,13 @@ class Scheduler:
             has_handoff=self.rm.has_handoff(storage_iri),
         )
         return endpoint, storage_iri, picked_instance
+
+    def _iri_for_topic(self, topic_id: str) -> str | None:
+        """Reverse-lookup the shell IRI for a known resource topic id."""
+        for iri in self.rm.resource_shell_ids:
+            if ResourceManager.topic_id_for_iri(iri) == topic_id:
+                return iri
+        return None
 
     def _find_shuttle_holding(
         self,
