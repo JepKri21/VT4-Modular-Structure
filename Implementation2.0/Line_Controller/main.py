@@ -77,7 +77,8 @@ RESOURCE_URL = "https://aausmartlab.org/Shells/Resources"
 SCRIPT_DIR = Path(__file__).resolve().parent
 # WORKORDER_PATH = SCRIPT_DIR / "WorkOrderExampleComplex.json"
 # WORKORDER_PATH = SCRIPT_DIR / "WorkOrderExampleComplex-Jeppes_Bærbar.json"
-WORKORDER_PATH = SCRIPT_DIR / "CorrectWorkorder.json"
+# WORKORDER_PATH = SCRIPT_DIR / "CorrectWorkorder.json"
+WORKORDER_PATH = SCRIPT_DIR / "WorkOrder.json"
 # The ProductionLine shell on the AAS server is the source of truth for the
 # line configuration. The local LineConfiguration.json is no longer read.
 LINE_SHELL_PREFIX = "https://aausmartlab.org/Shells/ProductionLine/"

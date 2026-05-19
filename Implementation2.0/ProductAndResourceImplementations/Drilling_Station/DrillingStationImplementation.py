@@ -464,7 +464,11 @@ test_command = MS.CommandMessage(
     skill_trigger=MS.CommandType.START,
     order_id="ORD-12345",
     job_id="Drilling_2x2",
-    parameters=params
+    parameters=params,
+    process_transformation={
+        "InputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_id"],
+        "OutputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_id"]
+    }
 )
 
 print("Test Command: ", test_command.model_dump_json(indent=2))
