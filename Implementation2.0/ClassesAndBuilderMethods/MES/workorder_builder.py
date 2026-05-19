@@ -25,6 +25,7 @@ import basyx_client
 log = logging.getLogger(__name__)
 
 PRESETS_DIR = Path(__file__).parent.parent / "BaSyx_AAS_Generator" / "shell_presets"
+SHELL_TEMPLATES_DIR = Path(__file__).parent.parent / "BaSyx_AAS_Generator" / "shell_templates"
 
 # Maps the last IRI segment (asset_name) to a preset file name
 ASSET_NAME_TO_PRESET: dict[str, str] = {
@@ -201,6 +202,26 @@ def _load_preset(name: str) -> dict:
     path = PRESETS_DIR / f"{name}.yaml"
     with open(path, encoding="utf-8") as f:
         return yaml.safe_load(f)
+
+
+def _type_iri_base_from_shell_template(shell_type: str) -> str:
+    """Read id_pattern from the shell template and return the base up to /{asset_type}.
+
+    e.g. id_pattern "…/Shells/Product/{asset_type}/{asset_name}_{uuid}"
+         → "…/Shells/Product/{asset_type}"
+
+    The {asset_type} token is left in place so the caller can substitute it.
+    Returns "" if the template file is missing or has no id_pattern.
+    """
+    path = SHELL_TEMPLATES_DIR / f"{shell_type}.yaml"
+    try:
+        with open(path, encoding="utf-8") as f:
+            tmpl = yaml.safe_load(f)
+        id_pattern = tmpl.get("id_pattern", "")
+        # Strip everything from /{asset_name} onward.
+        return re.sub(r"/\{asset_name\}.*$", "", id_pattern)
+    except Exception:
+        return ""
 
 
 _UUID_RE = re.compile(
@@ -441,20 +462,9 @@ def build_workorder(
                 input_ids.append(ing_id)
 
         # ── Step 2: process BOP steps ───────────────────────────────────────
-        if shell_type == "final_product_shell":
-            level_iri_template = (
-                f"https://aausmartlab.org/Shells/Configuration/{asset_type}/{asset_name}"
-            )
-            type_iri_template = (
-                f"https://aausmartlab.org/Shells/Configuration/{asset_type}"
-            )
-        else:
-            level_iri_template = (
-                f"https://aausmartlab.org/Shells/Assembly/{asset_type}/{asset_name}"
-            )
-            type_iri_template = (
-                f"https://aausmartlab.org/Shells/Assembly/{asset_type}"
-            )
+        iri_base = _type_iri_base_from_shell_template(shell_type)
+        type_iri_template = iri_base.replace("{asset_type}", asset_type)
+        level_iri_template = f"{type_iri_template}/{asset_name}"
 
         instance_iri = shell_iris.get(asset_name, level_iri_template)
 

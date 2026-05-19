@@ -31,6 +31,13 @@ elements:
             cardinality: "ZeroToOne"
             reference_type: "model"
 
+          - type: reference_element
+            id_short: "SkillReference"
+            semantic_id: "https://aausmartlab.org/Semantics/SkillReference"
+            description: "Reference to the specific skill on the resource that executed this process — identifies the concrete implementation used"
+            cardinality: "ZeroToOne"
+            reference_type: "model"
+
           - type: property
             id_short: "PerformedBy"
             value_type: "xs:string"
