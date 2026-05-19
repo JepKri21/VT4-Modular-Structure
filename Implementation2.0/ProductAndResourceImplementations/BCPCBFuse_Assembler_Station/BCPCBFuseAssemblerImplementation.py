@@ -94,10 +94,10 @@ mqtt_client = MQTTClientResource(BROKER, MQTT_PORT, CLIENT_ID, BASE_TOPIC)
 resource_inventories = {
     "Inventory_1": 
     {
-        "InventorySize": 10,
+        "InventorySize": 20,
         "SupportedComponents": 
         [
-           "https://aausmartlab.org/Shells/Component/PCB"
+           "https://aausmartlab.org/Shells/Component/Fuse"
         ],
         "AccessibleActors" : [Actor],
         "Storage" : 
@@ -110,8 +110,18 @@ resource_inventories = {
             "position6": "",
             "position7": "",
             "position8": "",
-            "position9": "https://aausmartlab.org/Shells/Component/PCB/PCBFuseBoxA-a30d0e20-d9c7-4f66-a2d8-0045ac564a1c",
-            "position10": ""
+            "position9": "https://aausmartlab.org/Shells/Component/Fuse/",
+            "position10": "",
+            "position11": "",
+            "position12": "",
+            "position13": "",
+            "position14": "",
+            "position15": "",
+            "position16": "",
+            "position17": "",
+            "position18": "",
+            "position19": "https://aausmartlab.org/Shells/Component/Fuse/",
+            "position20": ""
         }
     }
 }
@@ -289,7 +299,7 @@ class KUKAManipulatorBehavior(StationBehavior):
                 print(f"Failed to load the parameters with exception {e}")
 
 
-        elif self.skill == "BCPCBAssembly":
+        elif self.skill == "BCPCBFuseAssembly":
 
             if self.parameters is None:
                 raise ValueError("No parameters provided for Assemble skill")
@@ -331,39 +341,50 @@ class KUKAManipulatorBehavior(StationBehavior):
             self.quality = MS.Quality.GOOD
 
             
-        elif self.skill == "BCPCBAssembly":
+        elif self.skill == "BCPCBFuseAssembly":
             transformation_allowed = False
             print(f"Executing Assemble to perform this Process Transformation: {self.process_transformation}")
             print(f"With these parameters: XPos: {self.XPos}, YPos: {self.YPos}")
             
-            pcb_input = next(
+            fuse_input = next(
                 (x for x in self.process_transformation["InputTypes"]
-                 if x.startswith("https://aausmartlab.org/Shells/Component/PCB")),
+                 if x.startswith("https://aausmartlab.org/Shells/Component/Fuse")),
                 None
             )
 
-            bottom_cover_input = next(
+            bottom_cover_pcb_input = next(
                 (x for x in self.process_transformation["InputTypes"]
-                 if x.startswith("https://aausmartlab.org/Shells/Component/BottomCover")),
+                 if x.startswith("https://aausmartlab.org/Shells/Component/BottomCoverPCB")),
                 None
             )
 
-            bottom_cover_pcb_output = next(
+            bottom_cover_pcb_fuse_output = next(
                 (x for x in self.process_transformation["OutputTypes"]
-                 if x.startswith("https://aausmartlab.org/Shells/Assembly/BottomCoverPCB")),
+                 if x.startswith("https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse")),
                 None
             )
 
-            if pcb_input and bottom_cover_input and bottom_cover_pcb_output and len(self.process_transformation["InputTypes"]) == 2 and len(self.process_transformation["OutputTypes"]) == 1:
+            bottom_cover_pcb_fuse_input = next(
+                (x for x in self.process_transformation["InputTypes"]
+                 if x.startswith("https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse")),
+                None
+            )
+
+            if fuse_input and bottom_cover_pcb_input and bottom_cover_pcb_fuse_output and len(self.process_transformation["InputTypes"]) == 2 and len(self.process_transformation["OutputTypes"]) == 1:
                 print(f"The requested process transformation is supported")
                 transformation_allowed = True
+            elif fuse_input and bottom_cover_pcb_fuse_input and bottom_cover_pcb_fuse_output and len(self.process_transformation["InputTypes"]) == 2 and len(self.process_transformation["OutputTypes"]) == 1: 
+                print(f"The requested process transformation is supported")
+                transformation_allowed = True
+            
             else:
                 print(f"The requested {self.process_transformation} process transformation is not supported")
                 self.result = MS.Result.INCOMPLETE
                 self.quality = MS.Quality.NA
+                self.process_transformation["OutputTypes"] = None
 
             if transformation_allowed:
-                retriveable_locations = find_positions(inventories=resource_inventories,query=pcb_input)
+                retriveable_locations = find_positions(inventories=resource_inventories,query=fuse_input)
 
                 if retriveable_locations:
                     retrieved_item = retriveable_locations[0]  # We just take the first one
@@ -375,14 +396,14 @@ class KUKAManipulatorBehavior(StationBehavior):
                     self.ideal_cycle_time = 8000
                     self.actual_cycle_time = self.ideal_cycle_time + random.randint(200,1500)
                     await asyncio.sleep(self.actual_cycle_time/1000)
+                    #Generating result and quality randomly
+                    if random.randint(1,100) > 1:
+                        self.result = MS.Result.COMPLETE
+                        if random.randint(1,10) > 1:
+                            self.quality = MS.Quality.GOOD
 
-            #Generating result and quality randomly
-            if random.randint(1,100) > 1:
-                self.result = MS.Result.COMPLETE
-                if random.randint(1,10) > 1:
-                    self.quality = MS.Quality.GOOD
                 else: 
-                    print(f"Requested PCB is not in storage")
+                    print(f"Requested Fuse is not in storage")
                     self.result = MS.Result.INCOMPLETE
                     self.quality = MS.Quality.NA
                     self.process_transformation["OutputTypes"] = None
@@ -398,7 +419,9 @@ class KUKAManipulatorBehavior(StationBehavior):
         self.mqtt_client.publish(f"{state_suffix}/{self.actor_name}", state_message)
         print("Finalizing Process and sending result")
 
-        if self.skill == "BCPCBAssembly":
+        
+
+        if self.skill == "BCPCBFuseAssembly":
             XPos_element = MS.PropertyElement(id_short="XPos", value=self.XPos, semantic_id="https://aausmartlab.org/Semantics/mm")
             YPos_element = MS.PropertyElement(id_short="YPos", value=self.YPos, semantic_id="https://aausmartlab.org/Semantics/mm")
             target_position_element = MS.CollectionElement(id_short="TargetPosition", semantic_id="https://aausmartlab.org/Semantics/TargetPositon", elements=[XPos_element,YPos_element])
@@ -547,6 +570,7 @@ def handle_command(msg: MS.CommandMessage):
     print(f"Actor: {msg.actor_name}")
     print(f"Order ID: {msg.order_id}")
     print(f"Parameters: {msg.parameters}")
+    print(f"Process Transformation: {msg.process_transformation}")
 
     for StateMachine in StateMachines:
         if msg.actor_name == StateMachine.behavior.actor_name:
@@ -610,7 +634,7 @@ test_command = MS.CommandMessage(
 )
 
 
-print("Test Command: ", test_command.model_dump_json(indent=2))
+print("Test Command (WILL NOT WORK FOR THIS RESOURCE): ", test_command.model_dump_json(indent=2))
 
 #=============
 #Main loop where the full machine runs
