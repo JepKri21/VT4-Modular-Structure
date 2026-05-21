@@ -102,12 +102,12 @@ resource_inventories = {
         "Storage" : 
         {
             "position1": "https://aausmartlab.org/Shells/Component/TopCover/TopCoverABSBlack-2b7d8fe5-6fba-45a1-b88c-a38f85c947dc",
-            "position2": "",
-            "position3": "",
+            "position2": "https://aausmartlab.org/Shells/Component/TopCover/TopCoverPLABlack-e66de8ae-2652-4361-8962-31b1a89db358",
+            "position3": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverABSBlack-46fd5637-0e86-42d0-b299-11f0503c3d27",
             "position4": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover-BC004",
             "position5": "https://aausmartlab.org/Shells/Component/TopCover/TopCover-TC001",
             "position6": "https://aausmartlab.org/Shells/Component/TopCover/TopCoverABSBlack-1939d42b-e4f4-4bde-9519-eef6c7e30089",
-            "position7": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_7ef0e4df-1b09-4d0a-9448-14ae51652a52",
+            "position7": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverPLAWhite-97e0922b-e150-4ce8-a902-cb3faa00900e",
             "position8": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_3e06a1b6-96bf-4b44-abf6-b5e122c50427",
             "position9": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverABSBlack-771672b9-ba6b-4e44-8a55-3796401462e6",
             "position10": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverABSBlack-b0a74448-913c-4d86-9158-df551fe0c09b"

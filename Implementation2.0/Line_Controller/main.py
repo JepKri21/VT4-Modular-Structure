@@ -79,6 +79,15 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 # WORKORDER_PATH = SCRIPT_DIR / "WorkOrderExampleComplex-Jeppes_Bærbar.json"
 # WORKORDER_PATH = SCRIPT_DIR / "CorrectWorkorder.json"
 WORKORDER_PATH = SCRIPT_DIR / "WorkOrder.json"
+# If True, load WORKORDER_PATH once at startup and submit it as the first
+# order. Useful for dev/testing without an active MES. Live MES orders on
+# MES_TOPIC are accepted in either mode.
+SUBMIT_FILE_ON_STARTUP = False
+
+# MES publishes new work orders here. The payload is the workorder JSON
+# (same schema as the local *.json files).
+MES_TOPIC = "AAUSmartLab/ProductionLine1/MES/WorkOrder"
+
 # The ProductionLine shell on the AAS server is the source of truth for the
 # line configuration. The local LineConfiguration.json is no longer read.
 LINE_SHELL_PREFIX = "https://aausmartlab.org/Shells/ProductionLine/"
@@ -194,14 +203,6 @@ def handle_cargo_message(controller: MQTTClientController, message, topic_info):
 async def main() -> None:
     global _product_matcher
 
-    # Load work order
-    print(f"[init] loading work order from {WORKORDER_PATH.name}")
-    with open(WORKORDER_PATH) as f:
-        order = json.load(f)
-    handler = WorkOrderHandler()
-    handler.load_workorder(order)
-    handler.print_process_list()
-
     # Load line config first so we can filter resource discovery to only the
     # resources actually configured on this line (skips template shells).
     # Source of truth is the ProductionLine shell on the AAS server.
@@ -234,7 +235,35 @@ async def main() -> None:
     job_tracker = JobTracker(controller)
     occupancy = OccupancyManager(controller=controller, base_topic=BASE_TOPIC)
 
-    # Drive the order
+    # Per-process queue of incoming work orders. The MES subscription drops
+    # WorkOrder dicts onto this queue from paho's network thread; the main
+    # async loop drains it.
+    loop = asyncio.get_running_loop()
+    order_queue: asyncio.Queue[dict] = asyncio.Queue()
+
+    def on_mes_workorder(client, userdata, msg):
+        try:
+            order = json.loads(msg.payload.decode())
+        except json.JSONDecodeError as exc:
+            print(f"[MES] malformed WorkOrder payload: {exc}")
+            return
+        order_id = order.get("OrderId", "<unknown>")
+        print(f"[MES] received WorkOrder {order_id}")
+        # paho callbacks fire on the MQTT network thread; bounce into the
+        # asyncio loop before touching the queue.
+        loop.call_soon_threadsafe(order_queue.put_nowait, order)
+
+    controller.client.message_callback_add(MES_TOPIC, on_mes_workorder)
+    controller.client.subscribe(MES_TOPIC)
+    print(f"[init] subscribed to MES topic: {MES_TOPIC}")
+
+    # Optional dev convenience: submit a local file as the first order.
+    if SUBMIT_FILE_ON_STARTUP and WORKORDER_PATH.exists():
+        print(f"[init] loading work order from {WORKORDER_PATH.name}")
+        with open(WORKORDER_PATH) as f:
+            order_queue.put_nowait(json.load(f))
+
+    # Single scheduler shared across all orders.
     scheduler = Scheduler(
         controller=controller,
         resource_manager=rm,
@@ -245,15 +274,30 @@ async def main() -> None:
         product_matcher=_product_matcher,
         occupancy=occupancy,
         aas_server_base=AAS_SERVER_BASE,
-        workorder=order,
     )
-    await scheduler.run_order(handler)
 
-    print("\n=== Final process list ===")
-    handler.print_process_list()
+    print("[init] waiting for work orders on MQTT…")
 
-    # Drain trailing State messages before we exit.
-    await asyncio.sleep(2)
+    async def _run_one(order: dict) -> None:
+        handler = WorkOrderHandler()
+        handler.load_workorder(order)
+        order_id = order.get("OrderId", "<unknown>")
+        print(f"\n[ingest] starting work order {order_id}")
+        handler.print_process_list()
+        try:
+            await scheduler.run_order(handler)
+        except Exception as exc:
+            print(f"[ingest] order {order_id} failed: {exc}")
+            return
+        print(f"\n=== Final process list for {order_id} ===")
+        handler.print_process_list()
+
+    # Drain the queue and spawn each order concurrently. Multiple orders run
+    # in parallel; OccupancyManager + Scheduler's instance reservations
+    # prevent them from double-booking shuttles, actors, or inventory items.
+    while True:
+        order = await order_queue.get()
+        asyncio.create_task(_run_one(order))
 
 
 if __name__ == "__main__":

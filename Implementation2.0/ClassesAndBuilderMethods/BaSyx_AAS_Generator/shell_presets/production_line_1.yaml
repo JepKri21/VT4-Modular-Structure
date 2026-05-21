@@ -2,7 +2,7 @@
 label: "Production Line 1 – AAU Smart Lab"
 description: "AAU Smart Lab production line comprising Transport, Storage, and Drilling stations"
 
-asset_name: "ProductionLine"
+asset_name: "ProductionLine1"
 
 submodels:
   ServiceOffered:

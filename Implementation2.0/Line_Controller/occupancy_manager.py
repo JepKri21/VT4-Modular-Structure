@@ -120,6 +120,26 @@ class OccupancyManager:
             self._publish(resource_id, actor_name, order_id, occupied=True)
         print(f"[occupancy] order={order_id} committed: {actors}")
 
+    def try_commit(
+        self,
+        order_id: str,
+        actors: list[tuple[str, str]],
+    ) -> tuple[str, str] | None:
+        """Non-blocking variant of commit: claim all-or-nothing.
+
+        Returns None on success. On failure, returns the first (resource,
+        actor) pair that was already held by a different order — caller can
+        log it and back off until that pair frees. No partial reservations
+        are made on failure.
+        """
+        for resource_id, actor_name in actors:
+            owner = self._owner.get((resource_id, actor_name))
+            if owner is not None and owner != order_id:
+                return (resource_id, actor_name)
+        # All free or already ours — claim them.
+        self.commit(order_id, actors)
+        return None
+
     def release(self, order_id: str) -> list[tuple[str, str]]:
         """Drop every reservation held by an order. Returns the freed pairs."""
         freed: list[tuple[str, str]] = []

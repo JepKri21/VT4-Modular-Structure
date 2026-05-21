@@ -168,6 +168,34 @@ class Scheduler:
         # Per-order traceability: order_id -> {ingredient_name -> specific instance IRI}.
         self._traceability: dict[str, dict[str, str]] = {}
 
+        # Cross-order instance reservation. Once an order picks a concrete
+        # component instance (e.g. BottomCoverABSBlack-<uuid>) from a shared
+        # inventory, claim it so a concurrent order doesn't also pick it.
+        # Cleared when the owning order finishes (success or failure).
+        self._reserved_instances: dict[str, str] = {}
+
+    # ── Cross-order instance reservation ────────────────────────────────────
+
+    def _reserve_instance(self, instance_iri: str, order_id: str) -> bool:
+        """Claim a component instance for an order.
+
+        Returns True on a fresh reservation OR a re-claim by the same order.
+        Returns False if another order already holds it (caller should pick
+        a different candidate or pause).
+        """
+        owner = self._reserved_instances.get(instance_iri)
+        if owner is None:
+            self._reserved_instances[instance_iri] = order_id
+            return True
+        return owner == order_id
+
+    def _release_order_reservations(self, order_id: str) -> None:
+        freed = [iri for iri, owner in self._reserved_instances.items() if owner == order_id]
+        for iri in freed:
+            del self._reserved_instances[iri]
+        if freed:
+            print(f"[reserve] order={order_id} released {len(freed)} instance reservation(s)")
+
     # ── Public entry point ──────────────────────────────────────────────────
 
     async def run_order(self, handler: WorkOrderHandler) -> None:
@@ -180,19 +208,25 @@ class Scheduler:
 
         print(f"\n[run] === starting order {order_id} (product={product_ref}) ===\n")
 
-        while True:
-            if self._is_order_complete(handler):
-                await self._finalize_order(handler)
-                return
+        try:
+            while True:
+                if self._is_order_complete(handler):
+                    await self._finalize_order(handler)
+                    return
 
-            ready = handler.get_ready_steps()
-            if not ready:
-                # nothing to do this tick — could be waiting on dependencies
-                await asyncio.sleep(TICK_INTERVAL_S)
-                continue
+                ready = handler.get_ready_steps()
+                if not ready:
+                    # nothing to do this tick — could be waiting on dependencies
+                    await asyncio.sleep(TICK_INTERVAL_S)
+                    continue
 
-            bop = ready[0]
-            await self._execute_bop_step(handler, bop)
+                bop = ready[0]
+                await self._execute_bop_step(handler, bop)
+        finally:
+            # Free this order's hold on shared inventory + reserved actors so
+            # other concurrent orders can grab them.
+            self._release_order_reservations(order_id)
+            self.occupancy.release(order_id)
 
     # ── One-time bootstrap ──────────────────────────────────────────────────
 
@@ -264,7 +298,7 @@ class Scheduler:
                 "ComponentTypeReference": info["ComponentTypeReference"],
                 "ComponentReference": "",
                 "Properties": (handler.workorder.get("Properties", {}) or {}).get(ingredient_name, {}),
-            })
+            }, order_id=order_id)
             if resolved:
                 info["ComponentReference"] = resolved
                 # Refresh the InputIngredients view so subsequent uses (e.g.
@@ -369,7 +403,17 @@ class Scheduler:
         )
 
         # Reserve all involved actors for this order while the plan runs.
-        self.occupancy.commit(order_id, reservations)
+        # If any required actor is held by a different order, back off and
+        # retry until it frees, instead of failing the whole order.
+        while True:
+            blocker = self.occupancy.try_commit(order_id, reservations)
+            if blocker is None:
+                break
+            print(
+                f"[bop] step {bop['step_id']} waiting on {blocker[0]}/{blocker[1]} "
+                f"(held by order {self.occupancy.owner_of(*blocker)})"
+            )
+            await asyncio.sleep(TICK_INTERVAL_S)
 
         try:
             await self._print_and_execute_plan(plan, iri_by_topic, "pre-process")
@@ -432,7 +476,7 @@ class Scheduler:
                 return None, iris, reservations
 
         # Make sure we have a concrete instance IRI to plan around.
-        component_ref = self._resolve_input_instance(handler, ingredient)
+        component_ref = self._resolve_input_instance(handler, ingredient, order_id=order_id)
         if not component_ref:
             raise RuntimeError(
                 f"input '{ingredient_name}' could not be resolved to an instance"
@@ -514,7 +558,7 @@ class Scheduler:
 
         # Case C: classic — fetch from storage.
         storage, storage_iri, picked_instance = self._resolve_storage_for(
-            component_ref, ingredient_name=ingredient_name
+            component_ref, ingredient_name=ingredient_name, handler=handler,
         )
         shuttle, shuttle_iri = self._pick_shuttle(
             component_ref,
@@ -559,7 +603,7 @@ class Scheduler:
         bop_skill = chosen["skill_name"]
         bop_params = _flatten_parameters(bop["parameters"])
 
-        process_transformation = self._build_process_transformation(handler, info)
+        process_transformation = self._build_process_transformation(handler, info, order_id=order_id)
         if process_transformation is None:
             print(f"[bop] step {bop['step_id']} cannot build process_transformation "
                   "(unresolved inputs) — pausing")
@@ -601,16 +645,71 @@ class Scheduler:
     ) -> None:
         print(f"\n=== {label} plan ({len(plan.steps)} step(s)) ===")
         for s in plan.steps:
+            dep = f"  after {s.depends_on}" if s.depends_on else ""
             print(
                 f"  {s.step_id:<32s} skill={s.skill:<10s} "
-                f"on={s.resource_id}/{s.actor_name}"
+                f"on={s.resource_id}/{s.actor_name}{dep}"
             )
         if plan.occupies_through_bop:
             print(f"  shuttle stays occupied through BoP: {plan.occupies_through_bop}")
         print()
 
-        for step in plan.steps:
-            await self._execute_step(step, plan.order_id, iri_by_topic)
+        # DAG-parallel execution. Steps with no dependency start immediately
+        # and concurrently; each subsequent step starts the moment its parent
+        # completes. Sub-plans for different inputs of an Assemble step have
+        # disjoint dependency chains, so their Transport/Retrieve/Handoff
+        # sequences run in parallel across the line.
+        steps_by_id: dict[str, PreProcessStep] = {s.step_id: s for s in plan.steps}
+        completed: set[str] = set()
+        pending = list(plan.steps)
+        running: dict[asyncio.Task, str] = {}
+
+        def _ready_now() -> list[PreProcessStep]:
+            ready = []
+            for s in pending:
+                if s.depends_on is None or s.depends_on in completed:
+                    ready.append(s)
+            return ready
+
+        try:
+            while pending or running:
+                # Launch every step whose dependency is satisfied.
+                for s in _ready_now():
+                    pending.remove(s)
+                    task = asyncio.create_task(
+                        self._execute_step(s, plan.order_id, iri_by_topic)
+                    )
+                    running[task] = s.step_id
+
+                if not running:
+                    # No tasks running and nothing became ready — the DAG
+                    # has an unresolvable dependency. Surface it.
+                    stuck = [s.step_id for s in pending]
+                    raise RuntimeError(
+                        f"Pre-process plan stuck: no step is ready to run "
+                        f"(remaining: {stuck})"
+                    )
+
+                done, _ = await asyncio.wait(
+                    running.keys(), return_when=asyncio.FIRST_COMPLETED
+                )
+                for task in done:
+                    step_id = running.pop(task)
+                    if task.exception() is not None:
+                        # One step failed — cancel the rest and propagate.
+                        for other in running:
+                            other.cancel()
+                        if running:
+                            await asyncio.gather(*running, return_exceptions=True)
+                        raise task.exception()
+                    completed.add(step_id)
+        except BaseException:
+            # Make sure no orphan tasks survive on the unwind path.
+            for task in running:
+                task.cancel()
+            if running:
+                await asyncio.gather(*running, return_exceptions=True)
+            raise
 
     async def _execute_step(
         self,
@@ -663,6 +762,13 @@ class Scheduler:
             # actors, Store clears cargo, Transport doesn't change it.
             if step.cargo_transfers:
                 self.occupancy.apply_cargo_transfers(step.cargo_transfers)
+                # After cargo moves, any actor that just became cargo-free
+                # and is still reserved for this order can be released —
+                # we won't be coming back to it for this order. release_one
+                # is a no-op if cargo is still present, so this is safe.
+                for resource_id, actor_name, new_cargo in step.cargo_transfers:
+                    if new_cargo is None:
+                        self.occupancy.release_one(resource_id, actor_name, order_id)
         else:
             raise RuntimeError(
                 f"Step {step.step_id} failed: result={result.result.value}"
@@ -717,18 +823,23 @@ class Scheduler:
         self,
         handler: WorkOrderHandler,
         ingredient: dict,
+        order_id: str | None = None,
     ) -> str | None:
         """Resolve one InputIngredients entry to its concrete instance IRI.
 
-        - If the ingredient already has a ComponentReference, use it.
-        - Otherwise ask the ProductMatcher with the ingredient's properties.
-          On a hit, persist the choice via handler.update_component_reference
-          so subsequent steps see the same instance.
+        - If the ingredient already has a ComponentReference, use it (and
+          re-claim the reservation for this order — it's a no-op if we
+          already own it).
+        - Otherwise ask the ProductMatcher with the ingredient's properties
+          and pick the first candidate that isn't reserved by another order.
+          On a hit, persist the choice and reserve it.
 
-        Returns None if no instance can be resolved.
+        Returns None if no free instance can be resolved.
         """
         existing = ingredient.get("ComponentReference") or ""
         if existing:
+            if order_id is not None:
+                self._reserve_instance(existing, order_id)
             return existing
 
         type_ref = ingredient.get("ComponentTypeReference")
@@ -747,7 +858,24 @@ class Scheduler:
             print(f"[trans] no inventory match for ingredient '{ingredient.get('name')}' "
                   f"(type={type_ref})")
             return None
-        instance = matches[0].component_id
+
+        # Skip instances already reserved by a concurrent order.
+        instance = None
+        for m in matches:
+            if order_id is None or self._reserve_instance(m.component_id, order_id):
+                instance = m.component_id
+                break
+            print(
+                f"[reserve] '{ingredient.get('name')}': skipping {m.component_id} "
+                f"(claimed by order {self._reserved_instances.get(m.component_id)})"
+            )
+        if instance is None:
+            print(
+                f"[trans] all {len(matches)} match(es) for '{ingredient.get('name')}' "
+                f"are reserved by other orders — pausing"
+            )
+            return None
+
         handler.update_component_reference(ingredient["name"], instance)
         print(f"[trans] resolved {ingredient.get('name')} -> {instance}")
         return instance
@@ -756,6 +884,7 @@ class Scheduler:
         self,
         handler: WorkOrderHandler,
         info: dict,
+        order_id: str | None = None,
     ) -> dict | None:
         """Build the {InputTypes: [...], OutputTypes: [...]} CMD payload.
 
@@ -766,7 +895,7 @@ class Scheduler:
         """
         input_iris: list[str | None] = []
         for ing in info.get("InputIngredients") or []:
-            iri = self._resolve_input_instance(handler, ing)
+            iri = self._resolve_input_instance(handler, ing, order_id=order_id)
             if iri is None:
                 # No instance available for a required input. Caller pauses.
                 return None
@@ -851,6 +980,7 @@ class Scheduler:
         self,
         component_ref: str,
         ingredient_name: str | None = None,
+        handler: WorkOrderHandler | None = None,
     ) -> tuple[ResourceEndpoint, str, str | None]:
         """Pick a storage resource that actually has the component.
 
@@ -883,8 +1013,12 @@ class Scheduler:
         if storage_iri is None and component_ref:
             # Fallback: treat component_ref as a TYPE IRI (e.g. when the
             # caller hasn't pre-resolved to an instance).
+            # Prefer the handler's workorder (per-order, safe across
+             # concurrent orders); fall back to self.workorder for legacy
+             # single-order use.
+            workorder = (handler.workorder if handler is not None else None) or self.workorder
             props = (
-                (self.workorder or {})
+                (workorder or {})
                 .get("Properties", {})
                 .get(ingredient_name, {})
                 if ingredient_name

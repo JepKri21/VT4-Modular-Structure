@@ -265,7 +265,7 @@ class KUKAManipulatorBehavior(StationBehavior):
             #Generating result and quality randomly
             if random.randint(1,100) > 1:
                 self.result = MS.Result.COMPLETE
-                if random.randint(1,10) > 1:
+                if random.randint(1,100) > 1:
                     self.quality = MS.Quality.GOOD
                 else:
                     self.quality = MS.Quality.BAD

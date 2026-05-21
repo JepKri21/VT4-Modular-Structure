@@ -102,8 +102,8 @@ resource_inventories = {
         "AccessibleActors" : [Actor],
         "Storage" : 
         {
-            "position1": "",
-            "position2": "",
+            "position1": "https://aausmartlab.org/Shells/Component/PCB/PCBFuseBoxA-008ae740-5ee0-4dfa-b143-8a269cb268e8",
+            "position2": "https://aausmartlab.org/Shells/Component/PCB/PCBFuseBoxA-331561f8-8fa2-4e7a-a682-1d7645517886",
             "position3": "",
             "position4": "",
             "position5": "",
@@ -365,27 +365,37 @@ class KUKAManipulatorBehavior(StationBehavior):
             if transformation_allowed:
                 retriveable_locations = find_positions(inventories=resource_inventories,query=pcb_input)
 
-                if retriveable_locations:
-                    retrieved_item = retriveable_locations[0]  # We just take the first one
-                    inventory_name = retrieved_item["inventory"]
-                    position = retrieved_item["position"]
-                    self.retrieved_item_component = retrieved_item["item"]
-                    resource_inventories[inventory_name]["Storage"][position] = ""
-                    #Generating cycle times (ms) based on parameters
-                    self.ideal_cycle_time = 8000
-                    self.actual_cycle_time = self.ideal_cycle_time + random.randint(200,1500)
-                    await asyncio.sleep(self.actual_cycle_time/1000)
-
-            #Generating result and quality randomly
-            if random.randint(1,100) > 1:
-                self.result = MS.Result.COMPLETE
-                if random.randint(1,10) > 1:
-                    self.quality = MS.Quality.GOOD
-                else: 
+                if not retriveable_locations:
                     print(f"Requested PCB is not in storage")
                     self.result = MS.Result.INCOMPLETE
                     self.quality = MS.Quality.NA
                     self.process_transformation["OutputTypes"] = None
+                else:
+                    retrieved_item = retriveable_locations[0]  # We just take the first one
+                    inventory_name = retrieved_item["inventory"]
+                    position = retrieved_item["position"]
+                    self.retrieved_item_component = retrieved_item["item"]
+
+                    # Generating cycle times (ms) based on parameters
+                    self.ideal_cycle_time = 8000
+                    self.actual_cycle_time = self.ideal_cycle_time + random.randint(200,1500)
+                    await asyncio.sleep(self.actual_cycle_time/1000)
+
+                    # Generating result and quality randomly. Only clear the
+                    # inventory slot when the assembly actually succeeded —
+                    # otherwise the part stays available for a retry / the
+                    # next order.
+                    if random.randint(1,100) > 1:
+                        self.result = MS.Result.COMPLETE
+                        if random.randint(1,100) > 1:
+                            self.quality = MS.Quality.GOOD
+                        else:
+                            self.quality = MS.Quality.BAD
+                        resource_inventories[inventory_name]["Storage"][position] = ""
+                    else:
+                        self.result = MS.Result.INCOMPLETE
+                        self.quality = MS.Quality.NA
+                        self.process_transformation["OutputTypes"] = None
 
         else:
             print("This is not a skill of the actor, How did you even get here?")
