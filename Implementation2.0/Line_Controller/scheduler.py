@@ -567,6 +567,8 @@ class Scheduler:
                   "(unresolved inputs) — pausing")
             return
 
+        self._update_output_bom_with_inputs(handler, info)
+
         bop_job_id = f"{order_id}-{bop['step_id']}"
         handler.update_step(bop["step_id"], StepStates.IN_PROGRESS)
         start_time = datetime.now()
@@ -773,6 +775,7 @@ class Scheduler:
                   f"(type={type_ref})")
             return None
         instance = matches[0].component_id
+        ingredient["ComponentReference"] = instance
         handler.update_component_reference(ingredient["name"], instance)
         print(f"[trans] resolved {ingredient.get('name')} -> {instance}")
         return instance
@@ -1276,9 +1279,10 @@ class Scheduler:
             Mapping of ingredient_name -> (shell_iri, record_id_short) for every record
             successfully created. Passed to _complete_process_tracking() to PATCH them.
         """
-        process_type = bop.get("required_capability", "Unknown")
-        capability_ref = info.get("CapabilityReference")
-        skill_ref = chosen.get("capability_submodel_reference")
+        process_type = (bop.get("required_capability") or "Unknown").rsplit("/", 1)[-1]
+        capability_ref = info.get("RequiredCapabilitySubmodelIRI") or chosen.get("capability_submodel_reference")
+        skill_ref = f"{chosen['resource_id']}/Skills" if chosen.get("resource_id") else None
+        skill_name = chosen.get("skill_name")
         performed_by = target.resource_id
         start_iso = start_time.isoformat()
         live = (handler.workorder or {}).get("Ingredients", {})
@@ -1300,6 +1304,7 @@ class Scheduler:
                 performed_by=performed_by,
                 capability_reference_iri=capability_ref,
                 skill_reference_iri=skill_ref,
+                skill_name=skill_name,
                 start_time=start_iso,
             )
             if rec_id:
@@ -1324,9 +1329,10 @@ class Scheduler:
         are already in handler.workorder["Ingredients"].
         """
         completion_iso = result.timestamp.isoformat() if result.timestamp else datetime.now().isoformat()
-        process_type = bop.get("required_capability", "Unknown")
-        capability_ref = info.get("CapabilityReference")
-        skill_ref = chosen.get("capability_submodel_reference")
+        process_type = (bop.get("required_capability") or "Unknown").rsplit("/", 1)[-1]
+        capability_ref = info.get("RequiredCapabilitySubmodelIRI") or chosen.get("capability_submodel_reference")
+        skill_ref = f"{chosen['resource_id']}/Skills" if chosen.get("resource_id") else None
+        skill_name = chosen.get("skill_name")
         start_iso = start_time.isoformat()
         live = (handler.workorder or {}).get("Ingredients", {})
 
@@ -1354,9 +1360,47 @@ class Scheduler:
                 performed_by=target.resource_id,
                 capability_reference_iri=capability_ref,
                 skill_reference_iri=skill_ref,
+                skill_name=skill_name,
                 start_time=start_iso,
                 completion_time=completion_iso,
             )
+
+    def _update_output_bom_with_inputs(
+        self,
+        handler: WorkOrderHandler,
+        info: dict,
+    ) -> None:
+        """Write each input ingredient's instance IRI into the output shell's BOM.
+
+        Called after _build_process_transformation succeeds and before _send_and_wait.
+        All input IRIs are resolved by this point. Output shell IRIs are pre-assigned
+        in the WorkOrder so we don't need to wait for the JobResult.
+        Best-effort — never raises.
+        """
+        live = (handler.workorder or {}).get("Ingredients", {})
+
+        for out_ing in info.get("OutputIngredients") or []:
+            out_name = out_ing.get("name", "")
+            out_shell_iri = live.get(out_name, {}).get("ComponentReference") or ""
+            if not out_shell_iri:
+                continue
+
+            for in_ing in info.get("InputIngredients") or []:
+                in_name = in_ing.get("name", "")
+                in_instance_iri = live.get(in_name, {}).get("ComponentReference") or ""
+                in_type_iri = live.get(in_name, {}).get("ComponentTypeReference") or ""
+                if not in_instance_iri or not in_type_iri:
+                    continue
+
+                bom_entry = aas_writer.get_bom_entry_for_type(
+                    self.aas_server_base, out_shell_iri, in_type_iri
+                )
+                if not bom_entry:
+                    continue
+
+                aas_writer.write_bom_component_instance_ref(
+                    self.aas_server_base, out_shell_iri, bom_entry, in_instance_iri
+                )
 
     def _product_shell_iri(self, handler: WorkOrderHandler) -> str:
         product_ref = handler.workorder.get("ProductReference", "") or ""

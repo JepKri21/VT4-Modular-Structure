@@ -87,6 +87,7 @@ class WorkOrderHandler:
                     "ingredient": ingredient,
 
                     "required_capability": step_data["CapabilityReference"],
+                    "required_capability_submodel_iri": step_data.get("RequiredCapabilitySubmodelReference"),
                     "parameters": step_data.get("Parameters", {}),
                     "dependencies": step_data.get("Dependencies", []),
                     # Raw transformation spec (uses ingredient names — resolved
@@ -312,6 +313,7 @@ class WorkOrderHandler:
 
         return {
             "CapabilityReference": step["required_capability"],
+            "RequiredCapabilitySubmodelIRI": step.get("required_capability_submodel_iri"),
             "Parameters": step["parameters"],
             "Ingredient": ingredient_name,
             "ComponentReference": component_reference,

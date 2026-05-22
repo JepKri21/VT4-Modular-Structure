@@ -253,6 +253,86 @@ def build_elements_from_form(
                 lst.value.append(prop)
 
 
+# ──────────────── BOP RequiredComponents → BOM model references ───────────
+
+
+def _bom_entry_id_short(entry: dict, index: int) -> str:
+    """Compute the AAS idShort for a BOM entry.
+
+    Mirrors the entry_template "{Description}_{N}" from bill_of_materials.yaml
+    and the same sanitisation logic used in build_elements_from_form.
+    """
+    desc = entry.get("Description", "")
+    desc_sanitized = re.sub(r"[^A-Za-z0-9]", "_", desc) if desc else ""
+    raw = f"{desc_sanitized}_{index + 1}"
+    label = re.sub(r"_+", "_", raw).strip("_")
+    if not label or not label[0].isalpha():
+        label = f"Entry{index + 1}"
+    return label
+
+
+def _inject_bop_required_refs(preset_submodels: dict, shell_id: str) -> dict:
+    """Replace RequiredComponents string lists in BOP ProcessSteps with model
+    reference dicts pointing to the matching BOM entry.
+
+    Each string must equal the last IRI segment of a BOM entry's
+    ComponentTypeReference (e.g. "BottomCover", "PCB", "Fuse").
+    Unmatched names are silently dropped.
+    """
+    bop_data = preset_submodels.get("BillOfProcesses")
+    bom_data = preset_submodels.get("BillOfMaterials")
+    if not bop_data or not bom_data:
+        return preset_submodels
+
+    bom_entries = bom_data.get("BOMEntries", [])
+    if not bom_entries:
+        return preset_submodels
+
+    bom_sm_iri = f"{shell_id}/BillOfMaterials"
+
+    # last IRI segment → [idShort, ...] (multi-value to handle duplicate types)
+    seg_to_id_shorts: dict[str, list[str]] = {}
+    for i, entry in enumerate(bom_entries):
+        ref_iri = entry.get("ComponentTypeReference", "")
+        if not ref_iri:
+            continue
+        last_seg = ref_iri.rstrip("/").rsplit("/", 1)[-1]
+        seg_to_id_shorts.setdefault(last_seg, []).append(_bom_entry_id_short(entry, i))
+
+    bop_data = copy.deepcopy(bop_data)
+    # For types with multiple BOM entries (e.g. two Fuse slots), distribute one
+    # entry per step in order so each step references a distinct instance slot.
+    # For types with only one BOM entry (e.g. BottomCover, PCB), always reference
+    # the same entry — multiple steps may legitimately reference it (e.g. Drilling
+    # and Assemble PCB both need the BottomCover entry).
+    claimed: set[str] = set()
+    for step in bop_data.get("ProcessSteps", []):
+        raw = step.get("RequiredComponents", [])
+        if not raw or not isinstance(raw, list) or not isinstance(raw[0], str):
+            continue
+        refs = []
+        for name in raw:
+            entries_for_name = seg_to_id_shorts.get(name, [])
+            if not entries_for_name:
+                continue
+            if len(entries_for_name) == 1:
+                # Single entry — always reference it regardless of prior steps
+                refs.append({"submodel_id": bom_sm_iri, "path": ["BOMEntries", entries_for_name[0]]})
+            else:
+                # Multiple entries of same type — consume the next unclaimed one in order
+                for id_short in entries_for_name:
+                    if id_short not in claimed:
+                        refs.append({"submodel_id": bom_sm_iri, "path": ["BOMEntries", id_short]})
+                        claimed.add(id_short)
+                        break
+        if refs:
+            step["RequiredComponents"] = refs
+
+    result = dict(preset_submodels)
+    result["BillOfProcesses"] = bop_data
+    return result
+
+
 # ──────────────────── service required derivation ─────────────────────────
 
 def _derive_service_required(shell_id: str, bop_form_data: dict):
@@ -432,8 +512,12 @@ def main() -> None:
     if desc := shell_cfg.get("description"):
         shell.description = model.MultiLanguageTextType({"en": desc})
 
+    # Resolve RequiredComponents string names → BOM model references
+    _sm_by_idshort = {sm["id_short"]: sm.get("form_data", {}) for sm in submodel_inputs}
+    _injected_sms = _inject_bop_required_refs(_sm_by_idshort, shell_id)
+
     def _form_data_for(sm):
-        form_data = sm.get("form_data", {})
+        form_data = _injected_sms.get(sm["id_short"], sm.get("form_data", {}))
         if sm.get("id_short") == "Skills":
             form_data = _rewrite_skills_capability_refs(form_data, shell_id)
         return form_data
@@ -527,7 +611,7 @@ def build_environment(preset: dict, instance_suffix: str = "") -> tuple[dict, st
         shell.description = model.MultiLanguageTextType({"en": desc})
 
     submodels = []
-    preset_submodels = preset.get("submodels", {})
+    preset_submodels = _inject_bop_required_refs(preset.get("submodels", {}), shell_id)
 
     for sm_id_short, form_data in preset_submodels.items():
         template_file = SM_TEMPLATE_MAP.get(sm_id_short)

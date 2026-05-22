@@ -230,23 +230,30 @@ function collectRawEntries(
   const entries = (
     (doc as Record<string, Record<string, Record<string, unknown>>>)
       ?.submodels?.BillOfMaterials?.BOMEntries ?? []
-  ) as RawBomEntry[];
+  ) as Record<string, unknown>[];
 
   const result: RawBomEntry[] = [];
 
   for (const entry of entries) {
-    if (!entry.ProductFamilyRef) continue;
+    // YAML uses ComponentTypeReference; fall back to ProductFamilyRef for old-style presets
+    const iri = (entry.ComponentTypeReference ?? entry.ProductFamilyRef) as string | undefined;
+    if (!iri) continue;
 
-    if (entry.ProductFamilyRef.includes("/Shells/Assembly/")) {
-      // Sub-assembly: find the matching preset by asset_name (last IRI segment) and recurse
-      const subAssetName = entry.ProductFamilyRef.split("/").pop() ?? "";
+    const isSubAssembly = entry.IsSubAssembly === true || iri.includes("/Shells/Assembly/");
+
+    if (isSubAssembly) {
+      const subAssetName = iri.split("/").pop() ?? "";
       const subPreset = findPresetByAssetName(allPresets, subAssetName);
       if (subPreset) {
         result.push(...collectRawEntries(subPreset, allPresets, visited));
       }
     } else {
-      // Raw component: customer-selectable
-      result.push(entry);
+      result.push({
+        Description: entry.Description as string | undefined,
+        Quantity: entry.Quantity as number | undefined,
+        Required: entry.Required as boolean | undefined,
+        ProductFamilyRef: iri,
+      });
     }
   }
 

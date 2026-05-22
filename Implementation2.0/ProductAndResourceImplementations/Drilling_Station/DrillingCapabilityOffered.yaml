@@ -131,6 +131,7 @@ elements:
     items:
       - "https://aausmartlab.org/Materials/PLA"
       - "https://aausmartlab.org/Materials/ABS"
+      - "https://aausmartlab.org/Materials/PETG"
 
   - type: reference_element
     id_short: "ResourceReference"

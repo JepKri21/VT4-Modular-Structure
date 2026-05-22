@@ -6,6 +6,7 @@ their preset YAML files, then uploads everything to BaSyx.
 Returns a mapping of { asset_name → instance_shell_iri }.
 """
 
+import copy
 import logging
 import sys
 from pathlib import Path
@@ -34,6 +35,14 @@ def _load_preset(name: str) -> dict:
         return yaml.safe_load(f)
 
 
+def _inject_order_number(preset: dict, order_id: str) -> dict:
+    p = copy.deepcopy(preset)
+    (p.setdefault("submodels", {})
+      .setdefault("Documentation", {})
+      .setdefault("ProductionIdentification", {}))["OrderNumber"] = order_id
+    return p
+
+
 def upload_all(
     final_preset: dict,
     order_id: str,
@@ -44,20 +53,19 @@ def upload_all(
 
     Args:
         final_preset: merged final product preset dict
-        order_id: short order ID used as instance suffix (e.g. "ORD-ABCD1234")
+        order_id: order ID stored as Documentation/ProductionIdentification/OrderNumber
         basyx_url: BaSyx server URL
 
     Returns:
         (shell_iris, final_product_iri)
         shell_iris maps asset_name → instance shell IRI for every uploaded shell.
     """
-    instance_suffix = order_id.replace(" ", "_")
     shell_iris: dict[str, str] = {}
 
     # Upload sub-assembly shells (leaf first)
     for preset_name in SUB_ASSEMBLY_PRESET_NAMES:
-        preset = _load_preset(preset_name)
-        env, iri = build_environment(preset, instance_suffix)
+        preset = _inject_order_number(_load_preset(preset_name), order_id)
+        env, iri = build_environment(preset)
         asset_name = preset.get("asset_name", preset_name)
         try:
             basyx_client.upload_environment(env, basyx_url)
@@ -67,7 +75,7 @@ def upload_all(
         shell_iris[asset_name] = iri
 
     # Upload final product shell
-    env, final_iri = build_environment(final_preset, instance_suffix)
+    env, final_iri = build_environment(_inject_order_number(final_preset, order_id))
     asset_name = final_preset.get("asset_name", "FinalProduct")
     try:
         basyx_client.upload_environment(env, basyx_url)

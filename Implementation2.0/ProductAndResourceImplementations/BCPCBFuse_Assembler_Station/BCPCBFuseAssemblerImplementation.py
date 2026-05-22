@@ -102,12 +102,12 @@ resource_inventories = {
         "AccessibleActors" : [Actor],
         "Storage" : 
         {
-            "position1": "",
-            "position2": "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB-3a384db0-1f9a-4496-9364-a19621200979",
-            "position3": "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB-a70fc860-70c2-4132-bd8f-87a275b253e0",
-            "position4": "",
-            "position5": "",
-            "position6": "",
+            "position1": "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB-5d5574d7-c8e3-4b5b-b3c6-dfeebfdb1678",
+            "position2": "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB-5faa3958-782b-4b70-b748-50a78e1766fc",
+            "position3": "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB-74f00dea-9d95-436f-99ff-04466f8ffe60",
+            "position4": "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB-7ced82fa-47a5-4733-ab27-d3b1a150097f",
+            "position5": "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB-e872534d-6c0f-48b3-a326-beb2ef8ab392",
+            "position6": "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB-f89d5208-c787-4fb3-a6e8-5156d99b0ae8",
             "position7": "",
             "position8": "",
             "position9": "",
@@ -120,7 +120,7 @@ resource_inventories = {
             "position16": "",
             "position17": "",
             "position18": "",
-            "position19": "https://aausmartlab.org/Shells/Component/Fuse/",
+            "position19": "",
             "position20": ""
         }
     }

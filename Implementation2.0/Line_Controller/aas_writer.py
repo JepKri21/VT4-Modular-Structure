@@ -260,6 +260,7 @@ def write_process_started(
     performed_by: str,
     capability_reference_iri: str | None = None,
     skill_reference_iri: str | None = None,
+    skill_name: str | None = None,
     start_time: str | None = None,
 ) -> str | None:
     """Append an InProgress ProcessRecord to a component shell's ProcessTracking submodel.
@@ -272,8 +273,9 @@ def write_process_started(
         component_shell_iri: IRI of the component or assembly shell to write to.
         process_type: capability type name, e.g. "Assemble", "Drilling".
         performed_by: resource_id of the station that will perform the step.
-        capability_reference_iri: IRI of the required capability submodel on the product AAS.
-        skill_reference_iri: IRI of the capability submodel on the resource.
+        capability_reference_iri: IRI of the required capability submodel on the product AAS
+            (e.g. Assemble_TopCoverCapabilityRequired). Points to where the actual parameters live.
+        skill_reference_iri: IRI of the Skills submodel on the resource that performed the step.
         start_time: ISO 8601 timestamp when the step went IN_PROGRESS.
 
     Returns:
@@ -298,6 +300,7 @@ def write_process_started(
         performed_by=performed_by,
         capability_reference_iri=capability_reference_iri,
         skill_reference_iri=skill_reference_iri,
+        skill_name=skill_name,
         start_time=start_time,
         completion_time=None,
         status="InProgress",
@@ -362,6 +365,7 @@ def write_process_record(
     performed_by: str,
     capability_reference_iri: str | None = None,
     skill_reference_iri: str | None = None,
+    skill_name: str | None = None,
     start_time: str | None = None,
     completion_time: str | None = None,
     status: str = "Completed",
@@ -392,6 +396,7 @@ def write_process_record(
         performed_by=performed_by,
         capability_reference_iri=capability_reference_iri,
         skill_reference_iri=skill_reference_iri,
+        skill_name=skill_name,
         start_time=start_time,
         completion_time=completion_time,
         status=status,
@@ -485,6 +490,101 @@ def _create_process_tracking_submodel(
     return True
 
 
+# ── BillOfMaterials ComponentReference ───────────────────────────────────────
+
+def get_bom_entry_for_type(
+    aas_server_base: str,
+    product_shell_iri: str,
+    component_type_iri: str,
+) -> str | None:
+    """Return the idShort of the BOM entry whose ComponentTypeReference matches the type IRI.
+
+    ComponentTypeReference is the component category IRI (e.g. …/Component/PCB),
+    which must equal component_type_iri directly.
+
+    Args:
+        aas_server_base: e.g. "http://localhost:8081".
+        product_shell_iri: IRI of the product shell that owns BillOfMaterials.
+        component_type_iri: ComponentTypeReference IRI of the ingredient.
+
+    Returns:
+        idShort of the matching BOM entry, or None if not found. Never raises.
+    """
+    server = aas_server_base.rstrip("/")
+    submodel_id = f"{product_shell_iri.rstrip('/')}/BillOfMaterials"
+    try:
+        resp = requests.get(
+            f"{server}/submodels/{_b64(submodel_id)}/submodel-elements/BOMEntries"
+        )
+        if resp.status_code != 200:
+            return None
+        entries = resp.json().get("value") or []
+        for entry in entries:
+            id_short = entry.get("idShort")
+            if not id_short:
+                continue
+            type_matches = False
+            comp_ref_filled = False
+            for elem in entry.get("value") or []:
+                if elem.get("idShort") == "ComponentTypeReference":
+                    ref_keys = (elem.get("value") or {}).get("keys") or []
+                    if any(k.get("value") == component_type_iri for k in ref_keys):
+                        type_matches = True
+                if elem.get("idShort") == "ComponentReference":
+                    ref_val = elem.get("value")
+                    if ref_val and (ref_val.get("keys") or []):
+                        comp_ref_filled = True
+            if type_matches and not comp_ref_filled:
+                return id_short
+    except requests.RequestException as e:
+        print(f"[bom] HTTP error fetching BOM entries: {e}")
+    return None
+
+
+def write_bom_component_instance_ref(
+    aas_server_base: str,
+    product_shell_iri: str,
+    bom_entry_id_short: str,
+    instance_iri: str,
+) -> bool:
+    """Patch the ComponentReference ReferenceElement in a BOM entry.
+
+    Args:
+        aas_server_base: e.g. "http://localhost:8081".
+        product_shell_iri: IRI of the product shell that owns BillOfMaterials.
+        bom_entry_id_short: idShort of the BOM entry collection (e.g. "Bottom_Cover_1").
+        instance_iri: IRI of the specific component instance shell.
+
+    Returns:
+        True on success, False on any error. Never raises.
+    """
+    server = aas_server_base.rstrip("/")
+    submodel_id = f"{product_shell_iri.rstrip('/')}/BillOfMaterials"
+    path = (
+        f"{server}/submodels/{_b64(submodel_id)}"
+        f"/submodel-elements/BOMEntries.{bom_entry_id_short}.ComponentReference"
+    )
+    headers = {"Content-Type": "application/json"}
+    payload = json.dumps({
+        "modelType": "ReferenceElement",
+        "idShort": "ComponentReference",
+        "value": {
+            "type": "ModelReference",
+            "keys": [{"type": "AssetAdministrationShell", "value": instance_iri}],
+        },
+    })
+    try:
+        resp = requests.put(path, headers=headers, data=payload.encode("utf-8"))
+        if resp.status_code in (200, 201, 204):
+            print(f"[bom] {bom_entry_id_short}.ComponentReference -> {instance_iri}")
+            return True
+        print(f"[bom] PUT ComponentReference failed: {resp.status_code} {resp.text[:200]}")
+        return False
+    except requests.RequestException as e:
+        print(f"[bom] HTTP error writing ComponentReference: {e}")
+        return False
+
+
 def _build_process_record(
     record_id_short: str,
     process_type: str,
@@ -494,6 +594,7 @@ def _build_process_record(
     start_time: str | None,
     completion_time: str | None,
     status: str,
+    skill_name: str | None = None,
 ) -> dict:
     elements: list[dict] = [
         {"modelType": "Property", "idShort": "ProcessType", "valueType": "xs:string", "value": process_type},
@@ -504,18 +605,21 @@ def _build_process_record(
             "modelType": "ReferenceElement",
             "idShort": "CapabilityReference",
             "value": {
-                "type": "ExternalReference",
+                "type": "ModelReference",
                 "keys": [{"type": "Submodel", "value": capability_reference_iri}],
             },
         })
 
-    if skill_reference_iri:
+    if skill_reference_iri and skill_name:
         elements.append({
             "modelType": "ReferenceElement",
             "idShort": "SkillReference",
             "value": {
-                "type": "ExternalReference",
-                "keys": [{"type": "Submodel", "value": skill_reference_iri}],
+                "type": "ModelReference",
+                "keys": [
+                    {"type": "Submodel", "value": skill_reference_iri},
+                    {"type": "SubmodelElementCollection", "value": skill_name},
+                ],
             },
         })
 

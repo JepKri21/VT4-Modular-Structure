@@ -1,8 +1,8 @@
 # SA2 Sub-Assembly: Bottom Cover PCB Fuse Assembly
-# Inputs: SA1 (Bottom Cover PCB) + Fuse 1 + Fuse 2
-# Output: Bottom Cover with PCB and two fuses mounted
-# Two separate Assemble steps: first fuse mounts onto BottomCoverPCB,
-# second fuse mounts onto the partially assembled result.
+# Inputs: SA1 (Bottom Cover PCB) + 2 Fuses
+# Output: Bottom Cover with PCB and fuses mounted
+# Two separate BOM entries (one per fuse) so each physical fuse gets its own
+# ComponentReference slot for full traceability.
 # IsSubAssembly flags are MES-specific — ignored by form_to_aas.py template processing.
 
 type: "bottom_cover_assembly_chain"
@@ -37,29 +37,29 @@ submodels:
       - Description: "Bottom Cover PCB Sub-Assembly"
         Quantity: 1
         IsSubAssembly: true
-        ProductFamilyRef: "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB/BottomCoverPCB"
-      - Description: "Fuse 1 – 16A Slow-Blow"
+        ComponentTypeReference: "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
+      - Description: "Fuse Slow Blow 1"
         Quantity: 1
         IsSubAssembly: false
-        ProductFamilyRef: "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB"
-      - Description: "Fuse 2 – 16A Slow-Blow"
+        ComponentTypeReference: "https://aausmartlab.org/Shells/Component/Fuse"
+      - Description: "Fuse Slow Blow 2"
         Quantity: 1
         IsSubAssembly: false
-        ProductFamilyRef: "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB"
+        ComponentTypeReference: "https://aausmartlab.org/Shells/Component/Fuse"
 
   BillOfProcesses:
     ProcessTracking:
-      - StepRef: "Assemble_Fuse1_1"
+      - StepRef: "Assemble_First_Fuse_1"
         StepStatus: "Pending"
-      - StepRef: "Assemble_Fuse2_2"
+      - StepRef: "Assemble_Second_Fuse_2"
         StepStatus: "Pending"
 
     ProcessSteps:
-      - Operation: "Assemble Fuse 1"
+      - Operation: "Assemble First Fuse"
         ProcessType: "Assemble"
         RequiredComponents:
           - "BottomCoverPCB"
-          - "Fuse16ASB"
+          - "Fuse"
         StepConstraints:
           MaxDurationS: 90
           RequiresInspection: false
@@ -74,7 +74,7 @@ submodels:
               - language: "da"
                 text: "Monter første sikring på PCB"
           ProcessTransformations:
-            AssembleFuse1:
+            AssembleFirstFuse:
               InputTypes:
                 ComponentTypeReference:
                   - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
@@ -86,10 +86,10 @@ submodels:
             - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
             - "https://aausmartlab.org/Shells/Component/Fuse"
 
-      - Operation: "Assemble Fuse 2"
+      - Operation: "Assemble Second Fuse"
         ProcessType: "Assemble"
         RequiredComponents:
-          - "Fuse16ASB"
+          - "Fuse"
         StepConstraints:
           MaxDurationS: 90
           RequiresInspection: false
@@ -97,14 +97,14 @@ submodels:
           Parameters:
             TargetPosition:
               XPos: 5.0
-              YPos: 10.0
+              YPos: -20.0
             OperationLabel:
               - language: "en"
                 text: "Assemble second fuse onto PCB"
               - language: "da"
                 text: "Monter anden sikring på PCB"
           ProcessTransformations:
-            AssembleFuse2:
+            AssembleSecondFuse:
               InputTypes:
                 ComponentTypeReference:
                   - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"

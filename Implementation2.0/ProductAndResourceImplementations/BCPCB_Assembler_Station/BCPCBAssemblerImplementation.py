@@ -102,15 +102,15 @@ resource_inventories = {
         "AccessibleActors" : [Actor],
         "Storage" : 
         {
-            "position1": "",
-            "position2": "",
-            "position3": "",
-            "position4": "",
-            "position5": "",
-            "position6": "",
+            "position1": "https://aausmartlab.org/Shells/Component/PCB/PCBFuseBoxA-124cc043-87d1-489a-8826-db9e09cb3ed9",
+            "position2": "https://aausmartlab.org/Shells/Component/PCB/PCBFuseBoxA-31db1a81-e874-41bf-9f4d-59fe549897ea",
+            "position3": "https://aausmartlab.org/Shells/Component/PCB/PCBFuseBoxA-37cb759e-b8de-42c7-ab0c-d070098197f6",
+            "position4": "https://aausmartlab.org/Shells/Component/PCB/PCBFuseBoxA-5f144a97-53bf-44f1-8bc0-912a0bbe81cd",
+            "position5": "https://aausmartlab.org/Shells/Component/PCB/PCBFuseBoxA-6459cd50-8445-43cd-b7fc-6f900086d1df",
+            "position6": "https://aausmartlab.org/Shells/Component/PCB/PCBFuseBoxA-b717a8b1-690e-43d8-a3ec-13f749ad8d6e",
             "position7": "",
             "position8": "",
-            "position9": "https://aausmartlab.org/Shells/Component/PCB/PCBFuseBoxA-a30d0e20-d9c7-4f66-a2d8-0045ac564a1c",
+            "position9": "",
             "position10": ""
         }
     }
