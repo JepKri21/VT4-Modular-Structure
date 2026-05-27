@@ -101,16 +101,16 @@ resource_inventories = {
         "AccessibleActors" : [Actor],
         "Storage" : 
         {
-            "position1": "https://aausmartlab.org/Shells/Component/TopCover/TopCoverABSBlack-2b7d8fe5-6fba-45a1-b88c-a38f85c947dc",
-            "position2": "https://aausmartlab.org/Shells/Component/TopCover/TopCoverPLABlack-e66de8ae-2652-4361-8962-31b1a89db358",
-            "position3": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverABSBlack-46fd5637-0e86-42d0-b299-11f0503c3d27",
-            "position4": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover-BC004",
-            "position5": "https://aausmartlab.org/Shells/Component/TopCover/TopCover-TC001",
-            "position6": "https://aausmartlab.org/Shells/Component/TopCover/TopCoverABSBlack-1939d42b-e4f4-4bde-9519-eef6c7e30089",
-            "position7": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverPLAWhite-97e0922b-e150-4ce8-a902-cb3faa00900e",
-            "position8": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_3e06a1b6-96bf-4b44-abf6-b5e122c50427",
-            "position9": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverABSBlack-771672b9-ba6b-4e44-8a55-3796401462e6",
-            "position10": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverABSBlack-b0a74448-913c-4d86-9158-df551fe0c09b"
+            "position1": "https://aausmartlab.org/Shells/Component/TopCover/TopCoverABSBlack-760161c4-f2fd-4bfc-a460-d6a46820fa4c",
+            "position2": "https://aausmartlab.org/Shells/Component/TopCover/TopCoverABSWhite-63dcfb92-bb7b-4b99-ac4c-dd43229f6359",
+            "position3": "https://aausmartlab.org/Shells/Component/TopCover/TopCoverPLABlack-2adc6476-e2f4-4ccd-a635-a96e8819039f",
+            "position4": "https://aausmartlab.org/Shells/Component/TopCover/TopCoverPLABlue-f6302f71-07d8-459a-aab4-9892c927e205",
+            "position5": "https://aausmartlab.org/Shells/Component/TopCover/TopCoverPLARed-8f3f85db-5aac-46e7-be6a-b43273a6681e",
+            "position6": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverABSBlack-3005f5e4-86b5-4e13-8ba2-c4e524302921",
+            "position7": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverABSWhite-5698e6d9-8e48-4493-a57a-e1701d3bde18",
+            "position8": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverPETGGray-cd1be33c-0642-4403-8b84-ec52f983fff1",
+            "position9": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverPLABlue-73e9917e-9bf9-4a3a-b998-c7731df4dc2e",
+            "position10": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverPLARed-e45327e2-b872-4f7e-9318-4ca2d3fdbd42"
         }
     },
     "Inventory2": 

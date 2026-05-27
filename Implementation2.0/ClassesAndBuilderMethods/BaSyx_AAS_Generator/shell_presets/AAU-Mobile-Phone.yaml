@@ -32,11 +32,11 @@ submodels:
       - Description: "Bottom Cover PCB Fuse Sub-Assembly"
         Quantity: 1
         IsSubAssembly: true
-        ProductFamilyRef: "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse/BottomCoverPCBFuse"
+        ComponentTypeReference: "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
       - Description: "Top Cover"
         Quantity: 1
         IsSubAssembly: false
-        ProductFamilyRef: "https://aausmartlab.org/Shells/Component/TopCover/TopCover"
+        ComponentTypeReference: "https://aausmartlab.org/Shells/Component/TopCover"
 
   BillOfProcesses:
     ProcessSteps:

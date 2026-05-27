@@ -10,14 +10,15 @@ async function ensureMigrations() {
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { orderId: string } }
+  { params }: { params: Promise<{ orderId: string }> }
 ) {
   await ensureMigrations();
 
+  const { orderId } = await params;
   const res = await pool.query(
     `SELECT order_id, status, cancelled_at, cancellation_reason
      FROM aas_orders WHERE order_id = $1`,
-    [params.orderId]
+    [orderId]
   );
 
   if (res.rows.length === 0) {

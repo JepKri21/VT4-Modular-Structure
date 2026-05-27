@@ -31,7 +31,7 @@ elements:
         semantic_id: "https://aausmartlab.org/Semantics/ComponentTypeRef"
 
       - type: reference_element
-        id_short: "ComponentInstanceRef"
+        id_short: "ComponentReference"
         value: "https://aausmartlab.org/Shells/Component/BottomCover-BC001/Properties"
         semantic_id: "https://aausmartlab.org/Semantics/ComponentInstanceRef"
 

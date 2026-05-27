@@ -168,6 +168,8 @@ class Scheduler:
         # Per-order traceability: order_id -> {ingredient_name -> specific instance IRI}.
         self._traceability: dict[str, dict[str, str]] = {}
 
+        aas_writer.fetch_process_tracking_template(aas_server_base)
+
         # Cross-order instance reservation. Once an order picks a concrete
         # component instance (e.g. BottomCoverABSBlack-<uuid>) from a shared
         # inventory, claim it so a concurrent order doesn't also pick it.
@@ -609,9 +611,15 @@ class Scheduler:
                   "(unresolved inputs) — pausing")
             return
 
+        self._update_output_bom_with_inputs(handler, info)
+
         bop_job_id = f"{order_id}-{bop['step_id']}"
         handler.update_step(bop["step_id"], StepStates.IN_PROGRESS)
+        start_time = datetime.now()
         print(f"[bop] step {bop['step_id']} -> IN_PROGRESS")
+
+        tracking = self._start_process_tracking(bop, info, handler, target, chosen, start_time)
+        bop_rec_id = self._write_bop_step_started(handler, bop, target, start_time)
 
         result = await self._send_and_wait(
             target_iri=target_iri,
@@ -630,6 +638,8 @@ class Scheduler:
             self._apply_bop_cargo_transformation(info, result)
             handler.update_step(bop["step_id"], StepStates.COMPLETED)
             print(f"[ok]  BoP step {bop['step_id']} -> COMPLETED")
+            self._complete_process_tracking(bop, info, handler, tracking, target, chosen, start_time, result)
+            self._write_bop_step_completed(handler, bop_rec_id, result)
         else:
             print(f"[fail] BoP step {bop['step_id']} returned {result.result.value}")
             # Leave the step as IN_PROGRESS — operator decides what to do.
@@ -737,6 +747,16 @@ class Scheduler:
         step.state = StepStates.IN_PROGRESS
         step.timestamps[StepStates.IN_PROGRESS] = datetime.now()
 
+        pre_rec_id: str | None = None
+        if step.component_reference:
+            pre_rec_id = aas_writer.write_process_started(
+                aas_server_base=self.aas_server_base,
+                component_shell_iri=step.component_reference,
+                process_type=step.skill,
+                performed_by=step.resource_id,
+                start_time=step.timestamps[StepStates.IN_PROGRESS].isoformat(),
+            )
+
         result = await self._send_and_wait(
             target_iri=iri,
             resource_topic=step.resource_id,
@@ -755,6 +775,13 @@ class Scheduler:
             step.state = StepStates.COMPLETED
             step.timestamps[StepStates.COMPLETED] = datetime.now()
             print(f"[ok]        {step.step_id} ({step.skill}) -> COMPLETED\n")
+            if pre_rec_id and step.component_reference:
+                aas_writer.write_process_completed(
+                    aas_server_base=self.aas_server_base,
+                    component_shell_iri=step.component_reference,
+                    record_id_short=pre_rec_id,
+                    completion_time=step.timestamps[StepStates.COMPLETED].isoformat(),
+                )
             self._capture_retrieve_traceability(step, result, order_id)
             # Apply the step's declared cargo side-effects to the ledger.
             # See PreProcessStep.cargo_transfers for the semantics:
@@ -864,6 +891,7 @@ class Scheduler:
         for m in matches:
             if order_id is None or self._reserve_instance(m.component_id, order_id):
                 instance = m.component_id
+                ingredient["ComponentReference"] = instance
                 break
             print(
                 f"[reserve] '{ingredient.get('name')}': skipping {m.component_id} "
@@ -1239,11 +1267,10 @@ class Scheduler:
 
     async def _finalize_order(self, handler: WorkOrderHandler) -> None:
         order_id = handler.workorder["OrderId"]
-        product_ref = handler.workorder.get("ProductReference", "")
         print(f"\n[finalize] order {order_id} — all BoP steps complete")
 
         await self._run_post_process(handler)
-        self._write_traceability(order_id, product_ref)
+        self._write_traceability(order_id, handler)
         self._publish_order_complete(handler)
 
         print(f"[finalize] order {order_id} -> COMPLETE\n")
@@ -1367,17 +1394,198 @@ class Scheduler:
             return None
         return max(steps, key=lambda s: s["precedence"])
 
-    def _write_traceability(self, order_id: str, product_ref: str) -> None:
-        used = self._traceability.get(order_id, {})
-        if not used or not product_ref:
+    def _start_process_tracking(
+        self,
+        bop: dict,
+        info: dict,
+        handler: WorkOrderHandler,
+        target: ResourceEndpoint,
+        chosen: dict,
+        start_time: datetime,
+    ) -> dict[str, tuple[str, str]]:
+        """Write InProgress ProcessRecords on all input shells and any pre-known output shells.
+
+        Called just before _send_and_wait so the record exists on BaSyx from the moment
+        the CMD is sent. Uses the handler's live Ingredients dict because
+        _resolve_input_instance() wrote resolved IRIs there, not back into info.
+
+        Returns:
+            Mapping of ingredient_name -> (shell_iri, record_id_short) for every record
+            successfully created. Passed to _complete_process_tracking() to PATCH them.
+        """
+        process_type = (bop.get("required_capability") or "Unknown").rsplit("/", 1)[-1]
+        capability_ref = info.get("RequiredCapabilitySubmodelIRI") or chosen.get("capability_submodel_reference")
+        skill_ref = f"{chosen['resource_id']}/Skills" if chosen.get("resource_id") else None
+        skill_name = chosen.get("skill_name")
+        performed_by = target.resource_id
+        start_iso = start_time.isoformat()
+        live = (handler.workorder or {}).get("Ingredients", {})
+
+        tracking: dict[str, tuple[str, str]] = {}
+        seen_iris: set[str] = set()
+
+        all_ingredients = list(info.get("InputIngredients") or []) + list(info.get("OutputIngredients") or [])
+        for ing in all_ingredients:
+            name = ing.get("name", "")
+            shell_iri = live.get(name, {}).get("ComponentReference") or ""
+            if not shell_iri or shell_iri in seen_iris:
+                continue
+            seen_iris.add(shell_iri)
+            rec_id = aas_writer.write_process_started(
+                aas_server_base=self.aas_server_base,
+                component_shell_iri=shell_iri,
+                process_type=process_type,
+                performed_by=performed_by,
+                capability_reference_iri=capability_ref,
+                skill_reference_iri=skill_ref,
+                skill_name=skill_name,
+                start_time=start_iso,
+            )
+            if rec_id:
+                tracking[name] = (shell_iri, rec_id)
+
+        return tracking
+
+    def _complete_process_tracking(
+        self,
+        bop: dict,
+        info: dict,
+        handler: WorkOrderHandler,
+        tracking: dict[str, tuple[str, str]],
+        target: ResourceEndpoint,
+        chosen: dict,
+        start_time: datetime,
+        result: MS.JobResultMessage,
+    ) -> None:
+        """Patch InProgress records to Completed, and write full records for new output shells.
+
+        Called after _apply_output_traceability() so newly-created output shell IRIs
+        are already in handler.workorder["Ingredients"].
+        """
+        completion_iso = result.timestamp.isoformat() if result.timestamp else datetime.now().isoformat()
+        process_type = (bop.get("required_capability") or "Unknown").rsplit("/", 1)[-1]
+        capability_ref = info.get("RequiredCapabilitySubmodelIRI") or chosen.get("capability_submodel_reference")
+        skill_ref = f"{chosen['resource_id']}/Skills" if chosen.get("resource_id") else None
+        skill_name = chosen.get("skill_name")
+        start_iso = start_time.isoformat()
+        live = (handler.workorder or {}).get("Ingredients", {})
+
+        # Patch every record that was created at step start.
+        for name, (shell_iri, rec_id) in tracking.items():
+            aas_writer.write_process_completed(
+                aas_server_base=self.aas_server_base,
+                component_shell_iri=shell_iri,
+                record_id_short=rec_id,
+                completion_time=completion_iso,
+            )
+
+        # Output shells whose IRI was only resolved after the result came back
+        # (newly assembled sub-assemblies): write a full record now.
+        tracked_iris = {iri for _, (iri, _) in tracking.items()}
+        for ing in info.get("OutputIngredients") or []:
+            name = ing.get("name", "")
+            shell_iri = live.get(name, {}).get("ComponentReference") or ""
+            if not shell_iri or shell_iri in tracked_iris:
+                continue  # already handled above
+            aas_writer.write_process_record(
+                aas_server_base=self.aas_server_base,
+                component_shell_iri=shell_iri,
+                process_type=process_type,
+                performed_by=target.resource_id,
+                capability_reference_iri=capability_ref,
+                skill_reference_iri=skill_ref,
+                skill_name=skill_name,
+                start_time=start_iso,
+                completion_time=completion_iso,
+            )
+
+    def _update_output_bom_with_inputs(
+        self,
+        handler: WorkOrderHandler,
+        info: dict,
+    ) -> None:
+        """Write each input ingredient's instance IRI into the output shell's BOM.
+
+        Called after _build_process_transformation succeeds and before _send_and_wait.
+        All input IRIs are resolved by this point. Output shell IRIs are pre-assigned
+        in the WorkOrder so we don't need to wait for the JobResult.
+        Best-effort — never raises.
+        """
+        live = (handler.workorder or {}).get("Ingredients", {})
+
+        for out_ing in info.get("OutputIngredients") or []:
+            out_name = out_ing.get("name", "")
+            out_shell_iri = live.get(out_name, {}).get("ComponentReference") or ""
+            if not out_shell_iri:
+                continue
+
+            for in_ing in info.get("InputIngredients") or []:
+                in_name = in_ing.get("name", "")
+                in_instance_iri = live.get(in_name, {}).get("ComponentReference") or ""
+                in_type_iri = live.get(in_name, {}).get("ComponentTypeReference") or ""
+                if not in_instance_iri or not in_type_iri:
+                    continue
+
+                bom_entry = aas_writer.get_bom_entry_for_type(
+                    self.aas_server_base, out_shell_iri, in_type_iri
+                )
+                if not bom_entry:
+                    continue
+
+                aas_writer.write_bom_component_instance_ref(
+                    self.aas_server_base, out_shell_iri, bom_entry, in_instance_iri
+                )
+
+    def _product_shell_iri(self, handler: WorkOrderHandler) -> str:
+        product_ref = handler.workorder.get("ProductReference", "") or ""
+        if not product_ref:
+            return ""
+        return product_ref if product_ref.startswith("http") else f"https://aausmartlab.org/Shells/Assembly/{product_ref}"
+
+    def _write_bop_step_started(
+        self,
+        handler: WorkOrderHandler,
+        bop: dict,
+        target: ResourceEndpoint,
+        start_time: datetime,
+    ) -> str | None:
+        shell_iri = self._product_shell_iri(handler)
+        if not shell_iri:
+            return None
+        return aas_writer.write_bop_step_started(
+            aas_server_base=self.aas_server_base,
+            product_shell_iri=shell_iri,
+            step_id_short=bop["step_id"],
+            executed_by=target.resource_id,
+            start_time=start_time.isoformat(),
+        )
+
+    def _write_bop_step_completed(
+        self,
+        handler: WorkOrderHandler,
+        rec_id: str | None,
+        result: MS.JobResultMessage,
+    ) -> None:
+        if not rec_id:
             return
-        # WorkOrder's product_ref is short (e.g. "Bottom_Cover_Drilled_PCB-BCDP001").
-        # Convert to a shell IRI candidate; if it's already an IRI it'll pass through.
-        if product_ref.startswith("http"):
-            shell_iri = product_ref
-        else:
-            shell_iri = f"https://aausmartlab.org/Shells/Assembly/{product_ref}"
-        aas_writer.write_traceability(self.aas_server_base, shell_iri, used)
+        shell_iri = self._product_shell_iri(handler)
+        if not shell_iri:
+            return
+        completion_iso = result.timestamp.isoformat() if result.timestamp else datetime.now().isoformat()
+        aas_writer.write_bop_step_completed(
+            aas_server_base=self.aas_server_base,
+            product_shell_iri=shell_iri,
+            record_id_short=rec_id,
+            completion_time=completion_iso,
+        )
+
+    def _write_traceability(self, order_id: str, handler: WorkOrderHandler) -> None:
+        used = self._traceability.get(order_id, {})
+        if not used:
+            return
+        shell_iri = self._product_shell_iri(handler)
+        if shell_iri:
+            aas_writer.write_traceability(self.aas_server_base, shell_iri, used)
 
     def _publish_order_complete(self, handler: WorkOrderHandler) -> None:
         """Publish a WorkOrderStatus message indicating the order is done."""

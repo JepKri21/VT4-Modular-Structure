@@ -37,6 +37,13 @@ elements:
         description: "Production batch identifier for traceability"
         cardinality: "ZeroToOne"
 
+      - type: property
+        id_short: "OrderNumber"
+        value_type: "xs:string"
+        semantic_id: "https://aausmartlab.org/Semantics/OrderNumber"
+        description: "Order ID that triggered the creation of this shell instance"
+        cardinality: "ZeroToOne"
+
   - type: multi_language_property
     id_short: "DisplayName"
     semantic_id: "https://aausmartlab.org/Semantics/DisplayName"

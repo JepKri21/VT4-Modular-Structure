@@ -25,6 +25,7 @@ import basyx_client
 log = logging.getLogger(__name__)
 
 PRESETS_DIR = Path(__file__).parent.parent / "BaSyx_AAS_Generator" / "shell_presets"
+SHELL_TEMPLATES_DIR = Path(__file__).parent.parent / "BaSyx_AAS_Generator" / "shell_templates"
 
 # Maps the last IRI segment (asset_name) to a preset file name
 ASSET_NAME_TO_PRESET: dict[str, str] = {
@@ -119,26 +120,93 @@ def _get_type_shell_properties(component_iri: str, basyx_url: str) -> dict:
     _TYPE_SHELL_PROPS_CACHE[component_iri] = result
     return result
 
-def _fetch_required_cap_params(shell_iri: str, operation: str, basyx_url: str) -> dict:
+def _fetch_required_component_iris(shell_iri: str, operation: str, basyx_url: str) -> list[str]:
+    """
+    Read RequiredComponents model references from the BOP in BaSyx and resolve
+    each one to the ComponentTypeReference IRI of the referenced BOM entry.
+
+    Returns a list of component type IRIs, e.g.
+    ["https://aausmartlab.org/Shells/Component/BottomCover",
+     "https://aausmartlab.org/Shells/Component/PCB"].
+    """
+    bop_iri = f"{shell_iri}/BillOfProcesses"
+    bop = basyx_client.fetch_submodel(bop_iri, basyx_url)
+    if not bop:
+        log.warning("BOP not found for RequiredComponents resolution: %s", bop_iri)
+        return []
+
+    steps_coll = basyx_client.find_element_by_idshort(bop.get("submodelElements", []), "ProcessSteps")
+    if not steps_coll:
+        return []
+
+    req_refs: list[dict] = []
+    for step_elem in (steps_coll.get("value") or []):
+        op_elem = basyx_client.find_element_by_idshort(step_elem.get("value", []), "Operation")
+        if (op_elem or {}).get("value", "") != operation:
+            continue
+        req_list = basyx_client.find_element_by_idshort(step_elem.get("value", []), "RequiredComponents")
+        if req_list:
+            req_refs = req_list.get("value") or []
+        break
+
+    iris: list[str] = []
+    for ref_elem in req_refs:
+        keys = (ref_elem.get("value") or {}).get("keys", [])
+        # Expected: [Submodel: bom_iri, SMC: "BOMEntries", SMC: entry_id_short]
+        if len(keys) < 3:
+            continue
+        bom_sm_iri = keys[0].get("value", "")
+        entry_id_short = keys[2].get("value", "")
+        if not bom_sm_iri or not entry_id_short:
+            continue
+
+        bom_sm = basyx_client.fetch_submodel(bom_sm_iri, basyx_url)
+        if not bom_sm:
+            log.warning("BOM submodel not found: %s", bom_sm_iri)
+            continue
+
+        entries_coll = basyx_client.find_element_by_idshort(bom_sm.get("submodelElements", []), "BOMEntries")
+        if not entries_coll:
+            continue
+
+        entry_elem = basyx_client.find_element_by_idshort((entries_coll.get("value") or []), entry_id_short)
+        if not entry_elem:
+            log.warning("BOM entry %s not found in %s", entry_id_short, bom_sm_iri)
+            continue
+
+        comp_ref_elem = basyx_client.find_element_by_idshort(entry_elem.get("value", []), "ComponentTypeReference")
+        if not comp_ref_elem:
+            continue
+
+        ref_keys = (comp_ref_elem.get("value") or {}).get("keys", [])
+        if ref_keys:
+            iri = ref_keys[0].get("value", "")
+            if iri:
+                iris.append(iri)
+
+    return iris
+
+
+def _fetch_required_cap_params(shell_iri: str, operation: str, basyx_url: str) -> tuple[dict, str | None]:
     """
     Fetch capability parameters for a process step from BaSyx.
 
     Looks up the shell's BillOfProcesses submodel, finds the step whose
     Operation matches, follows its RequiredCapabilityRef, and returns
-    { id_short: { SemanticId, value } } for every leaf Property element.
-    Returns an empty dict if the BOP or ref is not found.
+    ({ id_short: { SemanticId, value } }, required_capability_submodel_iri).
+    Returns ({}, None) if the BOP or ref is not found.
     """
     bop_iri = f"{shell_iri}/BillOfProcesses"
     bop = basyx_client.fetch_submodel(bop_iri, basyx_url)
     if not bop:
         log.warning("BOP not found in BaSyx: %s", bop_iri)
-        return {}
+        return {}, None
 
     steps_coll = basyx_client.find_element_by_idshort(
         bop.get("submodelElements", []), "ProcessSteps"
     )
     if not steps_coll:
-        return {}
+        return {}, None
 
     cap_sm_iri: str | None = None
     for step_elem in (steps_coll.get("value") or []):
@@ -157,12 +225,12 @@ def _fetch_required_cap_params(shell_iri: str, operation: str, basyx_url: str) -
 
     if not cap_sm_iri:
         log.warning("No RequiredCapabilityReference for operation=%s in %s", operation, bop_iri)
-        return {}
+        return {}, None
 
     cap_sm = basyx_client.fetch_submodel(cap_sm_iri, basyx_url)
     if not cap_sm:
         log.warning("Required capability submodel not found: %s", cap_sm_iri)
-        return {}
+        return {}, cap_sm_iri
 
     def _parse_elements(elements: list) -> dict:
         """Parse BaSyx elements into a dict, preserving collection nesting."""
@@ -189,8 +257,8 @@ def _fetch_required_cap_params(shell_iri: str, operation: str, basyx_url: str) -
         cap_sm.get("submodelElements", []), "Parameters"
     )
     if not params_coll:
-        return {}
-    return _parse_elements(params_coll.get("value", []))
+        return {}, cap_sm_iri
+    return _parse_elements(params_coll.get("value", [])), cap_sm_iri
 
 
 
@@ -201,6 +269,25 @@ def _load_preset(name: str) -> dict:
     path = PRESETS_DIR / f"{name}.yaml"
     with open(path, encoding="utf-8") as f:
         return yaml.safe_load(f)
+
+
+def _type_iri_base_from_shell_template(shell_type: str) -> str:
+    """Derive the type-level IRI base from a shell template's id_pattern.
+
+    Reads id_pattern (e.g. "…/Shells/Product/{asset_type}/{asset_name}_{uuid}")
+    and strips everything from /{asset_name} onward, leaving the {asset_type}
+    token in place for the caller to substitute.
+
+    Returns "" if the template file is missing or has no id_pattern.
+    """
+    path = SHELL_TEMPLATES_DIR / f"{shell_type}.yaml"
+    try:
+        with open(path, encoding="utf-8") as f:
+            tmpl = yaml.safe_load(f)
+        id_pattern = tmpl.get("id_pattern", "")
+        return re.sub(r"/\{asset_name\}.*$", "", id_pattern)
+    except Exception:
+        return ""
 
 
 _UUID_RE = re.compile(
@@ -393,7 +480,7 @@ def build_workorder(
         input_ids: list[str] = []
 
         for entry in bom_entries:
-            ref_iri = entry.get("ProductFamilyRef", "")
+            ref_iri = entry.get("ComponentTypeReference", "")
             if not ref_iri:
                 continue
 
@@ -416,45 +503,34 @@ def build_workorder(
                 component_ref_iri = _type_iri_from_full(type_iri)
                 category_iri = _component_type_iri(component_ref_iri)
 
-                ing_id = _make_ing_id(_asset_name_from_iri(component_ref_iri))
-
-                ingredients[ing_id] = {
-                    "ComponentReference": "",
-                    "ComponentTypeReference": category_iri,
-                }
-
-                # Static defaults from the category type shell in BaSyx
-                # (e.g. .../Component/Fuse → Length/Width/Height).
-                # Delta (Material/Color/Finish) comes from the order configuration.
-                # Order values override type-shell defaults.
+                # Expand this BOM entry N times according to the YAML BOM Quantity field.
+                # Each explicitly-split entry (Quantity: 1) produces exactly one ingredient,
+                # so two Fuse entries → two ingredients without further MES-quantity expansion.
+                ordered_qty = int(entry.get("Quantity", 1))
                 type_props = _get_type_shell_properties(component_ref_iri, basyx_url) if basyx_url else {}
                 order_props = _make_properties_for_slot(slot_cfg) if slot_cfg else {}
                 merged: dict = {}
                 for section in set(type_props) | set(order_props):
                     merged[section] = {**type_props.get(section, {}), **order_props.get(section, {})}
-                properties[ing_id] = merged
-                log.info(
-                    "ingredient %s — %s",
-                    ing_id,
-                    {s: list(v.keys()) for s, v in merged.items()},
-                )
-                input_ids.append(ing_id)
+
+                for _ in range(ordered_qty):
+                    ing_id = _make_ing_id(_asset_name_from_iri(component_ref_iri))
+                    ingredients[ing_id] = {
+                        "ComponentReference": "",
+                        "ComponentTypeReference": category_iri,
+                    }
+                    properties[ing_id] = merged
+                    log.info(
+                        "ingredient %s — %s",
+                        ing_id,
+                        {s: list(v.keys()) for s, v in merged.items()},
+                    )
+                    input_ids.append(ing_id)
 
         # ── Step 2: process BOP steps ───────────────────────────────────────
-        if shell_type == "final_product_shell":
-            level_iri_template = (
-                f"https://aausmartlab.org/Shells/Product/{asset_type}/{asset_name}"
-            )
-            type_iri_template = (
-                f"https://aausmartlab.org/Shells/Product/{asset_type}"
-            )
-        else:
-            level_iri_template = (
-                f"https://aausmartlab.org/Shells/Assembly/{asset_type}/{asset_name}"
-            )
-            type_iri_template = (
-                f"https://aausmartlab.org/Shells/Assembly/{asset_type}"
-            )
+        iri_base = _type_iri_base_from_shell_template(shell_type)
+        type_iri_template = iri_base.replace("{asset_type}", asset_type)
+        level_iri_template = f"{type_iri_template}/{asset_name}"
 
         instance_iri = shell_iris.get(asset_name, level_iri_template)
 
@@ -471,7 +547,13 @@ def build_workorder(
 
         for step in bop_steps:
             process_type = step.get("ProcessType", "")
-            required_comps = step.get("RequiredComponents", [])
+            operation = step.get("Operation", "")
+
+            # Fetch RequiredComponents from the AAS (model references → resolved IRIs)
+            required_comp_iris = (
+                _fetch_required_component_iris(instance_iri, operation, basyx_url)
+                if basyx_url else []
+            )
 
             if process_type == "Assemble":
                 has_assemble_step = True
@@ -482,7 +564,7 @@ def build_workorder(
                     assemblies[output_id] = {"Ingredients": list(input_ids)}
 
                 # Find which remaining inputs this step explicitly requires
-                step_inputs = _find_all_step_inputs(remaining_inputs, required_comps, ingredients)
+                step_inputs = _find_all_step_inputs(remaining_inputs, required_comp_iris, ingredients)
                 if not step_inputs:
                     step_inputs = list(remaining_inputs)
                 for sid in step_inputs:
@@ -497,12 +579,12 @@ def build_workorder(
                 cap_ref = "https://aausmartlab.org/Submodels/Capability/Assemble"
                 step_name = f"ProcessStep{_step_counter[0]}"
                 deps = [_last_step_id[0]] if _last_step_id[0] else []
-                operation = step.get("Operation", "Assemble")
-                params = _fetch_required_cap_params(instance_iri, operation, basyx_url) if basyx_url else {}
+                params, req_cap_iri = _fetch_required_cap_params(instance_iri, operation, basyx_url) if basyx_url else ({}, None)
                 if output_id not in process_steps:
                     process_steps[output_id] = {}
                 process_steps[output_id][step_name] = {
                     "CapabilityReference": cap_ref,
+                    "RequiredCapabilitySubmodelReference": req_cap_iri,
                     "ProcessStepId": step_id,
                     "Dependencies": deps,
                     "Parameters": params,
@@ -516,15 +598,15 @@ def build_workorder(
             else:
                 # Non-assemble step (e.g. Drilling) — operates in-place on a raw ingredient.
                 # Step is stored under the target ingredient's key (not the output assembly).
-                target_id = _find_target_ingredient(input_ids, required_comps, ingredients)
+                target_id = _find_target_ingredient(input_ids, required_comp_iris, ingredients)
                 if target_id is None and input_ids:
                     target_id = input_ids[0]
 
                 if target_id:
                     step_id = _next_step()
-                    cap_name = process_type or step.get("Operation", "")
+                    cap_name = process_type or operation
                     cap_ref = f"https://aausmartlab.org/Submodels/Capability/{cap_name}"
-                    params = _fetch_required_cap_params(instance_iri, cap_name, basyx_url) if basyx_url else {}
+                    params, req_cap_iri = _fetch_required_cap_params(instance_iri, cap_name, basyx_url) if basyx_url else ({}, None)
 
                     step_name = f"ProcessStep{_step_counter[0]}"
                     deps = [_last_step_id[0]] if _last_step_id[0] else []
@@ -532,6 +614,7 @@ def build_workorder(
                         process_steps[target_id] = {}
                     process_steps[target_id][step_name] = {
                         "CapabilityReference": cap_ref,
+                        "RequiredCapabilitySubmodelReference": req_cap_iri,
                         "ProcessStepId": step_id,
                         "Dependencies": deps,
                         "Parameters": params,
@@ -541,6 +624,29 @@ def build_workorder(
                         },
                     }
                     _last_step_id[0] = step_id
+
+        # Emit extra assemble steps for any quantity-expanded ingredients not
+        # consumed by the BOP step templates (e.g. quantity=2 with one step template).
+        while remaining_inputs and has_assemble_step:
+            assemble_count[0] += 1
+            extra_inputs = [output_id] + list(remaining_inputs)
+            remaining_inputs.clear()
+            step_id = _next_step()
+            step_name = f"ProcessStep{_step_counter[0]}"
+            deps = [_last_step_id[0]] if _last_step_id[0] else []
+            if output_id not in process_steps:
+                process_steps[output_id] = {}
+            process_steps[output_id][step_name] = {
+                "CapabilityReference": "https://aausmartlab.org/Submodels/Capability/Assemble",
+                "ProcessStepId": step_id,
+                "Dependencies": deps,
+                "Parameters": {},
+                "ProcessTransformations": {
+                    "InputTypes": extra_inputs,
+                    "OutputTypes": [output_id],
+                },
+            }
+            _last_step_id[0] = step_id
 
         # If no assemble step produced the output, return the raw inputs instead
         if not has_assemble_step:
@@ -553,39 +659,37 @@ def build_workorder(
 
     def _find_target_ingredient(
         input_ids: list[str],
-        required_comps: list[str],
+        required_comp_iris: list[str],
         ingredients: dict[str, dict],
     ) -> str | None:
+        """Return the first ingredient whose ComponentTypeReference matches a required IRI."""
         for ing_id in input_ids:
             ing = ingredients[ing_id]
-            # Match against ComponentTypeReference (preferred) or ComponentReference
             ref = ing.get("ComponentTypeReference") or ing.get("ComponentReference", "")
-            for req in required_comps:
-                req_l = req.lower()
-                if req_l in ref.lower() or ref.endswith(req) or req_l in ing_id.lower():
+            for iri in required_comp_iris:
+                if ref == iri or ref.startswith(iri) or iri.startswith(ref):
                     return ing_id
         return None
 
     def _find_all_step_inputs(
         input_ids: list[str],
-        required_comps: list[str],
+        required_comp_iris: list[str],
         ingredients: dict[str, dict],
     ) -> list[str]:
-        """Return ingredient IDs from input_ids matching required_comps, one per requirement."""
-        if not required_comps:
+        """Return ingredient IDs matching required_comp_iris, one match per IRI."""
+        if not required_comp_iris:
             return []
         matched: list[str] = []
-        unmatched_reqs = list(required_comps)
+        unmatched = list(required_comp_iris)
         for ing_id in input_ids:
-            if not unmatched_reqs:
+            if not unmatched:
                 break
             ing = ingredients.get(ing_id, {})
             ref = ing.get("ComponentTypeReference") or ing.get("ComponentReference", "")
-            for req in list(unmatched_reqs):
-                req_l = req.lower()
-                if req_l in ref.lower() or ref.endswith(req) or req_l in ing_id.lower():
+            for iri in list(unmatched):
+                if ref == iri or ref.startswith(iri) or iri.startswith(ref):
                     matched.append(ing_id)
-                    unmatched_reqs.remove(req)
+                    unmatched.remove(iri)
                     break
         return matched
 

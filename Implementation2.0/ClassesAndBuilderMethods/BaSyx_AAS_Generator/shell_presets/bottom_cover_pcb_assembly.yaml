@@ -37,11 +37,11 @@ submodels:
       - Description: "Bottom Cover – PLA"
         Quantity: 1
         IsSubAssembly: false
-        ProductFamilyRef: "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover3DP"
+        ComponentTypeReference: "https://aausmartlab.org/Shells/Component/BottomCover"
       - Description: "PCB Board"
         Quantity: 1
         IsSubAssembly: false
-        ProductFamilyRef: "https://aausmartlab.org/Shells/Component/PCB/PCBFuseBoxA"
+        ComponentTypeReference: "https://aausmartlab.org/Shells/Component/PCB"
 
   BillOfProcesses:
     ProcessTracking:
@@ -88,7 +88,7 @@ submodels:
         ProcessType: "Assemble"
         RequiredComponents:
           - "BottomCover"
-          - "PCBFuseBoxA"
+          - "PCB"
         StepConstraints:
           MaxDurationS: 120
           RequiresInspection: false
