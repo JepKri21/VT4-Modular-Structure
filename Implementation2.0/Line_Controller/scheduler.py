@@ -41,7 +41,8 @@ from pre_process_planner import (
     release_sequence_for,
 )
 from transport_planner import TransportPlanner
-from MQTTClientControllerV2 import MQTTClientController
+from MQTTClientControllerV2 import MQTTClientController, CmdNoAckError
+from order_recovery import RecoveryAction, RecoveryReason
 import aas_writer
 
 
@@ -148,6 +149,7 @@ class Scheduler:
         product_matcher: ProductMatcher,
         occupancy: OccupancyManager,
         aas_server_base: str,
+        recovery=None,
         workorder: dict | None = None,
     ) -> None:
         self.controller = controller
@@ -159,6 +161,14 @@ class Scheduler:
         self.product_matcher = product_matcher
         self.occupancy = occupancy
         self.aas_server_base = aas_server_base
+        # OrderRecovery — optional so existing call sites in tests still
+        # construct Scheduler without it. When set, run_order delegates
+        # recovery to this object on detectable step failures.
+        self.recovery = recovery
+        # order_id -> WorkOrderHandler. Used by the unreachable callback
+        # so we can map a freshly-offline resource to the handler(s) that
+        # need to be re-evaluated.
+        self._active_orders: dict[str, "WorkOrderHandler"] = {}
         # Cached full work order so we can look up an ingredient's
         # Properties when calling ProductMatcher.find_matching_components.
         # The handler also exposes Properties via get_step_execution_info,
@@ -175,6 +185,11 @@ class Scheduler:
         # inventory, claim it so a concurrent order doesn't also pick it.
         # Cleared when the owning order finishes (success or failure).
         self._reserved_instances: dict[str, str] = {}
+
+        # Round-robin cursor for shuttle picks. Rotates the starting actor on
+        # each _pick_shuttle call so successive picks spread across actors
+        # instead of always grabbing the first one in the list.
+        self._shuttle_pick_cursor: int = 0
 
     # ── Cross-order instance reservation ────────────────────────────────────
 
@@ -201,10 +216,27 @@ class Scheduler:
     # ── Public entry point ──────────────────────────────────────────────────
 
     async def run_order(self, handler: WorkOrderHandler) -> None:
-        """Drive a single work order to completion."""
+        """Drive a single work order to completion.
+
+        Recoverable failures (CMD never ACKed, JobResult never arrived,
+        JobResult was INCOMPLETE) route through OrderRecovery if one is
+        wired. Recovery either restarts the order (resetting non-COMPLETED
+        steps and excluding the failed resource) or aborts. Without a
+        recovery instance the exception propagates as before.
+        """
         order_id = handler.workorder["OrderId"]
         product_ref = handler.workorder.get("ProductReference", "")
         self._traceability.setdefault(order_id, {})
+        self._active_orders[order_id] = handler
+        # Capture the start so OrderCompleted can carry both timestamps.
+        order_started_at = datetime.now()
+        # Status is decided per branch and read in the finally block.
+        order_final_status = MS.OrderStatus.ABORTED
+        # Per-attempt context. _execute_bop_step refreshes these so
+        # recovery knows which resource/step to attribute the failure to.
+        self._current_bop_target_iri = None
+        self._current_bop_target_topic = None
+        self._current_bop_step_info = None
 
         await self._seed_initial_state()
 
@@ -214,21 +246,99 @@ class Scheduler:
             while True:
                 if self._is_order_complete(handler):
                     await self._finalize_order(handler)
+                    order_final_status = MS.OrderStatus.COMPLETED
                     return
 
                 ready = handler.get_ready_steps()
                 if not ready:
-                    # nothing to do this tick — could be waiting on dependencies
                     await asyncio.sleep(TICK_INTERVAL_S)
                     continue
 
                 bop = ready[0]
-                await self._execute_bop_step(handler, bop)
+                try:
+                    await self._execute_bop_step(handler, bop)
+                except (CmdNoAckError, asyncio.TimeoutError, RuntimeError) as exc:
+                    if self.recovery is None:
+                        raise
+                    reason = self._classify_recovery_reason(exc)
+                    decision = self.recovery.handle_failure(
+                        handler=handler,
+                        reason=reason,
+                        failed_resource_iri=self._current_bop_target_iri,
+                        failed_resource_topic=self._current_bop_target_topic,
+                        failed_step_info=self._current_bop_step_info,
+                        detail=str(exc) or type(exc).__name__,
+                    )
+                    if decision.action == RecoveryAction.RESTART:
+                        # Wipe per-attempt instance bindings so the next
+                        # attempt re-resolves inputs (a stuck cargo holder
+                        # might still own the prior instance). Reservations
+                        # that aren't stuck were already released in recovery.
+                        self._traceability.pop(order_id, None)
+                        self._traceability.setdefault(order_id, {})
+                        self._release_order_reservations(order_id)
+                        continue
+                    # ABORT: stop driving this order.
+                    return
         finally:
-            # Free this order's hold on shared inventory + reserved actors so
-            # other concurrent orders can grab them.
+            self._active_orders.pop(order_id, None)
             self._release_order_reservations(order_id)
+            # release() leaves stuck cargo claimed — exactly what we want
+            # when an order aborts mid-flight with a part on a shuttle.
             self.occupancy.release(order_id)
+            # Emit OrderCompleted for the metrics bridge. Fire-and-forget;
+            # any publish failure here must not mask the original outcome.
+            try:
+                self._publish_order_completed(
+                    order_id=order_id,
+                    product_ref=product_ref,
+                    started_at=order_started_at,
+                    status=order_final_status,
+                    attempt_count=handler.get_attempt_count(),
+                )
+            except Exception as exc:
+                print(f"[order_completed] publish failed: {exc}")
+
+    def _publish_order_completed(
+        self,
+        *,
+        order_id: str,
+        product_ref: str,
+        started_at: datetime,
+        status,
+        attempt_count: int,
+    ) -> None:
+        """Publish the per-order completion event to the metrics bridge.
+
+        Topic: AAUSmartLab/<line_id>/Controller/OrderCompleted.
+        Uses the controller's raw paho client directly because there's no
+        per-resource topic map for the Controller namespace.
+        """
+        topic = f"{self.controller.base_topic}/Controller/OrderCompleted"
+        msg = MS.OrderCompletedMessage(
+            timestamp=datetime.now(),
+            order_id=order_id,
+            product_ref=product_ref or None,
+            started_at=started_at,
+            completed_at=datetime.now(),
+            status=status,
+            attempt_count=attempt_count,
+        )
+        payload = msg.model_dump(mode="json")
+        import json as _json
+        self.controller.client.publish(topic, _json.dumps(payload))
+        print(f"[order_completed] {order_id} status={status.value}")
+
+    @staticmethod
+    def _classify_recovery_reason(exc: BaseException) -> RecoveryReason:
+        if isinstance(exc, CmdNoAckError):
+            return RecoveryReason.CMD_NO_ACK
+        if isinstance(exc, asyncio.TimeoutError):
+            return RecoveryReason.JOB_TIMEOUT
+        msg = str(exc)
+        if "INCOMPLETE" in msg or "result=" in msg:
+            return RecoveryReason.JOB_INCOMPLETE
+        return RecoveryReason.JOB_TIMEOUT
 
     # ── One-time bootstrap ──────────────────────────────────────────────────
 
@@ -323,9 +433,11 @@ class Scheduler:
             f"component={info['ComponentReference']}"
         )
 
-        # 1) Match → pick target
+        # 1) Match → pick target. Excluded set comes from the handler so a
+        # restarted order avoids the resource that just failed it.
+        excluded = handler.get_excluded_resources()
         print("[bop] running capability matcher…")
-        candidates = self.matcher.match(info)
+        candidates = self.matcher.match(info, excluded_resources=excluded)
         if not candidates:
             print("[bop] no matching resource — pausing this step")
             await asyncio.sleep(TICK_INTERVAL_S)
@@ -343,6 +455,12 @@ class Scheduler:
             has_handoff=self.rm.has_handoff(target_iri),
         )
         print(f"[bop] target  = {target}")
+
+        # Stash per-step context so run_order's recovery branch knows
+        # which resource and step to attribute a failure to.
+        self._current_bop_target_iri = target_iri
+        self._current_bop_target_topic = target.resource_id
+        self._current_bop_step_info = info
 
         handler.update_step(bop["step_id"], StepStates.ASSIGNED, resource=target_iri)
 
@@ -379,6 +497,7 @@ class Scheduler:
                     target=target,
                     target_iri=target_iri,
                     material=material,
+                    prior_reservations=reservations,
                 )
             except RuntimeError as exc:
                 print(f"[bop] cannot plan arrival for input '{ing.get('name')}': {exc}")
@@ -442,6 +561,7 @@ class Scheduler:
         target: ResourceEndpoint,
         target_iri: str,
         material: str | None,
+        prior_reservations: list[tuple[str, str]] | None = None,
     ) -> tuple[PreProcessPlan | None, dict[str, str], list[tuple[str, str]]]:
         """Build a PreProcessPlan that gets one input ingredient to `target`.
 
@@ -536,6 +656,7 @@ class Scheduler:
                     material=material,
                     _target_iri=target_iri,
                     _storage_iri=holder_iri,
+                    excluded=prior_reservations,
                 )
                 iris[holder_topic] = holder_iri
                 iris[shuttle.resource_id] = shuttle_iri
@@ -567,6 +688,7 @@ class Scheduler:
             material=material,
             _target_iri=target_iri,
             _storage_iri=storage_iri,
+            excluded=prior_reservations,
         )
         if picked_instance and ingredient_name:
             self._traceability.setdefault(order_id, {})[ingredient_name] = picked_instance
@@ -840,7 +962,11 @@ class Scheduler:
             parameters=parameters,
         )
         print(f"[cmd]       -> {resource_topic}/{actor_name}  skill={skill}  job={job_id}")
-        self.controller.publish_message(target_iri, cmd)
+        # send_command_with_ack assigns a seq_no, publishes, and waits for
+        # the station ACK. Raises CmdNoAckError after retries are exhausted;
+        # we let that propagate — the existing exception path treats it the
+        # same as a JobResult timeout and fails the step.
+        await self.controller.send_command_with_ack(target_iri, cmd)
 
         return await self.jobs.wait_for(job_id, timeout=timeout)
 
@@ -1148,9 +1274,9 @@ class Scheduler:
         material: str | None = None,
         _target_iri: str | None = None,
         _storage_iri: str | None = None,
+        excluded: list[tuple[str, str]] | None = None,
     ) -> tuple[ResourceEndpoint, str]:
-        """First available shuttle whose Transport capability supports
-        the component (and material, if known).
+        """Pick an available shuttle, spreading load across actors.
 
         Filters applied, in order:
         - The transport resource's Transport capability must list this
@@ -1159,6 +1285,15 @@ class Scheduler:
           means "no restriction" — same convention as CapabilityMatcher.
         - The actor must be `available` per OccupancyManager: not reserved
           for any order AND not currently carrying cargo.
+        - The (topic, actor) pair must not be in `excluded` — used by the
+          planner to thread already-picked shuttles from earlier sub-plans
+          of the same BoP step so they aren't grabbed twice.
+
+        Among the actors that pass all filters, a class-level round-robin
+        cursor rotates the starting index each call so consecutive picks
+        with the same free pool alternate between actors instead of always
+        returning the first one. This is what spreads load across Shuttle1
+        and Shuttle2 even when both are idle.
 
         The two IRI args are unused today — they'll feed the future
         connection-point reachability filter (walking LineConfiguration's
@@ -1168,6 +1303,8 @@ class Scheduler:
         if not offering:
             raise RuntimeError("No resource offers a Transport skill")
 
+        excluded_set: set[tuple[str, str]] = set(excluded or [])
+
         for shuttle_iri, topic, actors in offering:
             if not self._transport_supports(shuttle_iri, component_ref, material):
                 print(
@@ -1175,9 +1312,22 @@ class Scheduler:
                     f"doesn't support component={component_ref} material={material}"
                 )
                 continue
-            for actor in actors:
+
+            # Rotate the starting index so consecutive picks don't all land
+            # on actors[0]. Modulo over the actor count keeps the cursor
+            # bounded; advancing once per call gives a simple round-robin.
+            n = len(actors)
+            if n == 0:
+                continue
+            start = self._shuttle_pick_cursor % n
+
+            for offset in range(n):
+                actor = actors[(start + offset) % n]
+                if (topic, actor) in excluded_set:
+                    continue
                 if not self.occupancy.is_available(topic, actor):
                     continue
+                self._shuttle_pick_cursor = (start + offset + 1) % n
                 endpoint = ResourceEndpoint(
                     resource_id=topic,
                     actor_name=actor,

@@ -52,6 +52,12 @@ class CommandMessage(BaseModel):
     process_transformation: Dict[str, List[str] | None]
     parameters: Dict[str, str | int | float | Dict] | None
     seq_no: int | None = None
+    # Set to True on a retransmission. The original (seq_no, payload) is
+    # otherwise byte-for-byte identical to the first attempt. Stations
+    # should dedupe based on seq_no + this flag — a retransmission with a
+    # seq_no the station has already acted on must be re-ACKed but not
+    # re-executed.
+    retransmission: bool = False
 
 """
 NOTE that capabilities will require ComponentTypeReferences to check if the capability is compatible
@@ -252,6 +258,59 @@ class AlarmsMessage(BaseModel):
     actor_id: str
     alarm_ids: List[str]
     seq_no: int | None = None
+
+
+class AlarmSeverity(str, enum.Enum):
+    INFO = "INFO"
+    WARNING = "WARNING"
+    ERROR = "ERROR"
+    CRITICAL = "CRITICAL"
+
+
+class AlarmCategory(str, enum.Enum):
+    RESOURCE_OFFLINE = "RESOURCE_OFFLINE"
+    JOB_INCOMPLETE = "JOB_INCOMPLETE"
+    CMD_NO_ACK = "CMD_NO_ACK"
+    NO_ALTERNATIVE = "NO_ALTERNATIVE"
+    ORDER_RESTARTED = "ORDER_RESTARTED"
+    STUCK_CARGO = "STUCK_CARGO"
+
+
+#=============================================================================
+#============================== Performance Metrics ==========================
+#=============================================================================
+
+class OrderStatus(str, enum.Enum):
+    COMPLETED = "COMPLETED"
+    ABORTED = "ABORTED"
+
+
+class OrderCompletedMessage(BaseModel):
+    """Emitted by the controller when an order leaves the scheduler — either
+    after a successful finish or an abort. Consumed by the metrics bridge
+    to populate order-level KPIs (throughput, lead time)."""
+    timestamp: datetime
+    order_id: str
+    product_ref: str | None = None
+    started_at: datetime
+    completed_at: datetime
+    status: OrderStatus
+    attempt_count: int = 1
+    seq_no: int | None = None
+
+
+class ControllerAlarmMessage(BaseModel):
+    timestamp: datetime
+    category: AlarmCategory
+    severity: AlarmSeverity
+    message: str
+    resource_id: str | None = None
+    order_id: str | None = None
+    seq_no: int | None = None
+    # When True, this message asks the bridge to mark any *active* alarm
+    # matching (category, resource_id, order_id) as cleared rather than
+    # inserting a new row. Used for auto-clear-on-reconnect, etc.
+    cleared: bool = False
 
 
 #=============================================================================

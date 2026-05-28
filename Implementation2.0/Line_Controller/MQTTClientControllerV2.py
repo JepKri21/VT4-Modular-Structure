@@ -7,6 +7,10 @@ import asyncio
 import threading
 from datetime import datetime, timedelta
 
+
+class CmdNoAckError(RuntimeError):
+    """Raised when no AcknowledgementMessage arrives for a CMD after retries."""
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from ClassesAndBuilderMethods.InformationModels import MessageStructure as MS
@@ -153,12 +157,42 @@ class MQTTClientController:
             callback_api_version=mqtt.CallbackAPIVersion.VERSION1
         )
 
+        # ── CMD ACK tracking (RR3 minimal) ──────────────────────────────────
+        # Each CMD gets a per-resource seq_no; pending_acks holds the asyncio
+        # Future the sender awaits. _loop is the event loop the sender runs
+        # on — captured via set_event_loop() so the ACK handler (running on
+        # paho's network thread) can resolve futures via call_soon_threadsafe.
+        # alarm_publisher is optional and set by main.py after construction;
+        # used to emit CMD_NO_ACK alarms when a retry exhausts.
+        self._pending_acks: dict[tuple[str, int], asyncio.Future] = {}
+        self._cmd_seq: dict[str, int] = {}
+        self._loop: asyncio.AbstractEventLoop | None = None
+        self.alarm_publisher = None
+        # Recovery hook: a callable(resource_id_short) fired when the
+        # watchdog flips a resource to UNREACHABLE. Wired by main.py to
+        # the OrderRecovery so in-flight orders using that resource get a
+        # chance to reschedule rather than hang on a 180s CMD timeout.
+        self.unreachable_callback = None
+
+        # Internal ACK dispatch — keep this even if main.py never registers
+        # a user handler for AcknowledgementMessage.
+        self.register_handler(
+            MS.AcknowledgementMessage,
+            lambda _c, msg, info: self._handle_ack(msg, info),
+        )
+
         self.watchdog_running = True
         self.watchdog_thread = threading.Thread(
             target=self._watch_last_seen_loop,
             daemon=True
         )
         self.watchdog_thread.start()
+
+    def set_event_loop(self, loop: asyncio.AbstractEventLoop) -> None:
+        """Tell the controller which asyncio loop to schedule ACK
+        resolutions on. Call this from main.py after the loop is running.
+        """
+        self._loop = loop
 
     #=================
     #Helper functions
@@ -499,8 +533,23 @@ class MQTTClientController:
             # ==========================
             self.last_seen[resource_suffix] = datetime.now()
 
-            # Optional:
-            self.RM.resource_shell_ids[self.topic_to_shell_id[resource_suffix]] = MS.ResourceReachability.ACTIVE
+            shell_id = self.topic_to_shell_id[resource_suffix]
+            prior_status = self.RM.resource_shell_ids.get(shell_id)
+            self.RM.resource_shell_ids[shell_id] = MS.ResourceReachability.ACTIVE
+
+            # If the watchdog had marked this resource UNREACHABLE and we
+            # just heard from it again, auto-clear any active
+            # RESOURCE_OFFLINE alarm so the dashboard reflects the recovery
+            # without operator action.
+            if (
+                prior_status == MS.ResourceReachability.UNREACHABLE
+                and self.alarm_publisher is not None
+            ):
+                self.alarm_publisher.clear(
+                    category=MS.AlarmCategory.RESOURCE_OFFLINE,
+                    resource_id=resource_suffix,
+                    message=f"{resource_suffix} reconnected",
+                )
 
             # ==========================
             # Dispatch handler
@@ -529,40 +578,83 @@ class MQTTClientController:
     def _watch_last_seen_loop(self):
 
         timeout = timedelta(minutes=1)
+        # When a resource goes silent for `timeout`, send an InfoRequest
+        # and give it `probe_grace` to reply. Only declare RESOURCE_OFFLINE
+        # if the probe also goes unanswered.
+        probe_grace = timedelta(seconds=15)
         check_interval = 10
+
+        # resource_id_short -> datetime when we last sent a probe. Cleared
+        # implicitly: any new message updates last_seen past the probe
+        # timestamp, so the comparison naturally resets.
+        probed_at: dict[str, datetime] = {}
 
         while self.watchdog_running:
 
             now = datetime.now()
 
-            # ==========================
-            # Check ALL known resources
-            # ==========================
             for resource_id_short, resource_shell_id in self.topic_to_shell_id.items():
 
-                # ---------------------------------
-                # CASE 1: never seen before
-                # ---------------------------------
+                # CASE 1: never heard from this resource — probe and wait.
                 if resource_id_short not in self.last_seen:
-
-                    print(f"[WATCHDOG] {resource_id_short} never seen → requesting update")
-
-                    self._request_resource_update(resource_id_short)
-
+                    if resource_id_short not in probed_at:
+                        print(f"[WATCHDOG] {resource_id_short} never seen → probing")
+                        self._request_resource_update(resource_id_short)
+                        probed_at[resource_id_short] = now
                     continue
 
                 last_time = self.last_seen[resource_id_short]
+                if now - last_time <= timeout:
+                    # Healthy. If we'd been probing, the reply cleared things up.
+                    probed_at.pop(resource_id_short, None)
+                    continue
 
-                # ---------------------------------
-                # CASE 2: timeout
-                # ---------------------------------
-                if now - last_time > timeout:
-
-                    print(f"[WATCHDOG] {resource_id_short} timed out")
-
-                    self.RM.resource_shell_ids[resource_shell_id] = MS.ResourceReachability.UNREACHABLE
-
+                # Silence exceeds `timeout`.
+                probe_time = probed_at.get(resource_id_short)
+                if probe_time is None or last_time > probe_time:
+                    # Either no probe outstanding, or the resource replied to
+                    # a prior probe and went silent again. Send a fresh probe
+                    # and wait one grace period before declaring offline.
+                    print(f"[WATCHDOG] {resource_id_short} silent → probing")
                     self._request_resource_update(resource_id_short)
+                    probed_at[resource_id_short] = now
+                    continue
+
+                # Probe outstanding. Still waiting within the grace window.
+                if now - probe_time <= probe_grace:
+                    continue
+
+                # Probe went unanswered → declare offline.
+                prior = self.RM.resource_shell_ids.get(resource_shell_id)
+                print(
+                    f"[WATCHDOG] {resource_id_short} did not reply to probe → "
+                    f"marking UNREACHABLE"
+                )
+                self.RM.resource_shell_ids[resource_shell_id] = MS.ResourceReachability.UNREACHABLE
+
+                # Fire the alarm exactly once per outage. The matching
+                # auto-clear happens in on_message when the resource comes
+                # back online.
+                if (
+                    prior != MS.ResourceReachability.UNREACHABLE
+                    and self.alarm_publisher is not None
+                ):
+                    self.alarm_publisher.publish(
+                        category=MS.AlarmCategory.RESOURCE_OFFLINE,
+                        severity=MS.AlarmSeverity.ERROR,
+                        message=(
+                            f"{resource_id_short} unreachable for >"
+                            f"{int((timeout + probe_grace).total_seconds())}s "
+                            f"(probe unanswered)"
+                        ),
+                        resource_id=resource_id_short,
+                    )
+
+                if self.unreachable_callback is not None:
+                    try:
+                        self.unreachable_callback(resource_id_short)
+                    except Exception as exc:
+                        print(f"[WATCHDOG ERROR] callback failed: {exc}")
 
             time.sleep(check_interval)
 
@@ -605,5 +697,116 @@ class MQTTClientController:
 
         except Exception as e:
             print(f"[WATCHDOG ERROR] {e}")
+
+    #========================
+    # CMD ACK retry (RR3 minimal)
+    #
+    # Follows the Intelligent Systems telegram protocol:
+    #   - seq_no values 1..65535, wraps to 1 after 65535
+    #   - seq_no 0 = counter reset, always accepted
+    #   - default ACK timeout 1.0s
+    #   - retransmissions reuse the same seq_no with retransmission=True;
+    #     the station must re-ACK but not re-execute a duplicate seq_no
+    #   - only one telegram in-flight per direction at a time (we serialize
+    #     by awaiting each send_command_with_ack before the next)
+    #========================
+
+    _SEQ_NO_MAX = 65535
+
+    def _next_seq_no(self, resource_suffix: str) -> int:
+        current = self._cmd_seq.get(resource_suffix, 0)
+        nxt = current + 1
+        if nxt > self._SEQ_NO_MAX:
+            nxt = 1
+        self._cmd_seq[resource_suffix] = nxt
+        return nxt
+
+    def _handle_ack(self, msg, topic_info) -> None:
+        """Resolve any pending future waiting on (resource, seq_no).
+
+        Runs on paho's MQTT thread, so we hop back to the asyncio loop
+        via call_soon_threadsafe before touching the Future.
+        """
+        if msg.seq_no is None:
+            return
+        key = (topic_info["resource_suffix"], msg.seq_no)
+        future = self._pending_acks.get(key)
+        if future is None or future.done() or self._loop is None:
+            return
+        self._loop.call_soon_threadsafe(future.set_result, msg)
+
+    async def send_command_with_ack(
+        self,
+        resource_shell_id: str,
+        command_message,
+        *,
+        timeout: float = 1.0,
+        max_retries: int = 1,
+    ):
+        """Publish a CommandMessage and wait for its acknowledgement.
+
+        On no-ack timeout, retransmits up to `max_retries` times — same
+        seq_no, retransmission=True, otherwise an exact copy. Raises
+        CmdNoAckError after the final attempt fails and publishes a
+        CMD_NO_ACK alarm if an alarm_publisher has been attached.
+
+        SEQ_TOO_LOW / SEQ_TOO_HIGH error codes still count as receipt
+        confirmations — they only indicate counter drift. A future
+        iteration will trigger a seq_no=0 reset telegram in response;
+        for now we log and accept.
+        """
+        if self._loop is None:
+            # Capture lazily so this works even when set_event_loop wasn't
+            # called explicitly — provided we're inside a running loop.
+            self._loop = asyncio.get_running_loop()
+
+        resource_suffix = self.shell_id_to_topic[resource_shell_id]
+        seq_no = self._next_seq_no(resource_suffix)
+        cmd = command_message.model_copy(
+            update={"seq_no": seq_no, "retransmission": False}
+        )
+
+        key = (resource_suffix, seq_no)
+        for attempt in range(max_retries + 1):
+            future: asyncio.Future = self._loop.create_future()
+            self._pending_acks[key] = future
+            try:
+                # Retransmissions are byte-identical to the original except
+                # for the retransmission flag — same seq_no, same payload.
+                if attempt > 0:
+                    cmd = cmd.model_copy(update={"retransmission": True})
+                self.publish_message(resource_shell_id, cmd)
+                ack = await asyncio.wait_for(future, timeout=timeout)
+                if ack.error_code != MS.AcknowledgementErrorCodes.NO_ERROR:
+                    print(
+                        f"[ACK] {resource_suffix} seq={seq_no} "
+                        f"returned {ack.error_code.value} — "
+                        f"TODO: send seq_no=0 reset telegram"
+                    )
+                return ack
+            except asyncio.TimeoutError:
+                if attempt < max_retries:
+                    print(
+                        f"[ACK] no ack for {resource_suffix} seq={seq_no} "
+                        f"after {timeout:.1f}s — retransmitting "
+                        f"({attempt + 1}/{max_retries})"
+                    )
+                    continue
+                message = (
+                    f"no ACK from {resource_suffix} for CMD seq={seq_no} "
+                    f"after {max_retries + 1} attempts"
+                )
+                print(f"[ACK ERROR] {message}")
+                if self.alarm_publisher is not None:
+                    self.alarm_publisher.publish(
+                        category=MS.AlarmCategory.CMD_NO_ACK,
+                        severity=MS.AlarmSeverity.ERROR,
+                        message=message,
+                        resource_id=resource_suffix,
+                        order_id=getattr(cmd, "order_id", None),
+                    )
+                raise CmdNoAckError(message)
+            finally:
+                self._pending_acks.pop(key, None)
 
 

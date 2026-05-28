@@ -19,6 +19,7 @@ import {
   MonitorCog,
   Wrench,
   Bot,
+  Trophy,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/app/redux";
 import { setIsSidebarCollapsed } from "@/state";
@@ -123,24 +124,30 @@ const Sidebar = () => {
         >
           <h3 className="text-xs text-primary ">MES & ERP</h3>
         </div>
-        <SidebarLink
+        {/* <SidebarLink
           href="/assets"
           icon={Wrench}
           label="Assets"
           isCollapsed={isSidebarCollapsed}
-        />
-        <SidebarLink
+        /> */}
+        {/* <SidebarLink
           href="/production-monitoring"
           icon={Factory}
           label="Production Monitoring"
           isCollapsed={isSidebarCollapsed}
-        />
+        /> */}
         <SidebarLink
+          href="/performance"
+          icon={Trophy}
+          label="Performance"
+          isCollapsed={isSidebarCollapsed}
+        />
+        {/* <SidebarLink
           href="/maintainance"
           icon={Paintbrush}
           label="Maintenance"
           isCollapsed={isSidebarCollapsed}
-        />
+        /> */}
         <SidebarLink
           href="/alarms"
           icon={TriangleAlert}
@@ -148,12 +155,12 @@ const Sidebar = () => {
           isCollapsed={isSidebarCollapsed}
         />
 
-        <SidebarLink
+        {/* <SidebarLink
           href="/scheduling"
           icon={Calendar}
           label="Scheduling"
           isCollapsed={isSidebarCollapsed}
-        />
+        /> */}
 
         {/* BUSINESS */}
         <div
@@ -193,24 +200,24 @@ const Sidebar = () => {
           label="Virtual Store"
           isCollapsed={isSidebarCollapsed}
         />
-        <SidebarLink
+        {/* <SidebarLink
           href="/configurator"
           icon={Cog}
           label="Configurator"
           isCollapsed={isSidebarCollapsed}
-        />
+        /> */}
         <SidebarLink
           href="/line-configuration"
           icon={MonitorCog}
           label="Line Configurator"
           isCollapsed={isSidebarCollapsed}
         />
-        <SidebarLink
+        {/* <SidebarLink
           href="/aas-server"
           icon={Server}
           label="AAS Server"
           isCollapsed={isSidebarCollapsed}
-        />
+        /> */}
         <SidebarLink
           href="/aas-configurator"
           icon={Layers}

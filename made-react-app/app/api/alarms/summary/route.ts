@@ -1,26 +1,25 @@
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { count } from "console";
 
 export async function GET() {
   const active = await pool.query(
-    `SELECT COUNT(*) from station_alarms
+    `SELECT COUNT(*) from alarms
         WHERE cleared_at IS NULL
         `,
   );
 
   const warnings = await pool.query(
-    `SELECT COUNT(*) FROM station_alarms
+    `SELECT COUNT(*) FROM alarms
         WHERE severity = 'WARNING'
         AND cleared_at IS NULL`,
   );
 
   const cleared = await pool.query(
-    `SELECT COUNT(*) FROM station_alarms
+    `SELECT COUNT(*) FROM alarms
         WHERE cleared_at IS NOT NULL`,
   );
   const recent = await pool.query(
-    `SELECT COUNT(*) FROM station_alarms
+    `SELECT COUNT(*) FROM alarms
         WHERE triggered_at > NOW() - INTERVAL '1 hour'`,
   );
 

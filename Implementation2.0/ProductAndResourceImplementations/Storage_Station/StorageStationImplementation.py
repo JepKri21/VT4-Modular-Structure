@@ -101,16 +101,16 @@ resource_inventories = {
         "AccessibleActors" : [Actor],
         "Storage" : 
         {
-            "position1": "https://aausmartlab.org/Shells/Component/TopCover/TopCoverABSBlack-760161c4-f2fd-4bfc-a460-d6a46820fa4c",
-            "position2": "https://aausmartlab.org/Shells/Component/TopCover/TopCoverABSWhite-63dcfb92-bb7b-4b99-ac4c-dd43229f6359",
-            "position3": "https://aausmartlab.org/Shells/Component/TopCover/TopCoverPLABlack-2adc6476-e2f4-4ccd-a635-a96e8819039f",
-            "position4": "https://aausmartlab.org/Shells/Component/TopCover/TopCoverPLABlue-f6302f71-07d8-459a-aab4-9892c927e205",
-            "position5": "https://aausmartlab.org/Shells/Component/TopCover/TopCoverPLARed-8f3f85db-5aac-46e7-be6a-b43273a6681e",
-            "position6": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverABSBlack-3005f5e4-86b5-4e13-8ba2-c4e524302921",
-            "position7": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverABSWhite-5698e6d9-8e48-4493-a57a-e1701d3bde18",
-            "position8": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverPETGGray-cd1be33c-0642-4403-8b84-ec52f983fff1",
-            "position9": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverPLABlue-73e9917e-9bf9-4a3a-b998-c7731df4dc2e",
-            "position10": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverPLARed-e45327e2-b872-4f7e-9318-4ca2d3fdbd42"
+            "position1": "",
+            "position2": "https://aausmartlab.org/Shells/Component/TopCover/TopCoverABSBlack-99ea6008-1829-416b-a1d1-c9bab9700492",
+            "position3": "",
+            "position4": "",
+            "position5": "https://aausmartlab.org/Shells/Component/TopCover/TopCoverABSBlack-180500f5-f3f6-47c0-8c59-4a884348b744",
+            "position6": "",
+            "position7": "",
+            "position8": "",
+            "position9": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover3DP-40b2b95a-feec-43d1-b02c-e426abaeab93",
+            "position10": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverABSBlack-71b6b520-cc8d-4b15-af9b-636e27e2a721"
         }
     },
     "Inventory2": 
