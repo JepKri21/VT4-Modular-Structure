@@ -1,16 +1,15 @@
 type: "assembly_module"
-label: "BCPCB Assembler Station – AAU Lab"
-description: "KUKA Manipulator station for assembling Bottom Cover and PCB into BCPCB sub-assembly"
+label: "Phone Assembler Station – AAU Lab"
+description: "KUKA Manipulator station for assembling BCPCBFuse sub-assembly and TopCover into the final MobilePhone product"
 
-asset_name: "BCPCBAssembler"
+asset_name: "PhoneAssembler"
 
 submodels:
   AssembleCapabilityOffered:
-    CapabilityCategory: "Offered"
     SupportedComponents:
-      - "https://aausmartlab.org/Shells/Component/BottomCover"
-      - "https://aausmartlab.org/Shells/Component/PCB"
-      - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
+      - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
+      - "https://aausmartlab.org/Shells/Component/TopCover"
+      - "https://aausmartlab.org/Shells/Product/MobilePhone"
     Parameters:
       TargetPosition:
         XPos: ""
@@ -19,20 +18,20 @@ submodels:
         en: "Assembly operation"
         dk: "Samleroperation"
     ProcessTransformations:
-      BottomCoverAndPCB:
+      BottomCoverPCBFuseAndTopCover:
         InputTypes:
           ComponentTypeReference:
-            - "https://aausmartlab.org/Shells/Component/BottomCover"
-            - "https://aausmartlab.org/Shells/Component/PCB"
+            - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
+            - "https://aausmartlab.org/Shells/Component/TopCover"
         OutputTypes:
           ComponentTypeReference:
-            - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
+            - "https://aausmartlab.org/Shells/Product/MobilePhone"
 
   HandoffCapabilityOffered:
     SupportedComponents:
-      - "https://aausmartlab.org/Shells/Component/BottomCover"
-      - "https://aausmartlab.org/Shells/Component/PCB"
-      - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
+      - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
+      - "https://aausmartlab.org/Shells/Component/TopCover"
+      - "https://aausmartlab.org/Shells/Product/MobilePhone"
     Parameters:
       TargetPosition:
         XPos: ""
@@ -42,24 +41,16 @@ submodels:
         dk: "Afleveringsoperation"
 
   Skills:
-    Assemble:
-      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/BCPCBAssembler/AssembleCapabilityOffered"
+    PhoneAssembly:
+      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/PhoneAssembler/AssembleCapabilityOffered"
       SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
       Actors:
         - "KUKAManipulator"
     Handoff:
-      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/BCPCBAssembler/HandoffCapabilityOffered"
+      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/PhoneAssembler/HandoffCapabilityOffered"
       SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
       Actors:
         - "KUKAManipulator"
-
-  Inventory:
-    Inventories:
-      - Specifications:
-          InventorySize: 10
-        SupportedComponents:
-          - "https://aausmartlab.org/Shells/Component/PCB"
-        StoredComponents: []
 
   ResourceZones:
     CenterPoint:

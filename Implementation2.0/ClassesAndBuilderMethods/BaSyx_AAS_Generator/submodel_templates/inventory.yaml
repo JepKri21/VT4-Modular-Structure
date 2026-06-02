@@ -10,6 +10,8 @@ elements:
     semantic_id: "https://aausmartlab.org/Semantics/Inventories"
     description: "All physical inventory slots or racks on this resource"
     cardinality: "One"
+    extensible: true
+    entry_template: "Inventory_{N}"
     elements:
 
       - type: collection

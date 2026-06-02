@@ -124,6 +124,77 @@ export const CREATE_ORDER_ITEMS_TABLE_SQL = `
   )
 `;
 
+export const CREATE_RESOURCE_SLOTS_TABLE_SQL = `
+  CREATE TABLE IF NOT EXISTS resource_slots (
+    resource_id          TEXT PRIMARY KEY,
+    resource_name        TEXT NOT NULL,
+    inventory_size       INTEGER NOT NULL DEFAULT 0,
+    supported_categories JSONB NOT NULL DEFAULT '[]',
+    last_synced          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )
+`;
+
+export const CREATE_RESOURCE_ALLOCATIONS_TABLE_SQL = `
+  CREATE TABLE IF NOT EXISTS resource_allocations (
+    allocation_id     TEXT PRIMARY KEY,
+    resource_id       TEXT NOT NULL REFERENCES resource_slots(resource_id) ON DELETE CASCADE,
+    component_type_id TEXT NOT NULL REFERENCES component_types(id),
+    quantity          INTEGER NOT NULL CHECK (quantity > 0),
+    allocated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    notes             TEXT
+  )
+`;
+
+export const CREATE_ALLOCATED_INSTANCES_TABLE_SQL = `
+  CREATE TABLE IF NOT EXISTS allocated_instances (
+    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    allocation_id TEXT NOT NULL REFERENCES resource_allocations(allocation_id) ON DELETE CASCADE,
+    instance_iri  TEXT NOT NULL UNIQUE
+  )
+`;
+
+export interface ResourceSlot {
+  resourceId: string;
+  resourceName: string;
+  inventorySize: number;
+  supportedCategories: string[];
+  lastSynced: string;
+}
+
+export interface ResourceAllocation {
+  allocationId: string;
+  resourceId: string;
+  componentTypeId: string;
+  quantity: number;
+  allocatedAt: string;
+  notes: string | null;
+}
+
+export interface ResourceWithAllocations extends ResourceSlot {
+  slotsUsed: number;
+  slotsAvailable: number;
+  allocations: Array<{
+    allocationId: string;
+    componentTypeId: string;
+    componentName: string;
+    category: string;
+    quantity: number;
+  }>;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function rowToResourceSlot(row: Record<string, any>): ResourceSlot {
+  return {
+    resourceId: row.resource_id,
+    resourceName: row.resource_name,
+    inventorySize: row.inventory_size ?? 0,
+    supportedCategories: Array.isArray(row.supported_categories)
+      ? row.supported_categories
+      : (typeof row.supported_categories === "string" ? JSON.parse(row.supported_categories) : []),
+    lastSynced: row.last_synced instanceof Date ? row.last_synced.toISOString() : row.last_synced,
+  };
+}
+
 // Helper functions
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function rowToComponentType(row: Record<string, any>): ComponentType {

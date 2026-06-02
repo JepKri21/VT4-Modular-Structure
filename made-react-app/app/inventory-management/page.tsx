@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
 import {
   PackageOpen,
   RefreshCw,
@@ -191,6 +192,19 @@ export default function InventoryManagementPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-8 py-10 space-y-8">
+      {/* Tabs */}
+      <div className="flex border-b border-border">
+        <span className="px-4 py-2 text-sm font-semibold text-primary border-b-2 border-primary">
+          Inventory
+        </span>
+        <Link
+          href="/inventory-management/allocation"
+          className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Allocate
+        </Link>
+      </div>
+
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>

@@ -77,10 +77,12 @@ submodels:
         SupportedComponents:
           - "BottomCover"
           - "TopCover"
+        StoredComponents: []
       - Specifications:
           InventorySize: 5
         SupportedComponents:
           - "BottomCoverDrilled"
+        StoredComponents: []
 
   ResourceZones:
     CenterPoint:
