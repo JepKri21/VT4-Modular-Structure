@@ -10,6 +10,11 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      # Any *.sql file in /docker-entrypoint-initdb.d/ is executed by the
+      # postgres image on *first* container start (i.e. when the data
+      # directory is empty). Once the volume has data this is ignored, so
+      # to re-apply you must `docker compose down -v` first.
+      - ../Implementation2.0/PSQL_Consumer/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
 
 volumes:
   postgres_data:
