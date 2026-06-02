@@ -60,6 +60,7 @@ from job_tracker import JobTracker
 from occupancy_manager import OccupancyManager
 from product_property_matcher import ProductMatcher
 from scheduler import Scheduler
+from orchestration_snapshot import run_snapshot_publisher
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -320,6 +321,12 @@ async def main() -> None:
     controller.client.message_callback_add(CLEAR_STUCK_TOPIC, on_clear_stuck)
     controller.client.subscribe(CLEAR_STUCK_TOPIC)
     print(f"[init] subscribed to operator topic: {CLEAR_STUCK_TOPIC}")
+
+    # Periodic orchestration snapshot for the MES Production Monitoring UI.
+    # Retained publish so a late-joining subscriber sees the current picture.
+    asyncio.create_task(run_snapshot_publisher(scheduler, controller, BASE_TOPIC))
+    print(f"[init] orchestration snapshot publisher running -> "
+          f"{BASE_TOPIC}/Orchestration/Snapshot")
 
     print("[init] waiting for work orders on MQTT…")
 

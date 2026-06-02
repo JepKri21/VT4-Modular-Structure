@@ -14,6 +14,8 @@ services:
       # postgres image on *first* container start (i.e. when the data
       # directory is empty). Once the volume has data this is ignored, so
       # to re-apply you must `docker compose down -v` first.
+      #Run the following command in made-react-app/ if docker cotainer already exists
+      #docker compose exec -T postgres psql -U made -d made_app < ..\Implementation2.0\PSQL_Consumer\schema.sql
       - ../Implementation2.0/PSQL_Consumer/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
 
 volumes:
