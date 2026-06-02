@@ -1,6 +1,7 @@
 ﻿id_short: "TransportCapabilityOffered"
 id: "https://aausmartlab.org/Submodels/Templates/TransportCapabilityOffered"
 description: "Offered transport capability â€” defines the reachable target area and supported components"
+semantic_id: "https://aausmartlab.org/Semantics/SubmodelTypes/Capability"
 
 elements:
 

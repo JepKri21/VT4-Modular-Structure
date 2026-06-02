@@ -1,6 +1,7 @@
 ﻿id_short: "ServiceOffered"
 id: "https://aausmartlab.org/Submodels/Templates/ServiceOffered"
 description: "Service offering submodel for a production line â€” aggregates all capability types offered across its constituent resources into a single discoverable list. Used by an orchestrator to match production lines against product service requirements."
+semantic_id: "https://aausmartlab.org/Semantics/SubmodelTypes/Services"
 
 elements:
 
