@@ -1,6 +1,7 @@
 ﻿id_short: "Communication"
 id: "https://aausmartlab.org/Submodels/Templates/Communication"
 description: "MQTT communication parameters for a resource station â€” defines topic suffixes for the standard PackML messaging protocol"
+semantic_id: "https://aausmartlab.org/Semantics/SubmodelTypes/Communication"
 
 elements:
 
@@ -10,9 +11,27 @@ elements:
     cardinality: "One"
     elements:
 
+      - type: property
+        id_short: "ProductionLinePrefix"
+        description: "Prefix of the production line connected to a line controller. Starts empty and is popoulated when the resource is added to a line configuration."
+        cardinality: "One"
+        semantic_id: "https://aausmartlab.org/Semantics/MQTTBrokerPrefix"
+      
+      - type: property
+        id_short: "BrokerID"
+        description: "ID of the broker that is used by the production line."
+        cardinality: "One"
+        semantic_id: "https://aausmartlab.org/Semantics/MQTTBrokerID"
+
+      - type: property
+        id_short: "BrokerPort"
+        description: "Port used for the Production Line's MQTT broker"
+        cardinality: "One"
+        semantic_id: "https://aausmartlab.org/Semantics/MQTTBrokerPort"
+
       - type: collection
         id_short: "Suffixes"
-        description: "Topic suffix definitions â€” full topic is <BaseTopic>/<ResourceID>/<Suffix>"
+        description: "Topic suffix definitions â€” full topic is <ProductionLinePrefix>/<ResourceID>/<Suffix>"
         cardinality: "One"
         elements:
 

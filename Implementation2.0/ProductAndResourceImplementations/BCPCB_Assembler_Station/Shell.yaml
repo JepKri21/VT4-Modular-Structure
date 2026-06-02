@@ -21,6 +21,7 @@ submodels:
   - template_id: "https://aausmartlab.org/Shells/Resources/BCPCBAssembler_12345678/ResourceZones"
     id_short: "ResourceZones"
     description: "Resource zones for the drilling station"
+    
 
   - template_id: "https://aausmartlab.org/Shells/Resources/BCPCBAssembler_12345678/Inventory"
     id_short: "ResourceZones"

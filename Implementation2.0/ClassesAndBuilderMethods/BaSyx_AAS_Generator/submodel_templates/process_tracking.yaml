@@ -1,6 +1,7 @@
 id_short: "ProcessTracking"
 id: "https://aausmartlab.org/Submodels/Templates/ProcessTracking"
 description: "Process history submodel — records all process steps applied to this component or assembly instance"
+semantic_id: "https://aausmartlab.org/Semantics/SubmodelTypes/ProcessTracking"
 
 elements:
   - type: collection

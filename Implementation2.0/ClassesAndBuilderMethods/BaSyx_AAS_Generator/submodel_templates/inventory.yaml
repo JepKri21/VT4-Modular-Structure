@@ -1,6 +1,7 @@
 ﻿id_short: "Inventory"
 id: "https://aausmartlab.org/Submodels/Templates/Inventory"
 description: "Inventory submodel for a storage resource â€” one entry per physical storage slot or rack"
+semantic_id: "https://aausmartlab.org/Semantics/SubmodelTypes/Inventory"
 
 elements:
 
@@ -39,3 +40,35 @@ elements:
             element_type: "property"
             value_type: "xs:string"
             cardinality: "OneToMany"
+
+          - type: collection
+            id_short: "StoredComponents"
+            semantic_id: "https://aausmartlab.org/Semantics/StoredComponents"
+            description: "Component types that can be stored in this inventory slot"
+            cardinality: "One"
+            extensible: true
+            entry_template: "SlotEntry_{N}"
+            elements:
+              - type: collection
+                id_short: "SlotEntry"
+                semantic_id: "https://aausmartlab.org/Semantics/SlotEntry"
+                description: "Template entry - one collection per required component"
+                cardinality: "OneToMany"
+                elements:
+                  - type: property
+                    id_short: "SlotReserved"
+                    value_type: "xs:boolean"
+                    semantic_id: "https://aausmartlab.org/Semantics/SlotReserved"
+                    description: "A true or false used to reserve a component for a job"
+                    cardinality: "One"
+
+                  - type: reference_element
+                    id_short: "ComponentShellReference"
+                    semantic_id: "https://aausmartlab.org/Semantics/ComponentInstanceRef"
+                    description: "Reference to the actual component instance used - empty at creation, filled during production"
+                    cardinality: "One"
+                    reference_type: "model"
+            
+            
+
+

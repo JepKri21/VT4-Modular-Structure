@@ -1,6 +1,7 @@
 id_short: "AssembleCapabilityRequired"
 id: "https://aausmartlab.org/Submodels/Templates/AssembleCapabilityRequired"
 description: "Required assembly capability — specifies the exact assembly position and the input/output component type transformation needed for a product assembly step"
+semantic_id: "https://aausmartlab.org/Semantics/SubmodelTypes/Capability"
 
 elements:
 

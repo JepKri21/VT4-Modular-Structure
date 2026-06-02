@@ -450,6 +450,41 @@ def _extract_capability_submodels(
 
     return form_data, extra
 
+# ──────────── BOM RequiredPropertiesReference → full submodel IRIs ────────
+
+
+def _inject_bom_req_props_refs(preset_submodels: dict, shell_id: str) -> dict:
+    """Rewrite bare RequiredPropertiesReference id_shorts to full submodel IRIs.
+
+    preset_loader stores the bare id_short (e.g. 'RequiredProperties_TopCover')
+    because shell_id is not known at that point. This function prepends shell_id
+    once the IRI is available.
+    """
+    bom_data = preset_submodels.get("BillOfMaterials")
+    if not bom_data:
+        return preset_submodels
+    entries = bom_data.get("BOMEntries", [])
+    if not entries:
+        return preset_submodels
+
+    new_entries = []
+    rewritten = False
+    for entry in entries:
+        ref = entry.get("RequiredPropertiesReference")
+        if isinstance(ref, str) and ref and "/" not in ref:
+            entry = dict(entry)
+            entry["RequiredPropertiesReference"] = f"{shell_id}/{ref}"
+            rewritten = True
+        new_entries.append(entry)
+
+    if not rewritten:
+        return preset_submodels
+
+    preset_submodels = copy.deepcopy(preset_submodels)
+    preset_submodels["BillOfMaterials"] = {**bom_data, "BOMEntries": new_entries}
+    return preset_submodels
+
+
 # ───────────────────────────── submodel builder ───────────────────────────
 
 def build_submodel(
@@ -470,6 +505,8 @@ def build_submodel(
     cap_ref = (form_data or {}).get("CapabilityTypeReference") or (form_data or {}).get("CapabilityReference")
     if isinstance(cap_ref, str) and cap_ref:
         builder.submodel.semantic_id = _ext_ref(cap_ref)
+    elif sem_id := tmpl.get("semantic_id"):
+        builder.submodel.semantic_id = _ext_ref(sem_id)
     if id_short == "Skills":
         _build_skills_submodel(builder, tmpl.get("elements", []), form_data or {})
     else:
@@ -612,9 +649,12 @@ def build_environment(preset: dict, instance_suffix: str = "") -> tuple[dict, st
 
     submodels = []
     preset_submodels = _inject_bop_required_refs(preset.get("submodels", {}), shell_id)
+    preset_submodels = _inject_bom_req_props_refs(preset_submodels, shell_id)
 
     for sm_id_short, form_data in preset_submodels.items():
         template_file = SM_TEMPLATE_MAP.get(sm_id_short)
+        if not template_file and sm_id_short.startswith("RequiredProperties_"):
+            template_file = SM_TEMPLATE_MAP.get("Properties")
         if not template_file or not form_data:
             continue
         sm_iri = f"{shell_id}/{sm_id_short}"

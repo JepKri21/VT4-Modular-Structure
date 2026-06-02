@@ -1,13 +1,13 @@
 """
 mes_api.py — FastAPI MES server.
 
-POST /api/v1/orders  Receive mesPayload from Next.js webshop.
+POST /api/v1/orRders  eceive mesPayload from Next.js webshop.
                      Returns 202 Accepted immediately; runs pipeline in background.
 
 GET  /api/v1/orders  Returns internal order registry with status.
 
 Start with:
-    uvicorn mes_api:app --host 0.0.0.0 --port 8000 --reload
+    python -m uvicorn mes_api:app --host 0.0.0.0 --port 8000 --reload
 """
 
 import asyncio

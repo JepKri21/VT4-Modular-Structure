@@ -1,6 +1,7 @@
 ﻿id_short: "DrillingCapabilityRequired"
 id: "https://aausmartlab.org/Submodels/Templates/DrillingCapabilityRequired"
 description: "Required capability template for a product process step â€” parameters expressed as exact property values to be matched against an offered capability"
+semantic_id: "https://aausmartlab.org/Semantics/SubmodelTypes/Capability"
 
 elements:
   - type: property

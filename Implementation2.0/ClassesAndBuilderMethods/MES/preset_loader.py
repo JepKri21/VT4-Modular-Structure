@@ -7,6 +7,7 @@ BOP structure is never modified — it comes entirely from the preset.
 
 import copy
 import logging
+import re
 import sys
 from pathlib import Path
 
@@ -23,19 +24,47 @@ PRODUCT_PRESET_MAP: dict[str, str] = {
     "AAU Mobile Phone": "AAU-Mobile-Phone",
 }
 
-# Maps slot label (case-insensitive prefix) → preset submodel field to patch
-SLOT_PROPERTY_MAP: dict[str, dict] = {
-    "bottom cover": {
-        "submodel": "Properties",
-        "group": "MaterialProperties",
-        "fields": {"material": "Material", "color": "Color", "finish": "Finish"},
-    },
-    "top cover": {
-        "submodel": "Properties",
-        "group": "MaterialProperties",
-        "fields": {"material": "Material", "color": "Color", "finish": "Finish"},
-    },
-}
+
+def _parse_numeric(val):
+    """Strip unit suffix from strings like '16A' or '250V' → numeric."""
+    if val is None:
+        return None
+    if isinstance(val, (int, float)):
+        return val
+    s = re.sub(r"[^0-9.]", "", str(val))
+    if not s:
+        return None
+    try:
+        f = float(s)
+        return int(f) if f == int(f) else f
+    except ValueError:
+        return None
+
+
+def _required_props_from_slot(props: dict) -> dict:
+    """Convert MES order slot properties into RequiredProperties submodel form data."""
+    data = {}
+
+    material = {k: v for k, v in {
+        "Material": props.get("material"),
+        "Color": props.get("color"),
+        "Finish": props.get("finish"),
+    }.items() if v is not None}
+    if material:
+        data["MaterialProperties"] = material
+
+    if props.get("weight") is not None:
+        data["PhysicalDimensions"] = {"Weight": props["weight"]}
+
+    electrical = {k: v for k, v in {
+        "CurrentRating": _parse_numeric(props.get("currentRating")),
+        "VoltageRating": _parse_numeric(props.get("voltageRating")),
+        "Type": props.get("type"),
+    }.items() if v is not None}
+    if electrical:
+        data["ElectricalProperties"] = electrical
+
+    return data
 
 
 def _load_preset(preset_name: str) -> dict:
@@ -68,20 +97,30 @@ def load_and_merge(product_name: str, configuration: list[dict], order_number: s
     doc["ProductionIdentification"] = prod_id
     preset.setdefault("submodels", {})["Documentation"] = doc
 
-    # Patch material properties per slot
-    props_sm = preset["submodels"].setdefault("Properties", {})
-
+    # Build a RequiredProperties submodel per order slot and link from BOM entries
+    bom_entries = (
+        preset.get("submodels", {})
+              .get("BillOfMaterials", {})
+              .get("BOMEntries", [])
+    )
     for slot_cfg in configuration:
-        slot_label = (slot_cfg.get("slot") or "").lower()
-        customer_props = slot_cfg.get("properties") or {}
+        category = re.sub(r"[^A-Za-z0-9]", "", slot_cfg.get("category") or "")
+        if not category:
+            continue
+        props = slot_cfg.get("properties") or {}
+        req_data = _required_props_from_slot(props)
+        if not req_data:
+            continue
+        sm_id_short = f"RequiredProperties_{category}"
+        preset["submodels"][sm_id_short] = req_data
+        log.info("Built %s from slot %r", sm_id_short, slot_cfg.get("slot"))
 
-        for slot_key, mapping in SLOT_PROPERTY_MAP.items():
-            if slot_label.startswith(slot_key):
-                group = props_sm.setdefault(mapping["group"], {})
-                for prop_key, field_name in mapping["fields"].items():
-                    val = customer_props.get(prop_key)
-                    if val is not None:
-                        group[field_name] = val
+        # Link to the BOM entry whose ComponentTypeReference last segment matches
+        for entry in bom_entries:
+            ref_iri = entry.get("ComponentTypeReference", "")
+            last_seg = ref_iri.rstrip("/").rsplit("/", 1)[-1]
+            if last_seg.lower() == category.lower():
+                entry["RequiredPropertiesReference"] = sm_id_short
                 break
 
     log.info("Loaded preset %r, merged %d slot configs", preset_name, len(configuration))

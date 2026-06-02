@@ -13,9 +13,6 @@ submodels:
       Width: 70
       Height: 12
       Weight: 180.0
-    MaterialProperties:
-      Material: "ABS"
-      Color: "Black"
 
   Documentation:
     ProductionIdentification:

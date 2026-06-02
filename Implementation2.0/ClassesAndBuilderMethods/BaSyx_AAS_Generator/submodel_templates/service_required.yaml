@@ -1,6 +1,7 @@
 ﻿id_short: "ServiceRequired"
 id: "https://aausmartlab.org/Submodels/Templates/ServiceRequired"
 description: "Service requirement submodel for a product â€” aggregates all capability types needed across all BOP process steps into a single discoverable list. Auto-derived from BOP at generation time for final products. Used by an orchestrator to match this product against production line service offerings."
+semantic_id: "https://aausmartlab.org/Semantics/SubmodelTypes/Services"
 
 elements:
 

@@ -1,11 +1,18 @@
 id_short: "Skills"
 id: "https://aausmartlab.org/Submodels/Templates/Skills"
 description: "Skills submodel — one collection per capability offered by the resource, named by the skill name (e.g. Drilling, Handoff, Store). Each key in the preset's Skills dict becomes a skill collection at the submodel root."
+semantic_id: "https://aausmartlab.org/Semantics/SubmodelTypes/Skills"
 
 elements:
 
   - type: reference_element
     id_short: "CapabilitySubmodelReference"
+    semantic_id: "https://aausmartlab.org/Semantics/CapabilitySubmodelReference"
+    description: "Reference to the corresponding CapabilityOffered submodel"
+    cardinality: "One"
+
+  - type: reference_element
+    id_short: "CapabilityTypeReference"
     semantic_id: "https://aausmartlab.org/Semantics/CapabilitySubmodelReference"
     description: "Reference to the corresponding CapabilityOffered submodel"
     cardinality: "One"

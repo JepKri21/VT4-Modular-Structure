@@ -1,6 +1,7 @@
 ﻿id_short: "BillOfProcesses"
 id: "https://aausmartlab.org/Submodels/Templates/BillOfProcesses"
 description: "Bill of Processes submodel template — generic process definition and tracking for assemblies and final products"
+semantic_id: "https://aausmartlab.org/Semantics/SubmodelTypes/BillOfProcesses"
 
 elements:
   - type: collection
