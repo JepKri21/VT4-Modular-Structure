@@ -212,12 +212,12 @@ const Sidebar = () => {
           label="Line Configurator"
           isCollapsed={isSidebarCollapsed}
         />
-        {/* <SidebarLink
+        { <SidebarLink
           href="/aas-server"
           icon={Server}
           label="AAS Server"
           isCollapsed={isSidebarCollapsed}
-        /> */}
+        />}
         <SidebarLink
           href="/aas-configurator"
           icon={Layers}
