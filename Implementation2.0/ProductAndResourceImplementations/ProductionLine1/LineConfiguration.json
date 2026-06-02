@@ -1,7 +1,7 @@
 {
   "idShort": "LineConfiguration_12345678",
   "modelType": "Submodel",
-  "id": "https://aausmartlab.org/Shells/ProductionLine/ProductionLine-1/LineConfiguration-12345678",
+  "id": "https://aausmartlab.org/Shells/Resources/ProductionLine/ProductionLine-1/LineConfiguration-12345678",
   "submodelElements": [
     {
       "idShort": "ResourceLocations",

@@ -90,7 +90,7 @@ MES_TOPIC = "AAUSmartLab/ProductionLine1/MES/WorkOrder"
 
 # The ProductionLine shell on the AAS server is the source of truth for the
 # line configuration. The local LineConfiguration.json is no longer read.
-LINE_SHELL_PREFIX = "https://aausmartlab.org/Shells/ProductionLine/"
+LINE_SHELL_PREFIX = "https://aausmartlab.org/Shells/Resources/ProductionLine/"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Message Handlers

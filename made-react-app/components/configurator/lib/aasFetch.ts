@@ -175,7 +175,7 @@ export const fetchProductionLines = async (
 ): Promise<ProductionLineShell[]> => {
   const shells = await pagedResults<Shell>(`${serverUrl}/shells`);
   return shells
-    .filter((s) => s.id.startsWith("https://aausmartlab.org/Shells/ProductionLine/"))
+    .filter((s) => s.id.startsWith("https://aausmartlab.org/Shells/Resources/ProductionLine/"))
     .map((s) => {
       const smIris = (s.submodels ?? []).map((ref) => ref.keys?.[0]?.value ?? "");
       return {

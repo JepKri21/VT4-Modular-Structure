@@ -13,9 +13,9 @@
 kind: "Type"
 description: "AAS shell template for a production line — composite resource used for product-to-line matchmaking via ServiceOffered"
 
-id_pattern: "https://aausmartlab.org/Shells/ProductionLine/{name}_{uuid}"
+id_pattern: "https://aausmartlab.org/Shells/Resources/ProductionLine/{name}_{uuid}"
 id_short_pattern: "{name}"
-global_asset_id_pattern: "https://aausmartlab.org/Shells/ProductionLine/{name}_{uuid}"
+global_asset_id_pattern: "https://aausmartlab.org/Shells/Resources/ProductionLine/{name}_{uuid}"
 
 submodels:
 

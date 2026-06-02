@@ -1,11 +1,11 @@
 kind: "Instance"               # Type | Instance
 description: "AAS shell for a ProductionLine"
 
-id_pattern: "https://aausmartlab.org/Shells/ProductionLine/ProductionLine-1"
+id_pattern: "https://aausmartlab.org/Shells/Resources/ProductionLine/ProductionLine-1"
 id_short_pattern: "ProductionLine_1"
-global_asset_id_pattern: "https://aausmartlab.org/Shells/ProductionLine/ProductionLine-1"
+global_asset_id_pattern: "https://aausmartlab.org/Shells/Resources/ProductionLine/ProductionLine-1"
 
 submodels:
-  - template_id: "https://aausmartlab.org/Shells/ProductionLine/ProductionLine-1/LineConfiguration-12345678"
+  - template_id: "https://aausmartlab.org/Shells/Resources/ProductionLine/ProductionLine-1/LineConfiguration-12345678"
     id_short: "LineConfiguration"
     description: "The current configuration of the production line"

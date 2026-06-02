@@ -22,7 +22,7 @@ import basyx_client
 
 log = logging.getLogger(__name__)
 
-_PRODUCTION_LINE_IRI_PREFIX = "https://aausmartlab.org/Shells/ProductionLine/"
+_PRODUCTION_LINE_IRI_PREFIX = "https://aausmartlab.org/Shells/Resources/ProductionLine/"
 
 
 def _discover_lines(basyx_url: str) -> list[dict]:

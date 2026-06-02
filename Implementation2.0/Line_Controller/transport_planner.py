@@ -170,7 +170,7 @@ def load_line_config_from_file(path: str | Path) -> LineConfig:
 
 def load_line_config_from_aas(
     aas_server_base: str,
-    line_shell_prefix: str = "https://aausmartlab.org/Shells/ProductionLine/",
+    line_shell_prefix: str = "https://aausmartlab.org/Shells/Resources/ProductionLine/",
 ) -> LineConfig:
     """Fetch the active ProductionLine shell from the AAS server and parse its
     LineConfiguration submodel.
