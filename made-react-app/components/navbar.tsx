@@ -1,11 +1,14 @@
 "use client";
 import { Bell, Menu, Moon, Sun } from "lucide-react";
 import { Search } from "lucide-react";
-import React from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Button } from "./ui/button";
 import { useTheme } from "next-themes";
 import { useAppDispatch, useAppSelector } from "@/app/redux";
-import { setIsDarkMode, setIsSidebarCollapsed } from "@/state";
+import { setIsSidebarCollapsed } from "@/state";
+
+const ALARM_POLL_INTERVAL_MS = 3000;
 
 const Navbar = () => {
   const { theme, setTheme } = useTheme();
@@ -14,14 +17,30 @@ const Navbar = () => {
   const isSidebarCollapsed = useAppSelector(
     (state) => state.global.isSidebarCollapsed,
   );
-  const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
+
+  const [activeAlarms, setActiveAlarms] = useState<number>(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchSummary = async () => {
+      try {
+        const res = await fetch("/api/alarms/summary", { cache: "no-store" });
+        const data = await res.json();
+        if (!cancelled) setActiveAlarms(Number(data.active ?? 0));
+      } catch {
+        // Swallow transient errors — the next tick will retry.
+      }
+    };
+    fetchSummary();
+    const id = setInterval(fetchSummary, ALARM_POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
 
   const toggleSidebar = () => {
     dispatch(setIsSidebarCollapsed(!isSidebarCollapsed));
-  };
-
-  const toggleDarkMode = () => {
-    dispatch(setIsDarkMode(!isDarkMode));
   };
 
   return (
@@ -64,12 +83,14 @@ const Navbar = () => {
             )}
           </Button>
         </div>
-        <div className="relative">
+        <Link href="/alarms" className="relative" aria-label="Alarms">
           <Bell className="cursor-pointer" size={24} />
-          <span className="absolute -top-2 -right-1 inline-flex items-center justify-center px-[0.2rem] py-[0.02rem] text-xs font-semibold bg-primary text-background rounded-full">
-            3
-          </span>
-        </div>
+          {activeAlarms > 0 && (
+            <span className="absolute -top-2 -right-1 inline-flex items-center justify-center px-[0.2rem] py-[0.02rem] text-xs font-semibold bg-primary text-background rounded-full">
+              {activeAlarms}
+            </span>
+          )}
+        </Link>
         <div className="w-8 h-8 rounded-full bg-secondary"></div>
       </div>
     </div>

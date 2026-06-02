@@ -52,6 +52,8 @@ from workorder_handler import WorkOrderHandler
 from resource_manager import ResourceManager
 from capability_matcher import CapabilityMatcher
 from MQTTClientControllerV2 import MQTTClientController
+from controller_alarms import ControllerAlarmPublisher
+from order_recovery import OrderRecovery
 from transport_planner import TransportPlanner, load_line_config_from_aas
 from pre_process_planner import PreProcessPlanner
 from job_tracker import JobTracker
@@ -231,6 +233,15 @@ async def main() -> None:
     controller.start_mqtt_connection()
     await asyncio.sleep(2)  # let on_connect run update_information() + subscribe
 
+    # Hand the controller the running loop so its CMD ACK handler (which
+    # fires on paho's MQTT thread) can resolve asyncio futures safely.
+    controller.set_event_loop(asyncio.get_running_loop())
+
+    # Attach the controller-side alarm publisher so RR-related failures
+    # (CMD_NO_ACK, RESOURCE_OFFLINE, NO_ALTERNATIVE, ...) reach the MES
+    # via AAUSmartLab/<line_id>/Controller/Alarms.
+    controller.alarm_publisher = ControllerAlarmPublisher(controller)
+
     # Runtime managers that need the controller
     job_tracker = JobTracker(controller)
     occupancy = OccupancyManager(controller=controller, base_topic=BASE_TOPIC)
@@ -263,6 +274,13 @@ async def main() -> None:
         with open(WORKORDER_PATH) as f:
             order_queue.put_nowait(json.load(f))
 
+    # Recovery owns restart vs abort decisions on detectable failures.
+    recovery = OrderRecovery(
+        capability_matcher=matcher,
+        occupancy=occupancy,
+        alarm_publisher=controller.alarm_publisher,
+    )
+
     # Single scheduler shared across all orders.
     scheduler = Scheduler(
         controller=controller,
@@ -274,7 +292,34 @@ async def main() -> None:
         product_matcher=_product_matcher,
         occupancy=occupancy,
         aas_server_base=AAS_SERVER_BASE,
+        recovery=recovery,
     )
+
+    # Operator clear-stuck-cargo: publish
+    #   { "resource_id": "...", "actor_name": "..." }
+    # to AAUSmartLab/<line>/Controller/ClearStuckCargo to free a stuck
+    # actor after the physical part has been removed.
+    CLEAR_STUCK_TOPIC = f"{BASE_TOPIC}/Controller/ClearStuckCargo"
+
+    def on_clear_stuck(client, userdata, msg):
+        try:
+            payload = json.loads(msg.payload.decode())
+            resource_id = payload["resource_id"]
+            actor_name = payload["actor_name"]
+        except (json.JSONDecodeError, KeyError) as exc:
+            print(f"[ClearStuckCargo] malformed payload: {exc}")
+            return
+        cleared = occupancy.clear_stuck(resource_id, actor_name)
+        if cleared and controller.alarm_publisher is not None:
+            controller.alarm_publisher.clear(
+                category=MS.AlarmCategory.STUCK_CARGO,
+                resource_id=resource_id,
+                message=f"{resource_id}/{actor_name} cleared by operator",
+            )
+
+    controller.client.message_callback_add(CLEAR_STUCK_TOPIC, on_clear_stuck)
+    controller.client.subscribe(CLEAR_STUCK_TOPIC)
+    print(f"[init] subscribed to operator topic: {CLEAR_STUCK_TOPIC}")
 
     print("[init] waiting for work orders on MQTT…")
 

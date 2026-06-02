@@ -9,6 +9,7 @@ class StepStates(str, enum.Enum):
     ASSIGNED = "ASSIGNED"
     PENDING = "PENDING"
     PLANNED = "PLANNED"
+    FAILED = "FAILED"
 
 class WorkOrderHandler:
 
@@ -112,7 +113,13 @@ class WorkOrderHandler:
             "workorder_id": self.workorder["OrderId"],
             "product": self.workorder["ProductReference"],
             "state": StepStates.PLANNED,
-            "steps": steps
+            "steps": steps,
+            # Resilience bookkeeping. attempt_count starts at 1 (the
+            # original run); reset_for_retry() bumps it. excluded_resources
+            # is the set of shell IRIs the scheduler must skip when picking
+            # candidates after a failure on this order.
+            "attempt_count": 1,
+            "excluded_resources": [],
         }
 
     # =============================
@@ -328,6 +335,50 @@ class WorkOrderHandler:
             "InputIngredients": input_ingredient_details,
             "OutputIngredients": output_ingredient_details,
         }
+
+    # =============================
+    # RESILIENCE
+    # =============================
+    def reset_for_retry(self, failed_resource: str | None = None) -> int:
+        """Roll back non-COMPLETED steps to PENDING for another attempt.
+
+        Steps already in COMPLETED stay completed — there's no value in
+        redoing finished work; the recovery policy is per-order restart,
+        not per-step. `failed_resource` (a shell IRI) is appended to the
+        order's excluded_resources so the matcher won't pick it again.
+
+        Returns the new attempt_count.
+        """
+        for step in self.execution_plan["steps"]:
+            if step["state"] != StepStates.COMPLETED:
+                step["state"] = StepStates.PENDING
+                step["assigned_resource"] = None
+                step["timestamps"] = {
+                    "assigned": None,
+                    "started": None,
+                    "completed": None,
+                }
+
+        if failed_resource:
+            excluded = self.execution_plan.setdefault("excluded_resources", [])
+            if failed_resource not in excluded:
+                excluded.append(failed_resource)
+
+        self.execution_plan["attempt_count"] = (
+            self.execution_plan.get("attempt_count", 1) + 1
+        )
+        self.execution_plan["state"] = StepStates.PENDING
+        return self.execution_plan["attempt_count"]
+
+    def get_excluded_resources(self) -> set[str]:
+        return set(self.execution_plan.get("excluded_resources", []))
+
+    def get_attempt_count(self) -> int:
+        return self.execution_plan.get("attempt_count", 1)
+
+    def mark_step_failed(self, step_id) -> None:
+        step = self._find_step(step_id)
+        step["state"] = StepStates.FAILED
 
     # =============================
     # UPDATE COMPONENT REFERENCE

@@ -102,14 +102,14 @@ resource_inventories = {
         "AccessibleActors" : [Actor],
         "Storage" : 
         {
-            "position1": "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB-5d5574d7-c8e3-4b5b-b3c6-dfeebfdb1678",
-            "position2": "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB-5faa3958-782b-4b70-b748-50a78e1766fc",
+            "position1": "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB-4a4846ea-fd5a-44a2-8876-fb5890b15409",
+            "position2": "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB-7a093674-49c5-41bf-94db-e4faf47a5ad6",
             "position3": "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB-74f00dea-9d95-436f-99ff-04466f8ffe60",
             "position4": "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB-7ced82fa-47a5-4733-ab27-d3b1a150097f",
             "position5": "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB-e872534d-6c0f-48b3-a326-beb2ef8ab392",
             "position6": "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB-f89d5208-c787-4fb3-a6e8-5156d99b0ae8",
-            "position7": "",
-            "position8": "",
+            "position7": "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB-d576de4b-44fe-454b-93b8-e7bf08fcc0de",
+            "position8": "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB-dc4eec47-52b1-4960-ae08-9c2b02d43a48",
             "position9": "",
             "position10": "",
             "position11": "",

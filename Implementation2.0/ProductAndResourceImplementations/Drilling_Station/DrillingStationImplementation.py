@@ -84,6 +84,15 @@ Actor = "KUKAManipulator"
 
 mqtt_client = MQTTClientResource(BROKER, MQTT_PORT, CLIENT_ID, BASE_TOPIC)
 
+# ── RR3 TEST HOOK ────────────────────────────────────────────────────
+# Drop the next N outgoing ACKs to simulate dropped CMD acknowledgements.
+# - 1 = happy-path test: controller retransmits, second ACK arrives,
+#       step completes without an alarm.
+# - 2 = failure-path test: both attempts fail, CMD_NO_ACK alarm fires,
+#       OrderRecovery restarts (or aborts) the order.
+# Set to 0 (or delete) when you're done testing.
+mqtt_client._drop_acks_remaining = 0
+
 
 
 """

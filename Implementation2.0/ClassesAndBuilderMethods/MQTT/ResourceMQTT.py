@@ -28,6 +28,13 @@ class MQTTClientResource:
         # Expected incoming seq_no from controller
         self.controller_seq_no = 1
 
+        # ── Test hook for RR3 ────────────────────────────────────────
+        # When `_drop_acks_remaining > 0`, the next outgoing ACK is
+        # silently skipped (the counter decrements). Stations enable this
+        # by setting the field after constructing the client. Leave at
+        # zero in production — does nothing.
+        self._drop_acks_remaining = 0
+
         # topic_suffix -> {
         #   "model": PydanticModel,
         #   "handler": function,
@@ -126,8 +133,12 @@ class MQTTClientResource:
 
         data = message_model.model_dump(mode="json")
 
-        # Inject seq_no ONLY if model has it
-        if hasattr(message_model, "seq_no"):
+        # Inject a fresh outbound seq_no ONLY when the message doesn't
+        # already carry one. Acknowledgements (and any other reply that
+        # echoes a received seq_no) set their own value before calling
+        # publish — overwriting it here would break the controller's
+        # ACK→CMD matching.
+        if hasattr(message_model, "seq_no") and data.get("seq_no") is None:
             data["seq_no"] = self.station_seq_no
             self.station_seq_no += 1
 
@@ -143,6 +154,18 @@ class MQTTClientResource:
     # =========================================================
 
     def publish_acknowledgement(self, received_seq_no):
+        # RR3 test hook: silently drop an ACK if a test asked us to.
+        # controller_seq_no still advances so the next legitimate ACK
+        # doesn't return SEQ_TOO_LOW for a non-test reason.
+        if self._drop_acks_remaining > 0:
+            self._drop_acks_remaining -= 1
+            print(
+                f"[TEST] dropping ACK for seq={received_seq_no} "
+                f"(remaining drops: {self._drop_acks_remaining})"
+            )
+            self.controller_seq_no += 1
+            return
+
         if self.controller_seq_no == received_seq_no:
             error_code = MS.AcknowledgementErrorCodes.NO_ERROR
 
@@ -152,10 +175,14 @@ class MQTTClientResource:
         else:
             error_code = MS.AcknowledgementErrorCodes.SEQ_TOO_HIGH
 
+        # Per the protocol, an ACK carries the seq_no of the telegram it
+        # acknowledges — not our own expected counter. They match in the
+        # happy path; on SEQ_TOO_LOW/HIGH they differ, and the controller
+        # needs the received value to know which CMD failed.
         ack = MS.AcknowledgementMessage(
             timestamp=datetime.now(),
             resource_id=self.client_id,
-            seq_no=self.controller_seq_no,
+            seq_no=received_seq_no,
             error_code=error_code
         )
 

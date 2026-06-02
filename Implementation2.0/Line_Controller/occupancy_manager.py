@@ -55,6 +55,12 @@ class OccupancyManager:
         """
         self._owner: dict[tuple[str, str], str | None] = {}
         self._cargo: dict[tuple[str, str], str | None] = {}
+        # Stuck-cargo ledger: when an order fails while an actor is still
+        # carrying its cargo, we cannot release the (resource, actor)
+        # reservation safely — a part really is sitting on that shuttle.
+        # Mark it stuck instead; the actor is unavailable to all orders
+        # until an operator clears it via MQTT (see main.py handler).
+        self._stuck: set[tuple[str, str]] = set()
         self._controller = controller
         self._base_topic = base_topic
 
@@ -66,12 +72,57 @@ class OccupancyManager:
     def has_cargo(self, resource_id_short: str, actor_name: str) -> bool:
         return self._cargo.get((resource_id_short, actor_name)) is not None
 
+    def is_stuck(self, resource_id_short: str, actor_name: str) -> bool:
+        return (resource_id_short, actor_name) in self._stuck
+
     def is_available(self, resource_id_short: str, actor_name: str) -> bool:
-        """Not reserved for an order AND not currently carrying anything."""
+        """Not reserved for an order AND not currently carrying anything
+        AND not marked as stuck after a failed order."""
         return (
             not self.is_occupied(resource_id_short, actor_name)
             and not self.has_cargo(resource_id_short, actor_name)
+            and not self.is_stuck(resource_id_short, actor_name)
         )
+
+    def mark_stuck(self, resource_id_short: str, actor_name: str) -> None:
+        """Flag an actor as physically holding cargo we can no longer track.
+
+        Called by recovery when an order fails while one of its actors
+        still has cargo. The actor stays excluded from new assignments
+        until clear_stuck() is called (typically by an operator via the
+        ClearStuckCargo topic).
+        """
+        key = (resource_id_short, actor_name)
+        self._stuck.add(key)
+        print(f"[occupancy] STUCK CARGO: {resource_id_short}/{actor_name}")
+
+    def clear_stuck(self, resource_id_short: str, actor_name: str) -> bool:
+        """Operator action: confirm the part has been removed manually.
+
+        Also clears the cargo ledger so the actor returns to fully
+        available. Returns True if the actor was actually stuck.
+        """
+        key = (resource_id_short, actor_name)
+        if key not in self._stuck:
+            return False
+        self._stuck.discard(key)
+        self._cargo[key] = None
+        print(f"[occupancy] stuck cleared: {resource_id_short}/{actor_name}")
+        return True
+
+    def stuck_pairs_for_order(
+        self,
+        order_id: str,
+    ) -> list[tuple[str, str]]:
+        """All (resource, actor) reserved by this order that have cargo —
+        i.e. the actors that would need to be marked stuck if the order
+        fails right now.
+        """
+        return [
+            (r, a)
+            for (r, a), owner in self._owner.items()
+            if owner == order_id and self._cargo.get((r, a)) is not None
+        ]
 
     def owner_of(self, resource_id_short: str, actor_name: str) -> str | None:
         return self._owner.get((resource_id_short, actor_name))

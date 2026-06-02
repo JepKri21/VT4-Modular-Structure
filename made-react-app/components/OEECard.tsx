@@ -9,6 +9,7 @@ interface OEECardProps {
   previousOEE: number;
   targetValue?: number;
   latestActivity: string;
+  onClick?: () => void;
 }
 
 const OEECard: React.FC<OEECardProps> = ({
@@ -17,30 +18,33 @@ const OEECard: React.FC<OEECardProps> = ({
   previousOEE,
   targetValue = 80,
   latestActivity,
+  onClick,
 }) => {
   const diff = currentOEE - previousOEE;
-  const handleClick = () => {
-    alert(`Kortet for ${stationId} blev klikket!`);
-  };
+  const handleClick = onClick ?? (() => {});
 
   return (
     <Card
-      className="relative cursor-pointer flex flex-col bg-muted p-10 min-w-100 justify-between"
+      className="cursor-pointer flex flex-col bg-muted p-6 justify-between gap-4"
       onClick={handleClick}
     >
-      {/* Header */}
-      <div className="flex items-center">
-        <div className="flex items-center gap-3">
-          {currentOEE >= targetValue ? (
-            <TrendingUp className="text-primary mb-1" size={24} />
-          ) : (
-            <TrendingDown className="text-primary mb-1" size={24} />
-          )}
-          <h2 className="text-primary text-md font-md">OEE</h2>
-        </div>
-        <h1 className="absolute inset-x-0 flex text-primary justify-center pointer-events-none font-bold">
+      {/* Header — station name on its own line, truncated if too long.
+          OEE label sits underneath so they never collide. */}
+      <div className="space-y-1 min-w-0">
+        <h1
+          className="text-primary font-bold truncate"
+          title={stationId}
+        >
           {stationId.toUpperCase()}
         </h1>
+        <div className="flex items-center gap-2">
+          {currentOEE >= targetValue ? (
+            <TrendingUp className="text-primary" size={18} />
+          ) : (
+            <TrendingDown className="text-primary" size={18} />
+          )}
+          <span className="text-primary text-sm font-medium">OEE</span>
+        </div>
       </div>
 
       {/* Progress */}

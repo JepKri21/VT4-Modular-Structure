@@ -9,13 +9,16 @@ class CapabilityMatcher:
     def __init__(self, resource_manager):
         self.resource_manager = resource_manager
 
-    def match(self, step_info):
+    def match(self, step_info, excluded_resources: set[str] | None = None):
         """Filter resources whose capability is compatible with the step.
 
         Args:
             step_info: dict from WorkOrderHandler.get_step_execution_info().
                 Required keys: CapabilityReference, Parameters,
                 ComponentTypeReference, ProcessTransformation, Material.
+            excluded_resources: shell IRIs to skip — used by order recovery
+                to keep a restarted order from reaching for the resource
+                that just failed it.
 
         Returns:
             List of viable candidates, each:
@@ -30,11 +33,22 @@ class CapabilityMatcher:
             print("[match] no CapabilityReference on step_info — rejecting")
             return []
 
+        excluded = excluded_resources or set()
+
         print(f"[match] looking for resources offering: {capability_semantic_id}")
         candidates = self.resource_manager.find_by_capability(capability_semantic_id)
         if not candidates:
             print("[match] no resources advertise that capability semanticId")
             return []
+        if excluded:
+            before = len(candidates)
+            candidates = [c for c in candidates if c["resource_id"] not in excluded]
+            removed = before - len(candidates)
+            if removed:
+                print(f"[match] {removed} candidate(s) excluded by recovery policy")
+            if not candidates:
+                print("[match] all candidates were excluded — no alternative")
+                return []
         print(f"[match] {len(candidates)} initial candidate(s):")
         for c in candidates:
             print(f"          - {c['resource_id']}  (skill={c['skill_name']})")
