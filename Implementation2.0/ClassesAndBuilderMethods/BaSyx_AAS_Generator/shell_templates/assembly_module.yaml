@@ -20,6 +20,7 @@ submodel_templates:
   HandoffCapabilityOffered:  "https://aausmartlab.org/Submodels/Templates/HandoffCapabilityOffered"
   Skills:                    "https://aausmartlab.org/Submodels/Templates/Skills"
   ResourceZones:             "https://aausmartlab.org/Submodels/Templates/ResourceZones"
+  Inventory:                 "https://aausmartlab.org/Submodels/Templates/Inventory"
   Communication:             "https://aausmartlab.org/Submodels/Templates/Communication"
 
 include:
@@ -33,6 +34,8 @@ include:
     - SupportedComponents
     - AllowedMaterials
   Skills: []
+  Inventory:
+    - Inventories
   ResourceZones:
     - CenterPoint
     - ResourceGeometry

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Boxes,
   CheckCircle2,
@@ -16,6 +16,8 @@ import {
   PackageOpen,
 } from "lucide-react";
 import type { ComponentWithInventory, ResourceWithAllocations } from "@/lib/inventory";
+
+const POLL_INTERVAL_MS = 30_000;
 
 /* ── helpers ─────────────────────────────────────────────────────────────── */
 
@@ -165,15 +167,11 @@ interface ResourcePanelProps {
   onServerUrlChange: (v: string) => void;
   onLoad: () => void;
   error: string | null;
-  onCleanup: () => void;
-  cleanupResult: string | null;
-  cleaningUp: boolean;
 }
 
 function ResourcePanel({
   resources, loading, loaded, lockedCategory, totalSelected,
   allocating, onAllocate, serverUrl, onServerUrlChange, onLoad, error,
-  onCleanup, cleanupResult, cleaningUp,
 }: ResourcePanelProps) {
   const compatible = lockedCategory
     ? resources.filter((r) =>
@@ -209,24 +207,6 @@ function ResourcePanel({
             {loaded ? "Refresh" : "Load"}
           </button>
         </div>
-
-        {/* Stale allocation cleanup */}
-        {loaded && (
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onCleanup}
-              disabled={cleaningUp || !serverUrl}
-              className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:border-amber-400/60 disabled:opacity-50 transition-colors w-full justify-center"
-            >
-              <RefreshCw className={`w-3 h-3 ${cleaningUp ? "animate-spin" : ""}`} />
-              {cleaningUp ? "Checking..." : "Check stale allocations"}
-            </button>
-          </div>
-        )}
-        {cleanupResult && (
-          <p className="text-xs text-center text-muted-foreground">{cleanupResult}</p>
-        )}
 
         {error && (
           <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
@@ -342,13 +322,13 @@ export default function AllocationPage() {
   const [allocating, setAllocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<{ resourceName: string; items: Array<{ name: string; qty: number; label: string }> } | null>(null);
-  const [cleaningUp, setCleaningUp] = useState(false);
-  const [cleanupResult, setCleanupResult] = useState<string | null>(null);
 
+  const serverUrlRef = useRef("");
+
+  // Keep ref in sync when user edits the URL input
   useEffect(() => {
-    const saved = typeof window !== "undefined" ? localStorage.getItem("inventory_server_url") ?? "" : "";
-    setServerUrl(saved);
-  }, []);
+    serverUrlRef.current = serverUrl;
+  }, [serverUrl]);
 
   const fetchComponents = useCallback(async () => {
     const [compRes, allocRes] = await Promise.all([
@@ -366,10 +346,11 @@ export default function AllocationPage() {
   }, [fetchComponents]);
 
   const loadResources = useCallback(async () => {
+    const sv = serverUrlRef.current;
     setResourcesLoading(true);
     setResourceError(null);
-    const url = serverUrl
-      ? `/api/inventory/resources?serverUrl=${encodeURIComponent(serverUrl)}`
+    const url = sv
+      ? `/api/inventory/resources?serverUrl=${encodeURIComponent(sv)}`
       : "/api/inventory/resources";
     try {
       const res = await fetch(url);
@@ -380,34 +361,48 @@ export default function AllocationPage() {
       const data = (await res.json()) as ResourceWithAllocations[];
       setResources(Array.isArray(data) ? data : []);
       setResourcesLoaded(true);
-      if (serverUrl) localStorage.setItem("inventory_server_url", serverUrl);
+      if (sv) localStorage.setItem("inventory_server_url", sv);
+
+      // Silently clean up stale allocations on every refresh
+      if (sv) {
+        try {
+          const cleanupRes = await fetch("/api/inventory/allocations/cleanup", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ serverUrl: sv }),
+          });
+          if (cleanupRes.ok) {
+            await fetchComponents();
+            const res2 = await fetch(url);
+            if (res2.ok) {
+              const data2 = (await res2.json()) as ResourceWithAllocations[];
+              setResources(Array.isArray(data2) ? data2 : []);
+            }
+          }
+        } catch {
+          // ignore cleanup errors — don't block the refresh
+        }
+      }
     } catch (err) {
       setResourceError(String(err));
     }
     setResourcesLoading(false);
-  }, [serverUrl]);
+  }, [fetchComponents]);
 
-  const handleCleanup = useCallback(async () => {
-    if (!serverUrl) return;
-    setCleaningUp(true);
-    setCleanupResult(null);
-    try {
-      const res = await fetch("/api/inventory/allocations/cleanup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ serverUrl }),
-      });
-      const data = (await res.json()) as { message?: string; error?: string };
-      setCleanupResult(data.message ?? data.error ?? "Done");
-      if (res.ok) {
-        await fetchComponents();
-        await loadResources();
-      }
-    } catch (err) {
-      setCleanupResult(String(err));
-    }
-    setCleaningUp(false);
-  }, [serverUrl, fetchComponents, loadResources]);
+  // Auto-load on mount if a server URL is already saved
+  useEffect(() => {
+    const saved = typeof window !== "undefined" ? localStorage.getItem("inventory_server_url") ?? "" : "";
+    serverUrlRef.current = saved;
+    setServerUrl(saved);
+    if (saved) void loadResources();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Periodic refresh every 30 s once the panel is loaded
+  useEffect(() => {
+    const id = setInterval(() => void loadResources(), POLL_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [loadResources]);
 
   // Net available = stock - reserved - already allocated in DB
   const totalAllocatedByType = new Map<string, number>();
@@ -490,7 +485,7 @@ export default function AllocationPage() {
       <div className="flex border-b border-border">
         <Link href="/inventory-management"
           className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-          Inventory
+          Resource Inventory
         </Link>
         <span className="px-4 py-2 text-sm font-semibold text-primary border-b-2 border-primary">
           Allocate
@@ -641,9 +636,6 @@ export default function AllocationPage() {
           onServerUrlChange={setServerUrl}
           onLoad={() => void loadResources()}
           error={resourceError}
-          onCleanup={() => void handleCleanup()}
-          cleanupResult={cleanupResult}
-          cleaningUp={cleaningUp}
         />
       </div>
     </div>

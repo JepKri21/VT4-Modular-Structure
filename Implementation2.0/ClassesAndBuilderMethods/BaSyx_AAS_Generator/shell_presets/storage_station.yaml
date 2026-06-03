@@ -9,12 +9,12 @@ submodels:
     CapabilityCategory: "Offered"
     CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Store"
     SupportedComponents:
-      - "BottomCoverALU"
-      - "TopCoverALU"
-      - "BottomCoverDrilled"
+      - "https://aausmartlab.org/Shells/Component/BottomCover"
+      - "https://aausmartlab.org/Shells/Component/TopCover"
+      - "https://aausmartlab.org/Shells/Product/MobilePhone"
     AllowedMaterials:
-      - "PLA"
-      - "ABS"
+      - "https://aausmartlab.org/Materials/PLA"
+      - "https://aausmartlab.org/Materials/ABS"
     Parameters:
       OperationLabel:
         en: "Store operation"
@@ -24,12 +24,12 @@ submodels:
     CapabilityCategory: "Offered"
     CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Retrieve"
     SupportedComponents:
-      - "BottomCoverALU"
-      - "TopCoverALU"
-      - "BottomCoverDrilled"
+      - "https://aausmartlab.org/Shells/Component/BottomCover"
+      - "https://aausmartlab.org/Shells/Component/TopCover"
+      - "https://aausmartlab.org/Shells/Product/MobilePhone"
     AllowedMaterials:
-      - "PLA"
-      - "ABS"
+      - "https://aausmartlab.org/Materials/PLA"
+      - "https://aausmartlab.org/Materials/ABS"
     Parameters:
       OperationLabel:
         en: "Retrieve operation"
@@ -39,12 +39,12 @@ submodels:
     CapabilityCategory: "Offered"
     CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Handoff"
     SupportedComponents:
-      - "BottomCoverALU"
-      - "TopCoverALU"
-      - "BottomCoverDrilled"
+      - "https://aausmartlab.org/Shells/Component/BottomCover"
+      - "https://aausmartlab.org/Shells/Component/TopCover"
+      - "https://aausmartlab.org/Shells/Product/MobilePhone"
     AllowedMaterials:
-      - "PLA"
-      - "ABS"
+      - "https://aausmartlab.org/Materials/PLA"
+      - "https://aausmartlab.org/Materials/ABS"
     Parameters:
       TargetPosition:
         XPos: ""
@@ -56,16 +56,19 @@ submodels:
   Skills:
     Store:
       CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage/StoreCapabilityOffered"
+      CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Store"
       SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
       Actors:
         - "UR5"
     Retrieve:
       CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage/RetrieveCapabilityOffered"
+      CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Retrieve"
       SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
       Actors:
         - "UR5"
     Handoff:
       CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Storage/HandoffCapabilityOffered"
+      CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Handoff"
       SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
       Actors:
         - "UR5"
@@ -75,13 +78,13 @@ submodels:
       - Specifications:
           InventorySize: 10
         SupportedComponents:
-          - "BottomCover"
-          - "TopCover"
+          - "https://aausmartlab.org/Shells/Component/BottomCover"
+          - "https://aausmartlab.org/Shells/Component/TopCover"
         StoredComponents: []
       - Specifications:
           InventorySize: 5
         SupportedComponents:
-          - "BottomCoverDrilled"
+          - "https://aausmartlab.org/Shells/Product/MobilePhone"
         StoredComponents: []
 
   ResourceZones:

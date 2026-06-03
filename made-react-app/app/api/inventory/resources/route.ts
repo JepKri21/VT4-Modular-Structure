@@ -93,12 +93,15 @@ export async function GET(req: NextRequest) {
     ) as Array<{
       id: string;
       idShort?: string;
+      assetInformation?: { assetKind?: string };
       submodels?: Array<{ keys?: Array<{ value: string }> }>;
     }>;
 
-    // Standard IRI for resource shells: https://aausmartlab.org/Shells/Resources/{Name}
+    // Only instance shells — exclude Type/template shells (AssemblyModule, StorageModule, etc.)
     const resourceShells = rawShells.filter(
-      (s) => s.id?.includes("/Shells/Resources/")
+      (s) =>
+        s.id?.includes("/Shells/Resources/") &&
+        s.assetInformation?.assetKind !== "Type"
     );
 
     const found: ResourceWithAllocations[] = [];

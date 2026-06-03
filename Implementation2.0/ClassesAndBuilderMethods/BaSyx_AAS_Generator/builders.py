@@ -68,6 +68,14 @@ def _sm_ref(sm_id: str) -> model.ModelReference:
     )
 
 
+def _shell_ref(shell_id: str) -> model.ModelReference:
+    """Create a ModelReference pointing at an AssetAdministrationShell by its ID."""
+    return model.ModelReference(
+        key=(model.Key(type_=model.KeyTypes.ASSET_ADMINISTRATION_SHELL, value=shell_id),),
+        type_=model.AssetAdministrationShell,
+    )
+
+
 def _lang(text: str, language: str = "en") -> model.MultiLanguageTextType:
     """Return a one-entry MultiLanguageTextType for description/display fields."""
     return model.MultiLanguageTextType({language: text})

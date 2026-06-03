@@ -333,6 +333,7 @@ class ControllerAlarmMessage(BaseModel):
     
 class InventorySlot(BaseModel):
     component_id: str | None
+    reserved: bool = False
 
 class InventoryData(BaseModel):
     inventory_size: int

@@ -124,6 +124,9 @@ export async function POST(req: NextRequest) {
     // Old IDs looked like "fuse_fuse_16a_sb_d6f8e1d3-6196-4c44-..." — strip those so
     // they don't appear alongside the new correctly-grouped types.
     await pool.query(
+      `DELETE FROM resource_allocations WHERE component_type_id ~ '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'`
+    );
+    await pool.query(
       `DELETE FROM component_types WHERE id ~ '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'`
     );
 
@@ -233,6 +236,11 @@ export async function POST(req: NextRequest) {
         activeIds
       );
       await pool.query(
+        `DELETE FROM resource_allocations WHERE component_type_id NOT IN (${placeholders})
+           AND component_type_id IN (SELECT id FROM component_types WHERE ${staleFilter})`,
+        activeIds
+      );
+      await pool.query(
         `DELETE FROM component_types WHERE ${staleFilter}`,
         activeIds
       );
@@ -240,6 +248,7 @@ export async function POST(req: NextRequest) {
       // Nothing synced — wipe all previously-synced entries
       await pool.query(`DELETE FROM inventory WHERE component_type_id IN (SELECT id FROM component_types WHERE description LIKE 'Synced from %')`);
       await pool.query(`DELETE FROM order_items WHERE component_type_id IN (SELECT id FROM component_types WHERE description LIKE 'Synced from %')`);
+      await pool.query(`DELETE FROM resource_allocations WHERE component_type_id IN (SELECT id FROM component_types WHERE description LIKE 'Synced from %')`);
       await pool.query(`DELETE FROM component_types WHERE description LIKE 'Synced from %'`);
     }
 

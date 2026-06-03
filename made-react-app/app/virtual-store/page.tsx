@@ -300,25 +300,44 @@ export default function VirtualStorePage() {
       typeof window !== "undefined"
         ? (localStorage.getItem("inventory_server_url") ?? "")
         : "";
-    const url = serverUrl
-      ? `/api/inventory/bom-slots?serverUrl=${encodeURIComponent(serverUrl)}`
-      : "/api/inventory/bom-slots";
 
-    fetch(url)
-      .then((r) => r.json())
-      .then((data: BomSlot[]) => {
+    const init = async () => {
+      // Sync from AAS on entry so inventory is always fresh
+      if (serverUrl) {
+        try {
+          await fetch("/api/inventory/sync", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ serverUrl }),
+          });
+        } catch {
+          // ignore — fall back to cached data
+        }
+      }
+
+      const url = serverUrl
+        ? `/api/inventory/bom-slots?serverUrl=${encodeURIComponent(serverUrl)}`
+        : "/api/inventory/bom-slots";
+
+      try {
+        const r = await fetch(url);
+        const data = (await r.json()) as BomSlot[];
         if (Array.isArray(data)) {
           setBomSlots(data);
           setProducts([{ id: crypto.randomUUID(), selections: emptySelections(data) }]);
         }
-      })
-      .catch(() => setError("Could not load product template."))
-      .finally(() => setSlotsLoading(false));
-  }, [emptySelections]);
+      } catch {
+        setError("Could not load product template.");
+      } finally {
+        setSlotsLoading(false);
+      }
 
-  useEffect(() => {
-    fetchComponents().then(() => setLoading(false)).catch(() => setLoading(false));
-  }, [fetchComponents]);
+      await fetchComponents().catch(() => {});
+      setLoading(false);
+    };
+
+    void init();
+  }, [emptySelections, fetchComponents]);
 
   const addProduct = () =>
     setProducts((prev) => [...prev, newProduct(bomSlots)]);
@@ -713,7 +732,7 @@ export default function VirtualStorePage() {
                                 key={component.id}
                                 component={component}
                                 diffKeys={diffKeys}
-                                available={Math.max(0, (component.quantityAvailable ?? 0) - (component.quantityReserved ?? 0) - (otherAllocated.get(component.id) ?? 0))}
+                                available={Math.max(0, (component.quantityAllocated ?? component.quantityAvailable ?? 0) - (component.quantityReserved ?? 0) - (otherAllocated.get(component.id) ?? 0))}
                                 maxQuantity={slot.maxQuantity}
                                 isSelected={selectedForSlot?.component.id === component.id}
                                 quantity={selectedForSlot?.component.id === component.id ? selectedForSlot.quantity : 1}

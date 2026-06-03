@@ -10,7 +10,7 @@ elements:
     
     elements:
     - type: collection
-      id_short: "Invertory_1"
+      id_short: "Inventory_1"
       semantic_id: "https://aausmartlab.org/Semantics/Inventory"
       description: "Specifications and other relevant information of a specific inventory"
       

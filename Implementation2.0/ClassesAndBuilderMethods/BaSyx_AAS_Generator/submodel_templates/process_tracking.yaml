@@ -31,6 +31,7 @@ elements:
             description: "Reference to the required capability submodel instance for this step (e.g. DrillingCapabilityRequired on the product AAS) — carries the actual parameter values used"
             cardinality: "ZeroToOne"
             reference_type: "model"
+            reference_target: "submodel"
 
           - type: reference_element
             id_short: "SkillReference"
@@ -38,6 +39,7 @@ elements:
             description: "Reference to the specific skill on the resource that executed this process — identifies the concrete implementation used"
             cardinality: "ZeroToOne"
             reference_type: "model"
+            reference_target: "submodel"
 
           - type: property
             id_short: "PerformedBy"

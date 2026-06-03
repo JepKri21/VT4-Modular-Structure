@@ -98,6 +98,19 @@ def _read_str(props, id_short: str) -> str:
     return str(el["value"])
 
 
+def _read_ref(props, id_short: str) -> str:
+    """Extract shell IRI from a ReferenceElement (ModelReference) element."""
+    el = _find(props, id_short)
+    if el is None:
+        raise KeyError(f"Missing required element '{id_short}'")
+    val = el.get("value")
+    if isinstance(val, dict):
+        keys = val.get("keys", [])
+        if keys:
+            return str(keys[0]["value"])
+    raise ValueError(f"Cannot extract IRI from '{id_short}': unexpected shape {el!r}")
+
+
 def parse_line_config(submodel: dict) -> LineConfig:
     """Parse a LineConfiguration submodel JSON into a LineConfig.
 
@@ -117,7 +130,7 @@ def parse_line_config(submodel: dict) -> LineConfig:
     for entry in (rl_collection or {}).get("value", []):
         id_short = entry["idShort"]
         props = entry.get("value", [])
-        iri = _read_str(props, "ResourceReference")
+        iri = _read_ref(props, "ResourceReference")
         gloc = (_find(props, "GlobalLocation") or {}).get("value", [])
         loc = ResourceLocation(
             resource_id=id_short,
@@ -142,7 +155,7 @@ def parse_line_config(submodel: dict) -> LineConfig:
             res_props = res_entry.get("value", [])
             local = (_find(res_props, "LocalLocation") or {}).get("value", [])
             connected.append(ConnectedResource(
-                resource_iri=_read_str(res_props, "ResourceReference"),
+                resource_iri=_read_ref(res_props, "ResourceReference"),
                 zone_type=_read_str(res_props, "ZoneType"),
                 local_x=_read_float(local, "XPos"),
                 local_y=_read_float(local, "YPos"),

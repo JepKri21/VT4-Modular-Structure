@@ -37,7 +37,7 @@ from basyx.aas import model
 import basyx.aas.adapter.json
 sys.path.insert(0, str(Path(__file__).parent))
 
-from builders import XS_TYPE_MAP, _convert_value, _sm_ref
+from builders import XS_TYPE_MAP, _convert_value, _sm_ref, _shell_ref
 from instance_generator_class import AASInstanceBuilder
 from shell_type_utils import resolve_type
 
@@ -213,7 +213,10 @@ def build_elements_from_form(
                     continue
                 builder.add_reference_element(parent, id_short, value=None, semantic_id=sem_id)
                 continue
-            ref = _sm_ref(str(val)) if elem.get("reference_type") == "model" else _ext_ref(str(val))
+            if elem.get("reference_type") == "model":
+                ref = _shell_ref(str(val)) if elem.get("reference_target") == "shell" else _sm_ref(str(val))
+            else:
+                ref = _ext_ref(str(val))
             builder.add_reference_element(parent, id_short, value=ref, semantic_id=sem_id)
 
         elif etype == "list":

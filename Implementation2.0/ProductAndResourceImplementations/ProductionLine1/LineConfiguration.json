@@ -13,9 +13,16 @@
           "value": [
             {
               "idShort": "ResourceReference",
-              "modelType": "Property",
-              "value": "https://aausmartlab.org/Shells/Resources/Transport-12345678",
-              "valueType": "xs:string"
+              "modelType": "ReferenceElement",
+              "value": {
+                "type": "ModelReference",
+                "keys": [
+                  {
+                    "type": "AssetAdministrationShell",
+                    "value": "https://aausmartlab.org/Shells/Resources/Transport-12345678"
+                  }
+                ]
+              }
             },
             {
               "idShort": "GlobalLocation",
@@ -49,9 +56,16 @@
           "value": [
             {
               "idShort": "ResourceReference",
-              "modelType": "Property",
-              "value": "https://aausmartlab.org/Shells/Resources/Storage-12345678",
-              "valueType": "xs:string"
+              "modelType": "ReferenceElement",
+              "value": {
+                "type": "ModelReference",
+                "keys": [
+                  {
+                    "type": "AssetAdministrationShell",
+                    "value": "https://aausmartlab.org/Shells/Resources/Storage-12345678"
+                  }
+                ]
+              }
             },
             {
               "idShort": "GlobalLocation",
@@ -85,9 +99,16 @@
           "value": [
             {
               "idShort": "ResourceReference",
-              "modelType": "Property",
-              "value": "https://aausmartlab.org/Shells/Resources/Drilling-12345678",
-              "valueType": "xs:string"
+              "modelType": "ReferenceElement",
+              "value": {
+                "type": "ModelReference",
+                "keys": [
+                  {
+                    "type": "AssetAdministrationShell",
+                    "value": "https://aausmartlab.org/Shells/Resources/Drilling-12345678"
+                  }
+                ]
+              }
             },
             {
               "idShort": "GlobalLocation",
@@ -153,9 +174,16 @@
                   "value": [
                     {
                       "idShort": "ResourceReference",
-                      "modelType": "Property",
-                      "value": "https://aausmartlab.org/Shells/Resources/Transport-12345678",
-                      "valueType": "xs:string"
+                      "modelType": "ReferenceElement",
+                      "value": {
+                        "type": "ModelReference",
+                        "keys": [
+                          {
+                            "type": "AssetAdministrationShell",
+                            "value": "https://aausmartlab.org/Shells/Resources/Transport-12345678"
+                          }
+                        ]
+                      }
                     },
                     {
                       "idShort": "ZoneType",
@@ -189,9 +217,16 @@
                   "value": [
                     {
                       "idShort": "ResourceReference",
-                      "modelType": "Property",
-                      "value": "https://aausmartlab.org/Shells/Resources/Storage-12345678",
-                      "valueType": "xs:string"
+                      "modelType": "ReferenceElement",
+                      "value": {
+                        "type": "ModelReference",
+                        "keys": [
+                          {
+                            "type": "AssetAdministrationShell",
+                            "value": "https://aausmartlab.org/Shells/Resources/Storage-12345678"
+                          }
+                        ]
+                      }
                     },
                     {
                       "idShort": "ZoneType",
@@ -255,9 +290,16 @@
                   "value": [
                     {
                       "idShort": "ResourceReference",
-                      "modelType": "Property",
-                      "value": "https://aausmartlab.org/Shells/Resources/Transport-12345678",
-                      "valueType": "xs:string"
+                      "modelType": "ReferenceElement",
+                      "value": {
+                        "type": "ModelReference",
+                        "keys": [
+                          {
+                            "type": "AssetAdministrationShell",
+                            "value": "https://aausmartlab.org/Shells/Resources/Transport-12345678"
+                          }
+                        ]
+                      }
                     },
                     {
                       "idShort": "ZoneType",
@@ -291,9 +333,16 @@
                   "value": [
                     {
                       "idShort": "ResourceReference",
-                      "modelType": "Property",
-                      "value": "https://aausmartlab.org/Shells/Resources/Drilling-12345678",
-                      "valueType": "xs:string"
+                      "modelType": "ReferenceElement",
+                      "value": {
+                        "type": "ModelReference",
+                        "keys": [
+                          {
+                            "type": "AssetAdministrationShell",
+                            "value": "https://aausmartlab.org/Shells/Resources/Drilling-12345678"
+                          }
+                        ]
+                      }
                     },
                     {
                       "idShort": "ZoneType",

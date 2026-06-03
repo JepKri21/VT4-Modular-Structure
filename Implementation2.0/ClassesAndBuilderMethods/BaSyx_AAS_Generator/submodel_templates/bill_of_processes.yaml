@@ -104,6 +104,7 @@ elements:
             description: "Reference to the required capability submodel instance for this step"
             cardinality: "ZeroToOne"
             reference_type: "model"
+            reference_target: "submodel"
 
           - type: collection
             id_short: "StepConstraints"

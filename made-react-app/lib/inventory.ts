@@ -55,6 +55,7 @@ export interface PlacedOrder extends AasOrder {
 export interface ComponentWithInventory extends ComponentType {
   quantityAvailable: number;
   quantityReserved: number;
+  quantityAllocated?: number;
 }
 
 // SQL schema definitions

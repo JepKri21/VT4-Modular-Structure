@@ -564,6 +564,60 @@ function ProcessStepRefField({ element, value, onChange, path, processStepEntrie
   );
 }
 
+/* ──────────────────────────────── range ── */
+
+function RangeField({ element, value, onChange, path }: FieldProps) {
+  const idMin = `${path}-${element.id_short}-min`;
+  const idMax = `${path}-${element.id_short}-max`;
+  const data = (typeof value === "object" && value !== null && !Array.isArray(value))
+    ? (value as FormData)
+    : {};
+  const minVal = data.min as number | null | undefined;
+  const maxVal = data.max as number | null | undefined;
+
+  const update = (key: "min" | "max", raw: string) => {
+    const parsed = raw === "" ? null : parseFloat(raw);
+    onChange({ ...data, [key]: parsed });
+  };
+
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-sm font-medium">
+        {labelFor(element.id_short)}
+        {element.description && (
+          <span className="text-xs text-muted-foreground ml-1">
+            — {element.description}
+          </span>
+        )}
+      </span>
+      <div className="flex gap-2 items-center">
+        <div className="flex flex-col gap-0.5 flex-1">
+          <label htmlFor={idMin} className="text-xs text-muted-foreground">Min</label>
+          <input
+            id={idMin}
+            type="number"
+            step="any"
+            className={inputClass()}
+            value={minVal === null || minVal === undefined ? "" : String(minVal)}
+            onChange={(e) => update("min", e.target.value)}
+          />
+        </div>
+        <div className="flex flex-col gap-0.5 flex-1">
+          <label htmlFor={idMax} className="text-xs text-muted-foreground">Max</label>
+          <input
+            id={idMax}
+            type="number"
+            step="any"
+            className={inputClass()}
+            value={maxVal === null || maxVal === undefined ? "" : String(maxVal)}
+            onChange={(e) => update("max", e.target.value)}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ──────────────────────────────── collection (recursive) ── */
 
 function CollectionField({ element, value, onChange, path, context, inlineCapabilityMap, bomEntries, processStepEntries }: FieldProps) {
@@ -828,6 +882,17 @@ export function FieldRenderer({ element, value, onChange, path, context, inlineC
       </div>
     );
   };
+
+  if (element.type === "range") {
+    return wrap(
+      <RangeField
+        element={element}
+        value={value}
+        onChange={onChange}
+        path={path}
+      />
+    );
+  }
 
   if (element.type === "property" && element.ref_source === "process_steps") {
     return wrap(

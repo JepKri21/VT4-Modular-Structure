@@ -11,13 +11,14 @@ elements:
     description: "Reference to the corresponding CapabilityOffered submodel"
     cardinality: "One"
     reference_type: "model"
+    reference_target: "submodel"
 
   - type: reference_element
     id_short: "CapabilityTypeReference"
-    semantic_id: "https://aausmartlab.org/Semantics/CapabilitySubmodelReference"
-    description: "Reference to the corresponding CapabilityOffered submodel"
+    semantic_id: "https://aausmartlab.org/Semantics/CapabilityTypeReference"
+    description: "Reference to the abstract capability type IRI"
     cardinality: "One"
-    reference_type: "model"
+    reference_type: "external"
 
   - type: list
     id_short: "SkillTriggers"

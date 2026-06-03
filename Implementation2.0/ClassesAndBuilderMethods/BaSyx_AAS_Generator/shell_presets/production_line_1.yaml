@@ -52,6 +52,20 @@ submodels:
           - "TopCoverALU"
           - "BottomCoverDrilled"
 
+  Communication:
+    MQTT:
+      ProductionLinePrefix: "AAUSmartLab/Line1"
+      BrokerID: "mqtt.aausmartlab.org"
+      BrokerPort: 1883
+      Suffixes:
+        CommandSuffix: "CMD"
+        StateSuffix: "PackMLState"
+        JobResultSuffix: "JobResult"
+        InfoRequestSuffix: "InfoRequest"
+        ResourceAcknowledgementSuffix: "ResourceAck"
+        ControllerAcknowledgementSuffix: "ControllerAck"
+        OccupancySuffix: "Occupy"
+
   LineConfiguration:
     ResourceLocations:
       - ResourceReference: "https://aausmartlab.org/Shells/Resources/Transport-12345678"

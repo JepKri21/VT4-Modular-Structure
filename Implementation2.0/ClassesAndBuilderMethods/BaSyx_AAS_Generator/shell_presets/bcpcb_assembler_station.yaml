@@ -44,11 +44,13 @@ submodels:
   Skills:
     Assemble:
       CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/BCPCBAssembler/AssembleCapabilityOffered"
+      CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Assemble"
       SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
       Actors:
         - "KUKAManipulator"
     Handoff:
       CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/BCPCBAssembler/HandoffCapabilityOffered"
+      CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Handoff"
       SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
       Actors:
         - "KUKAManipulator"
@@ -59,7 +61,6 @@ submodels:
           InventorySize: 10
         SupportedComponents:
           - "https://aausmartlab.org/Shells/Component/PCB"
-        StoredComponents: []
 
   ResourceZones:
     CenterPoint:

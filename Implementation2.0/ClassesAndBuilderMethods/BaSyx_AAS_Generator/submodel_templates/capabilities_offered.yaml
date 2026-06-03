@@ -11,3 +11,5 @@ elements:
     semantic_id: "https://aausmartlab.org/Semantics/CapabilityReference"
     description: "Reference to an offered capability submodel on this resource shell"
     cardinality: "OneToMany"
+    reference_type: "model"
+    reference_target: "submodel"
