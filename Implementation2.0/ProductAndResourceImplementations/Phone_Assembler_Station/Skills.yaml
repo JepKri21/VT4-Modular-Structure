@@ -1,6 +1,7 @@
 id_short: "Skills"
 id: "https://aausmartlab.org/Shells/Resources/PhoneAssembler_12345678/Skills"
 description: "Submodel of skills and capabilities provided by this resource"
+semantic_id: "https://aausmartlab.org/Semantics/SubmodelTypes/Skills"
 
 elements:
   - type: collection
@@ -12,6 +13,12 @@ elements:
       - type: reference_element
         id_short: "CapabilitySubmodelReference"
         value: "https://aausmartlab.org/Shells/Resources/PhoneAssembler_12345678/PhoneAssemblyCapabilityOffered"
+
+      - type: reference_element
+        id_short: "CapabilityTypeReference"
+        semantic_id: "https://aausmartlab.org/Semantics/CapabilityTypeReference"
+        description: "Reference to the corresponding CapabilityOffered type"
+        value: "https://aausmartlab.org/Submodels/Capability/Assemble"
 
       - type: list
         id_short: "SkillTriggers"
@@ -48,6 +55,12 @@ elements:
       - type: reference_element
         id_short: "CapabilitySubmodelReference"
         value: "https://aausmartlab.org/Shells/Resources/BCPCBFuseAssembler_12345678/HandoffCapabilityOffered"
+
+      - type: reference_element
+        id_short: "CapabilityTypeReference"
+        semantic_id: "https://aausmartlab.org/Semantics/CapabilityTypeReference"
+        description: "Reference to the corresponding CapabilityOffered type"
+        value: "https://aausmartlab.org/Submodels/Capability/Handoff"
 
       - type: list
         id_short: "SkillTriggers"

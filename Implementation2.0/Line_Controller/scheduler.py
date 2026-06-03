@@ -1552,35 +1552,43 @@ class Scheduler:
             shuttle.resource_id: shuttle_iri,
         }
 
-        self.occupancy.commit(order_id, [
-            (shuttle.resource_id, shuttle.actor_name),
-        ])
+        # Wait for the shuttle to become free instead of raising if a
+        # concurrent order currently owns it. Mirrors the wait-loop in
+        # _execute_bop_step so post-process doesn't kill the order on
+        # cross-order contention.
+        post_reservation = [(shuttle.resource_id, shuttle.actor_name)]
+        while True:
+            blocker = self.occupancy.try_commit(order_id, post_reservation)
+            if blocker is None:
+                break
+            print(
+                f"[finalize] post-process waiting on {blocker[0]}/{blocker[1]} "
+                f"(held by order {self.occupancy.owner_of(*blocker)})"
+            )
+            await asyncio.sleep(TICK_INTERVAL_S)
         try:
             await self._print_and_execute_plan(plan, iri_by_topic, "post-process")
         finally:
-            self.occupancy.release(order_id)
+            # Release only what post_process committed — not the whole order.
+            # run_order's outer finally still calls occupancy.release(order_id)
+            # for any leftover reservations.
+            for resource_id, actor_name in post_reservation:
+                self.occupancy.release_one(resource_id, actor_name, order_id)
 
     def _find_cargo_holder_for_order(
         self, order_id: str
     ) -> tuple[str, str] | None:
-        """Pick an actor that's currently carrying *something* and was
-        reserved by this order. If nothing's carrying, return None.
+        """Pick an actor that's currently carrying cargo AND is reserved by
+        this order. Returns None if nothing on the line belongs to this order.
 
-        For one-order operation this is just "first cargo on the line".
-        For multi-order this needs to disambiguate by what was loaded
-        for which order — left as a TODO until multi-order matters.
+        Strictly per-order: never fall back to "any cargo on the line" — in
+        a multi-order run that would let one order's post-process pick up
+        another order's in-flight part.
         """
-        # Simplest correct version: any actor with cargo whose reservation
-        # belongs to this order, OR (failing that) any actor with cargo.
-        owned: tuple[str, str] | None = None
-        anything: tuple[str, str] | None = None
         for resource_id, actor, _cargo in self.occupancy.all_cargo():
-            if anything is None:
-                anything = (resource_id, actor)
             if self.occupancy.owner_of(resource_id, actor) == order_id:
-                owned = (resource_id, actor)
-                break
-        return owned or anything
+                return (resource_id, actor)
+        return None
 
     def _is_transport_actor(self, shell_iri: str) -> bool:
         return "Transport" in self.rm.get_resource_skills(shell_iri)
