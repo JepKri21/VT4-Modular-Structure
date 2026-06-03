@@ -1,91 +1,63 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import OEECard from "@/components/OEECard";
 
-interface OEEItem {
-  id: string;
-  currentOEE: number;
-  previousOEE: number;
-  latestActivity: string;
-}
+import React from "react";
+import { useOrchestrationSnapshot } from "@/lib/useOrchestrationSnapshot";
+import ResourceAllocationView from "@/components/ResourceAllocationView";
+import DispatchQueueView from "@/components/DispatchQueueView";
 
-// Dummy fetch-funktion, som du kan erstatte med PSQL fetch
-const fetchStationOEE = async (
-  filter: "line" | "station",
-  hoursInterval: number,
-): Promise<OEEItem[]> => {
-  // TODO: Lav et API endpoint der returnerer OEE per station eller line
-  return [
-    {
-      id: "Drilling_1",
-      currentOEE: 75,
-      previousOEE: 56,
-      latestActivity: "2h ago",
-    },
-    {
-      id: "Drilling_2",
-      currentOEE: 82,
-      previousOEE: 79,
-      latestActivity: "1h ago",
-    },
-  ];
-};
-
-const ProductionMonitoring: React.FC = () => {
-  const [filter, setFilter] = useState<"line" | "station">("line");
-  const [interval, setInterval] = useState(168);
-  const [stations, setStations] = useState<OEEItem[]>([]);
-
-  useEffect(() => {
-    const loadData = async () => {
-      const res = await fetch(
-        `/api/oee-new?filter=${filter}&hours=${interval}`,
-      );
-      const data = await res.json();
-      setStations(data);
-    };
-    loadData();
-  }, [filter, interval]);
+export default function ProductionMonitoringPage() {
+  const { snapshot, status, error } = useOrchestrationSnapshot();
 
   return (
-    <div className="p-4">
-      {/* Filter Controls */}
-      <div className="flex gap-4 mb-4">
-        <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value as "line" | "station")}
-          className="border p-1 rounded"
-        >
-          <option value="station">Station Specific</option>
-          <option value="line">Line Specific</option>
-        </select>
-
-        <select
-          value={interval}
-          onChange={(e) => setInterval(Number(e.target.value))}
-          className="border p-1 rounded"
-        >
-          <option value={1}>Last 1 hour</option>
-          <option value={8}>Last 8 hours</option>
-          <option value={24}>Last 24 hours</option>
-          <option value={72}>Last 3 days</option>
-          <option value={168}>Last 7 days</option>
-        </select>
+    <div className="p-4 space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold">Live Production Monitoring</h1>
+        <ConnectionBadge status={status} />
       </div>
 
-      {/* OEE Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-15">
-        {stations.map((station) => (
-          <OEECard
-            key={station.id}
-            stationId={station.id}
-            currentOEE={station.currentOEE}
-            previousOEE={station.previousOEE}
-            latestActivity={station.latestActivity}
-          />
-        ))}
-      </div>
+      {error && (
+        <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2">
+          {error}
+        </div>
+      )}
+
+      <section>
+        <div className="flex items-baseline justify-between mb-2">
+          <h2 className="text-base font-medium">Dispatch Queue</h2>
+          <span className="text-xs text-gray-500">
+            {snapshot?.orders.length ?? 0} active
+          </span>
+        </div>
+        <DispatchQueueView orders={snapshot?.orders ?? []} />
+      </section>
+
+      <section>
+        <div className="flex items-baseline justify-between mb-2">
+          <h2 className="text-base font-medium">Resource Allocation</h2>
+          {snapshot && (
+            <span className="text-xs text-gray-500">
+              snapshot {new Date(snapshot.timestamp).toLocaleTimeString()}
+            </span>
+          )}
+        </div>
+        <ResourceAllocationView lanes={snapshot?.lanes ?? []} />
+      </section>
     </div>
   );
-};
-export default ProductionMonitoring;
+}
+
+function ConnectionBadge({ status }: { status: string }) {
+  const cls =
+    status === "connected"
+      ? "bg-green-100 text-green-800 border-green-200"
+      : status === "error"
+        ? "bg-red-100 text-red-800 border-red-200"
+        : "bg-amber-100 text-amber-800 border-amber-200";
+  return (
+    <span
+      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${cls}`}
+    >
+      MQTT: {status}
+    </span>
+  );
+}

@@ -130,12 +130,12 @@ const Sidebar = () => {
           label="Assets"
           isCollapsed={isSidebarCollapsed}
         /> */}
-        {/* <SidebarLink
+        <SidebarLink
           href="/production-monitoring"
           icon={Factory}
           label="Production Monitoring"
           isCollapsed={isSidebarCollapsed}
-        /> */}
+        />
         <SidebarLink
           href="/performance"
           icon={Trophy}
@@ -212,12 +212,14 @@ const Sidebar = () => {
           label="Line Configurator"
           isCollapsed={isSidebarCollapsed}
         />
-        { <SidebarLink
-          href="/aas-server"
-          icon={Server}
-          label="AAS Server"
-          isCollapsed={isSidebarCollapsed}
-        />}
+        {
+          <SidebarLink
+            href="/aas-server"
+            icon={Server}
+            label="AAS Server"
+            isCollapsed={isSidebarCollapsed}
+          />
+        }
         <SidebarLink
           href="/aas-configurator"
           icon={Layers}

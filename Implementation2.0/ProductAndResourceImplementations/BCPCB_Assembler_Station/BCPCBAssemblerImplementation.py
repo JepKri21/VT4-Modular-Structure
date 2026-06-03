@@ -107,8 +107,8 @@ resource_inventories = {
             "position3": "",
             "position4": "",
             "position5": "",
-            "position6": "https://aausmartlab.org/Shells/Component/PCB/PCBFuseBoxA-6c0758ad-986a-447d-a2b7-72a0a9eb1f2c",
-            "position7": "https://aausmartlab.org/Shells/Component/PCB/PCBFuseBoxA-d362b1f2-89f6-4173-88b6-fcb837560e20",
+            "position6": "https://aausmartlab.org/Shells/Component/PCB/PCBFuseBoxA-25cf99e2-f3b5-4aba-86c0-cf755edf30ee",
+            "position7": "https://aausmartlab.org/Shells/Component/PCB/PCBFuseBoxA-63c6951c-2304-4f9c-8b74-61176a65e8f1",
             "position8": "",
             "position9": "",
             "position10": ""

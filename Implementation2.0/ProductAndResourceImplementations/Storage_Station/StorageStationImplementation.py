@@ -101,16 +101,16 @@ resource_inventories = {
         "AccessibleActors" : [Actor],
         "Storage" : 
         {
-            "position1": "",
-            "position2": "https://aausmartlab.org/Shells/Component/TopCover/TopCoverABSBlack-99ea6008-1829-416b-a1d1-c9bab9700492",
+            "position1": "https://aausmartlab.org/Shells/Component/TopCover/TopCoverABSBlack-2e8f481c-61eb-4652-9814-3dfa2c1c4560",
+            "position2": "https://aausmartlab.org/Shells/Component/TopCover/TopCoverABSBlack-ccfc6f64-1c58-4e16-bb15-7159fd0ed325",
             "position3": "",
             "position4": "",
             "position5": "https://aausmartlab.org/Shells/Component/TopCover/TopCoverABSBlack-180500f5-f3f6-47c0-8c59-4a884348b744",
             "position6": "",
             "position7": "",
             "position8": "",
-            "position9": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover3DP-40b2b95a-feec-43d1-b02c-e426abaeab93",
-            "position10": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverABSBlack-71b6b520-cc8d-4b15-af9b-636e27e2a721"
+            "position9": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverABSBlack-a1432970-2da3-400c-ba19-618abb87b80e",
+            "position10": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverABSBlack-b853e510-6620-45b5-a009-09e9532c8f53"
         }
     },
     "Inventory2": 
