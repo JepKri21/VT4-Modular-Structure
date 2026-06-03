@@ -24,14 +24,6 @@ logging.basicConfig(
 #So, I think maybe we should start by creating the generic parameter reading, execution and job_result creating, for each of the capability types.
 #Could be in a class, but there might also be a better way of storing it.
 
-#====== JUST FOR TESTING=========
-BROKER = "localhost"
-AAS_PORT = "8081"
-SERVER_BASE = f"http://{BROKER}:{AAS_PORT}"  # your server base URL
-SUBMODEL_ENDPOINT = f"{SERVER_BASE}/submodels"
-SHELL_ENDPOINT = f"{SERVER_BASE}/shells"
-#====== JUST FOR TESTING=========
-
 
 class AASResourceLoader:
 
@@ -562,23 +554,3 @@ class InventoryParser:
             }
 
 
-loader = AASResourceLoader(SERVER_BASE, SUBMODEL_ENDPOINT, SHELL_ENDPOINT)
-loaded_raw_resource = loader.load("https://aausmartlab.org/Shells/Resources/Storage_12345678")
-parser = ResourceParser()
-parsed_resource = parser.parse(loaded_raw_resource)
-print(parsed_resource)
-
-inventory_parser = parser.get_parser(GRM.SubmodelSemanticIDs.INVENTORY)
-component_id = "https://aausmartlab.org/Shells/Component/TopCover/TopCoverABSBlack-NEW" #The one I want to add
-
-inventory_parser.update_slot(inventory_name="Inventory_1",slot_id="SlotEntry_10",component_id=component_id)
-headers = {"Content-Type": "application/json"}
-
-inventory_submodel_data = json.dumps(inventory_parser.raw_submodel.data).encode("utf-8")
-
-response = requests.put(f"{SUBMODEL_ENDPOINT}/aHR0cHM6Ly9hYXVzbWFydGxhYi5vcmcvU2hlbGxzL1Jlc291cmNlcy9TdG9yYWdlXzEyMzQ1Njc4L0ludmVudG9yeQ==", headers=headers, data=inventory_submodel_data)
-
-if response.status_code in (200, 201, 204):
-    print("updated")
-else:
-    raise RuntimeError(f"Upload failed on PUT: {response.status_code} - {response.text}")

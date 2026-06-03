@@ -86,7 +86,7 @@ class MQTTClientResource:
         if rc == 0:
             print(f"{self.client_id} connected")
 
-            for topic_suffix in self.subscribers:
+            for topic_suffix in list(self.subscribers.keys()):
                 full_topic = f"{self.base_topic}/{self.client_id}/{topic_suffix}"
                 client.subscribe(full_topic)
                 print(f"Subscribed to {full_topic}")

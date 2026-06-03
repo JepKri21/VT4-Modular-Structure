@@ -421,24 +421,6 @@ def handle_request(msg: MS.RequestMessage):
 mqtt_client.register_subscriber(command_suffix, MS.CommandMessage,handle_command)
 mqtt_client.register_subscriber(info_request_suffix, MS.RequestMessage,handle_request)
 
-params = {"TargetPosition": {"XPos": 80.0, "YPos": 40.0}}
-
-test_command = MS.CommandMessage(
-    timestamp=datetime.now(),
-    resource_id=CLIENT_ID,
-    skill="Assemble",
-    actor_name=Actor,
-    skill_trigger=MS.CommandType.START,
-    process_transformation={"InputTypes": ["https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverPLABlue-264a4570-0bfb-4171-bdf8-5ed087afd73e", "https://aausmartlab.org/Shells/Component/PCB/PCB_213fasd-0bfb-4171-bdf8-5ed087afd73e"],
-                            "OutputTypes": ["https://aausmartlab.org/Shells/Assembly/BottomCoverPCB/BottomCoverPCB-as734bld-0bfb-4171-bdf8-5ed087afd73e"]},
-    order_id="ORD-1",
-    job_id="1xx23",
-    parameters=params
-)
-
-
-print("Test Command (WILL NOT WORK FOR THIS RESOURCE): ", test_command.model_dump_json(indent=2))
-
 #=============
 #Main loop where the full machine runs
 #=============
