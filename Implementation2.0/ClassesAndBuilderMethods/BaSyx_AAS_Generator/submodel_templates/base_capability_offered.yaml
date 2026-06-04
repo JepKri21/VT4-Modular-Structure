@@ -103,3 +103,5 @@ elements:
     semantic_id: "https://aausmartlab.org/Semantics/ResourceReference"
     description: "Reference to the AAS shell of the resource realizing this capability (offered side only)"
     cardinality: "One"
+    reference_type: "model"
+    reference_target: "shell"

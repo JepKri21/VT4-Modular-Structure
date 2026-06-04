@@ -20,6 +20,7 @@ import {
   Wrench,
   Bot,
   Trophy,
+  Boxes,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/app/redux";
 import { setIsSidebarCollapsed } from "@/state";
@@ -56,6 +57,34 @@ const SidebarLink = ({
         <span
           className={`${isCollapsed ? "hidden" : "block"} ${isActive ? "text-background font-bold" : "text-primary"}`}
         >
+          {label}
+        </span>
+      </div>
+    </Link>
+  );
+};
+
+const SidebarSubLink = ({
+  href,
+  icon: Icon,
+  label,
+  isCollapsed,
+}: sidebarLinkProps) => {
+  const pathname = usePathname();
+  const isActive = pathname === href;
+
+  return (
+    <Link href={href}>
+      <div
+        className={`cursor-pointer flex items-center gap-2.5 transition-colors hover:bg-card hover:text-primary
+          ${isCollapsed ? "justify-center py-2.5" : "justify-start pl-12 pr-8 py-2.5"}
+          ${isActive ? "bg-primary/10 text-primary" : "text-primary/70"}`}
+      >
+        {!isCollapsed && (
+          <span className="w-px h-4 bg-primary/20 rounded-full shrink-0" />
+        )}
+        <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-primary" : "text-primary/60"}`} />
+        <span className={`${isCollapsed ? "hidden" : "block"} text-sm ${isActive ? "font-semibold text-primary" : ""}`}>
           {label}
         </span>
       </div>
@@ -185,6 +214,12 @@ const Sidebar = () => {
           href="/inventory-management"
           icon={PackageOpen}
           label="Inventory Management"
+          isCollapsed={isSidebarCollapsed}
+        />
+        <SidebarSubLink
+          href="/inventory-management/allocation"
+          icon={Boxes}
+          label="Allocate Components"
           isCollapsed={isSidebarCollapsed}
         />
 

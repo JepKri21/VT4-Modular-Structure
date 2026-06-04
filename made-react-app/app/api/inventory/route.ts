@@ -5,11 +5,12 @@ import {
   CREATE_INVENTORY_TABLE_SQL,
   CREATE_ORDERS_TABLE_SQL,
   CREATE_ORDER_ITEMS_TABLE_SQL,
+  CREATE_RESOURCE_SLOTS_TABLE_SQL,
+  CREATE_RESOURCE_ALLOCATIONS_TABLE_SQL,
+  CREATE_ALLOCATED_INSTANCES_TABLE_SQL,
   MIGRATE_COMPONENT_TYPES_SQL,
   rowToComponentType,
-  rowToInventoryItem,
   type ComponentType,
-  type InventoryItem,
 } from "@/lib/inventory";
 
 async function ensureTables() {
@@ -20,11 +21,9 @@ async function ensureTables() {
   for (const sql of MIGRATE_COMPONENT_TYPES_SQL) {
     await pool.query(sql);
   }
-}
-
-interface ComponentWithInventory extends ComponentType {
-  quantityAvailable: number;
-  quantityReserved: number;
+  await pool.query(CREATE_RESOURCE_SLOTS_TABLE_SQL);
+  await pool.query(CREATE_RESOURCE_ALLOCATIONS_TABLE_SQL);
+  await pool.query(CREATE_ALLOCATED_INSTANCES_TABLE_SQL);
 }
 
 export async function GET() {
@@ -34,9 +33,14 @@ export async function GET() {
       ct.id, ct.category, ct.material, ct.color, ct.finish, ct.current_rating, ct.voltage_rating,
       ct.version, ct.weight, ct.aas_type_iri, ct.name, ct.description, ct.created_at,
       COALESCE(inv.quantity_available, 0) as quantity_available,
-      COALESCE(inv.quantity_reserved, 0) as quantity_reserved
+      COALESCE(inv.quantity_reserved, 0) as quantity_reserved,
+      COALESCE(SUM(ra.quantity), 0) as quantity_allocated
     FROM component_types ct
     LEFT JOIN inventory inv ON ct.id = inv.component_type_id
+    LEFT JOIN resource_allocations ra ON ct.id = ra.component_type_id
+    GROUP BY ct.id, ct.category, ct.material, ct.color, ct.finish, ct.current_rating,
+             ct.voltage_rating, ct.version, ct.weight, ct.aas_type_iri, ct.name,
+             ct.description, ct.created_at, inv.quantity_available, inv.quantity_reserved
     ORDER BY ct.category, ct.created_at DESC
   `);
 
@@ -45,6 +49,7 @@ export async function GET() {
       ...rowToComponentType(row),
       quantityAvailable: row.quantity_available,
       quantityReserved: row.quantity_reserved,
+      quantityAllocated: parseInt(row.quantity_allocated) || 0,
     }))
   );
 }
@@ -103,6 +108,7 @@ export async function DELETE(req: NextRequest) {
 
   await ensureTables();
   await pool.query("DELETE FROM order_items WHERE component_type_id = $1", [componentTypeId]);
+  await pool.query("DELETE FROM resource_allocations WHERE component_type_id = $1", [componentTypeId]);
   await pool.query("DELETE FROM inventory WHERE component_type_id = $1", [componentTypeId]);
   await pool.query("DELETE FROM component_types WHERE id = $1", [componentTypeId]);
 

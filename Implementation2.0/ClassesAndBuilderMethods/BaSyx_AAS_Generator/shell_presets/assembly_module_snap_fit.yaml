@@ -41,11 +41,13 @@ submodels:
   Skills:
     Assemble:
       CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/AssemblySnapFit/AssembleCapabilityOffered"
+      CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Assemble"
       SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
       Actors:
         - "UR5"
     Handoff:
       CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/AssemblySnapFit/HandoffCapabilityOffered"
+      CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Handoff"
       SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
       Actors:
         - "UR5"

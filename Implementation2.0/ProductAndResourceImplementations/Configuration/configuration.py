@@ -6,6 +6,7 @@ import basyx.aas.adapter.json as aas_json
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 
 from BaSyx_AAS_Generator.instance_generator_class import AASInstanceBuilder
+from basyx.aas.model import ModelReference, Key, KeyTypes, AssetAdministrationShell as AASShell
 
 #IMPORTANT NOTE: Global Reference Frame is the (0,0,0) position for the entire production line configuration
 
@@ -51,11 +52,14 @@ drill_station = Configuration.add_collection(
     "DrillStation"
 )
 
-Configuration.add_property(
+Configuration.add_reference_element(
     drill_station,
     "ResourceReference",
-    "xs:string",
-    "https://aausmartlab.org/Shells/Resources/Drilling-12345678"
+    value=ModelReference(
+        key=(Key(type_=KeyTypes.ASSET_ADMINISTRATION_SHELL,
+                 value="https://aausmartlab.org/Shells/Resources/Drilling-12345678"),),
+        type_=AASShell,
+    ),
 )
 
 location_drill_station = Configuration.add_collection(
@@ -94,11 +98,14 @@ transport_station = Configuration.add_collection(
     "TransportStation"
 )
 
-Configuration.add_property(
+Configuration.add_reference_element(
     transport_station,
     "ResourceReference",
-    "xs:string",
-    "https://aausmartlab.org/Shells/Resources/Transport-12345678"
+    value=ModelReference(
+        key=(Key(type_=KeyTypes.ASSET_ADMINISTRATION_SHELL,
+                 value="https://aausmartlab.org/Shells/Resources/Transport-12345678"),),
+        type_=AASShell,
+    ),
 )
 
 
@@ -138,11 +145,14 @@ storage_station = Configuration.add_collection(
     "StorageStation"
 )
 
-Configuration.add_property(
+Configuration.add_reference_element(
     storage_station,
     "ResourceReference",
-    "xs:string",
-    "https://aausmartlab.org/Shells/Resources/Storage-12345678"
+    value=ModelReference(
+        key=(Key(type_=KeyTypes.ASSET_ADMINISTRATION_SHELL,
+                 value="https://aausmartlab.org/Shells/Resources/Storage-12345678"),),
+        type_=AASShell,
+    ),
 )
 
 location_storage_station = Configuration.add_collection(
@@ -221,11 +231,14 @@ conncetion_point_1_connceted_resource1 = Configuration.add_collection(
     "Resource1"
 )
 
-Configuration.add_property(
+Configuration.add_reference_element(
     conncetion_point_1_connceted_resource1,
     "ResourceReference",
-    "xs:string",
-    "https://aausmartlab.org/Shells/Resources/Drilling-12345678"
+    value=ModelReference(
+        key=(Key(type_=KeyTypes.ASSET_ADMINISTRATION_SHELL,
+                 value="https://aausmartlab.org/Shells/Resources/Drilling-12345678"),),
+        type_=AASShell,
+    ),
 )
 
 Configuration.add_property(
@@ -261,11 +274,14 @@ conncetion_point_1_connceted_resource2 = Configuration.add_collection(
     "Resource2",
 )
 
-Configuration.add_property(
+Configuration.add_reference_element(
     conncetion_point_1_connceted_resource2,
     "ResourceReference",
-    "xs:string",
-    "https://aausmartlab.org/Shells/Resources/Transport-12345678"
+    value=ModelReference(
+        key=(Key(type_=KeyTypes.ASSET_ADMINISTRATION_SHELL,
+                 value="https://aausmartlab.org/Shells/Resources/Transport-12345678"),),
+        type_=AASShell,
+    ),
 )
 
 Configuration.add_property(
@@ -344,11 +360,14 @@ conncetion_point_2_connceted_resource1 = Configuration.add_collection(
     "Resource1"
 )
 
-Configuration.add_property(
+Configuration.add_reference_element(
     conncetion_point_2_connceted_resource1,
     "ResourceReference",
-    "xs:string",
-    "https://aausmartlab.org/Shells/Resources/Storage-12345678"
+    value=ModelReference(
+        key=(Key(type_=KeyTypes.ASSET_ADMINISTRATION_SHELL,
+                 value="https://aausmartlab.org/Shells/Resources/Storage-12345678"),),
+        type_=AASShell,
+    ),
 )
 
 Configuration.add_property(
@@ -386,11 +405,14 @@ conncetion_point_2_connceted_resource2 = Configuration.add_collection(
     "Resource2"
 )
 
-Configuration.add_property(
+Configuration.add_reference_element(
     conncetion_point_2_connceted_resource2,
     "ResourceReference",
-    "xs:string",
-    "https://aausmartlab.org/Shells/Resources/Transport-12345678"
+    value=ModelReference(
+        key=(Key(type_=KeyTypes.ASSET_ADMINISTRATION_SHELL,
+                 value="https://aausmartlab.org/Shells/Resources/Transport-12345678"),),
+        type_=AASShell,
+    ),
 )
 
 Configuration.add_property(

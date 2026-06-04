@@ -21,6 +21,7 @@ submodels:
   Skills:
     Transport:
       CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Transport/TransportCapabilityOffered"
+      CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Transport"
       SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
       Actors:
         - "Shuttle1"

@@ -61,11 +61,13 @@ submodels:
   Skills:
     Drilling:
       CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Drilling/DrillingCapabilityOffered"
+      CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Drilling"
       SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
       Actors:
         - "KUKAManipulator"
     Handoff:
       CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Drilling/HandoffCapabilityOffered"
+      CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Handoff"
       SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
       Actors:
         - "KUKAManipulator"

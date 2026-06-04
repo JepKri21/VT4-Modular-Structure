@@ -10,6 +10,8 @@ elements:
     semantic_id: "https://aausmartlab.org/Semantics/Inventories"
     description: "All physical inventory slots or racks on this resource"
     cardinality: "One"
+    extensible: true
+    entry_template: "Inventory_{N}"
     elements:
 
       - type: collection
@@ -68,6 +70,7 @@ elements:
                     description: "Reference to the actual component instance used - empty at creation, filled during production"
                     cardinality: "One"
                     reference_type: "model"
+                    reference_target: "shell"
             
             
 

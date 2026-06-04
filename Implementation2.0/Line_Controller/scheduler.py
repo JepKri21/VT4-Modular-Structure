@@ -183,8 +183,10 @@ class Scheduler:
         # Cross-order instance reservation. Once an order picks a concrete
         # component instance (e.g. BottomCoverABSBlack-<uuid>) from a shared
         # inventory, claim it so a concurrent order doesn't also pick it.
-        # Cleared when the owning order finishes (success or failure).
-        self._reserved_instances: dict[str, str] = {}
+        # Value is (order_id, resource_shell_id, inventory_name, slot_id) so
+        # we can release the AAS SlotReserved flag when the slot empties.
+        # Released after Retrieve completes; order-end release is safety net.
+        self._reserved_instances: dict[str, tuple[str, str, str, str]] = {}
 
         # Round-robin cursor for shuttle picks. Rotates the starting actor on
         # each _pick_shuttle call so successive picks spread across actors
@@ -193,21 +195,59 @@ class Scheduler:
 
     # ── Cross-order instance reservation ────────────────────────────────────
 
-    def _reserve_instance(self, instance_iri: str, order_id: str) -> bool:
+    def _reserve_instance(
+        self,
+        instance_iri: str,
+        order_id: str,
+        resource_shell_id: str = "",
+        inventory_name: str = "",
+        slot_id: str = "",
+    ) -> bool:
         """Claim a component instance for an order.
 
         Returns True on a fresh reservation OR a re-claim by the same order.
         Returns False if another order already holds it (caller should pick
         a different candidate or pause).
         """
-        owner = self._reserved_instances.get(instance_iri)
-        if owner is None:
-            self._reserved_instances[instance_iri] = order_id
+        entry = self._reserved_instances.get(instance_iri)
+        if entry is None:
+            self._reserved_instances[instance_iri] = (order_id, resource_shell_id, inventory_name, slot_id)
             return True
-        return owner == order_id
+        return entry[0] == order_id
+
+    def _release_instance_reservation(self, instance_iri: str, order_id: str) -> None:
+        """Release a single slot reservation and clear SlotReserved on BaSyx."""
+        entry = self._reserved_instances.get(instance_iri)
+        if entry is not None and entry[0] == order_id:
+            _, shell_id, inv_name, slot = entry
+            del self._reserved_instances[instance_iri]
+            print(f"[reserve] released {instance_iri} (slot={slot} now empty)")
+            if shell_id and inv_name and slot:
+                self._patch_slot_reserved(shell_id, inv_name, slot, False)
+
+    def _patch_slot_reserved(
+        self,
+        resource_shell_id: str,
+        inventory_name: str,
+        slot_id: str,
+        reserved: bool,
+    ) -> None:
+        """Write SlotReserved to the storage station's Inventory submodel on BaSyx."""
+        import base64
+        import requests as _requests
+        submodel_iri = f"{resource_shell_id}/Inventory"
+        b64 = base64.urlsafe_b64encode(submodel_iri.encode()).decode().rstrip("=")
+        path = f"Inventories.{inventory_name}.StoredComponents.{slot_id}.SlotReserved"
+        url = f"{self.aas_server_base}/submodels/{b64}/submodel-elements/{path}/$value"
+        value = "true" if reserved else "false"
+        try:
+            _requests.patch(url, json=value, timeout=3)
+            print(f"[reserve] AAS SlotReserved={value} -> {slot_id}")
+        except Exception as exc:
+            print(f"[reserve] AAS PATCH failed for {slot_id}: {exc}")
 
     def _release_order_reservations(self, order_id: str) -> None:
-        freed = [iri for iri, owner in self._reserved_instances.items() if owner == order_id]
+        freed = [iri for iri, entry in self._reserved_instances.items() if entry[0] == order_id]
         for iri in freed:
             del self._reserved_instances[iri]
         if freed:
@@ -1015,13 +1055,19 @@ class Scheduler:
         # Skip instances already reserved by a concurrent order.
         instance = None
         for m in matches:
-            if order_id is None or self._reserve_instance(m.component_id, order_id):
+            if order_id is None or self._reserve_instance(
+                m.component_id, order_id,
+                m.resource_shell_id, m.inventory_name, m.slot_id,
+            ):
                 instance = m.component_id
                 ingredient["ComponentReference"] = instance
+                if order_id is not None:
+                    self._patch_slot_reserved(m.resource_shell_id, m.inventory_name, m.slot_id, True)
                 break
+            entry = self._reserved_instances.get(m.component_id)
             print(
                 f"[reserve] '{ingredient.get('name')}': skipping {m.component_id} "
-                f"(claimed by order {self._reserved_instances.get(m.component_id)})"
+                f"(claimed by order {entry[0] if entry else '?'})"
             )
         if instance is None:
             print(
@@ -1406,6 +1452,8 @@ class Scheduler:
             return
         self._traceability.setdefault(order_id, {})[step.component_reference] = instance
         print(f"[trace] {order_id}: {step.component_reference} -> {instance}")
+        # Slot is now empty — release reservation so future orders can use it.
+        self._release_instance_reservation(step.component_reference, order_id)
 
     # ── Finalization (post-process + AAS writeback + status) ────────────────
 

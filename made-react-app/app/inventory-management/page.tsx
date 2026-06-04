@@ -1,59 +1,83 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
 import {
   PackageOpen,
   RefreshCw,
-  Trash2,
   Server,
   AlertCircle,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
-  Plus,
+  Boxes,
 } from "lucide-react";
-import type { ComponentType } from "@/lib/inventory";
+import type { ComponentWithInventory, ResourceWithAllocations } from "@/lib/inventory";
 
 const POLL_INTERVAL_MS = 30_000;
 const STORAGE_KEY = "inventory_server_url";
 
-interface ComponentWithInventory extends ComponentType {
-  quantityAvailable: number;
-  quantityReserved: number;
+type PropertyKey = "material" | "color" | "finish" | "currentRating" | "voltageRating" | "version";
+const ALL_PROPERTY_KEYS: PropertyKey[] = ["material", "color", "finish", "currentRating", "voltageRating", "version"];
+
+function typeLabel(component: ComponentWithInventory): string {
+  const parts = ALL_PROPERTY_KEYS.map((k) => component[k]).filter(Boolean);
+  return parts.length > 0 ? (parts as string[]).join(" · ") : "Standard";
 }
 
-function typeLabel(component: { material?: string; color?: string; finish?: string; currentRating?: string; voltageRating?: string; version?: string }): string {
-  const parts = [
-    component.material,
-    component.color,
-    component.finish,
-    component.currentRating,
-    component.voltageRating,
-    component.version,
-  ].filter(Boolean);
-  return parts.length > 0 ? parts.join(" · ") : "Standard";
+/* ── ComponentCard ──────────────────────────────────────────────────────── */
+
+function ComponentCard({
+  component,
+  quantity,
+  muted = false,
+}: {
+  component: ComponentWithInventory;
+  quantity: number;
+  muted?: boolean;
+}) {
+  return (
+    <div className={`rounded-xl border p-4 flex flex-col gap-2 transition-shadow hover:shadow-md ${
+      muted ? "border-border/60 bg-muted/10" : "border-border bg-card"
+    }`}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold text-sm truncate">{component.name}</p>
+          <p className="text-xs text-muted-foreground mt-1">{typeLabel(component)}</p>
+        </div>
+        <div className="flex flex-col items-end gap-0.5 shrink-0">
+          <span className={`text-2xl font-bold leading-none ${muted ? "text-muted-foreground" : "text-primary"}`}>
+            {quantity}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {muted ? "on AAS" : "allocated"}
+          </span>
+          {!muted && component.quantityReserved > 0 && (
+            <span className="text-xs text-amber-600 dark:text-amber-400">
+              {component.quantityReserved} reserved
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
+
+/* ── page ───────────────────────────────────────────────────────────────── */
 
 export default function InventoryManagementPage() {
-  const [components, setComponents] = useState<ComponentWithInventory[]>([]);
+  const [resources, setResources] = useState<ResourceWithAllocations[]>([]);
+  const [allComponents, setAllComponents] = useState<ComponentWithInventory[]>([]);
   const [loading, setLoading] = useState(true);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [lastSyncMessage, setLastSyncMessage] = useState<{
-    text: string;
-    ok: boolean;
-  } | null>(null);
-
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [lastSyncMessage, setLastSyncMessage] = useState<{ text: string; ok: boolean } | null>(null);
   const [syncUrl, setSyncUrl] = useState("http://localhost:8081");
   const [syncOpen, setSyncOpen] = useState(false);
-  const [confirmClear, setConfirmClear] = useState(false);
-  const [editingQuantity, setEditingQuantity] = useState<string | null>(null);
-  const [newQuantity, setNewQuantity] = useState<number>(0);
+  const [expandedResources, setExpandedResources] = useState<Set<string>>(new Set());
 
-  // Load persisted server URL from localStorage on mount
   useEffect(() => {
-    const saved =
-      typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
+    const saved = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
     if (saved) setSyncUrl(saved);
   }, []);
 
@@ -64,9 +88,14 @@ export default function InventoryManagementPage() {
   }, [syncUrl]);
 
   const loadLocal = useCallback(async () => {
-    const res = await fetch("/api/inventory");
-    const data = (await res.json()) as ComponentWithInventory[];
-    setComponents(Array.isArray(data) ? data : []);
+    const [compRes, resRes] = await Promise.all([
+      fetch("/api/inventory"),
+      fetch("/api/inventory/resources"),
+    ]);
+    const components = (await compRes.json()) as ComponentWithInventory[];
+    const resourceData = (await resRes.json()) as ResourceWithAllocations[];
+    setAllComponents(Array.isArray(components) ? components : []);
+    setResources(Array.isArray(resourceData) ? resourceData : []);
     setLastUpdated(new Date());
   }, []);
 
@@ -78,177 +107,100 @@ export default function InventoryManagementPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ serverUrl: url.trim() }),
       });
-      const data = (await res.json()) as {
-        message?: string;
-        error?: string;
-      };
-      if (!res.ok || data.error) {
-        setLastSyncMessage({
-          text: data.error ?? `Server returned ${res.status}`,
-          ok: false,
-        });
-      } else {
-        setLastSyncMessage({
-          text: data.message ?? "Sync complete.",
-          ok: true,
-        });
-      }
+      const data = (await res.json()) as { message?: string; error?: string };
+      setLastSyncMessage({
+        text: data.error ?? data.message ?? "Sync complete.",
+        ok: res.ok && !data.error,
+      });
     } catch (err) {
       setLastSyncMessage({ text: String(err), ok: false });
     }
   }, []);
 
-  // Refresh = sync from server + reload local DB
-  const refresh = useCallback(
-    async (showSpinner = false) => {
-      if (showSpinner) setRefreshing(true);
-      await syncFromServer(syncUrlRef.current);
-      await loadLocal().catch(() => setComponents([]));
-      setLoading(false);
-      setRefreshing(false);
-    },
-    [syncFromServer, loadLocal]
-  );
+  const refresh = useCallback(async (showSpinner = false) => {
+    if (showSpinner) setRefreshing(true);
+    await syncFromServer(syncUrlRef.current);
+    await loadLocal().catch(() => {});
+    setLoading(false);
+    setRefreshing(false);
+  }, [syncFromServer, loadLocal]);
 
-  // Initial load + auto-refresh every 30 s
+  useEffect(() => { void refresh(); }, [refresh]);
   useEffect(() => {
-    refresh();
-  }, [refresh]);
-  useEffect(() => {
-    const id = setInterval(() => refresh(), POLL_INTERVAL_MS);
+    const id = setInterval(() => void refresh(), POLL_INTERVAL_MS);
     return () => clearInterval(id);
   }, [refresh]);
 
-  const handleRemove = async (componentTypeId: string) => {
-    await fetch(
-      `/api/inventory?id=${encodeURIComponent(componentTypeId)}`,
-      { method: "DELETE" }
-    );
-    setComponents((prev) =>
-      prev.filter((item) => item.id !== componentTypeId)
-    );
-  };
+  function toggleResource(id: string) {
+    setExpandedResources((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
 
-  const handleUpdateQuantity = async (
-    componentTypeId: string,
-    quantity: number
-  ) => {
-    try {
-      const res = await fetch("/api/inventory", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "update_inventory",
-          componentTypeId,
-          quantity,
-        }),
-      });
+  const componentById = new Map(allComponents.map((c) => [c.id, c]));
 
-      if (!res.ok) throw new Error("Failed to update quantity");
+  const activeResources = resources.filter((r) => r.allocations && r.allocations.length > 0);
 
-      setComponents((prev) =>
-        prev.map((c) =>
-          c.id === componentTypeId
-            ? { ...c, quantityAvailable: quantity }
-            : c
-        )
-      );
-
-      setEditingQuantity(null);
-      setNewQuantity(0);
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to update quantity");
-    }
-  };
-
-  const handleClearAll = async () => {
-    if (!confirmClear) {
-      setConfirmClear(true);
-      return;
-    }
-    await Promise.all(
-      components.map((item) =>
-        fetch(
-          `/api/inventory?id=${encodeURIComponent(item.id)}`,
-          { method: "DELETE" }
-        )
-      )
-    );
-    setComponents([]);
-    setConfirmClear(false);
-  };
-
-  // Group by category
-  const grouped = components.reduce(
-    (acc, component) => {
-      const category = component.category || "Uncategorized";
-      acc[category] = acc[category] ?? [];
-      acc[category].push(component);
-      return acc;
-    },
-    {} as Record<string, ComponentWithInventory[]>
+  const unallocated = allComponents.filter(
+    (c) => (c.quantityAllocated ?? 0) === 0 && c.quantityAvailable > 0
   );
+  const unallocatedByCategory = unallocated.reduce<Record<string, ComponentWithInventory[]>>(
+    (acc, c) => { (acc[c.category] ??= []).push(c); return acc; },
+    {}
+  );
+
+  const hasAnything = activeResources.length > 0 || unallocated.length > 0;
 
   return (
     <div className="max-w-6xl mx-auto px-8 py-10 space-y-8">
+      {/* Tabs */}
+      <div className="flex border-b border-border -mx-8 px-8">
+        <span className="px-4 py-2 text-sm font-semibold text-primary border-b-2 border-primary">
+          Resource Inventory
+        </span>
+        <Link
+          href="/inventory-management/allocation"
+          className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Allocate
+        </Link>
+      </div>
+
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <PackageOpen className="w-6 h-6 text-primary" />
-            <h1 className="text-2xl font-bold">Component Inventory</h1>
+            <Boxes className="w-6 h-6 text-primary" />
+            <h1 className="text-2xl font-bold">Resource Inventory</h1>
           </div>
           {lastUpdated && (
             <p className="text-xs text-muted-foreground">
-              Last synced {lastUpdated.toLocaleTimeString()} · auto-refreshes
-              every 30 s
+              Last synced {lastUpdated.toLocaleTimeString()} · auto-refreshes every 30 s
             </p>
           )}
           {lastSyncMessage && (
-            <div
-              className={`flex items-center gap-1.5 text-xs mt-1 ${
-                lastSyncMessage.ok ? "text-primary" : "text-destructive"
-              }`}
-            >
-              {lastSyncMessage.ok ? (
-                <CheckCircle2 className="w-3 h-3 shrink-0" />
-              ) : (
-                <AlertCircle className="w-3 h-3 shrink-0" />
-              )}
+            <div className={`flex items-center gap-1.5 text-xs mt-1 ${lastSyncMessage.ok ? "text-primary" : "text-destructive"}`}>
+              {lastSyncMessage.ok
+                ? <CheckCircle2 className="w-3 h-3 shrink-0" />
+                : <AlertCircle className="w-3 h-3 shrink-0" />}
               {lastSyncMessage.text}
             </div>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => refresh(true)}
-            disabled={refreshing}
-            className="flex items-center gap-1.5 text-xs rounded-md border border-border px-3 py-1.5 text-muted-foreground hover:text-foreground disabled:opacity-50 transition-colors"
-          >
-            <RefreshCw
-              className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`}
-            />
-            {refreshing ? "Syncing…" : "Sync & Refresh"}
-          </button>
-          {components.length > 0 && (
-            <button
-              type="button"
-              onClick={handleClearAll}
-              className={`flex items-center gap-1.5 text-xs rounded-md border px-3 py-1.5 transition-colors ${
-                confirmClear
-                  ? "border-destructive text-destructive bg-destructive/5"
-                  : "border-border text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              {confirmClear ? "Confirm clear all" : "Clear all"}
-            </button>
-          )}
-        </div>
+        <button
+          type="button"
+          onClick={() => void refresh(true)}
+          disabled={refreshing}
+          className="flex items-center gap-1.5 text-xs rounded-md border border-border px-3 py-1.5 text-muted-foreground hover:text-foreground disabled:opacity-50 transition-colors"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
+          {refreshing ? "Syncing…" : "Sync & Refresh"}
+        </button>
       </div>
 
-      {/* Server URL panel */}
+      {/* AAS Server panel */}
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <button
           type="button"
@@ -258,11 +210,9 @@ export default function InventoryManagementPage() {
           <Server className="w-4 h-4 text-primary shrink-0" />
           <span className="font-semibold text-sm flex-1">AAS Server</span>
           <span className="text-xs text-muted-foreground mr-2">{syncUrl}</span>
-          {syncOpen ? (
-            <ChevronDown className="w-4 h-4 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="w-4 h-4 text-muted-foreground" />
-          )}
+          {syncOpen
+            ? <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
         </button>
         {syncOpen && (
           <div className="px-5 pb-5 flex flex-col gap-3 border-t border-border">
@@ -280,12 +230,10 @@ export default function InventoryManagementPage() {
               <button
                 type="button"
                 disabled={refreshing}
-                onClick={() => refresh(true)}
+                onClick={() => void refresh(true)}
                 className="flex items-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold disabled:opacity-50 hover:opacity-90 transition-opacity"
               >
-                <RefreshCw
-                  className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
-                />
+                <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
                 {refreshing ? "Syncing…" : "Sync now"}
               </button>
             </div>
@@ -293,144 +241,125 @@ export default function InventoryManagementPage() {
         )}
       </div>
 
-      {/* Components */}
+      {/* Content */}
       {loading ? (
         <div className="flex items-center justify-center py-20 text-muted-foreground text-sm">
           <RefreshCw className="w-4 h-4 animate-spin mr-2" /> Loading…
         </div>
-      ) : components.length === 0 ? (
+      ) : !hasAnything ? (
         <div className="rounded-xl border border-dashed border-border bg-muted/20 py-20 flex flex-col items-center gap-3 text-center">
           <PackageOpen className="w-12 h-12 text-muted-foreground/30" />
-          <p className="text-sm text-muted-foreground">
-            No component types in inventory yet.
-          </p>
+          <p className="text-sm text-muted-foreground">No components in any resource inventory yet.</p>
           <p className="text-xs text-muted-foreground/60 max-w-xs">
-            Upload a component via the{" "}
-            <a href="/aas-configurator" className="underline">
-              AAS Configurator
-            </a>{" "}
-            or make sure the AAS server is running and click{" "}
-            <strong>Sync &amp; Refresh</strong>.
+            Sync from the AAS server above, then use the{" "}
+            <Link href="/inventory-management/allocation" className="underline">Allocate</Link>{" "}
+            tab to assign components to resources.
           </p>
         </div>
       ) : (
-        <div className="space-y-10">
-          {Object.entries(grouped).map(([category, items]) => {
-            const totalAvailable = items.reduce(
-              (s, c) => s + c.quantityAvailable,
-              0
-            );
-            const totalReserved = items.reduce(
-              (s, c) => s + c.quantityReserved,
-              0
-            );
+        <div className="space-y-4">
+          {/* Resource sections */}
+          {activeResources.map((resource) => {
+            const isExpanded = expandedResources.has(resource.resourceId);
+
+            const byCategory: Record<string, Array<{ component: ComponentWithInventory; quantity: number }>> = {};
+            for (const alloc of resource.allocations) {
+              const comp = componentById.get(alloc.componentTypeId);
+              if (!comp) continue;
+              const cat = alloc.category || comp.category;
+              (byCategory[cat] ??= []).push({ component: comp, quantity: alloc.quantity });
+            }
+
+            const pct = resource.inventorySize > 0
+              ? Math.round((resource.slotsUsed / resource.inventorySize) * 100)
+              : 0;
+
             return (
-              <section key={category} className="space-y-4">
-                <div className="flex items-center gap-3 border-b border-border pb-2">
-                  <h2 className="text-lg font-semibold">{category}</h2>
-                  <span className="text-sm text-muted-foreground">
-                    {items.length} type
-                    {items.length !== 1 ? "s" : ""} · {totalAvailable} available
-                    {totalReserved > 0 && ` · ${totalReserved} reserved`}
+              <div key={resource.resourceId} className="rounded-xl border border-border bg-card overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => toggleResource(resource.resourceId)}
+                  className="flex items-center gap-3 w-full px-5 py-4 text-left hover:bg-muted/30 transition-colors"
+                >
+                  <Boxes className="w-4 h-4 text-primary shrink-0" />
+                  <span className="font-semibold text-sm flex-1">{resource.resourceName}</span>
+                  <span className="text-xs text-muted-foreground mr-1">
+                    {resource.slotsUsed} / {resource.inventorySize} slots
                   </span>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {items.map((component) => (
-                    <div
-                      key={component.id}
-                      className="bg-card rounded-xl border border-border p-4 flex flex-col gap-3 hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0 flex-1">
-                          <p className="font-semibold text-sm truncate">
-                            {component.name}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {typeLabel(component)}
-                          </p>
-                        </div>
-                        <div className="flex flex-col items-end gap-1.5 shrink-0">
-                          <span className="text-2xl font-bold text-primary leading-none">
-                            {component.quantityAvailable}
-                          </span>
+                  <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden mr-2">
+                    <div className="h-full rounded-full bg-primary/60" style={{ width: `${pct}%` }} />
+                  </div>
+                  {isExpanded
+                    ? <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
+                    : <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />}
+                </button>
+
+                {isExpanded && (
+                  <div className="border-t border-border px-5 pb-5 pt-4 space-y-6">
+                    {Object.entries(byCategory).map(([category, items]) => (
+                      <section key={category} className="space-y-3">
+                        <div className="flex items-center gap-2 border-b border-border pb-1.5">
+                          <h3 className="text-sm font-semibold">{category}</h3>
                           <span className="text-xs text-muted-foreground">
-                            available
+                            {items.reduce((s, i) => s + i.quantity, 0)} allocated
                           </span>
-                          {component.quantityReserved > 0 && (
-                            <span className="text-xs text-amber-600 dark:text-amber-400">
-                              {component.quantityReserved} reserved
-                            </span>
-                          )}
                         </div>
-                      </div>
-
-                      {component.description && (
-                        <div className="border-t border-border pt-3 text-xs text-muted-foreground">
-                          {component.description}
-                        </div>
-                      )}
-
-                      <div className="flex gap-2">
-                        {editingQuantity === component.id ? (
-                          <>
-                            <input
-                              type="number"
-                              min="0"
-                              value={newQuantity}
-                              onChange={(e) =>
-                                setNewQuantity(parseInt(e.target.value) || 0)
-                              }
-                              className="flex-1 rounded-md border border-border px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                              autoFocus
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                          {items.map(({ component, quantity }) => (
+                            <ComponentCard
+                              key={component.id}
+                              component={component}
+                              quantity={quantity}
                             />
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleUpdateQuantity(component.id, newQuantity)
-                              }
-                              className="px-2 py-1 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:opacity-90"
-                            >
-                              Save
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingQuantity(null);
-                                setNewQuantity(0);
-                              }}
-                              className="px-2 py-1 rounded-md border border-border text-xs hover:bg-muted"
-                            >
-                              Cancel
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingQuantity(component.id);
-                                setNewQuantity(component.quantityAvailable);
-                              }}
-                              className="flex-1 flex items-center justify-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:border-primary transition-colors"
-                            >
-                              <Plus className="w-3 h-3" /> Edit qty
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleRemove(component.id)}
-                              className="flex items-center justify-center rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:text-destructive hover:border-destructive transition-colors"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
+                          ))}
+                        </div>
+                      </section>
+                    ))}
+                  </div>
+                )}
+              </div>
             );
           })}
+
+          {/* Unallocated section */}
+          {Object.keys(unallocatedByCategory).length > 0 && (
+            <div className="rounded-xl border border-dashed border-border bg-muted/10 overflow-hidden">
+              <div className="flex items-center gap-3 px-5 py-4">
+                <PackageOpen className="w-4 h-4 text-muted-foreground shrink-0" />
+                <div className="flex-1">
+                  <span className="font-semibold text-sm text-muted-foreground">Unallocated Components</span>
+                  <p className="text-xs text-muted-foreground/70 mt-0.5">
+                    On the AAS server but not assigned to any resource — not available in the store.
+                  </p>
+                </div>
+                <Link
+                  href="/inventory-management/allocation"
+                  className="text-xs text-primary hover:underline shrink-0"
+                >
+                  Allocate →
+                </Link>
+              </div>
+              <div className="border-t border-border/60 px-5 pb-5 pt-4 space-y-6">
+                {Object.entries(unallocatedByCategory).map(([category, items]) => (
+                  <section key={category} className="space-y-3">
+                    <div className="flex items-center gap-2 border-b border-border/60 pb-1.5">
+                      <h3 className="text-sm font-semibold text-muted-foreground">{category}</h3>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                      {items.map((component) => (
+                        <ComponentCard
+                          key={component.id}
+                          component={component}
+                          quantity={component.quantityAvailable}
+                          muted
+                        />
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -49,7 +49,7 @@ class InventoryIndexer:
 
                 for slot_id, slot in inventory_data.storage.items():
 
-                    if slot.component_id is None:
+                    if slot.component_id is None or slot.reserved:
                         continue
 
                     indexed_component = self._create_indexed_component(

@@ -1,16 +1,15 @@
 type: "assembly_module"
-label: "BCPCB Assembler Station – AAU Lab"
-description: "KUKA Manipulator station for assembling Bottom Cover and PCB into BCPCB sub-assembly"
+label: "BCPCBFuse Assembler Station – AAU Lab"
+description: "KUKA Manipulator station for assembling BottomCoverPCB and Fuse into BCPCBFuse sub-assembly"
 
-asset_name: "BCPCBAssembler"
+asset_name: "BCPCBFuseAssembler"
 
 submodels:
   AssembleCapabilityOffered:
-    CapabilityCategory: "Offered"
     SupportedComponents:
-      - "https://aausmartlab.org/Shells/Component/BottomCover"
-      - "https://aausmartlab.org/Shells/Component/PCB"
       - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
+      - "https://aausmartlab.org/Shells/Component/Fuse"
+      - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
     Parameters:
       TargetPosition:
         XPos: ""
@@ -19,20 +18,28 @@ submodels:
         en: "Assembly operation"
         dk: "Samleroperation"
     ProcessTransformations:
-      BottomCoverAndPCB:
+      BottomCoverPCBAndFuse:
         InputTypes:
           ComponentTypeReference:
-            - "https://aausmartlab.org/Shells/Component/BottomCover"
-            - "https://aausmartlab.org/Shells/Component/PCB"
+            - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
+            - "https://aausmartlab.org/Shells/Component/Fuse"
         OutputTypes:
           ComponentTypeReference:
-            - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
+            - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
+      BottomCoverPCBFuseAndFuse:
+        InputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
+            - "https://aausmartlab.org/Shells/Component/Fuse"
+        OutputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
 
   HandoffCapabilityOffered:
     SupportedComponents:
-      - "https://aausmartlab.org/Shells/Component/BottomCover"
-      - "https://aausmartlab.org/Shells/Component/PCB"
       - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
+      - "https://aausmartlab.org/Shells/Component/Fuse"
+      - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
     Parameters:
       TargetPosition:
         XPos: ""
@@ -42,14 +49,14 @@ submodels:
         dk: "Afleveringsoperation"
 
   Skills:
-    Assemble:
-      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/BCPCBAssembler/AssembleCapabilityOffered"
+    BCPCBFuseAssembly:
+      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/BCPCBFuseAssembler/AssembleCapabilityOffered"
       CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Assemble"
       SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
       Actors:
         - "KUKAManipulator"
     Handoff:
-      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/BCPCBAssembler/HandoffCapabilityOffered"
+      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/BCPCBFuseAssembler/HandoffCapabilityOffered"
       CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Handoff"
       SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
       Actors:
@@ -58,9 +65,9 @@ submodels:
   Inventory:
     Inventories:
       - Specifications:
-          InventorySize: 10
+          InventorySize: 20
         SupportedComponents:
-          - "https://aausmartlab.org/Shells/Component/PCB"
+          - "https://aausmartlab.org/Shells/Component/Fuse"
 
   ResourceZones:
     CenterPoint:

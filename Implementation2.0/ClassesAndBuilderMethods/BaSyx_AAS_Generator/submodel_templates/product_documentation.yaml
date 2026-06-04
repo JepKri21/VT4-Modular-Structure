@@ -94,3 +94,5 @@ elements:
     semantic_id: "https://aausmartlab.org/Semantics/ParentProductRef"
     description: "Reference to the parent product type (if this is a variant)"
     cardinality: "ZeroToOne"
+    reference_type: "model"
+    reference_target: "shell"

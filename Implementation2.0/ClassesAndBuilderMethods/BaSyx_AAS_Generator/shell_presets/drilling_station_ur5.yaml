@@ -36,11 +36,13 @@ submodels:
   Skills:
     Drilling:
       CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/DrillingUR5/DrillingCapabilityOffered"
+      CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Drilling"
       SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
       Actors:
         - "UR5"
     Handoff:
       CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/DrillingUR5/HandoffCapabilityOffered"
+      CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Handoff"
       SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
       Actors:
         - "UR5"

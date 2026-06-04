@@ -14,13 +14,13 @@ elements:
       id_short: "Inventory_1"
       semantic_id: "https://aausmartlab.org/Semantics/Inventory"
       description: "Specifications and other relevant information of a specific inventory"
-      
+
       elements:
         - type: collection
           id_short: "Specifications"
           semantic_id: "https://aausmartlab.org/Semantics/Parameters"
           description: "Parameters defining the capability envelope"
-          
+
           elements:
             - type: property
               id_short: "InventorySize"
@@ -28,7 +28,7 @@ elements:
               semantic_id: "https://aausmartlab.org/Semantics/InventorySize"
               description: "Size of the inventory"
               value: 10
-              
+
         - type: list
           id_short: "SupportedComponents"
           semantic_id: "https://aausmartlab.org/Semantics/SupportedComponents"
@@ -225,13 +225,13 @@ elements:
       id_short: "Inventory_2"
       semantic_id: "https://aausmartlab.org/Semantics/Inventory"
       description: "Specifications and other relevant information of a specific inventory"
-      
+
       elements:
         - type: collection
           id_short: "Specifications"
           semantic_id: "https://aausmartlab.org/Semantics/Parameters"
           description: "Parameters defining the capability envelope"
-          
+
           elements:
             - type: property
               id_short: "InventorySize"
@@ -239,7 +239,7 @@ elements:
               semantic_id: "https://aausmartlab.org/Semantics/InventorySize"
               description: "Size of the inventory"
               value: 5
-              
+
         - type: list
           id_short: "SupportedComponents"
           semantic_id: "https://aausmartlab.org/Semantics/SupportedComponents"

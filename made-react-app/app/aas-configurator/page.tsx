@@ -545,6 +545,28 @@ export default function AasConfiguratorPage() {
     }
   };
 
+  const [uploadTplState, setUploadTplState] = useState<"idle" | "running" | "done" | "error">("idle");
+  const [uploadTplOutput, setUploadTplOutput] = useState("");
+  const [tplServerUrl, setTplServerUrl] = useState("http://localhost:8081");
+
+  const uploadTemplates = async (dryRun = false) => {
+    setUploadTplState("running");
+    setUploadTplOutput("");
+    try {
+      const res = await fetch("/api/aas-configurator/upload-templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ serverUrl: tplServerUrl, dryRun }),
+      });
+      const data = await res.json() as { output: string; exitCode: number };
+      setUploadTplOutput(data.output);
+      setUploadTplState(data.exitCode === 0 ? "done" : "error");
+    } catch (err) {
+      setUploadTplOutput(String(err));
+      setUploadTplState("error");
+    }
+  };
+
   // Upload to BaSyx
   const [serverUrl, setServerUrl] = useState("http://localhost:8081");
   type UploadResult = { type: string; id: string; status: number; ok: boolean; error?: string };
@@ -1130,6 +1152,49 @@ export default function AasConfiguratorPage() {
             {pathSaveState === "error" && (
               <span className="text-xs text-destructive">Failed to save — check the server log.</span>
             )}
+
+            <div className="border-t border-border pt-3 flex flex-col gap-2">
+              <h2 className="font-semibold text-sm flex items-center gap-2">
+                <Upload className="w-4 h-4 text-primary" />
+                Upload Templates
+              </h2>
+              <p className="text-xs text-muted-foreground -mt-1">
+                Upload all submodel templates and category type shells from the generator folder to a BaSyx server.
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  className={inputClass()}
+                  value={tplServerUrl}
+                  onChange={(e) => { setTplServerUrl(e.target.value); setUploadTplState("idle"); }}
+                  placeholder="http://localhost:8081"
+                />
+                <button
+                  type="button"
+                  disabled={!tplServerUrl.trim() || uploadTplState === "running"}
+                  onClick={() => uploadTemplates(false)}
+                  className="flex items-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold disabled:opacity-40 hover:opacity-90 shrink-0"
+                >
+                  {uploadTplState === "running" ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Running…</> : <><Upload className="w-3.5 h-3.5" /> Upload</>}
+                </button>
+                <button
+                  type="button"
+                  disabled={!tplServerUrl.trim() || uploadTplState === "running"}
+                  onClick={() => uploadTemplates(true)}
+                  className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-semibold disabled:opacity-40 hover:bg-muted shrink-0"
+                >
+                  Dry Run
+                </button>
+              </div>
+              {uploadTplOutput && (
+                <pre className={`text-xs rounded-md p-3 overflow-x-auto whitespace-pre-wrap font-mono ${uploadTplState === "error" ? "bg-destructive/10 text-destructive" : "bg-muted text-foreground"}`}>
+                  {uploadTplOutput}
+                </pre>
+              )}
+              {uploadTplState === "done" && !uploadTplOutput && (
+                <span className="flex items-center gap-1 text-xs text-primary"><Check className="w-3.5 h-3.5" /> Done.</span>
+              )}
+            </div>
           </div>
         )}
 

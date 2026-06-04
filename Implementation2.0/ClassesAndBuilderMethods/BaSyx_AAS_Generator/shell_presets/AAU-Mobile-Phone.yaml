@@ -4,7 +4,7 @@ description: "Preset that models the AAU Mobile Phone: BOM entries and a simple 
 
 asset_type: "MobilePhone"
 asset_name: "AAUMobilePhoneV1"
-asset_category: "Electrical"
+asset_category: "Telefon"
 
 submodels:
   Properties:

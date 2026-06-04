@@ -71,6 +71,69 @@ class InventoryManager:
         return handle
 
 
+    # def poll_inventory_from_aas(
+    #     self,
+    #     line_config,        # LineConfig from transport_planner
+    #     aas_server_base: str,
+    # ) -> None:
+    #     """Read live slot state from each connected resource's AAS Inventory submodel.
+    #
+    #     Alternative to the MQTT path: fetches Inventories > Inventory_N >
+    #     StoredComponents > SlotEntry_M > ComponentShellReference from BaSyx for
+    #     every resource in line_config and calls self.update().  Resources without
+    #     an Inventory submodel are silently skipped.
+    #
+    #     Args:
+    #         line_config: Parsed LineConfiguration (resource IRIs come from here).
+    #         aas_server_base: BaSyx REST base URL, e.g. "http://localhost:8081".
+    #     """
+    #     import base64
+    #     import requests
+    #
+    #     def _b64(s: str) -> str:
+    #         return base64.urlsafe_b64encode(s.encode()).decode().rstrip("=")
+    #
+    #     def _find_el(elements, id_short):
+    #         for el in elements or []:
+    #             if el.get("idShort") == id_short:
+    #                 return el
+    #         return None
+    #
+    #     def _ref_iri(element):
+    #         val = element.get("value")
+    #         if isinstance(val, dict):
+    #             keys = val.get("keys", [])
+    #             if keys:
+    #                 return str(keys[0]["value"])
+    #         return None
+    #
+    #     for loc in line_config.locations.values():
+    #         submodel_iri = f"{loc.resource_iri}/Inventory"
+    #         resp = requests.get(
+    #             f"{aas_server_base}/submodels/{_b64(submodel_iri)}",
+    #             timeout=5,
+    #         )
+    #         if resp.status_code == 404:
+    #             print(f"[inventory/aas] no Inventory submodel for {loc.resource_id}; skipping")
+    #             continue
+    #         resp.raise_for_status()
+    #
+    #         items: list[str] = []
+    #         top = resp.json().get("submodelElements", [])
+    #         inventories_el = _find_el(top, "Inventories")
+    #         for inv in (inventories_el or {}).get("value", []):
+    #             stored = _find_el(inv.get("value", []), "StoredComponents")
+    #             for slot in (stored or {}).get("value", []):
+    #                 ref_el = _find_el(slot.get("value", []), "ComponentShellReference")
+    #                 if ref_el is not None:
+    #                     iri = _ref_iri(ref_el)
+    #                     if iri:
+    #                         items.append(iri)
+    #
+    #         self.update(loc.resource_iri, items)
+    #         print(f"[inventory/aas] {loc.resource_id}: {len(items)} item(s) read from AAS")
+
+
 def request_inventory_update(controller, rm: ResourceManager) -> None:
     """Send InfoRequest for InventoryLevel to every resource that exposes Retrieve.
 

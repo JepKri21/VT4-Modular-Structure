@@ -8,7 +8,10 @@ const SCRIPT_CWD = getGeneratorPath();
 
 function runPython(payload: unknown): Promise<Record<string, unknown>> {
   return new Promise((resolve, reject) => {
-    const child = spawn("python", [SCRIPT_PATH], { cwd: SCRIPT_CWD });
+    const child = spawn("python", [SCRIPT_PATH], {
+      cwd: SCRIPT_CWD,
+      env: { ...process.env, PYTHONIOENCODING: "utf-8" },
+    });
 
     let stdout = "";
     let stderr = "";

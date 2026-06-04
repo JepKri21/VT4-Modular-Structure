@@ -37,7 +37,7 @@ from basyx.aas import model
 import basyx.aas.adapter.json
 sys.path.insert(0, str(Path(__file__).parent))
 
-from builders import XS_TYPE_MAP, _convert_value, _sm_ref
+from builders import XS_TYPE_MAP, _convert_value, _sm_ref, _shell_ref
 from instance_generator_class import AASInstanceBuilder
 from shell_type_utils import resolve_type
 
@@ -157,6 +157,10 @@ def build_elements_from_form(
                 else:
                     entries = val if isinstance(val, list) else []
                     if not entries:
+                        # Explicit [] in preset → create empty container so runtime can add entries.
+                        # Missing key (val is None) → skip entirely.
+                        if isinstance(val, list):
+                            builder.add_collection(parent, id_short, sem_id)
                         continue
                     col = builder.add_collection(parent, id_short, sem_id)
                     entry_template = elem.get("entry_template", "Entry{N}")
@@ -209,7 +213,10 @@ def build_elements_from_form(
                     continue
                 builder.add_reference_element(parent, id_short, value=None, semantic_id=sem_id)
                 continue
-            ref = _sm_ref(str(val)) if elem.get("reference_type") == "model" else _ext_ref(str(val))
+            if elem.get("reference_type") == "model":
+                ref = _shell_ref(str(val)) if elem.get("reference_target") == "shell" else _sm_ref(str(val))
+            else:
+                ref = _ext_ref(str(val))
             builder.add_reference_element(parent, id_short, value=ref, semantic_id=sem_id)
 
         elif etype == "list":
@@ -487,11 +494,49 @@ def _inject_bom_req_props_refs(preset_submodels: dict, shell_id: str) -> dict:
 
 # ───────────────────────────── submodel builder ───────────────────────────
 
+def _expand_inventory_slots(form_data: dict) -> dict:
+    """For each Inventory entry that specifies InventorySize but omits
+    StoredComponents, generate that many empty SlotEntry collections
+    (SlotReserved=False, ComponentShellReference=None) so the AAS is
+    created with the full slot structure ready to be filled at runtime.
+    """
+    inventories = form_data.get("Inventories")
+    if not isinstance(inventories, list):
+        return form_data
+
+    expanded = []
+    changed = False
+    for entry in inventories:
+        if not isinstance(entry, dict) or "StoredComponents" in entry:
+            expanded.append(entry)
+            continue
+        size = 0
+        specs = entry.get("Specifications")
+        if isinstance(specs, dict):
+            try:
+                size = int(specs.get("InventorySize", 0))
+            except (TypeError, ValueError):
+                pass
+        if size > 0:
+            entry = dict(entry)
+            entry["StoredComponents"] = [
+                {"SlotReserved": False, "ComponentShellReference": ""}
+                for _ in range(size)
+            ]
+            changed = True
+        expanded.append(entry)
+
+    if not changed:
+        return form_data
+    return {**form_data, "Inventories": expanded}
+
+
 def build_submodel(
     template_file: str,
     submodel_id: str,
     id_short: str,
     form_data: dict,
+    shell_id: str | None = None,
 ) -> model.Submodel:
     tmpl = _load_yaml(SUBMODEL_TEMPLATES_DIR / f"{template_file}.yaml")
     builder = AASInstanceBuilder(id_short, submodel_id)
@@ -507,6 +552,14 @@ def build_submodel(
         builder.submodel.semantic_id = _ext_ref(cap_ref)
     elif sem_id := tmpl.get("semantic_id"):
         builder.submodel.semantic_id = _ext_ref(sem_id)
+    # Auto-populate ResourceReference so capability submodels always point back
+    # to their resource shell. Only fills if not already set in form_data.
+    if shell_id:
+        form_data = dict(form_data or {})
+        if not form_data.get("ResourceReference"):
+            form_data["ResourceReference"] = shell_id
+    if id_short == "Inventory":
+        form_data = _expand_inventory_slots(form_data or {})
     if id_short == "Skills":
         _build_skills_submodel(builder, tmpl.get("elements", []), form_data or {})
     else:
@@ -565,6 +618,7 @@ def main() -> None:
             sm["id"],
             sm["id_short"],
             _form_data_for(sm),
+            shell_id,
         )
         for sm in submodel_inputs
     ]
@@ -668,7 +722,7 @@ def build_environment(preset: dict, instance_suffix: str = "") -> tuple[dict, st
         if sm_id_short == "Skills":
             form_data = _rewrite_skills_capability_refs(form_data, shell_id)
 
-        sm = build_submodel(template_file, sm_iri, sm_id_short, form_data)
+        sm = build_submodel(template_file, sm_iri, sm_id_short, form_data, shell_id)
         submodels.append(sm)
         shell.submodel.add(_sm_ref(sm_iri))
 

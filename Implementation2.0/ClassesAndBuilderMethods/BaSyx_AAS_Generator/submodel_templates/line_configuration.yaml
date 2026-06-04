@@ -15,12 +15,13 @@ elements:
         description: "One entry per resource station (duplicate this collection for each station)"
         cardinality: "OneToMany"
         elements:
-          - type: property
+          - type: reference_element
             id_short: "ResourceReference"
-            value_type: "xs:string"
             semantic_id: "https://aausmartlab.org/Semantics/ResourceReference"
-            description: "IRI of the resource shell"
+            description: "Model reference to the resource shell"
             cardinality: "One"
+            reference_type: "model"
+            reference_target: "shell"
           - type: collection
             id_short: "GlobalLocation"
             description: "Position of the resource in the factory coordinate system"
@@ -80,12 +81,13 @@ elements:
                 description: "One entry per connected resource (duplicate this collection for each resource)"
                 cardinality: "OneToMany"
                 elements:
-                  - type: property
+                  - type: reference_element
                     id_short: "ResourceReference"
-                    value_type: "xs:string"
                     semantic_id: "https://aausmartlab.org/Semantics/ResourceReference"
-                    description: "IRI of the connected resource shell"
+                    description: "Model reference to the connected resource shell"
                     cardinality: "One"
+                    reference_type: "model"
+                    reference_target: "shell"
                   - type: property
                     id_short: "ZoneType"
                     value_type: "xs:string"
