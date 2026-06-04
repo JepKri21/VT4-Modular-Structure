@@ -1,7 +1,7 @@
 id_short: "TransportCapabilityOffered"
 id: "https://aausmartlab.org/Shells/Resources/Transport_12345678/TransportCapabilityOffered"
 description: "Offered capability template for a transport capability — parameters expressed as ranges defining the operational envelope"
-semantic_id: "https://aausmartlab.org/Submodels/Capability/Transport"
+semantic_id: "https://aausmartlab.org/Semantics/SubmodelTypes/Capability"
 
 elements:
   - type: property

@@ -1,6 +1,7 @@
 id_short: "Skills"
 id: "https://aausmartlab.org/Shells/Resources/Transport_12345678/Skills"
 description: "Submodel of skills and capabilities provided by this resource"
+semantic_id: "https://aausmartlab.org/Semantics/SubmodelTypes/Skills"
 
 elements:
   - type: collection
@@ -13,6 +14,12 @@ elements:
         id_short: "CapabilitySubmodelReference"
         value: "https://aausmartlab.org/Shells/Resources/Transport_12345678/TransportCapabilityOffered"
       
+      - type: reference_element
+        id_short: "CapabilityTypeReference"
+        semantic_id: "https://aausmartlab.org/Semantics/CapabilityTypeReference"
+        description: "Reference to the corresponding CapabilityOffered type"
+        value: "https://aausmartlab.org/Submodels/Capability/Transport"
+  
       - type: list
         id_short: "SkillTriggers"
         semantic_id: "https://aausmartlab.org/Semantics/SkillTriggers"
