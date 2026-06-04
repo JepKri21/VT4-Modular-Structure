@@ -16,7 +16,7 @@ script_dir = Path(__file__).parent
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 
 from ClassesAndBuilderMethods.MQTT.ResourceMQTT import MQTTClientResource
-from ClassesAndBuilderMethods.PackML.PackMLMachineClass import StationBehavior, PackMLState,PackMLStateMachine 
+from ClassesAndBuilderMethods.PackML.PackMLMachineClass import StationBehavior, PackMLState,PackMLStateMachine
 from ClassesAndBuilderMethods.InformationModels import MessageStructure as MS
 
 #====== JUST FOR TESTING=========
@@ -48,7 +48,7 @@ class GenericResourceExecutor:
         self.refresh_resource()
         self.wait_for_communication_configuration()
 
-        
+
     def attach_event_loop(self, loop):
         self.main_loop = loop
 
@@ -108,7 +108,6 @@ class GenericResourceExecutor:
 
         print(f"[{self.resource_shell_id}] Connected to MQTT broker")
 
-        # 🔥 THIS IS THE KEY ADDITION
         self.initialize_runtime()
 
     def register_mqtt_handlers(self):
@@ -128,7 +127,7 @@ class GenericResourceExecutor:
         )
 
     def handle_command(self, msg: MS.CommandMessage):
-    
+
         try:
             print(
                 f"Received command "
@@ -136,37 +135,45 @@ class GenericResourceExecutor:
                 f"for actor "
                 f"{msg.actor_name}"
             )
-    
+
             actor_entry = self.actors.get(msg.actor_name)
-    
+
             if not actor_entry:
                 print(f"Unknown actor: {msg.actor_name}")
                 return
-    
+
             machine = actor_entry["machine"]
             behavior = actor_entry["behavior"]
-    
+
             context = self.skill_executor.build_skill_context(
                 msg.skill,
                 msg
             )
-    
+
             behavior.apply_context(context)
-    
+
             asyncio.run_coroutine_threadsafe(
                 machine.state_command_callback(msg.skill_trigger),
                 self.main_loop
             )
-    
+
         except Exception as e:
             print(f"[MQTT HANDLE_COMMAND ERROR] {e}")
-    
+
     def handle_request(self, msg: MS.RequestMessage):
-        print(f"Received request for "f"{msg.requested_topic_update}")
-
-        # State and inventory responses
-        # come later
-
+        print(f"[{self.resource_shell_id}] Info request for {msg.requested_topic_update}")
+        suffixes = self.parsed_resource["Communication"].suffixes
+        for actor_name, actor_entry in self.actors.items():
+            machine = actor_entry["machine"]
+            state_msg = MS.StateMessage(
+                timestamp=datetime.now(),
+                resource_id=self.resource_shell_id,
+                state=machine.state
+            )
+            self.mqtt_client.publish(
+                f"{suffixes.state_suffix}/{actor_name}",
+                state_msg
+            )
 
     def initialize_runtime(self):
 
@@ -204,7 +211,7 @@ class GenericResourceExecutor:
             }
 
         print(f"[{self.resource_shell_id}] Runtime initialized with {len(self.actors)} actors")
-    
+
 
 class SkillExecutionContext:
     def __init__(self):
@@ -251,7 +258,6 @@ class SkillExecutor:
 
     # ---------------------------
     # Process transformation matching
-    # (STRICT set equality, no subset logic)
     # ---------------------------
     def match_process_transformation(self, capability, command_pt):
         if not capability:
@@ -271,19 +277,15 @@ class SkillExecutor:
         return None
 
     def _types_match(self, capability_types, command_types):
-        """
-        Each capability type must match at least one command type
-        via prefix matching.
-        """
+        # Both empty: identical (no-material transformation)
+        if not capability_types and not command_types:
+            return True
+        # One empty, one not: mismatch
+        if not capability_types or not command_types:
+            return False
 
         for cap_type in capability_types:
-            matched = False
-
-            for cmd_type in command_types:
-                if cmd_type.startswith(cap_type):
-                    matched = True
-                    break
-
+            matched = any(cmd_type.startswith(cap_type) for cmd_type in command_types)
             if not matched:
                 return False
 
@@ -324,12 +326,7 @@ class SkillExecutor:
 
                     sub_value = value[sub_name]
 
-                    # range validation if exists
-                    if hasattr(sub_def, "min_value") and hasattr(sub_def, "max_value"):
-                        if not (sub_def.min_value <= sub_value <= sub_def.max_value):
-                            raise ValueError(
-                                f"{sub_name} out of range: {sub_value}"
-                            )
+                    self._check_range(sub_name, sub_value, sub_def)
 
                     result[sub_name] = sub_value
 
@@ -339,17 +336,23 @@ class SkillExecutor:
             # Flat parameter
             # -------------------
             else:
-
-                # range validation for flat
-                if hasattr(definition, "min_value") and hasattr(definition, "max_value"):
-                    if not (definition.min_value <= value <= definition.max_value):
-                        raise ValueError(
-                            f"{name} out of range: {value}"
-                        )
-
+                self._check_range(name, value, definition)
                 validated[name] = value
 
         return validated
+
+    def _check_range(self, name, value, definition):
+        min_val = getattr(definition, "min_value", None)
+        max_val = getattr(definition, "max_value", None)
+        if min_val is not None and max_val is not None:
+            if not (min_val <= value <= max_val):
+                raise ValueError(f"{name} out of range [{min_val}, {max_val}]: {value}")
+        elif min_val is not None:
+            if value < min_val:
+                raise ValueError(f"{name} below minimum {min_val}: {value}")
+        elif max_val is not None:
+            if value > max_val:
+                raise ValueError(f"{name} above maximum {max_val}: {value}")
 
     # ---------------------------
     # Build execution context
@@ -378,6 +381,8 @@ class SkillExecutor:
             raise ValueError("No matching process transformation")
 
         context.process_transformation = match
+        context.input_types = match.input_types
+        context.output_types = match.output_types
 
         context.parameters = self.validate_parameters(
             capability,
@@ -403,84 +408,78 @@ class InventoryManager:
         encoded_id = self.resource_loader._base64encode(f"{resource_shell_id}/Inventory")
         self.inventory_url = f"{self.submodel_endpoint}/{encoded_id}"
 
+        self._lock = asyncio.Lock()
+
     def load(self):
-        parsed = self.resource_parser.parse(
-            self.resource_loader.load(self.resource_shell_id)
+        # Fetch only the inventory submodel — no need to reload the whole resource shell
+        raw_inventory = self.resource_loader.read_submodel(
+            f"{self.resource_shell_id}/Inventory"
         )
-
-        
-
         self.inventory_parser = self.resource_parser.get_parser(GRM.SubmodelSemanticIDs.INVENTORY)
-        self.inventory_model = parsed["Inventory"]
-        #self.inventory_model = self.inventory_parser.parse(parsed["Inventory"])
-
-        #print(f"[PARSED] {self.inventory_model}")
-
+        self.inventory_model = self.inventory_parser.parse(raw_inventory)
         return self.inventory_model
 
-    def execute_inventory_effect(self, context):
+    async def execute_inventory_effect(self, context):
 
         cap = context.capability.capability_type
 
         if cap == self.STORE_CAPABILITY:
-            return self.store_component(context)
+            return await self.store_component(context)
 
         if cap == self.RETRIEVE_CAPABILITY:
-            return self.retrieve_component(context)
+            return await self.retrieve_component(context)
 
-    def retrieve_component(self, context):
+    async def retrieve_component(self, context):
 
         component_id = context.command.process_transformation.get("OutputTypes") or []
-        if component_id is not []:
-            component_id = component_id[0]
-        inventory_name, slot_id = self.find_component_slot(component_id)
+        if not component_id:
+            raise ValueError("No OutputTypes in process transformation for Retrieve")
+        component_id = component_id[0]
 
-        self.inventory_parser.update_slot(
-            inventory_name=inventory_name,
-            slot_id=slot_id,
-            component_id=None
-        )
+        async with self._lock:
+            model = self.load()
+            inventory_name, slot_id = self.find_component_slot(model, component_id)
 
-        self.upload()
+            self.inventory_parser.update_slot(
+                inventory_name=inventory_name,
+                slot_id=slot_id,
+                component_id=None
+            )
+
+            self.upload()
 
         return component_id
 
-    def store_component(self, context):
+    async def store_component(self, context):
 
         component_id = context.command.process_transformation.get("InputTypes") or []
-        if component_id is not []:
-            component_id = component_id[0]
+        if not component_id:
+            raise ValueError("No InputTypes in process transformation for Store")
+        component_id = component_id[0]
 
-        inventory_name, slot_id = self.find_free_slot(component_id)
+        async with self._lock:
+            model = self.load()
+            inventory_name, slot_id = self.find_free_slot(model, component_id)
 
-        self.inventory_parser.update_slot(
-            inventory_name=inventory_name,
-            slot_id=slot_id,
-            component_id=component_id
-        )
+            self.inventory_parser.update_slot(
+                inventory_name=inventory_name,
+                slot_id=slot_id,
+                component_id=component_id
+            )
 
-        self.upload()
+            self.upload()
 
         return slot_id
 
-    def find_component_slot(self, component_id):
-        model = self.load()
-
-        print(f"[MODEL] {model}")
-        print(f"[COMPONENT ID] {component_id}")
-        
-
+    def find_component_slot(self, model, component_id):
         for inv_name, inv in model.inventories.items():
             for slot_id, slot in inv.storage.items():
-                print(f"[SLOT COMPONENT ID] {slot.component_id}")
                 if slot.component_id == component_id:
                     return inv_name, slot_id
 
         raise ValueError(f"Component not found: {component_id}")
 
-    def find_free_slot(self, component_id):
-        model = self.load()
-
+    def find_free_slot(self, model, component_id):
         for inv_name, inv in model.inventories.items():
 
             supports = any(
@@ -507,9 +506,6 @@ class InventoryManager:
 
         if r.status_code not in (200, 201, 204):
             raise RuntimeError(r.text)
-
-
-
 
 
 class GenericStationBehavior(StationBehavior):
@@ -557,7 +553,6 @@ class GenericStationBehavior(StationBehavior):
             state=PackMLState.IDLE
         )
         self.mqtt_client.publish(f"{self.suffixes.state_suffix}/{self.actor_name}", msg)
-        #print(f"[{self.actor_name}] IDLE")
 
     async def starting(self, machine):
         msg = MS.StateMessage(
@@ -580,8 +575,6 @@ class GenericStationBehavior(StationBehavior):
 
     async def execute(self, machine):
 
-        #NOTE ==================== NEED SOMETHING TO HANDLE INVENTORIES
-
         msg = MS.StateMessage(
             timestamp=datetime.now(),
             resource_id=self.resource_id_short,
@@ -592,19 +585,19 @@ class GenericStationBehavior(StationBehavior):
         if not self.context:
             raise ValueError("No execution context applied")
 
-        #print(f"[{self.actor_name}] EXECUTING {self.skill}")
+        try:
+            await self.inventory_manager.execute_inventory_effect(self.context)
+        except Exception as e:
+            print(f"[{self.actor_name}] Job failed: {e}")
+            self.ideal_cycle_time = 0
+            self.actual_cycle_time = 0
+            self.result = MS.Result.INCOMPLETE
+            self.quality = MS.Quality.NA
+            await machine.transition_to(PackMLState.COMPLETING)
+            return
 
-        # ===========================
-        # GENERIC EXECUTION LOGIC
-        # ===========================
-
-        self.inventory_manager.execute_inventory_effect(self.context)
-
-        # Example: derive fake cycle time (replace later with real model)
-        base_time = 3000 + len(self.parameters) * 500
-
-        self.ideal_cycle_time = base_time
-        self.actual_cycle_time = base_time + random.randint(100, 800)
+        self.ideal_cycle_time = self._estimate_cycle_time(self.parameters)
+        self.actual_cycle_time = self.ideal_cycle_time + random.randint(100, 800)
 
         await asyncio.sleep(self.actual_cycle_time / 1000)
 
@@ -620,12 +613,6 @@ class GenericStationBehavior(StationBehavior):
             state=PackMLState.COMPLETING
         )
         self.mqtt_client.publish(f"{self.suffixes.state_suffix}/{self.actor_name}", msg)
-
-        #print(f"[{self.actor_name}] COMPLETING")
-
-        # =====================================================
-        # BUILD JOB RESULT (YOUR EXACT REQUIRED STRUCTURE)
-        # =====================================================
 
         job_result_message = MS.JobResultMessage(
             timestamp=datetime.now(),
@@ -653,15 +640,11 @@ class GenericStationBehavior(StationBehavior):
         self.mqtt_client.publish(f"{self.suffixes.state_suffix}/{self.actor_name}", state_message)
         print("Resetting Assembler")
 
-        self.capability = None
+        self.context = None
         self.result = None
         self.quality = None
         self.ideal_cycle_time = None
         self.actual_cycle_time = None
-        self.skill = None
-        self.capability = None
-        self.process_transformation = None
-        self.parameters = None
 
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.IDLE)
@@ -673,14 +656,14 @@ class GenericStationBehavior(StationBehavior):
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.STOPPED)
 
-    async def holding(self, machine): 
+    async def holding(self, machine):
         state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=self.resource_id_short, state=PackMLState.HOLDING)
         self.mqtt_client.publish(f"{self.suffixes.state_suffix}/{self.actor_name}", state_message)
         print("Holding")
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.HELD)
 
-    async def unholding(self, machine): 
+    async def unholding(self, machine):
         state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=self.resource_id_short, state=PackMLState.UNHOLDING)
         self.mqtt_client.publish(f"{self.suffixes.state_suffix}/{self.actor_name}", state_message)
         print("Unholding Assembler")
@@ -701,37 +684,44 @@ class GenericStationBehavior(StationBehavior):
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.EXECUTE)
 
-    async def aborting(self, machine): 
+    async def aborting(self, machine):
         state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=self.resource_id_short, state=PackMLState.ABORTING)
         self.mqtt_client.publish(f"{self.suffixes.state_suffix}/{self.actor_name}", state_message)
         print("Aborting Assembler")
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.ABORTED)
 
-    async def clearing(self, machine): 
+    async def clearing(self, machine):
         state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=self.resource_id_short, state=PackMLState.CLEARING)
         self.mqtt_client.publish(f"{self.suffixes.state_suffix}/{self.actor_name}", state_message)
         print("Clearing Assembler")
 
-        self.capability = None
+        self.context = None
         self.result = None
         self.quality = None
         self.ideal_cycle_time = None
         self.actual_cycle_time = None
-        self.skill = None
-        self.capability = None
-        self.process_transformation = None
-        self.parameters = None
 
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.STOPPED)
-    
+
     # =========================================================
-    # OUTPUT PARAMETER BUILDER (THIS IS NOT CORRECT YET)
+    # CYCLE TIME ESTIMATION
+    # TODO: Replace with a capability-specific model derived from
+    #       the capability's RangeParameter definitions.
+    # =========================================================
+    def _estimate_cycle_time(self, parameters):
+        # TODO: Replace with a capability-specific model derived from
+        #       self.capability's RangeParameter definitions.
+        return 3000 + len(parameters) * 500
+
+    # =========================================================
+    # OUTPUT PARAMETER BUILDER
     # =========================================================
     def _build_output_parameters(self):
 
         params = self.parameters
+        cap_params = self.context.capability.parameters if self.context else {}
 
         elements = []
 
@@ -739,24 +729,30 @@ class GenericStationBehavior(StationBehavior):
 
             # flat parameter
             if not isinstance(value, dict):
+                param_def = cap_params.get(key)
+                unit = getattr(param_def, "unit", None) or "https://aausmartlab.org/Semantics/unitless"
                 elements.append(
                     MS.PropertyElement(
                         id_short=key,
                         value=value,
-                        semantic_id="https://aausmartlab.org/Semantics/mm"
+                        semantic_id=unit
                     )
                 )
 
             # nested parameter (Collection)
             else:
                 sub_elements = []
+                collection_def = cap_params.get(key)
+                sub_params = getattr(collection_def, "parameters", {}) or {}
 
                 for sub_key, sub_value in value.items():
+                    sub_def = sub_params.get(sub_key)
+                    unit = getattr(sub_def, "unit", None) or "https://aausmartlab.org/Semantics/unitless"
                     sub_elements.append(
                         MS.PropertyElement(
                             id_short=sub_key,
                             value=sub_value,
-                            semantic_id="https://aausmartlab.org/Semantics/mm"
+                            semantic_id=unit
                         )
                     )
 
@@ -826,7 +822,7 @@ print(test_command.model_dump_json(indent=2))
 
 
 
-resource_shell_id = "https://aausmartlab.org/Shells/Resources/Transport_12345678"
+resource_shell_id = "https://aausmartlab.org/Shells/Resources/Storage_12345678"
 
 #resource_executor = GenericResourceExecutor(SERVER_BASE, SUBMODEL_ENDPOINT, SHELL_ENDPOINT, resource_shell_id)
 
@@ -845,6 +841,25 @@ async def main():
     await asyncio.Event().wait()
 
 if __name__ == "__main__":
+    import argparse
+    ap = argparse.ArgumentParser(description="Generic Resource Runner")
+    ap.add_argument("--shell-id", required=True, help="Full AAS shell IRI for this resource")
+    ap.add_argument("--server", default="http://localhost:8081", help="AAS server base URL")
+    _args = ap.parse_args()
+
+    _server = _args.server.rstrip("/")
+    _sub_ep = f"{_server}/submodels"
+    _shell_ep = f"{_server}/shells"
+
+    async def main():
+        global resource_executor
+        resource_executor = GenericResourceExecutor(
+            _server, _sub_ep, _shell_ep, _args.shell_id
+        )
+        loop = asyncio.get_running_loop()
+        resource_executor.attach_event_loop(loop)
+        await asyncio.Event().wait()
+
     asyncio.run(main())
 
 #resource_executor = GenericResourceExecutor(SERVER_BASE,SUBMODEL_ENDPOINT,SHELL_ENDPOINT,resource_shell_id)

@@ -166,6 +166,7 @@ export function CanvasView({
 
     scene.resources.forEach((res) => {
       const type = typeById[res.typeId];
+      if (!type) return;
       const zones = getEffectiveZones(res, typeById);
       const p = worldToScreen(res.position.x, res.position.y);
       const isSelected = selectedId === res.instanceId;

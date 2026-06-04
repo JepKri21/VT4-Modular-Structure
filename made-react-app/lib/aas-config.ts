@@ -23,5 +23,33 @@ export function getGeneratorPath(): string {
 }
 
 export function saveGeneratorPath(p: string): void {
-  fs.writeFileSync(CONFIG_FILE, JSON.stringify({ generatorPath: p }, null, 2), "utf-8");
+  let cfg: Record<string, unknown> = {};
+  try { cfg = JSON.parse(fs.readFileSync(CONFIG_FILE, "utf-8")); } catch { /* new file */ }
+  cfg.generatorPath = p;
+  fs.writeFileSync(CONFIG_FILE, JSON.stringify(cfg, null, 2), "utf-8");
+}
+
+export function getResourceRunnerConfig(): { runnerPath: string; pythonExe: string } {
+  const envPath = (process.env.RESOURCE_RUNNER_PATH ?? "").trim();
+  const envPy = (process.env.PYTHON_EXECUTABLE ?? "").trim();
+  try {
+    const cfg = JSON.parse(fs.readFileSync(CONFIG_FILE, "utf-8")) as {
+      resourceRunnerPath?: string;
+      pythonExecutable?: string;
+    };
+    return {
+      runnerPath: envPath || cfg.resourceRunnerPath?.trim() || "",
+      pythonExe: envPy || cfg.pythonExecutable?.trim() || "python",
+    };
+  } catch {
+    return { runnerPath: envPath, pythonExe: envPy || "python" };
+  }
+}
+
+export function saveResourceRunnerConfig(runnerPath: string, pythonExe: string): void {
+  let cfg: Record<string, unknown> = {};
+  try { cfg = JSON.parse(fs.readFileSync(CONFIG_FILE, "utf-8")); } catch { /* new file */ }
+  cfg.resourceRunnerPath = runnerPath;
+  cfg.pythonExecutable = pythonExe || "python";
+  fs.writeFileSync(CONFIG_FILE, JSON.stringify(cfg, null, 2), "utf-8");
 }

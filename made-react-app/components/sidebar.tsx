@@ -12,6 +12,7 @@ import {
   Menu,
   PackageOpen,
   Paintbrush,
+  Power,
   Server,
   ShoppingCart,
   Store,
@@ -259,6 +260,12 @@ const Sidebar = () => {
           href="/aas-configurator"
           icon={Layers}
           label="AAS Configurator"
+          isCollapsed={isSidebarCollapsed}
+        />
+        <SidebarLink
+          href="/resource-control"
+          icon={Power}
+          label="Resource Control"
           isCollapsed={isSidebarCollapsed}
         />
       </div>

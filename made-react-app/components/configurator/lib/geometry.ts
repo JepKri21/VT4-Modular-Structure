@@ -149,6 +149,7 @@ export interface BBox {
 
 export const resourceBBox = (res: Resource, typeById: TypeById): BBox => {
   const type = typeById[res.typeId];
+  if (!type) return { minX: res.x, maxX: res.x, minY: res.y, maxY: res.y };
   const localCorners: [number, number][] =
     type.geometry && type.geometry.length >= 3
       ? type.geometry
@@ -180,6 +181,7 @@ export const getEffectiveZones = (
   typeById: TypeById,
 ): (ConnectionZone | CustomZone)[] => {
   const type = typeById[res.typeId];
+  if (!type) return res.customZones || [];
   const overrides = res.zoneOverrides || {};
   const builtin = type.connectionZones.map((z) =>
     overrides[z.id] ? { ...z, type: overrides[z.id] } : z,

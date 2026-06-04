@@ -257,3 +257,11 @@ export function rowToOrder(row: Record<string, any>): AasOrder {
     fulfilledAt: fulfilledAt instanceof Date ? fulfilledAt.toISOString() : (fulfilledAt ?? null),
   };
 }
+
+export const CREATE_RESOURCE_PROCESSES_TABLE_SQL = `
+  CREATE TABLE IF NOT EXISTS resource_processes (
+    shell_id   TEXT PRIMARY KEY,
+    pid        INTEGER NOT NULL,
+    started_at TIMESTAMPTZ DEFAULT NOW()
+  )
+`;

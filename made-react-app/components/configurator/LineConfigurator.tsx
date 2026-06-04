@@ -50,6 +50,7 @@ export default function LineConfigurator() {
   const [loadingLine, setLoadingLine] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "ok" | "error">("idle");
+  const [staleCount, setStaleCount] = useState(0);
 
   const reloadLibrary = useCallback(async () => {
     setLibraryLoading(true);
@@ -77,6 +78,9 @@ export default function LineConfigurator() {
       Object.fromEntries(library.map((t) => [t.typeId, t])) as TypeById,
     [library],
   );
+  // Ref so the line-load effect can filter stale resources without being in its deps
+  const typeByIdRef = useRef<TypeById>(typeById);
+  useEffect(() => { typeByIdRef.current = typeById; }, [typeById]);
 
   const {
     state: scene,
@@ -298,7 +302,17 @@ export default function LineConfigurator() {
       line?.lineConfigSubmodelId ?? `${selectedLine}/Submodels/LineConfiguration`;
     setLoadingLine(true);
     fetchLineConfiguration(submodelId, AAS_SERVER_URL, library)
-      .then((loaded) => commit(loaded))
+      .then((loaded) => {
+        const known = typeByIdRef.current;
+        const validResources = loaded.resources.filter((r) => known[r.typeId]);
+        const removed = loaded.resources.length - validResources.length;
+        const validIds = new Set(validResources.map((r) => r.instanceId));
+        const validConnections = loaded.connections.filter(
+          (c) => validIds.has(c.resourceAId) && validIds.has(c.resourceBId),
+        );
+        setStaleCount(removed);
+        commit({ resources: validResources, connections: validConnections });
+      })
       .catch(() => {})
       .finally(() => setLoadingLine(false));
   // Only re-run when the selected line changes, not on library/productionLines updates.
@@ -376,7 +390,21 @@ export default function LineConfigurator() {
         </button>
         {saveStatus === "ok" && <span className="text-green-400">Saved</span>}
         {saveStatus === "error" && <span className="text-red-400">Save failed</span>}
+        <button
+          className="ml-auto px-3 py-1 rounded bg-red-900 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed text-red-300"
+          disabled={!selectedLine}
+          title="Clear all resources and connections from the current line config"
+          onClick={() => { commit({ resources: [], connections: [] }); setStaleCount(0); }}
+        >
+          Reset config
+        </button>
       </div>
+      {staleCount > 0 && (
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-yellow-900/60 border-b border-yellow-700 text-yellow-300 text-xs shrink-0">
+          <span>⚠ {staleCount} resource{staleCount > 1 ? "s" : ""} removed — their types are no longer on the AAS server.</span>
+          <button className="ml-auto hover:text-yellow-100" onClick={() => setStaleCount(0)}>✕</button>
+        </div>
+      )}
       <div className="grid grid-cols-[240px_1fr_320px] flex-1 min-h-0">
       <ResourcePalette
         onPaletteDragStart={onPaletteDragStart}
