@@ -1,6 +1,7 @@
 id_short: "ResourceZones"
 id: "https://aausmartlab.org/Shells/Resources/Transport_12345678/ResourceZones"
 description: "Resource zones submodel for the resource"
+semantic_id: "https://aausmartlab.org/Semantics/SubmodelTypes/ResourceZones"
 
 elements:
 

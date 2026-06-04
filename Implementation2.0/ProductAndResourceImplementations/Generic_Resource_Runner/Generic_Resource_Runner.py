@@ -6,8 +6,11 @@ import time
 import asyncio
 from datetime import datetime
 import random
-
+import requests
+import json
+import Generic_Resource_Models as GRM
 from Generic_Resource_Submodel_Parser import ResourceParser, AASResourceLoader
+
 script_dir = Path(__file__).parent
 
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
@@ -39,6 +42,8 @@ class GenericResourceExecutor:
         self.main_loop = None
         self.skill_executor = None
         self.actors = {}
+
+        self.inventory_manager = InventoryManager(self.resource_loader,self.resource_parser,self.resource_shell_id,self.submodel_endpoint)
 
         self.refresh_resource()
         self.wait_for_communication_configuration()
@@ -187,7 +192,8 @@ class GenericResourceExecutor:
                 actor_name=actor_name,
                 mqtt_client=self.mqtt_client,
                 suffixes=self.parsed_resource["Communication"].suffixes,
-                resource_id=self.resource_shell_id
+                resource_id=self.resource_shell_id,
+                inventory_manager=self.inventory_manager
             )
 
             machine = PackMLStateMachine(behavior)
@@ -380,14 +386,142 @@ class SkillExecutor:
 
         return context
 
+
+class InventoryManager:
+
+    STORE_CAPABILITY = "https://aausmartlab.org/Submodels/Capability/Store"
+    RETRIEVE_CAPABILITY = "https://aausmartlab.org/Submodels/Capability/Retrieve"
+
+    def __init__(self, resource_loader: AASResourceLoader, resource_parser: ResourceParser, resource_shell_id, submodel_endpoint):
+        self.resource_loader = resource_loader
+        self.resource_parser = resource_parser
+        self.resource_shell_id = resource_shell_id
+        self.submodel_endpoint = submodel_endpoint
+
+        self.inventory_parser = None
+        self.inventory_model = None
+        encoded_id = self.resource_loader._base64encode(f"{resource_shell_id}/Inventory")
+        self.inventory_url = f"{self.submodel_endpoint}/{encoded_id}"
+
+    def load(self):
+        parsed = self.resource_parser.parse(
+            self.resource_loader.load(self.resource_shell_id)
+        )
+
+        
+
+        self.inventory_parser = self.resource_parser.get_parser(GRM.SubmodelSemanticIDs.INVENTORY)
+        self.inventory_model = parsed["Inventory"]
+        #self.inventory_model = self.inventory_parser.parse(parsed["Inventory"])
+
+        #print(f"[PARSED] {self.inventory_model}")
+
+        return self.inventory_model
+
+    def execute_inventory_effect(self, context):
+
+        cap = context.capability.capability_type
+
+        if cap == self.STORE_CAPABILITY:
+            return self.store_component(context)
+
+        if cap == self.RETRIEVE_CAPABILITY:
+            return self.retrieve_component(context)
+
+    def retrieve_component(self, context):
+
+        component_id = context.command.process_transformation.get("OutputTypes") or []
+        if component_id is not []:
+            component_id = component_id[0]
+        inventory_name, slot_id = self.find_component_slot(component_id)
+
+        self.inventory_parser.update_slot(
+            inventory_name=inventory_name,
+            slot_id=slot_id,
+            component_id=None
+        )
+
+        self.upload()
+
+        return component_id
+
+    def store_component(self, context):
+
+        component_id = context.command.process_transformation.get("InputTypes") or []
+        if component_id is not []:
+            component_id = component_id[0]
+
+        inventory_name, slot_id = self.find_free_slot(component_id)
+
+        self.inventory_parser.update_slot(
+            inventory_name=inventory_name,
+            slot_id=slot_id,
+            component_id=component_id
+        )
+
+        self.upload()
+
+        return slot_id
+
+    def find_component_slot(self, component_id):
+        model = self.load()
+
+        print(f"[MODEL] {model}")
+        print(f"[COMPONENT ID] {component_id}")
+        
+
+        for inv_name, inv in model.inventories.items():
+            for slot_id, slot in inv.storage.items():
+                print(f"[SLOT COMPONENT ID] {slot.component_id}")
+                if slot.component_id == component_id:
+                    return inv_name, slot_id
+
+        raise ValueError(f"Component not found: {component_id}")
+
+    def find_free_slot(self, component_id):
+        model = self.load()
+
+        for inv_name, inv in model.inventories.items():
+
+            supports = any(
+                component_id.startswith(s)
+                for s in inv.supported_components
+            )
+
+            if not supports:
+                continue
+
+            for slot_id, slot in inv.storage.items():
+                if slot.component_id is None:
+                    return inv_name, slot_id
+
+        raise ValueError("No free slot found")
+
+    def upload(self):
+
+        headers = {"Content-Type": "application/json"}
+
+        data = json.dumps(self.inventory_parser.raw_submodel.data).encode("utf-8")
+
+        r = requests.put(self.inventory_url, headers=headers, data=data)
+
+        if r.status_code not in (200, 201, 204):
+            raise RuntimeError(r.text)
+
+
+
+
+
 class GenericStationBehavior(StationBehavior):
 
-    def __init__(self, resource_id_short: str, actor_name: str, mqtt_client, suffixes, resource_id: str):
+    def __init__(self, resource_id_short: str, actor_name: str, mqtt_client, suffixes, resource_id: str, inventory_manager: InventoryManager):
         self.actor_name = actor_name
         self.resource_id_short = resource_id_short
         self.mqtt_client = mqtt_client
         self.suffixes = suffixes
         self.resource_id = resource_id
+
+        self.inventory_manager = inventory_manager
 
         # execution context (set per job)
         self.context = None
@@ -423,12 +557,12 @@ class GenericStationBehavior(StationBehavior):
             state=PackMLState.IDLE
         )
         self.mqtt_client.publish(f"{self.suffixes.state_suffix}/{self.actor_name}", msg)
-        print(f"[{self.actor_name}] IDLE")
+        #print(f"[{self.actor_name}] IDLE")
 
     async def starting(self, machine):
         msg = MS.StateMessage(
             timestamp=datetime.now(),
-            resource_id=self.resource_id,
+            resource_id=self.resource_id_short,
             state=PackMLState.STARTING
         )
         self.mqtt_client.publish(f"{self.suffixes.state_suffix}/{self.actor_name}", msg)
@@ -437,7 +571,7 @@ class GenericStationBehavior(StationBehavior):
             raise ValueError("No execution context applied")
 
         print(f"[{self.actor_name}] STARTING skill={self.skill}")
-        print(f"ProcessTransformation={self.process_transformation}")
+        print(f"ProcessTransformation={self.context.command.process_transformation}")
         print(f"Parameters={self.parameters}")
 
         await asyncio.sleep(1)
@@ -450,7 +584,7 @@ class GenericStationBehavior(StationBehavior):
 
         msg = MS.StateMessage(
             timestamp=datetime.now(),
-            resource_id=self.resource_id,
+            resource_id=self.resource_id_short,
             state=PackMLState.EXECUTE
         )
         self.mqtt_client.publish(f"{self.suffixes.state_suffix}/{self.actor_name}", msg)
@@ -458,11 +592,13 @@ class GenericStationBehavior(StationBehavior):
         if not self.context:
             raise ValueError("No execution context applied")
 
-        print(f"[{self.actor_name}] EXECUTING {self.skill}")
+        #print(f"[{self.actor_name}] EXECUTING {self.skill}")
 
         # ===========================
         # GENERIC EXECUTION LOGIC
         # ===========================
+
+        self.inventory_manager.execute_inventory_effect(self.context)
 
         # Example: derive fake cycle time (replace later with real model)
         base_time = 3000 + len(self.parameters) * 500
@@ -480,12 +616,12 @@ class GenericStationBehavior(StationBehavior):
     async def completing(self, machine):
         msg = MS.StateMessage(
             timestamp=datetime.now(),
-            resource_id=self.resource_id,
+            resource_id=self.resource_id_short,
             state=PackMLState.COMPLETING
         )
         self.mqtt_client.publish(f"{self.suffixes.state_suffix}/{self.actor_name}", msg)
 
-        print(f"[{self.actor_name}] COMPLETING")
+        #print(f"[{self.actor_name}] COMPLETING")
 
         # =====================================================
         # BUILD JOB RESULT (YOUR EXACT REQUIRED STRUCTURE)
@@ -641,6 +777,27 @@ class GenericStationBehavior(StationBehavior):
 CLIENT_ID = "Storage_12345678"
 Actor = "UR5"
 
+params = {}
+
+test_command = MS.CommandMessage(
+    timestamp=datetime.now(),
+    resource_id=CLIENT_ID,
+    skill="Retrieve",
+    actor_name=Actor,
+    skill_trigger=MS.CommandType.START,
+    order_id="ORD-12345",
+    job_id="Retrieve_Test_001",
+    parameters=params,
+    process_transformation={
+        "InputTypes": [],
+        "OutputTypes": [
+            "https://aausmartlab.org/Shells/Component/TopCover/TopCoverABSBlack-99ea6008-1829-416b-a1d1-c9bab9700492"
+        ]
+    }
+)
+
+print(test_command.model_dump_json(indent=2))
+
 params = {
     "TargetPosition": {
         "XPos": 20.0,
@@ -658,11 +815,9 @@ test_command = MS.CommandMessage(
     job_id="Handoff_Test_001",
     parameters=params,
     process_transformation={
-        "InputTypes": [
-            "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_id"
-        ],
+        "InputTypes": [],
         "OutputTypes": [
-            "https://aausmartlab.org/Shells/Component/BottomCover/BottomCover_id"
+            "https://aausmartlab.org/Shells/Component/TopCover/SomeID"
         ]
     }
 )
@@ -671,7 +826,7 @@ print(test_command.model_dump_json(indent=2))
 
 
 
-resource_shell_id = "https://aausmartlab.org/Shells/Resources/Storage_12345678"
+resource_shell_id = "https://aausmartlab.org/Shells/Resources/Transport_12345678"
 
 #resource_executor = GenericResourceExecutor(SERVER_BASE, SUBMODEL_ENDPOINT, SHELL_ENDPOINT, resource_shell_id)
 
@@ -692,7 +847,9 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 
+#resource_executor = GenericResourceExecutor(SERVER_BASE,SUBMODEL_ENDPOINT,SHELL_ENDPOINT,resource_shell_id)
 
+#inventory_parser = resource_executor.resource_parser.get_parser(GRM.SubmodelSemanticIDs.INVENTORY)
 
 #inventory_parser = parser.get_parser(GRM.SubmodelSemanticIDs.INVENTORY)
 #component_id = "https://aausmartlab.org/Shells/Component/TopCover/TopCoverABSBlack-NEW" #The one I want to add
