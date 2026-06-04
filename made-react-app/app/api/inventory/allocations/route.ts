@@ -139,8 +139,8 @@ async function updateAasInventory(
             return {
               ...child,
               value: {
-                type: "ExternalReference",
-                keys: [{ type: "GlobalReference", value: iriForThisSlot }],
+                type: "ModelReference",
+                keys: [{ type: "AssetAdministrationShell", value: iriForThisSlot }],
               },
             };
           }

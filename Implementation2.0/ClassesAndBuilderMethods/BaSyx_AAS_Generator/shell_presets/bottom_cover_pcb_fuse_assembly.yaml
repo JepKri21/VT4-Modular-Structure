@@ -45,6 +45,7 @@ submodels:
       - Description: "Fuse Slow Blow 2"
         Quantity: 1
         IsSubAssembly: false
+        MinOrderedQuantity: 2
         ComponentTypeReference: "https://aausmartlab.org/Shells/Component/Fuse"
 
   BillOfProcesses:
@@ -53,6 +54,7 @@ submodels:
         StepStatus: "Pending"
       - StepRef: "Assemble_Second_Fuse_2"
         StepStatus: "Pending"
+        MinOrderedQuantity: 2
 
     ProcessSteps:
       - Operation: "Assemble First Fuse"
@@ -88,6 +90,7 @@ submodels:
 
       - Operation: "Assemble Second Fuse"
         ProcessType: "Assemble"
+        MinOrderedQuantity: 2
         RequiredComponents:
           - "Fuse"
         StepConstraints:

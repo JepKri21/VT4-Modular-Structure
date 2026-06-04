@@ -119,11 +119,25 @@ def _apply_qualifiers(builder: AASInstanceBuilder, element, qualifiers: list) ->
         )
 
 
-def _make_ref(value):
-    """Build an ExternalReference or ModelReference from a YAML value field."""
+def _make_ref(value, reference_type: str | None = None, reference_target: str | None = None):
+    """Build an ExternalReference or ModelReference from a YAML value field.
+
+    When reference_type=="model" and the value is a plain string, the key type
+    is derived from reference_target ("shell" → AAS, anything else → Submodel).
+    """
     if value is None:
         return None
     if isinstance(value, str):
+        if reference_type == "model":
+            if reference_target == "shell":
+                return model.ModelReference(
+                    key=(model.Key(type_=model.KeyTypes.ASSET_ADMINISTRATION_SHELL, value=value),),
+                    type_=model.AssetAdministrationShell,
+                )
+            return model.ModelReference(
+                key=(model.Key(type_=model.KeyTypes.SUBMODEL, value=value),),
+                type_=model.Submodel,
+            )
         return model.ExternalReference(
             key=(model.Key(type_=model.KeyTypes.GLOBAL_REFERENCE, value=value),)
         )
@@ -174,7 +188,7 @@ def _build_elements(builder: AASInstanceBuilder, parent, elements: list) -> None
         elif etype == "reference_element":
             el = builder.add_reference_element(
                 parent, id_short,
-                value=_make_ref(elem.get("value")),
+                value=_make_ref(elem.get("value"), elem.get("reference_type"), elem.get("reference_target")),
                 semantic_id=semantic_id,
                 description=elem.get("description"),
             )

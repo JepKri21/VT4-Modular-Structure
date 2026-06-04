@@ -120,6 +120,12 @@ export default function InventoryManagementPage() {
   const refresh = useCallback(async (showSpinner = false) => {
     if (showSpinner) setRefreshing(true);
     await syncFromServer(syncUrlRef.current);
+    // Also re-sync resource shells so deleted resources are removed from DB
+    if (syncUrlRef.current.trim()) {
+      await fetch(
+        `/api/inventory/resources?serverUrl=${encodeURIComponent(syncUrlRef.current.trim())}`
+      ).catch(() => {});
+    }
     await loadLocal().catch(() => {});
     setLoading(false);
     setRefreshing(false);
@@ -144,7 +150,7 @@ export default function InventoryManagementPage() {
   const activeResources = resources.filter((r) => r.allocations && r.allocations.length > 0);
 
   const unallocated = allComponents.filter(
-    (c) => (c.quantityAllocated ?? 0) === 0 && c.quantityAvailable > 0
+    (c) => c.quantityAvailable - c.quantityReserved - (c.quantityAllocated ?? 0) > 0
   );
   const unallocatedByCategory = unallocated.reduce<Record<string, ComponentWithInventory[]>>(
     (acc, c) => { (acc[c.category] ??= []).push(c); return acc; },
@@ -262,13 +268,22 @@ export default function InventoryManagementPage() {
           {activeResources.map((resource) => {
             const isExpanded = expandedResources.has(resource.resourceId);
 
-            const byCategory: Record<string, Array<{ component: ComponentWithInventory; quantity: number }>> = {};
+            const byCategoryMap: Record<string, Map<string, { component: ComponentWithInventory; quantity: number }>> = {};
             for (const alloc of resource.allocations) {
               const comp = componentById.get(alloc.componentTypeId);
               if (!comp) continue;
               const cat = alloc.category || comp.category;
-              (byCategory[cat] ??= []).push({ component: comp, quantity: alloc.quantity });
+              const catMap = (byCategoryMap[cat] ??= new Map());
+              const existing = catMap.get(comp.id);
+              if (existing) {
+                existing.quantity += alloc.quantity;
+              } else {
+                catMap.set(comp.id, { component: comp, quantity: alloc.quantity });
+              }
             }
+            const byCategory = Object.fromEntries(
+              Object.entries(byCategoryMap).map(([cat, map]) => [cat, Array.from(map.values())])
+            );
 
             const pct = resource.inventorySize > 0
               ? Math.round((resource.slotsUsed / resource.inventorySize) * 100)
@@ -350,7 +365,7 @@ export default function InventoryManagementPage() {
                         <ComponentCard
                           key={component.id}
                           component={component}
-                          quantity={component.quantityAvailable}
+                          quantity={Math.max(0, component.quantityAvailable - component.quantityReserved - (component.quantityAllocated ?? 0))}
                           muted
                         />
                       ))}

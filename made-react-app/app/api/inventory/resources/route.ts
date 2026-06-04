@@ -209,6 +209,23 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    // Remove resource slots that no longer exist on the AAS server.
+    // ON DELETE CASCADE on resource_allocations cleans up allocations automatically.
+    const foundIds = found.map((r) => r.resourceId);
+    if (foundIds.length > 0) {
+      const ph = foundIds.map((_, i) => `$${i + 1}`).join(", ");
+      await pool.query(
+        `DELETE FROM resource_slots
+         WHERE resource_id NOT IN (${ph})
+           AND resource_id LIKE '%/Shells/Resources/%'`,
+        foundIds
+      );
+    } else {
+      await pool.query(
+        `DELETE FROM resource_slots WHERE resource_id LIKE '%/Shells/Resources/%'`
+      );
+    }
+
     // Overlay current allocation counts
     if (found.length > 0) {
       const usedRes = await pool.query(`

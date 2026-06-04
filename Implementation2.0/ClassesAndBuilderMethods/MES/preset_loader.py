@@ -67,6 +67,25 @@ def _required_props_from_slot(props: dict) -> dict:
     return data
 
 
+def _ordered_count(configuration: list[dict], category: str) -> int:
+    """Sum quantities for all slots whose category matches (alphanumeric, case-insensitive)."""
+    norm = re.sub(r"[^A-Za-z0-9]", "", category).lower()
+    return sum(
+        slot_cfg.get("quantity", 1)
+        for slot_cfg in configuration
+        if re.sub(r"[^A-Za-z0-9]", "", slot_cfg.get("category") or "").lower() == norm
+    )
+
+
+def _prune_conditional_entries(entries: list[dict], ordered_count: int) -> list[dict]:
+    """Remove entries where MinOrderedQuantity > ordered_count, and strip the marker from survivors."""
+    result = []
+    for e in entries:
+        if e.get("MinOrderedQuantity", 1) <= ordered_count:
+            result.append({k: v for k, v in e.items() if k != "MinOrderedQuantity"})
+    return result
+
+
 def _load_preset(preset_name: str) -> dict:
     path = PRESETS_DIR / f"{preset_name}.yaml"
     with open(path, encoding="utf-8") as f:
@@ -89,6 +108,18 @@ def load_and_merge(product_name: str, configuration: list[dict], order_number: s
         raise ValueError(f"No preset found for product: {product_name!r}")
 
     preset = copy.deepcopy(_load_preset(preset_name))
+
+    # Prune BOM entries and BOP steps that require more fuses than ordered
+    fuse_count = _ordered_count(configuration, "Fuse")
+    if fuse_count > 0:
+        bom = preset.get("submodels", {}).get("BillOfMaterials", {})
+        bop = preset.get("submodels", {}).get("BillOfProcesses", {})
+        if bom:
+            bom["BOMEntries"] = _prune_conditional_entries(bom.get("BOMEntries", []), fuse_count)
+        if bop:
+            bop["ProcessTracking"] = _prune_conditional_entries(bop.get("ProcessTracking", []), fuse_count)
+            bop["ProcessSteps"] = _prune_conditional_entries(bop.get("ProcessSteps", []), fuse_count)
+        log.info("Fuse count from order: %d — preset pruned accordingly", fuse_count)
 
     # Patch Documentation ModelNumber with the order number
     doc = preset.get("submodels", {}).get("Documentation", {})

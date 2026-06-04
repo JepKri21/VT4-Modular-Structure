@@ -39,8 +39,7 @@ const ALL_PROPERTY_KEYS: PropertyKey[] = [
 function getDifferentiatingKeys(components: ComponentWithInventory[]): Set<PropertyKey> {
   const keys = new Set<PropertyKey>();
   for (const key of ALL_PROPERTY_KEYS) {
-    const values = new Set(components.map((c) => c[key] ?? null));
-    if (values.size > 1) keys.add(key);
+    if (components.some((c) => c[key] != null)) keys.add(key);
   }
   return keys;
 }
@@ -474,10 +473,12 @@ export default function AllocationPage() {
   }
 
   // Group and filter components
-  const grouped = allComponents.reduce<Record<string, ComponentWithInventory[]>>((acc, comp) => {
-    (acc[comp.category] ??= []).push(comp);
-    return acc;
-  }, {});
+  const grouped = allComponents
+    .filter((c) => netAvailable(c) > 0 || (selections[c.id] ?? 0) > 0)
+    .reduce<Record<string, ComponentWithInventory[]>>((acc, comp) => {
+      (acc[comp.category] ??= []).push(comp);
+      return acc;
+    }, {});
 
   return (
     <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10 space-y-6">
@@ -563,20 +564,19 @@ export default function AllocationPage() {
             </div>
           ) : (
             Object.entries(grouped).map(([category, components]) => {
-              const available = components.filter((c) => netAvailable(c) > 0 || (selections[c.id] ?? 0) > 0);
-              if (available.length === 0) return null;
+              if (components.length === 0) return null;
 
               const isLockedOut = lockedCategory !== null && lockedCategory !== category;
-              const diffKeys = getDifferentiatingKeys(available);
+              const diffKeys = getDifferentiatingKeys(components);
 
               return (
                 <section key={category} className={`space-y-3 transition-opacity ${isLockedOut ? "opacity-30 pointer-events-none" : ""}`}>
                   <div className="flex items-center gap-2 border-b border-border pb-2">
                     <h2 className="text-sm font-semibold">{category}</h2>
-                    {available.some((c) => (selections[c.id] ?? 0) > 0) && (
+                    {components.some((c) => (selections[c.id] ?? 0) > 0) && (
                       <span className="text-xs text-primary flex items-center gap-1 ml-auto">
                         <CheckCircle2 className="w-3.5 h-3.5" />
-                        {available.filter((c) => (selections[c.id] ?? 0) > 0).reduce((s, c) => s + (selections[c.id] ?? 0), 0)} selected
+                        {components.filter((c) => (selections[c.id] ?? 0) > 0).reduce((s, c) => s + (selections[c.id] ?? 0), 0)} selected
                       </span>
                     )}
                     {isLockedOut && (
@@ -586,7 +586,7 @@ export default function AllocationPage() {
                     )}
                   </div>
                   <div className="grid gap-3 sm:grid-cols-2">
-                    {available.map((component) => (
+                    {components.map((component) => (
                       <TypeCard
                         key={component.id}
                         component={component}
