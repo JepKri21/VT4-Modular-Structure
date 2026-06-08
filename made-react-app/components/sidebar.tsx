@@ -22,6 +22,7 @@ import {
   Bot,
   Trophy,
   Boxes,
+  ChartPie,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/app/redux";
 import { setIsSidebarCollapsed } from "@/state";
@@ -84,8 +85,12 @@ const SidebarSubLink = ({
         {!isCollapsed && (
           <span className="w-px h-4 bg-primary/20 rounded-full shrink-0" />
         )}
-        <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-primary" : "text-primary/60"}`} />
-        <span className={`${isCollapsed ? "hidden" : "block"} text-sm ${isActive ? "font-semibold text-primary" : ""}`}>
+        <Icon
+          className={`w-4 h-4 shrink-0 ${isActive ? "text-primary" : "text-primary/60"}`}
+        />
+        <span
+          className={`${isCollapsed ? "hidden" : "block"} text-sm ${isActive ? "font-semibold text-primary" : ""}`}
+        >
           {label}
         </span>
       </div>
@@ -185,12 +190,18 @@ const Sidebar = () => {
           isCollapsed={isSidebarCollapsed}
         />
 
-        {/* <SidebarLink
+        <SidebarLink
           href="/scheduling"
           icon={Calendar}
           label="Scheduling"
           isCollapsed={isSidebarCollapsed}
-        /> */}
+        />
+        <SidebarLink
+          href="/mrp"
+          icon={ChartPie}
+          label="MRP"
+          isCollapsed={isSidebarCollapsed}
+        />
 
         {/* BUSINESS */}
         <div
@@ -234,6 +245,12 @@ const Sidebar = () => {
           href="/virtual-store"
           icon={Store}
           label="Virtual Store"
+          isCollapsed={isSidebarCollapsed}
+        />
+        <SidebarLink
+          href="/store"
+          icon={Store}
+          label="Store"
           isCollapsed={isSidebarCollapsed}
         />
         {/* <SidebarLink

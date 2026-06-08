@@ -266,7 +266,9 @@ async def main() -> None:
         loop.call_soon_threadsafe(order_queue.put_nowait, order)
 
     controller.client.message_callback_add(MES_TOPIC, on_mes_workorder)
-    controller.client.subscribe(MES_TOPIC)
+    # QoS 1 + persistent session (set in MQTTClientControllerV2.__init__)
+    # is what makes the broker queue WorkOrders for us while we're offline.
+    controller.client.subscribe(MES_TOPIC, qos=1)
     print(f"[init] subscribed to MES topic: {MES_TOPIC}")
 
     # Optional dev convenience: submit a local file as the first order.

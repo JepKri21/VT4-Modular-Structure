@@ -299,17 +299,62 @@ class OrderCompletedMessage(BaseModel):
     seq_no: int | None = None
 
 
+#=============================================================================
+#============================== Resilience Testing ===========================
+#=============================================================================
+
+class TestInjectionCommand(str, enum.Enum):
+    DROP_ACKS = "DROP_ACKS"            # drop next N outbound ACKs
+    NEXT_INCOMPLETE = "NEXT_INCOMPLETE" # flip the next JobResult to INCOMPLETE
+    GO_SILENT = "GO_SILENT"            # suppress all publishes for N seconds
+
+
+class TestInjectionMessage(BaseModel):
+    """Published by the MES dashboard to a station's TestInjection topic to
+    deterministically trigger a failure for RR1/RR2/RR3 demos. Stations
+    opt in by calling `mqtt_client.enable_fault_injection()` in their
+    setup code."""
+    timestamp: datetime
+    command: TestInjectionCommand
+    count: int | None = None       # DROP_ACKS only
+    duration_s: int | None = None  # GO_SILENT only
+    seq_no: int | None = None
+
+
+class ReceiveShipmentMessage(BaseModel):
+    """Restock notification — published by the MES when an MRP-driven
+    purchase order is marked RECEIVED. The destination station appends
+    fresh instances to its inventory (one per quantity) and re-publishes
+    its InventoryLevel.
+
+    `inventory_name` lets the dashboard target a specific bin in stations
+    that maintain more than one (e.g. Storage has Inventory1 for raw
+    components and Inventory2 for finished goods). When null, the station
+    picks the first inventory whose `SupportedComponents` matches.
+    """
+    timestamp: datetime
+    component_type_iri: str
+    quantity: int
+    purchase_order_id: int | None = None
+    inventory_name: str | None = None
+    seq_no: int | None = None
+
+
 class ControllerAlarmMessage(BaseModel):
     timestamp: datetime
     category: AlarmCategory
     severity: AlarmSeverity
     message: str
     resource_id: str | None = None
+    # Per-actor alarms (STUCK_CARGO is the only one today) carry the
+    # actor_name so the operator's Resolve action can free the right one
+    # via OccupancyManager.clear_stuck.
+    actor_name: str | None = None
     order_id: str | None = None
     seq_no: int | None = None
     # When True, this message asks the bridge to mark any *active* alarm
-    # matching (category, resource_id, order_id) as cleared rather than
-    # inserting a new row. Used for auto-clear-on-reconnect, etc.
+    # matching (category, resource_id, actor_name, order_id) as cleared
+    # rather than inserting a new row. Used for auto-clear-on-reconnect, etc.
     cleared: bool = False
 
 

@@ -18,6 +18,7 @@ Run as a long-lived process alongside the broker and the line controller:
 
 import json
 import os
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -51,6 +52,10 @@ JOBRESULT_TOPIC_FILTER = f"{BASE_TOPIC}/+/JobResult/+"
 
 # Order-level completion events from the line controller.
 ORDER_COMPLETED_TOPIC = f"{BASE_TOPIC}/Controller/OrderCompleted"
+
+# Per-resource inventory snapshots — published by stations that have local
+# storage (Storage_*, BCPCBFuseAssembler_*, etc.). Powers MRP inventory.
+INVENTORY_TOPIC_FILTER = f"{BASE_TOPIC}/+/InventoryLevel"
 
 DATABASE_URL = os.environ.get(
     "DATABASE_URL", "postgresql://made:made@localhost:5432/made_app"
@@ -97,11 +102,56 @@ def line_id_from_topic(topic: str) -> str | None:
     return parts[1] if len(parts) >= 2 else None
 
 
+# Matches the standard `Name<sep><UUID>` suffix used to distinguish a
+# specific instance from its type IRI. Both `-` (Fuse16ASB-<uuid>) and
+# `_` (AAUMobilePhoneV1_<uuid>) are valid separators in the project.
+_UUID_TAIL = re.compile(
+    r"[-_][0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+)
+
+
+def classify_material_kind(type_iri: str) -> str:
+    """Map an IRI shape to its MRP kind:
+      /Shells/Component/...  -> RAW           (we buy / source these)
+      /Shells/Assembly/...   -> INTERMEDIATE  (we produce on the line)
+      /Shells/Product/...    -> FINISHED      (output of MPS, not material)
+    """
+    if "/Shells/Product/" in type_iri:
+        return "FINISHED"
+    if "/Shells/Assembly/" in type_iri:
+        return "INTERMEDIATE"
+    return "RAW"
+
+
+def component_type_iri(component_id: str) -> str:
+    """Strip the `-<UUID>` instance tail from a component IRI to get the
+    type-level IRI used as the MRP material key.
+
+    Example:
+      https://.../Fuse/Fuse16ASB-b40d1f62-735d-4c4e-a91a-18ae08043cff
+      -> https://.../Fuse/Fuse16ASB
+    """
+    if not component_id:
+        return component_id
+    return _UUID_TAIL.sub("", component_id)
+
+
+def _name_and_category_from_iri(type_iri: str) -> tuple[str, str | None]:
+    """Pull a human name and category out of the AAS shell IRI shape
+    `https://.../<Category>/<Name>` so seeded materials are readable.
+    """
+    parts = [p for p in type_iri.split("/") if p]
+    if len(parts) >= 2:
+        return parts[-1], parts[-2]
+    return type_iri, None
+
+
 def insert_alarm(
     conn,
     *,
     source: str,
     resource_id: str | None,
+    actor_name: str | None,
     category: str,
     severity: str,
     order_id: str | None,
@@ -110,18 +160,22 @@ def insert_alarm(
 ) -> None:
     sql = """
         INSERT INTO alarms
-            (source, resource_id, category, severity, order_id, message, triggered_at)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
+            (source, resource_id, actor_name, category, severity, order_id,
+             message, triggered_at)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
     """
     with conn.cursor() as cur:
         cur.execute(
             sql,
-            (source, resource_id, category, severity, order_id, message, triggered_at),
+            (
+                source, resource_id, actor_name, category, severity,
+                order_id, message, triggered_at,
+            ),
         )
     conn.commit()
     print(
         f"[DB] inserted {source} alarm "
-        f"resource={resource_id} category={category} severity={severity}"
+        f"resource={resource_id} actor={actor_name} category={category}"
     )
 
 
@@ -135,10 +189,11 @@ def handle_station_alarm(conn, payload: dict) -> None:
             conn,
             source="station",
             resource_id=msg.resource_id,
+            actor_name=msg.actor_id,
             category=alarm_id,
             severity=MS.AlarmSeverity.WARNING.value,
             order_id=None,
-            message=f"actor={msg.actor_id}",
+            message=None,
             triggered_at=msg.timestamp,
         )
 
@@ -148,6 +203,7 @@ def clear_alarms(
     *,
     category: str,
     resource_id: str | None,
+    actor_name: str | None,
     order_id: str | None,
     cleared_at: datetime,
 ) -> None:
@@ -162,18 +218,24 @@ def clear_alarms(
         WHERE category = %s
           AND cleared_at IS NULL
           AND (%s::text IS NULL OR resource_id = %s)
+          AND (%s::text IS NULL OR actor_name  = %s)
           AND (%s::text IS NULL OR order_id    = %s)
     """
     with conn.cursor() as cur:
         cur.execute(
             sql,
-            (cleared_at, category, resource_id, resource_id, order_id, order_id),
+            (
+                cleared_at, category,
+                resource_id, resource_id,
+                actor_name, actor_name,
+                order_id, order_id,
+            ),
         )
         affected = cur.rowcount
     conn.commit()
     print(
-        f"[DB] cleared {affected} alarm(s) "
-        f"category={category} resource={resource_id} order={order_id}"
+        f"[DB] cleared {affected} alarm(s) category={category} "
+        f"resource={resource_id} actor={actor_name} order={order_id}"
     )
 
 
@@ -184,6 +246,7 @@ def handle_controller_alarm(conn, payload: dict) -> None:
             conn,
             category=msg.category.value,
             resource_id=msg.resource_id,
+            actor_name=msg.actor_name,
             order_id=msg.order_id,
             cleared_at=msg.timestamp,
         )
@@ -192,6 +255,7 @@ def handle_controller_alarm(conn, payload: dict) -> None:
         conn,
         source="controller",
         resource_id=msg.resource_id,
+        actor_name=msg.actor_name,
         category=msg.category.value,
         severity=msg.severity.value,
         order_id=msg.order_id,
@@ -260,6 +324,88 @@ def handle_job_result(conn, topic: str, payload: dict) -> None:
     )
 
 
+def handle_inventory(conn, topic: str, payload: dict) -> None:
+    """Aggregate a station's InventoryLevel snapshot into mrp_inventory.
+
+    The bridge wipes the rows for this resource_id and re-inserts the
+    fresh per-type counts — the message is authoritative.
+
+    Side effect: auto-seeds mrp_materials with sensible defaults for any
+    type we haven't seen before, so the materials catalog grows on its
+    own as the line discovers new components.
+
+    Topic shape: AAUSmartLab/<line>/<resource_id>/InventoryLevel
+    Expected payload shape (see InventoryLevelMessage / InventoryData):
+      {
+        "resource_id": "...",
+        "inventory": {
+          "Inventory_1": {
+            "storage": {
+              "position1": {"component_id": null},
+              "position3": {"component_id": "https://.../Fuse16ASB-<UUID>"}
+            },
+            ...
+          },
+          ...
+        },
+        "timestamp": "..."
+      }
+    """
+    resource_id = payload.get("resource_id")
+    if not resource_id:
+        print(f"[WARN] InventoryLevel on {topic} missing resource_id")
+        return
+
+    # Count by type IRI across all of this station's inventories.
+    counts: dict[str, int] = {}
+    for inv in (payload.get("inventory") or {}).values():
+        storage = (inv or {}).get("storage") or {}
+        for slot in storage.values():
+            component_id = (slot or {}).get("component_id")
+            if not component_id:
+                continue
+            type_iri = component_type_iri(component_id)
+            counts[type_iri] = counts.get(type_iri, 0) + 1
+
+    with conn.cursor() as cur:
+        # Wipe + insert is the simplest authoritative-snapshot pattern.
+        cur.execute(
+            "DELETE FROM mrp_inventory WHERE resource_id = %s",
+            (resource_id,),
+        )
+        if counts:
+            cur.executemany(
+                """
+                INSERT INTO mrp_inventory
+                    (resource_id, component_type_iri, on_hand, updated_at)
+                VALUES (%s, %s, %s, NOW())
+                """,
+                [(resource_id, type_iri, n) for type_iri, n in counts.items()],
+            )
+            # Seed material rows for any new type — no-op if already there.
+            cur.executemany(
+                """
+                INSERT INTO mrp_materials
+                    (component_type_iri, name, category, kind)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (component_type_iri) DO NOTHING
+                """,
+                [
+                    (
+                        type_iri,
+                        *_name_and_category_from_iri(type_iri),
+                        classify_material_kind(type_iri),
+                    )
+                    for type_iri in counts.keys()
+                ],
+            )
+    conn.commit()
+    print(
+        f"[DB] inventory: {resource_id} -> {len(counts)} type(s), "
+        f"{sum(counts.values())} unit(s)"
+    )
+
+
 def handle_order_completed(conn, topic: str, payload: dict) -> None:
     msg = MS.OrderCompletedMessage(**payload)
     line_id = line_id_from_topic(topic)
@@ -300,6 +446,7 @@ def on_connect(client, userdata, flags, reason_code, properties=None):
         STATE_TOPIC_FILTER,
         JOBRESULT_TOPIC_FILTER,
         ORDER_COMPLETED_TOPIC,
+        INVENTORY_TOPIC_FILTER,
     ):
         client.subscribe(f)
         print(f"[MQTT] subscribed to {f}")
@@ -307,7 +454,7 @@ def on_connect(client, userdata, flags, reason_code, properties=None):
 
 def _classify_topic(topic: str) -> str:
     """Return one of: 'controller_alarm', 'station_alarm', 'state',
-    'job_result', 'order_completed', or 'unknown'."""
+    'job_result', 'order_completed', 'inventory', or 'unknown'."""
     if topic == ORDER_COMPLETED_TOPIC:
         return "order_completed"
     if topic == CONTROLLER_ALARM_TOPIC:
@@ -315,6 +462,8 @@ def _classify_topic(topic: str) -> str:
     parts = topic.split("/")
     if parts[-1] == "Alarms":
         return "station_alarm"
+    if parts[-1] == "InventoryLevel":
+        return "inventory"
     # Per-actor channels have shape: ...<resource>/<channel>/<actor>
     if len(parts) >= 2:
         channel = parts[-2]
@@ -340,6 +489,8 @@ def on_message(client, userdata, msg):
             handle_job_result(conn, msg.topic, payload)
         elif kind == "order_completed":
             handle_order_completed(conn, msg.topic, payload)
+        elif kind == "inventory":
+            handle_inventory(conn, msg.topic, payload)
         else:
             print(f"[WARN] unhandled topic shape: {msg.topic}")
     except Exception as exc:

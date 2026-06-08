@@ -102,8 +102,8 @@ resource_inventories = {
         "AccessibleActors" : [Actor],
         "Storage" : 
         {
-            "position1": "",
-            "position2": "",
+            "position1": "https://aausmartlab.org/Shells/Component/PCB/PCBFuseBoxA-7b651dda-b6e5-4edd-a809-fa4c4bbc0f4f",
+            "position2": "https://aausmartlab.org/Shells/Component/PCB/PCBFuseBoxA-97b9e97e-2376-4a0f-b386-cf8d5716297d",
             "position3": "",
             "position4": "",
             "position5": "",

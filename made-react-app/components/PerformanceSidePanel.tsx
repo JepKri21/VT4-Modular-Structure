@@ -543,7 +543,14 @@ function LineBody({
               </thead>
               <tbody>
                 {detail.recent_orders.map((o) => (
-                  <tr key={o.order_id} className="border-b last:border-b-0">
+                  // order_id alone isn't unique — an order that goes
+                  // through OrderRecovery emits one OrderCompleted per
+                  // attempt, so the same order_id can appear multiple
+                  // times. completed_at disambiguates.
+                  <tr
+                    key={`${o.order_id}-${o.completed_at}`}
+                    className="border-b last:border-b-0"
+                  >
                     <td className="p-2 font-mono text-xs">{o.order_id}</td>
                     <td className="p-2">{o.status}</td>
                     <td className="p-2 text-right">{o.attempt_count}</td>

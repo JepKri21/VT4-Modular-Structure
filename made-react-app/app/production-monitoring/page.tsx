@@ -1,9 +1,9 @@
 "use client";
 
-import React from "react";
 import { useOrchestrationSnapshot } from "@/lib/useOrchestrationSnapshot";
 import ResourceAllocationView from "@/components/ResourceAllocationView";
 import DispatchQueueView from "@/components/DispatchQueueView";
+import ResilienceTestingPanel from "@/components/ResilienceTestingPanel";
 
 export default function ProductionMonitoringPage() {
   const { snapshot, status, error } = useOrchestrationSnapshot();
@@ -42,6 +42,8 @@ export default function ProductionMonitoringPage() {
         </div>
         <ResourceAllocationView lanes={snapshot?.lanes ?? []} />
       </section>
+
+      <ResilienceTestingPanel lanes={snapshot?.lanes ?? []} />
     </div>
   );
 }
