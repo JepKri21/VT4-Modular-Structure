@@ -18,6 +18,15 @@ const smc = (idShort: string, value: SME[]): SME => ({
   value,
 });
 
+const modelRef = (idShort: string, shellIri: string): SME => ({
+  idShort,
+  modelType: "ReferenceElement",
+  value: {
+    type: "ModelReference",
+    keys: [{ type: "AssetAdministrationShell", value: shellIri }],
+  },
+});
+
 const floatStr = (n: number): string => {
   const rounded = Math.round(n * 1000) / 1000;
   return Number.isInteger(rounded) ? `${rounded}.0` : String(rounded);
@@ -53,7 +62,7 @@ export const buildLineConfigurationSubmodel = (
     scene.resources.map((r) => {
       const type = typeById[r.typeId];
       return smc(type.name, [
-        prop("ResourceReference", r.typeId, "xs:string"),
+        modelRef("ResourceReference", r.typeId),
         globalLocation(r.position.x, r.position.y, r.rotation),
       ]);
     }),
@@ -70,12 +79,12 @@ export const buildLineConfigurationSubmodel = (
         globalLocation(c.worldPosition.x, c.worldPosition.y),
         smc("ConnectedResources", [
           smc("Resource1", [
-            prop("ResourceReference", refA, "xs:string"),
+            modelRef("ResourceReference", refA),
             prop("ZoneType", zoneTypeToExport(c.zoneAType), "xs:string"),
             localLocation(c.localPositionA.x, c.localPositionA.y),
           ]),
           smc("Resource2", [
-            prop("ResourceReference", refB, "xs:string"),
+            modelRef("ResourceReference", refB),
             prop("ZoneType", zoneTypeToExport(c.zoneBType), "xs:string"),
             localLocation(c.localPositionB.x, c.localPositionB.y),
           ]),

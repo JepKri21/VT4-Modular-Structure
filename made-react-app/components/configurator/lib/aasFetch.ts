@@ -12,13 +12,27 @@ import type {
 
 export const AAS_SERVER_URL = "http://localhost:8081";
 
+interface ModelRefValue {
+  type?: string;
+  keys?: { type?: string; value: string }[];
+}
+
 interface SME {
   idShort: string;
   modelType: string;
-  value?: SME[] | string;
+  value?: SME[] | string | ModelRefValue;
   submodelElements?: SME[];
   valueType?: string;
 }
+
+// Extract the target IRI from a ResourceReference, supporting both the legacy
+// string Property form and the model ReferenceElement form.
+const refIri = (sme: SME | undefined): string => {
+  const v = sme?.value;
+  if (typeof v === "string") return v;
+  if (v && !Array.isArray(v)) return (v as ModelRefValue).keys?.[0]?.value ?? "";
+  return "";
+};
 
 interface Shell {
   id: string;
@@ -213,7 +227,7 @@ export const fetchLineConfiguration = async (
   const resources: Resource[] = children(locsSmc)
     .filter((c) => c.modelType === "SubmodelElementCollection")
     .map((c) => {
-      const rawTypeId = (findChild(c, "ResourceReference")?.value as string) ?? "";
+      const rawTypeId = refIri(findChild(c, "ResourceReference"));
       const libraryEntry = typeById.get(rawTypeId) ?? typeByName.get(rawTypeId);
       const typeIdVal = libraryEntry?.typeId ?? rawTypeId;
       const globalLoc = findChild(c, "GlobalLocation");
@@ -239,8 +253,8 @@ export const fetchLineConfiguration = async (
       const connRes = findChild(c, "ConnectedResources");
       const r1 = findChild(connRes, "Resource1");
       const r2 = findChild(connRes, "Resource2");
-      const refA = (findChild(r1, "ResourceReference")?.value as string) ?? "";
-      const refB = (findChild(r2, "ResourceReference")?.value as string) ?? "";
+      const refA = refIri(findChild(r1, "ResourceReference"));
+      const refB = refIri(findChild(r2, "ResourceReference"));
       const ztA = importZoneType((findChild(r1, "ZoneType")?.value as string) ?? "inout");
       const ztB = importZoneType((findChild(r2, "ZoneType")?.value as string) ?? "inout");
       const locA = findChild(r1, "LocalLocation");

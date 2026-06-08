@@ -61,9 +61,12 @@ function extractResourceIris(submodels: Record<string, unknown>[]): string[] {
   for (const entry of locsSmc.value) {
     const children = (entry.value as Record<string, unknown>[] | undefined) ?? [];
     const refProp = children.find((c) => c.idShort === "ResourceReference") as
-      | { value?: string }
+      | { value?: string | { keys?: { value: string }[] } }
       | undefined;
-    if (refProp?.value) iris.add(refProp.value);
+    const refVal = refProp?.value;
+    const iri =
+      typeof refVal === "string" ? refVal : refVal?.keys?.[0]?.value;
+    if (iri) iris.add(iri);
   }
   return Array.from(iris);
 }
