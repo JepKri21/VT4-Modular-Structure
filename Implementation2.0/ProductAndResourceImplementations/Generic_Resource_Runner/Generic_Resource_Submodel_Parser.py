@@ -307,9 +307,25 @@ class CapabilityParser:
         elif model_type == "SubmodelElementCollection":
             return self._parse_collection_parameter(element)
 
+        elif model_type == "MultiLanguageProperty":
+            return self._parse_multilanguage_parameter(element)
+
         else:
             logging.warning(f"[WARN] Skipping unsupported parameter type: {model_type}")
             return None
+
+    def _parse_multilanguage_parameter(self, element: dict) -> GRM.MultiLanguageParameter:
+        values = {
+            entry.get("language"): entry.get("text")
+            for entry in element.get("value", [])
+            if entry.get("language") is not None
+        }
+
+        return GRM.MultiLanguageParameter(
+            name=element["idShort"],
+            parameter_type="MultiLanguageProperty",
+            values=values
+        )
 
     def _parse_property_parameter(self,element: dict) -> GRM.PropertyParameter:
         value_type = element.get("valueType")

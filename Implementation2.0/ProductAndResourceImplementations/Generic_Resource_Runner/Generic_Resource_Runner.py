@@ -299,13 +299,22 @@ class SkillExecutor:
     # - range constraints
     # ---------------------------
     def validate_parameters(self, capability, parameters: dict):
-
-        if not capability.parameters:
-            return {}
-
+        # The capability's Parameters block is the envelope: every parameter it
+        # defines is a required runtime input the command must supply, EXCEPT
+        # descriptors like OperationLabel (MultiLanguageProperty), which are
+        # capability metadata, not command inputs. Each supplied value is range-
+        # checked against its definition.
+        definitions = capability.parameters or {}
+        parameters = parameters or {}
         validated = {}
 
-        for name, definition in capability.parameters.items():
+        for name, definition in definitions.items():
+
+            param_type = getattr(definition, "parameter_type", None)
+
+            # Descriptors are not command inputs — neither required nor validated.
+            if param_type == "MultiLanguageProperty":
+                continue
 
             if name not in parameters:
                 raise ValueError(f"Missing parameter: {name}")
@@ -313,21 +322,24 @@ class SkillExecutor:
             value = parameters[name]
 
             # -------------------
-            # Collection parameter
+            # Collection parameter (e.g. TargetPosition -> {XPos, YPos})
             # -------------------
-            if getattr(definition, "parameter_type", None) == "Collection":
+            if param_type == "Collection":
 
+                sub_defs = getattr(definition, "parameters", {}) or {}
                 result = {}
 
-                for sub_name, sub_def in definition.parameters.items():
+                for sub_name, sub_def in sub_defs.items():
+
+                    # Descriptors nested in a collection are likewise skipped.
+                    if getattr(sub_def, "parameter_type", None) == "MultiLanguageProperty":
+                        continue
 
                     if sub_name not in value:
                         raise ValueError(f"Missing sub-parameter: {sub_name}")
 
                     sub_value = value[sub_name]
-
                     self._check_range(sub_name, sub_value, sub_def)
-
                     result[sub_name] = sub_value
 
                 validated[name] = result
