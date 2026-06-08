@@ -107,6 +107,9 @@ submodels:
 
   Communication:
     MQTT:
+      ProductionLinePrefix: "AAUSmartLab/Line1"
+      BrokerID: "mqtt.aausmartlab.org"
+      BrokerPort: "1883"
       Suffixes:
         CommandSuffix: "CMD"
         StateSuffix: "PackMLState"

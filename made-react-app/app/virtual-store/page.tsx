@@ -400,6 +400,8 @@ export default function VirtualStorePage() {
         })),
     }));
 
+    const serverUrl = localStorage.getItem("inventory_server_url") ?? undefined;
+
     try {
       const res = await fetch("/api/inventory/order", {
         method: "POST",
@@ -409,6 +411,7 @@ export default function VirtualStorePage() {
           session: sessionId,
           totalProducts: products.length,
           productConfigs,
+          serverUrl,
         }),
       });
 

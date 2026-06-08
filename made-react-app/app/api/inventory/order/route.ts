@@ -129,13 +129,14 @@ export async function PATCH(req: NextRequest) {
 
 // Place an order: create order with line items and reserve inventory
 export async function POST(req: NextRequest) {
-  const { items, session, totalProducts, productConfigs } = (await req.json()) as {
+  const { items, session, totalProducts, productConfigs, serverUrl } = (await req.json()) as {
     items: Array<{ componentTypeId: string; quantity: number }>;
     session: string;
     totalProducts?: number;
     productConfigs?: Array<{
       items: Array<{ slotLabel: string; componentTypeId: string; quantity: number }>;
     }>;
+    serverUrl?: string;
   };
 
   if (!items?.length || !session) {
@@ -143,6 +144,19 @@ export async function POST(req: NextRequest) {
   }
 
   await ensureTables();
+
+  // Sync from AAS before checking availability so inventory counts are always fresh.
+  if (serverUrl) {
+    try {
+      await fetch(new URL("/api/inventory/sync", req.url).toString(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ serverUrl }),
+      });
+    } catch {
+      // Sync failure is non-fatal — fall back to last-cached inventory counts.
+    }
+  }
 
   // Merge duplicate component types (e.g. two fuse slots picking the same type)
   const merged = new Map<string, number>();

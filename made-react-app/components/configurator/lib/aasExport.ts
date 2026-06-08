@@ -18,12 +18,16 @@ const smc = (idShort: string, value: SME[]): SME => ({
   value,
 });
 
-const modelRef = (idShort: string, shellIri: string): SME => ({
+const modelRef = (
+  idShort: string,
+  targetIri: string,
+  keyType: "AssetAdministrationShell" | "Submodel" = "AssetAdministrationShell",
+): SME => ({
   idShort,
   modelType: "ReferenceElement",
   value: {
     type: "ModelReference",
-    keys: [{ type: "AssetAdministrationShell", value: shellIri }],
+    keys: [{ type: keyType, value: targetIri }],
   },
 });
 
@@ -108,8 +112,8 @@ export const buildServiceOfferedSubmodel = (
   const entries = capabilities.map((cap, i) =>
     smc(`${cap.capabilityType}_${i}`, [
       prop("CapabilityType", cap.capabilityType, "xs:string"),
-      prop("ResourceReference", cap.resourceRef, "xs:string"),
-      prop("CapabilityReference", cap.capabilityRef, "xs:string"),
+      modelRef("ResourceReference", cap.resourceRef, "AssetAdministrationShell"),
+      modelRef("CapabilityReference", cap.capabilityRef, "Submodel"),
     ]),
   );
   return {

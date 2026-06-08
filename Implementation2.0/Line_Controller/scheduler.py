@@ -149,6 +149,7 @@ class Scheduler:
         product_matcher: ProductMatcher,
         occupancy: OccupancyManager,
         aas_server_base: str,
+        locations: dict | None = None,
         recovery=None,
         workorder: dict | None = None,
     ) -> None:
@@ -161,6 +162,7 @@ class Scheduler:
         self.product_matcher = product_matcher
         self.occupancy = occupancy
         self.aas_server_base = aas_server_base
+        self.locations = locations
         # OrderRecovery — optional so existing call sites in tests still
         # construct Scheduler without it. When set, run_order delegates
         # recovery to this object on detectable step failures.
@@ -1029,6 +1031,11 @@ class Scheduler:
 
         Returns None if no free instance can be resolved.
         """
+        # Pull fresh inventory from AAS before matching so we never work off
+        # stale cached state.
+        if self.locations is not None:
+            self.product_matcher.poll_inventory_from_aas(self.locations)
+
         existing = ingredient.get("ComponentReference") or ""
         if existing:
             if order_id is not None:

@@ -96,6 +96,13 @@ class GenericResourceExecutor:
 
         communication = self.parsed_resource["Communication"]
 
+        print(
+            f"[{self.resource_shell_id}] "
+            f"Connecting to MQTT broker {communication.broker_id}:{communication.broker_port} "
+            f"(prefix={communication.production_line_prefix})",
+            flush=True,
+        )
+
         self.mqtt_client = MQTTClientResource(
             communication.broker_id,
             communication.broker_port,
@@ -106,7 +113,11 @@ class GenericResourceExecutor:
 
         self.mqtt_client.start_mqtt_connection()
 
-        print(f"[{self.resource_shell_id}] Connected to MQTT broker")
+        print(
+            f"[{self.resource_shell_id}] "
+            f"Connected to MQTT broker {communication.broker_id}:{communication.broker_port}",
+            flush=True,
+        )
 
         self.initialize_runtime()
 
