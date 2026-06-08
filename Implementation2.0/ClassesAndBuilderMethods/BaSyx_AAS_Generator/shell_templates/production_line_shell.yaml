@@ -32,3 +32,9 @@ submodels:
     id_short: "LineConfiguration"
     description: "Physical layout and ordered list of constituent resource stations"
     required: true
+
+  # Communication parameters for this production line's MQTT broker and PackML topic structure.
+  - template_id: "https://aausmartlab.org/Submodels/Templates/Communication"
+    id_short: "Communication"
+    description: "Communication parameters for this production line's MQTT broker and PackML topic structure"
+    required: true

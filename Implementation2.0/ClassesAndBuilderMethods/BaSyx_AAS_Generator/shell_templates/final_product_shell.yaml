@@ -37,4 +37,4 @@ submodels:
   - template_id: "https://aausmartlab.org/Submodels/Templates/ProcessTracking"
     id_short: "ProcessTracking"
     description: "Process history — all process steps applied to this final product instance"
-    required: true
+    required: false

@@ -68,6 +68,8 @@ submodels:
           InventorySize: 20
         SupportedComponents:
           - "https://aausmartlab.org/Shells/Component/Fuse"
+        Actors:
+          - "KUKAManipulator"
 
   ResourceZones:
     CenterPoint:

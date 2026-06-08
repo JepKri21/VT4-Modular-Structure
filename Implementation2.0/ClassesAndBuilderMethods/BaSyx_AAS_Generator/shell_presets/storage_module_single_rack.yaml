@@ -31,6 +31,8 @@ submodels:
         SupportedComponents:
           - "https://aausmartlab.org/Shells/Component/BottomCover"
           - "https://aausmartlab.org/Shells/Component/TopCover"
+        Actors:
+          - "UR5"
 
   Skills:
     Store:

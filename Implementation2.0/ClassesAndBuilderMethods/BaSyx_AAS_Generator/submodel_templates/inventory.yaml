@@ -43,6 +43,14 @@ elements:
             value_type: "xs:string"
             cardinality: "OneToMany"
 
+          - type: list
+            id_short: "Actors"
+            semantic_id: "https://aausmartlab.org/Semantics/Actors"
+            description: "Actor IDs on this resource that can access this inventory slot"
+            element_type: "property"
+            value_type: "xs:string"
+            cardinality: "OneToMany"
+
           - type: collection
             id_short: "StoredComponents"
             semantic_id: "https://aausmartlab.org/Semantics/StoredComponents"

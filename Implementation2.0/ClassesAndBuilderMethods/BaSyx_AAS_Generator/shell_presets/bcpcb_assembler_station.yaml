@@ -61,6 +61,8 @@ submodels:
           InventorySize: 10
         SupportedComponents:
           - "https://aausmartlab.org/Shells/Component/PCB"
+        Actors:
+          - "KUKAManipulator"
 
   ResourceZones:
     CenterPoint:

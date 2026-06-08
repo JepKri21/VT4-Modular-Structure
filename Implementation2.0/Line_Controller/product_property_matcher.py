@@ -9,6 +9,24 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 from ClassesAndBuilderMethods.InformationModels import MessageStructure as MS
 
 
+def _b64(s: str) -> str:
+    return base64.urlsafe_b64encode(s.encode()).decode().rstrip("=")
+
+def _find_el(elements, id_short):
+    for el in elements or []:
+        if el.get("idShort") == id_short:
+            return el
+    return None
+
+def _ref_iri(element):
+    val = element.get("value")
+    if isinstance(val, dict):
+        keys = val.get("keys", [])
+        if keys:
+            return str(keys[0]["value"])
+    return None
+
+
 # ============================================================
 # Inventory Indexer
 # ============================================================
@@ -64,6 +82,76 @@ class InventoryIndexer:
 
         #print("[COMPONENT ID INDEX]",self.component_id_index)
         #print("[COMPONENT TYPE INDEX]",self.component_type_index)
+
+    def rebuild_from_aas(self, locations: dict, aas_server_base: str) -> None:
+        """Rebuild the inventory index by polling each resource's Inventory submodel on BaSyx.
+
+        Resources without an Inventory submodel (404) are silently skipped.
+        accessible_actors is left empty; the scheduler treats None as "any actor".
+        """
+        self.indexed_components.clear()
+        self.component_id_index.clear()
+        self.component_type_index.clear()
+
+        for loc in locations.values():
+            submodel_iri = f"{loc.resource_iri}/Inventory"
+            try:
+                resp = requests.get(
+                    f"{aas_server_base}/submodels/{_b64(submodel_iri)}",
+                    timeout=5,
+                )
+            except requests.RequestException as exc:
+                print(f"[inventory/aas] {loc.resource_id}: request failed: {exc}")
+                continue
+
+            if resp.status_code == 404:
+                print(f"[inventory/aas] {loc.resource_id}: no Inventory submodel, skipping")
+                continue
+            resp.raise_for_status()
+
+            top = resp.json().get("submodelElements", [])
+            inventories_el = _find_el(top, "Inventories")
+
+            for inv in (inventories_el or {}).get("value", []):
+                inventory_name = inv.get("idShort", "unknown")
+                stored = _find_el(inv.get("value", []), "StoredComponents")
+
+                for slot in (stored or {}).get("value", []):
+                    slot_id = slot.get("idShort", "")
+
+                    reserved_el = _find_el(slot.get("value", []), "SlotReserved")
+                    reserved = (reserved_el or {}).get("value") == "true"
+                    if reserved:
+                        continue
+
+                    ref_el = _find_el(slot.get("value", []), "ComponentShellReference")
+                    if ref_el is None:
+                        continue
+                    component_id = _ref_iri(ref_el)
+                    if not component_id:
+                        continue
+
+                    actors_el = _find_el(inv.get("value", []), "Actors")
+                    actors = [
+                        item.get("value", "")
+                        for item in (actors_el or {}).get("value", [])
+                        if item.get("value")
+                    ]
+
+                    indexed = self._create_indexed_component(
+                        component_id=component_id,
+                        resource_shell_id=loc.resource_iri,
+                        inventory_name=inventory_name,
+                        slot_id=slot_id,
+                        accessible_actors=actors,
+                    )
+                    self._add_to_indexes(indexed)
+
+            count = sum(
+                1 for c in self.indexed_components
+                if c.resource_shell_id == loc.resource_iri
+            )
+            print(f"[inventory/aas] {loc.resource_id}: {count} item(s) indexed")
 
     def find_by_component_id(self,component_id: str) -> Optional[MS.IndexedComponent]:
 
@@ -543,6 +631,10 @@ class ProductMatcher:
         self.inventory_indexer = InventoryIndexer()
         self.property_resolver = AASPropertyResolver(self.AAS_BROKER,AAS_PORT)
         self.constraint_evaluator = ConstraintEvaluator()
+
+    def poll_inventory_from_aas(self, locations: dict) -> None:
+        """Refresh the inventory index from AAS for all line resources."""
+        self.inventory_indexer.rebuild_from_aas(locations, self.AAS_SERVER_BASE)
 
     def find_in_resource_inventory(
         self,

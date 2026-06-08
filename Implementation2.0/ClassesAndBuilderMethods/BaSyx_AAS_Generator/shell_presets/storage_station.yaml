@@ -80,11 +80,14 @@ submodels:
         SupportedComponents:
           - "https://aausmartlab.org/Shells/Component/BottomCover"
           - "https://aausmartlab.org/Shells/Component/TopCover"
-        
+        Actors:
+          - "UR5"
       - Specifications:
           InventorySize: 5
         SupportedComponents:
           - "https://aausmartlab.org/Shells/Product/MobilePhone"
+        Actors:
+          - "UR5"
         
 
   ResourceZones:

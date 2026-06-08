@@ -183,6 +183,7 @@ export const fetchProductionLines = async (
         idShort: s.idShort,
         lineConfigSubmodelId: smIris.find((iri) => iri.includes("LineConfiguration")),
         serviceOfferedSubmodelId: smIris.find((iri) => iri.includes("ServiceOffered")),
+        communicationSubmodelId: smIris.find((iri) => iri.includes("Communication")),
       };
     });
 };

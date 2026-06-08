@@ -340,6 +340,8 @@ export default function LineConfigurator() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           serverUrl: AAS_SERVER_URL,
+          lineShellId: selectedLine,
+          communicationSubmodelId: line?.communicationSubmodelId,
           submodels: [lineConfigSM, serviceOfferedSM],
         }),
       });

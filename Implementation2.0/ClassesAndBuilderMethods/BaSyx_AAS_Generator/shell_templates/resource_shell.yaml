@@ -39,6 +39,12 @@ submodels:
     id_short: "Inventory"
     description: "Inventory slot definitions — only for resources that store components"
     required: false
+  
+  # Communication parameters for this resource's MQTT broker and PackML topic structure.
+  - template_id: "https://aausmartlab.org/Submodels/Templates/Communication"
+    id_short: "Communication"
+    description: "Communication parameters for this resource's MQTT broker and PackML topic structure"
+    required: true
 
   # --- Capability submodels (added dynamically by the configurator) ---
   # The specific *CapabilityOffered submodels are not predefined here.
