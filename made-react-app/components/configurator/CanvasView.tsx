@@ -838,7 +838,7 @@ export function CanvasView({
   }, [commit, drag, snapshot, zoneDraw, setDrag, setZoneDraw]);
 
   const onWheel = useCallback(
-    (e: React.WheelEvent) => {
+    (e: WheelEvent) => {
       e.preventDefault();
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -856,6 +856,13 @@ export function CanvasView({
     },
     [canvasRef, screenToWorld, setView, view.scale],
   );
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.addEventListener("wheel", onWheel, { passive: false });
+    return () => canvas.removeEventListener("wheel", onWheel);
+  }, [canvasRef, onWheel]);
 
   const onDragOver = useCallback((e: React.DragEvent) => {
     if (e.dataTransfer.types.includes("application/x-resource-type")) {
@@ -899,7 +906,6 @@ export function CanvasView({
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
       onMouseLeave={onMouseUp}
-      onWheel={onWheel}
       onDragOver={onDragOver}
       onDrop={onDrop}
       className="w-full h-full cursor-crosshair"
