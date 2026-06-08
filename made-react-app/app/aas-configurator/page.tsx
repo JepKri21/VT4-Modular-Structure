@@ -875,7 +875,21 @@ export default function AasConfiguratorPage() {
     setGenerating(true);
     setGenerateError(null);
     try {
-      const templates = templateOverride ?? loadedTemplates;
+      const templates = { ...(templateOverride ?? loadedTemplates) };
+      // A slot whose template was never lazily loaded would be silently dropped
+      // below. Eagerly load templates for any slot that carries form data (e.g.
+      // an Inventory filled in from a preset) so the generator receives it and
+      // can decide inclusion based on content.
+      await Promise.all(
+        activeShell.submodels.map(async (slot, i) => {
+          const hasData = Object.keys(submodelForms[i] ?? {}).length > 0;
+          if (templates[i] || !slot.template_file || !hasData) return;
+          try {
+            const res = await fetch(`/api/aas-configurator/templates/${slot.template_file}`);
+            templates[i] = (await res.json()) as SubmodelTemplate;
+          } catch { /* leave unloaded — slot will be skipped */ }
+        })
+      );
       const instances = await Promise.all(
         Array.from({ length: quantity }, async () => {
           const uuid = crypto.randomUUID();

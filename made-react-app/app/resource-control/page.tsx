@@ -14,6 +14,7 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
+  Terminal,
 } from "lucide-react";
 import type { ResourceControlEntry, ResourceControlResponse } from "@/app/api/resource-control/route";
 
@@ -30,6 +31,33 @@ export default function ResourceControlPage() {
   const [pythonExe, setPythonExe] = useState("python");
   const [configSaving, setConfigSaving] = useState(false);
   const [configSaved, setConfigSaved] = useState(false);
+  const [expandedLogs, setExpandedLogs] = useState<Set<string>>(new Set());
+  const [logLines, setLogLines] = useState<Record<string, string[]>>({});
+
+  const fetchLogs = useCallback(async (shellId: string) => {
+    try {
+      const res = await fetch(`/api/resource-control/logs?shellId=${encodeURIComponent(shellId)}`);
+      const data = await res.json() as { lines: string[] };
+      setLogLines((prev) => ({ ...prev, [shellId]: data.lines }));
+    } catch { /* ignore */ }
+  }, []);
+
+  const toggleLogs = useCallback((shellId: string) => {
+    setExpandedLogs((prev) => {
+      const next = new Set(prev);
+      if (next.has(shellId)) { next.delete(shellId); } else { next.add(shellId); void fetchLogs(shellId); }
+      return next;
+    });
+  }, [fetchLogs]);
+
+  // Poll logs for all expanded panels every 2 seconds
+  useEffect(() => {
+    if (expandedLogs.size === 0) return;
+    const id = setInterval(() => {
+      for (const shellId of expandedLogs) void fetchLogs(shellId);
+    }, 2000);
+    return () => clearInterval(id);
+  }, [expandedLogs, fetchLogs]);
 
   const fetchResources = useCallback(async (url = serverUrl) => {
     try {
@@ -232,58 +260,86 @@ export default function ResourceControlPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {resources.map((resource) => (
           <Card key={resource.shellId} className="relative">
-            <CardContent className="p-4 flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3 min-w-0">
-                {/* Status dot */}
-                <span
-                  className={`mt-1 shrink-0 w-2.5 h-2.5 rounded-full ${
-                    resource.running ? "bg-green-500" : "bg-muted-foreground/30"
-                  }`}
-                />
-                <div className="min-w-0">
-                  <p className="font-semibold text-sm leading-tight truncate">
-                    {resource.displayName}
-                  </p>
-                  <p className="text-xs text-muted-foreground font-mono truncate mt-0.5">
-                    {resource.shellId.length > 60
-                      ? `…${resource.shellId.slice(-55)}`
-                      : resource.shellId}
-                  </p>
-                  {resource.running && resource.pid && (
-                    <span className="mt-1 inline-block text-xs bg-green-500/10 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded font-mono">
-                      PID: {resource.pid}
-                    </span>
-                  )}
-                  {resource.running && !resource.pid && (
-                    <span className="mt-1 inline-block text-xs bg-green-500/10 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded">
-                      running
-                    </span>
-                  )}
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3 min-w-0">
+                  {/* Status dot */}
+                  <span
+                    className={`mt-1 shrink-0 w-2.5 h-2.5 rounded-full ${
+                      resource.running ? "bg-green-500" : "bg-muted-foreground/30"
+                    }`}
+                  />
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm leading-tight truncate">
+                      {resource.displayName}
+                    </p>
+                    <p className="text-xs text-muted-foreground font-mono truncate mt-0.5">
+                      {resource.shellId.length > 60
+                        ? `…${resource.shellId.slice(-55)}`
+                        : resource.shellId}
+                    </p>
+                    {resource.running && resource.pid && (
+                      <span className="mt-1 inline-block text-xs bg-green-500/10 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded font-mono">
+                        PID: {resource.pid}
+                      </span>
+                    )}
+                    {resource.running && !resource.pid && (
+                      <span className="mt-1 inline-block text-xs bg-green-500/10 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded">
+                        running
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1 shrink-0">
+                  {/* Logs toggle */}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => toggleLogs(resource.shellId)}
+                    title="Toggle logs"
+                  >
+                    <Terminal className="w-3.5 h-3.5" />
+                  </Button>
+
+                  {/* Start/Stop button */}
+                  <Button
+                    size="sm"
+                    variant={resource.running ? "destructive" : "default"}
+                    disabled={resource.toggling || (!configOk && !resource.running)}
+                    onClick={() => handleToggle(resource.shellId, resource.running)}
+                  >
+                    {resource.toggling ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : resource.running ? (
+                      <>
+                        <Square className="w-3.5 h-3.5 mr-1" />
+                        Stop
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-3.5 h-3.5 mr-1" />
+                        Start
+                      </>
+                    )}
+                  </Button>
                 </div>
               </div>
 
-              {/* Toggle button */}
-              <Button
-                size="sm"
-                variant={resource.running ? "destructive" : "default"}
-                disabled={resource.toggling || (!configOk && !resource.running)}
-                onClick={() => handleToggle(resource.shellId, resource.running)}
-                className="shrink-0"
-              >
-                {resource.toggling ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : resource.running ? (
-                  <>
-                    <Square className="w-3.5 h-3.5 mr-1" />
-                    Stop
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-3.5 h-3.5 mr-1" />
-                    Start
-                  </>
-                )}
-              </Button>
+              {/* Log panel */}
+              {expandedLogs.has(resource.shellId) && (
+                <div className="mt-3 rounded-md bg-black/80 border border-border overflow-hidden">
+                  <div className="px-2 py-1 text-xs text-muted-foreground border-b border-border flex items-center gap-1">
+                    <Terminal className="w-3 h-3" />
+                    stdout / stderr
+                  </div>
+                  <pre className="p-2 text-xs font-mono text-green-400 overflow-auto max-h-48 whitespace-pre-wrap break-all">
+                    {(logLines[resource.shellId] ?? []).length === 0
+                      ? <span className="text-muted-foreground italic">No output yet…</span>
+                      : (logLines[resource.shellId] ?? []).join("\n")}
+                  </pre>
+                </div>
+              )}
             </CardContent>
           </Card>
         ))}

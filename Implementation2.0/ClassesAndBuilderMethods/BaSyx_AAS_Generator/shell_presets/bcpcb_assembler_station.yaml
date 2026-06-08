@@ -29,6 +29,7 @@ submodels:
             - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
 
   HandoffCapabilityOffered:
+    CapabilityCategory: "Offered"
     SupportedComponents:
       - "https://aausmartlab.org/Shells/Component/BottomCover"
       - "https://aausmartlab.org/Shells/Component/PCB"

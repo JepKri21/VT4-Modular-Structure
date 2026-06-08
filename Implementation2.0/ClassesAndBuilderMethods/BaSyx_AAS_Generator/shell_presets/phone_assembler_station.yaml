@@ -6,6 +6,7 @@ asset_name: "PhoneAssembler"
 
 submodels:
   AssembleCapabilityOffered:
+    CapabilityCategory: "Offered"
     SupportedComponents:
       - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
       - "https://aausmartlab.org/Shells/Component/TopCover"
@@ -28,6 +29,7 @@ submodels:
             - "https://aausmartlab.org/Shells/Product/MobilePhone"
 
   HandoffCapabilityOffered:
+    CapabilityCategory: "Offered"
     SupportedComponents:
       - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
       - "https://aausmartlab.org/Shells/Component/TopCover"

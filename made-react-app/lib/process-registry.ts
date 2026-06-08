@@ -7,6 +7,28 @@ import { getResourceRunnerConfig } from "@/lib/aas-config";
 // Module-level singleton — one instance per Next.js server process
 const registry = new Map<string, ChildProcess>();
 
+// Keeps the last 200 lines of stdout+stderr per shell, survives process exit so crashes are visible
+const LOG_MAX = 200;
+const logBuffers = new Map<string, string[]>();
+
+function appendLog(shellId: string, chunk: Buffer | string): void {
+  const lines = chunk.toString("utf-8").split(/\r?\n/);
+  const buf = logBuffers.get(shellId) ?? [];
+  for (const line of lines) {
+    if (line) buf.push(line);
+  }
+  if (buf.length > LOG_MAX) buf.splice(0, buf.length - LOG_MAX);
+  logBuffers.set(shellId, buf);
+}
+
+export function getProcessLogs(shellId: string): string[] {
+  return logBuffers.get(shellId) ?? [];
+}
+
+export function clearProcessLogs(shellId: string): void {
+  logBuffers.delete(shellId);
+}
+
 async function ensureTable(): Promise<void> {
   await pool.query(CREATE_RESOURCE_PROCESSES_TABLE_SQL);
 }
@@ -79,7 +101,12 @@ export async function startRunner(shellId: string, serverUrl: string): Promise<S
     return { ok: false, error: "Failed to spawn process (no PID assigned)" };
   }
 
+  // Clear stale logs from a previous run before buffering fresh output
+  logBuffers.delete(shellId);
   registry.set(shellId, child);
+
+  child.stdout?.on("data", (chunk: Buffer) => appendLog(shellId, chunk));
+  child.stderr?.on("data", (chunk: Buffer) => appendLog(shellId, chunk));
 
   await pool.query(
     `INSERT INTO resource_processes (shell_id, pid, started_at)
@@ -88,7 +115,8 @@ export async function startRunner(shellId: string, serverUrl: string): Promise<S
     [shellId, child.pid]
   );
 
-  child.on("exit", () => {
+  child.on("exit", (code, signal) => {
+    appendLog(shellId, `\n[process exited — code=${code ?? "null"} signal=${signal ?? "null"}]`);
     registry.delete(shellId);
     pool.query("DELETE FROM resource_processes WHERE shell_id = $1", [shellId]).catch(() => {});
   });

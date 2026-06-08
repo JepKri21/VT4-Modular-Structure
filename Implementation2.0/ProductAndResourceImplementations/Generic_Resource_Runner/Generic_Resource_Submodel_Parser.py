@@ -280,8 +280,11 @@ class CapabilityParser:
         )
 
     def _parse_parameters(self,elements: list[dict]) -> dict[str, GRM.CapabilityParameter]:
-        parameters_collection = self.utils.find_element(elements,"Parameters")
+        parameters_collection = self.utils.find_optional_element(elements,"Parameters")
         result = {}
+
+        if not parameters_collection:
+            return result
 
         for element in parameters_collection.get("value", []):
             parsed = self._parse_parameter_element(element)
@@ -334,6 +337,8 @@ class CapabilityParser:
 
         for child in element.get("value", []):
             parsed = self._parse_parameter_element(child)
+            if parsed is None:
+                continue
             parameters[parsed.name] = parsed
 
         return GRM.CollectionParameter(
@@ -343,9 +348,12 @@ class CapabilityParser:
         )
 
     def _parse_transformations(self,elements: list[dict]) -> dict[str, GRM.ProcessTransformationModel]:
-        transformations_collection = self.utils.find_element(elements,"ProcessTransformations")
+        transformations_collection = self.utils.find_optional_element(elements,"ProcessTransformations")
 
         result = {}
+
+        if not transformations_collection:
+            return result
 
         for transformation in transformations_collection.get("value", []):
             name = transformation.get("idShort")
@@ -363,12 +371,12 @@ class CapabilityParser:
 
     def _extract_component_types(self,transformation: dict,io_type: str) -> list[str]:
 
-        io_collection = self.utils.find_element(transformation.get("value", []),io_type)
+        io_collection = self.utils.find_optional_element(transformation.get("value", []),io_type)
 
         if not io_collection:
             return []
 
-        list_container = self.utils.find_element(io_collection.get("value", []),"ComponentTypeReference")
+        list_container = self.utils.find_optional_element(io_collection.get("value", []),"ComponentTypeReference")
 
         if not list_container:
             return []
@@ -396,7 +404,10 @@ class InventoryParser:
         self.raw_submodel = submodel
 
         elements = submodel.data.get("submodelElements", [])
-        inventories_element = self.utils.find_element(elements,"Inventories")
+        inventories_element = self.utils.find_optional_element(elements, "Inventories")
+
+        if not inventories_element:
+            return GRM.InventoryModel(inventories={})
 
         inventories = {}
 

@@ -542,15 +542,9 @@ def build_submodel(
     builder = AASInstanceBuilder(id_short, submodel_id)
     if desc := tmpl.get("description"):
         builder.submodel.description = model.MultiLanguageTextType({"en": desc})
-    # Top-level semantic_id on the submodel itself — used by capability
-    # submodels so consumers (e.g. the Line Controller's capability matcher)
-    # can identify the capability without parsing inner elements. We drive
-    # it off CapabilityTypeReference (injected by the resource type shell);
-    # CapabilityReference is kept as a fallback for any legacy data.
-    cap_ref = (form_data or {}).get("CapabilityTypeReference") or (form_data or {}).get("CapabilityReference")
-    if isinstance(cap_ref, str) and cap_ref:
-        builder.submodel.semantic_id = _ext_ref(cap_ref)
-    elif sem_id := tmpl.get("semantic_id"):
+    # Top-level semantic_id comes from the submodel template so consumers can
+    # identify the submodel type (e.g. CapabilityParser uses this to route parsing).
+    if sem_id := tmpl.get("semantic_id"):
         builder.submodel.semantic_id = _ext_ref(sem_id)
     # Auto-populate ResourceReference so capability submodels always point back
     # to their resource shell. Only fills if not already set in form_data.
@@ -597,7 +591,7 @@ def main() -> None:
             asset_kind=model.AssetKind.INSTANCE,
             global_asset_id=global_asset_id,
         ),
-        submodel={_sm_ref(sm["id"]) for sm in submodel_inputs},
+        submodel=set(),
     )
     if desc := shell_cfg.get("description"):
         shell.description = model.MultiLanguageTextType({"en": desc})
@@ -612,16 +606,19 @@ def main() -> None:
             form_data = _rewrite_skills_capability_refs(form_data, shell_id)
         return form_data
 
-    submodels = [
-        build_submodel(
-            sm["template_file"],
-            sm["id"],
-            sm["id_short"],
-            _form_data_for(sm),
-            shell_id,
+    # A submodel is generated only when it carries data. Empty form_data means the
+    # slot is optional and was not configured (e.g. assembly stations without an
+    # internal inventory), so it is skipped and left off the shell entirely —
+    # matching build_environment()'s preset-driven behaviour.
+    submodels = []
+    for sm in submodel_inputs:
+        form_data = _form_data_for(sm)
+        if not form_data:
+            continue
+        submodels.append(
+            build_submodel(sm["template_file"], sm["id"], sm["id_short"], form_data, shell_id)
         )
-        for sm in submodel_inputs
-    ]
+        shell.submodel.add(_sm_ref(sm["id"]))
 
     # Auto-derive ServiceRequired from BOP for final products, but only if the
     # user has not already provided a ServiceRequired submodel with entries.

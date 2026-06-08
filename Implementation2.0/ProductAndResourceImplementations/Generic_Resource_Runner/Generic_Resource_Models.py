@@ -160,7 +160,7 @@ class ProcessTransformationModel(BaseModel):
 
 class CapabilityModel(BaseModel):
     name: str
-    capability_category: str
+    capability_category: str | None = None
     capability_type: str
     parameters: dict[str, CapabilityParameter]
     process_transformations: dict[str, ProcessTransformationModel]

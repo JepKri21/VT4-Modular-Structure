@@ -6,6 +6,7 @@ asset_name: "BCPCBFuseAssembler"
 
 submodels:
   AssembleCapabilityOffered:
+    CapabilityCategory: "Offered"
     SupportedComponents:
       - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
       - "https://aausmartlab.org/Shells/Component/Fuse"
@@ -36,6 +37,7 @@ submodels:
             - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
 
   HandoffCapabilityOffered:
+    CapabilityCategory: "Offered"
     SupportedComponents:
       - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
       - "https://aausmartlab.org/Shells/Component/Fuse"
