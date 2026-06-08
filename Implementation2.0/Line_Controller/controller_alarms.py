@@ -29,6 +29,7 @@ class ControllerAlarmPublisher:
         message: str,
         *,
         resource_id: str | None = None,
+        actor_name: str | None = None,
         order_id: str | None = None,
     ) -> None:
         alarm = MS.ControllerAlarmMessage(
@@ -37,13 +38,14 @@ class ControllerAlarmPublisher:
             severity=severity,
             message=message,
             resource_id=resource_id,
+            actor_name=actor_name,
             order_id=order_id,
         )
         payload = alarm.model_dump(mode="json")
         self._client.publish(self._topic, json.dumps(payload))
         print(
             f"[ALARM] {category.value}/{severity.value} "
-            f"resource={resource_id} order={order_id}: {message}"
+            f"resource={resource_id} actor={actor_name} order={order_id}: {message}"
         )
 
     def clear(
@@ -51,12 +53,13 @@ class ControllerAlarmPublisher:
         category: MS.AlarmCategory,
         *,
         resource_id: str | None = None,
+        actor_name: str | None = None,
         order_id: str | None = None,
         message: str = "auto-cleared",
     ) -> None:
-        """Mark active alarms matching (category, resource_id, order_id)
-        as resolved. The bridge translates this into an UPDATE on rows
-        where cleared_at IS NULL, instead of inserting a new row.
+        """Mark active alarms matching (category, resource_id, actor_name,
+        order_id) as resolved. The bridge translates this into an UPDATE
+        on rows where cleared_at IS NULL, instead of inserting a new row.
         """
         alarm = MS.ControllerAlarmMessage(
             timestamp=datetime.now(),
@@ -64,6 +67,7 @@ class ControllerAlarmPublisher:
             severity=MS.AlarmSeverity.INFO,
             message=message,
             resource_id=resource_id,
+            actor_name=actor_name,
             order_id=order_id,
             cleared=True,
         )
@@ -71,5 +75,5 @@ class ControllerAlarmPublisher:
         self._client.publish(self._topic, json.dumps(payload))
         print(
             f"[ALARM CLEAR] {category.value} "
-            f"resource={resource_id} order={order_id}"
+            f"resource={resource_id} actor={actor_name} order={order_id}"
         )

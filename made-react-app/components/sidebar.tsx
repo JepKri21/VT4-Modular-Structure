@@ -20,6 +20,7 @@ import {
   Wrench,
   Bot,
   Trophy,
+  ChartPie,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/app/redux";
 import { setIsSidebarCollapsed } from "@/state";
@@ -155,12 +156,18 @@ const Sidebar = () => {
           isCollapsed={isSidebarCollapsed}
         />
 
-        {/* <SidebarLink
+        <SidebarLink
           href="/scheduling"
           icon={Calendar}
           label="Scheduling"
           isCollapsed={isSidebarCollapsed}
-        /> */}
+        />
+        <SidebarLink
+          href="/mrp"
+          icon={ChartPie}
+          label="MRP"
+          isCollapsed={isSidebarCollapsed}
+        />
 
         {/* BUSINESS */}
         <div
@@ -198,6 +205,12 @@ const Sidebar = () => {
           href="/virtual-store"
           icon={Store}
           label="Virtual Store"
+          isCollapsed={isSidebarCollapsed}
+        />
+        <SidebarLink
+          href="/store"
+          icon={Store}
+          label="Store"
           isCollapsed={isSidebarCollapsed}
         />
         {/* <SidebarLink

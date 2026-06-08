@@ -6,12 +6,31 @@
 import asyncio
 import time
 import random
+import re
 import sys
 from pathlib import Path
 import json
 from datetime import datetime
 from math import ceil
 import basyx.aas.adapter.json
+
+
+# When a station resolves a workorder InputType against its OWN local
+# inventory (rather than something handed off by the orchestrator), the
+# IRI in the workorder is a placeholder instance — the orchestrator can't
+# pre-bind to local stock it doesn't see. Stripping the standard
+# `<sep><UUID>` tail gives us the type IRI we can use to find any
+# matching instance currently in the bin.
+_INSTANCE_TAIL = re.compile(
+    r"[-_][0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+)
+
+
+def type_iri_of(iri: str | None) -> str | None:
+    """Drop the instance UUID tail so we can match a workorder placeholder
+    IRI against type-prefixed entries in a station's local inventory.
+    """
+    return None if not iri else _INSTANCE_TAIL.sub("", iri)
 
 script_dir = Path(__file__).parent
 
@@ -102,10 +121,10 @@ resource_inventories = {
         "AccessibleActors" : [Actor],
         "Storage" : 
         {
-            "position1": "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB-22662f67-faa8-46bf-b3fd-df8f23dc3583",
-            "position2": "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB-686a581d-e5d2-4bb9-8db0-4e044b4d9cab",
-            "position3": "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB-e0308eb8-0b45-4d13-ae78-425c13167ff7",
-            "position4": "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB-f8281357-682c-417a-bdc1-380d24a8ecc7",
+            "position1": "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB-9899f72c-3399-4741-8717-c6584d1fcc52",
+            "position2": "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB-a0984122-e28d-487c-82e5-5215b370f721",
+            "position3": "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB-b40d1f62-735d-4c4e-a91a-18ae08043cff",
+            "position4": "https://aausmartlab.org/Shells/Component/Fuse/Fuse16ASB-d7775378-7ba0-49d7-9030-b67c541c9772",
             "position5": "",
             "position6": "",
             "position7": "",
@@ -180,7 +199,19 @@ def build_inventory(resource_inventories):
 
 
 def find_positions(inventories, query):
+    """Search storage by exact match OR type prefix.
+
+    The original implementation only honoured `query + "/"` as a type
+    prefix, but the project's instance IRIs use `Name-<UUID>` (Fuse) and
+    `Name_<UUID>` (MobilePhone) shapes. So a type query like
+    `.../Fuse/Fuse16ASB` needs to also match `.../Fuse/Fuse16ASB-<uuid>`
+    and `.../Fuse/Fuse16ASB_<uuid>`. We try all three valid separators.
+    """
     results = []
+    if not query:
+        return results
+
+    type_prefixes = (query + "/", query + "-", query + "_")
 
     for inv_name, inv_data in inventories.items():
         storage = inv_data.get("Storage", {})
@@ -189,20 +220,11 @@ def find_positions(inventories, query):
             if not item:
                 continue
 
-            # Case 1: exact match (specific ID)
-            if item == query:
+            if item == query or any(item.startswith(p) for p in type_prefixes):
                 results.append({
                     "inventory": inv_name,
                     "position": position,
-                    "item": item
-                })
-
-            # Case 2: type match (base URL)
-            elif item.startswith(query + "/"):
-                results.append({
-                    "inventory": inv_name,
-                    "position": position,
-                    "item": item
+                    "item": item,
                 })
 
     return results
@@ -384,7 +406,16 @@ class KUKAManipulatorBehavior(StationBehavior):
                 self.process_transformation["OutputTypes"] = None
 
             if transformation_allowed:
-                retriveable_locations = find_positions(inventories=resource_inventories,query=fuse_input)
+                # Local-bin resolution: the orchestrator can't pre-bind to
+                # our internal fuse stock, so it hands us a placeholder
+                # instance IRI. Search by type prefix instead, pick any
+                # matching fuse from the bin, and swap the actual instance
+                # IRI into InputTypes so the JobResult records what was
+                # really used.
+                fuse_type = type_iri_of(fuse_input)
+                retriveable_locations = find_positions(
+                    inventories=resource_inventories, query=fuse_type,
+                )
 
                 if retriveable_locations:
                     retrieved_item = retriveable_locations[0]  # We just take the first one
@@ -392,6 +423,15 @@ class KUKAManipulatorBehavior(StationBehavior):
                     position = retrieved_item["position"]
                     self.retrieved_item_component = retrieved_item["item"]
                     resource_inventories[inventory_name]["Storage"][position] = ""
+
+                    # Reflect the actual fuse instance in the InputTypes so
+                    # the controller / job result downstream see traceable
+                    # IRIs rather than the placeholder we got asked about.
+                    inputs = self.process_transformation.get("InputTypes") or []
+                    self.process_transformation["InputTypes"] = [
+                        retrieved_item["item"] if x == fuse_input else x
+                        for x in inputs
+                    ]
                     #Generating cycle times (ms) based on parameters
                     self.ideal_cycle_time = 8000
                     self.actual_cycle_time = self.ideal_cycle_time + random.randint(200,1500)
@@ -622,6 +662,75 @@ def handle_request(msg: MS.RequestMessage):
 
 mqtt_client.register_subscriber(command_suffix, MS.CommandMessage,handle_command)
 mqtt_client.register_subscriber(info_request_suffix, MS.RequestMessage,handle_request)
+
+
+#=============
+# Restock from MRP — handler for ReceiveShipmentMessage
+#=============
+
+import uuid as _uuid
+
+
+def handle_receive_shipment(msg: MS.ReceiveShipmentMessage):
+    """Append fresh instance IRIs to the chosen inventory bin and
+    republish InventoryLevel so the bridge updates mrp_inventory.
+
+    Each unit gets a new UUID — the workorder builder still mints
+    fictional UUIDs for fuse inputs, and the station resolves them by
+    type prefix (see find_positions), so what matters here is that the
+    type IRI in the new instance matches the BOM.
+    """
+    type_iri = msg.component_type_iri
+    qty = int(msg.quantity or 0)
+    print(f"[RESTOCK] received {qty} × {type_iri} (PO={msg.purchase_order_id})")
+
+    # Pick the destination bin. If the caller named one, honour it;
+    # otherwise find a bin whose SupportedComponents list this type.
+    target_inv_name = msg.inventory_name
+    if target_inv_name is None:
+        for inv_name, inv_data in resource_inventories.items():
+            supported = inv_data.get("SupportedComponents", [])
+            if any(type_iri == s or type_iri.startswith(s + "/") for s in supported):
+                target_inv_name = inv_name
+                break
+    if target_inv_name is None or target_inv_name not in resource_inventories:
+        print(
+            f"[RESTOCK] no inventory accepts {type_iri} — "
+            f"check SupportedComponents"
+        )
+        return
+
+    storage = resource_inventories[target_inv_name]["Storage"]
+    placed = 0
+    for position, current in storage.items():
+        if placed >= qty:
+            break
+        if not current:
+            # Fresh instance IRI for the new physical item. Convention
+            # matches the rest of the project: <type>-<uuid>.
+            storage[position] = f"{type_iri}-{_uuid.uuid4()}"
+            placed += 1
+
+    if placed < qty:
+        print(
+            f"[RESTOCK] only placed {placed}/{qty} — inventory {target_inv_name} full"
+        )
+
+    # Re-publish so the bridge sees the new counts. Builds the same
+    # InventoryLevelMessage shape as the request handler.
+    inventory_models = build_inventory(resource_inventories)
+    inventory_message = MS.InventoryLevelMessage(
+        timestamp=datetime.now(),
+        resource_id=CLIENT_ID,
+        inventory=inventory_models,
+    )
+    mqtt_client.publish(inventory_suffix, inventory_message)
+    print(f"[RESTOCK] placed {placed} into {target_inv_name}, republished InventoryLevel")
+
+
+mqtt_client.register_subscriber(
+    "ReceiveShipment", MS.ReceiveShipmentMessage, handle_receive_shipment,
+)
 
 params = {"TargetPosition": {"XPos": 80.0, "YPos": 40.0}}
 

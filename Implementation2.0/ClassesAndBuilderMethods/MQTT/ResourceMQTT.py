@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import paho.mqtt.client as mqtt
 import sys
 from pathlib import Path
@@ -28,12 +28,14 @@ class MQTTClientResource:
         # Expected incoming seq_no from controller
         self.controller_seq_no = 1
 
-        # ── Test hook for RR3 ────────────────────────────────────────
-        # When `_drop_acks_remaining > 0`, the next outgoing ACK is
-        # silently skipped (the counter decrements). Stations enable this
-        # by setting the field after constructing the client. Leave at
-        # zero in production — does nothing.
-        self._drop_acks_remaining = 0
+        # ── Fault-injection state (RR1 / RR2 / RR3 demos) ────────────
+        # All three knobs default to "no effect". A station opts in by
+        # calling `enable_fault_injection()` after registering its
+        # normal subscribers; the dashboard then publishes to that
+        # station's TestInjection topic to set these knobs at runtime.
+        self._drop_acks_remaining = 0          # RR3 — skip next N ACKs
+        self._next_incomplete = False          # RR2 — flip next result
+        self._mute_until = None                # RR1 — suppress publishes
 
         # topic_suffix -> {
         #   "model": PydanticModel,
@@ -129,6 +131,17 @@ class MQTTClientResource:
     # =========================================================
 
     def publish(self, topic_suffix, message_model):
+        # RR1 test hook: while muted we simulate going offline. Drop the
+        # message entirely — state, JobResult, ACK all included. The
+        # controller's watchdog will probe and eventually publish
+        # RESOURCE_OFFLINE.
+        if self._mute_until is not None and datetime.now() < self._mute_until:
+            print(
+                f"[TEST MUTE] suppressed publish to {topic_suffix} "
+                f"(silent until {self._mute_until.isoformat(timespec='seconds')})"
+            )
+            return
+
         topic = f"{self.base_topic}/{self.client_id}/{topic_suffix}"
 
         data = message_model.model_dump(mode="json")
@@ -229,3 +242,47 @@ class MQTTClientResource:
 
         self.client.connect(self.broker, self.port)
         self.client.loop_start()
+
+    # =========================================================
+    # Fault Injection (RR1 / RR2 / RR3 demos)
+    # =========================================================
+
+    def enable_fault_injection(self) -> None:
+        """Opt this station into runtime fault injection.
+
+        Subscribes to <line>/<resource>/TestInjection. Auto-ack is False
+        — the bridge / dashboard fires-and-forgets, no controller-style
+        retry needed.
+        """
+        self.register_subscriber(
+            topic_suffix="TestInjection",
+            model=MS.TestInjectionMessage,
+            handler=self._handle_test_injection,
+            auto_ack=False,
+        )
+
+    def consume_next_incomplete(self) -> bool:
+        """Behaviors call this when computing a JobResult: returns True
+        (and clears the flag) if a test injection asked the next result
+        to be INCOMPLETE. Returns False under normal operation.
+        """
+        if self._next_incomplete:
+            self._next_incomplete = False
+            return True
+        return False
+
+    def _handle_test_injection(self, msg) -> None:
+        cmd = msg.command
+        if cmd == MS.TestInjectionCommand.DROP_ACKS:
+            n = max(1, msg.count or 1)
+            self._drop_acks_remaining += n
+            print(f"[TEST] will drop next {n} ACK(s)")
+        elif cmd == MS.TestInjectionCommand.NEXT_INCOMPLETE:
+            self._next_incomplete = True
+            print("[TEST] next JobResult will be INCOMPLETE")
+        elif cmd == MS.TestInjectionCommand.GO_SILENT:
+            duration = max(1, msg.duration_s or 60)
+            self._mute_until = datetime.now() + timedelta(seconds=duration)
+            print(f"[TEST] muting publishes for {duration}s")
+        else:
+            print(f"[TEST] unknown command: {cmd}")

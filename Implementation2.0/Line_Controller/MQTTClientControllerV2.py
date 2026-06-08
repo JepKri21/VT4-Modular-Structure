@@ -152,8 +152,14 @@ class MQTTClientController:
             }
         """
 
+        # clean_session=False registers a persistent session with the
+        # broker. The broker then queues any QoS>=1 messages addressed
+        # to this client_id while we are disconnected and delivers them
+        # on reconnect — so a dispatcher that releases WorkOrders while
+        # the controller is offline doesn't lose them.
         self.client = mqtt.Client(
             client_id=self.client_id,
+            clean_session=False,
             callback_api_version=mqtt.CallbackAPIVersion.VERSION1
         )
 

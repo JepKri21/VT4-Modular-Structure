@@ -111,6 +111,7 @@ class OrderRecovery:
                     f"order {order_id} — operator must clear manually"
                 ),
                 resource_id=resource_id,
+                actor_name=actor_name,
                 order_id=order_id,
             )
         # release_one() is a no-op when cargo is present, so the stuck
