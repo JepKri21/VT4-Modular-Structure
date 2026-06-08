@@ -2,11 +2,11 @@
 import { Bell, Menu, Moon, Sun } from "lucide-react";
 import { Search } from "lucide-react";
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { Button } from "./ui/button";
 import { useTheme } from "next-themes";
 import { useAppDispatch, useAppSelector } from "@/app/redux";
 import { setIsSidebarCollapsed } from "@/state";
+import NotificationSidePanel from "./NotificationSidePanel";
 
 const ALARM_POLL_INTERVAL_MS = 3000;
 
@@ -19,6 +19,7 @@ const Navbar = () => {
   );
 
   const [activeAlarms, setActiveAlarms] = useState<number>(0);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -69,6 +70,7 @@ const Navbar = () => {
       </h1>
       {/* RIGHT SIDE */}
       <div className="flex justify-between items-center gap-5">
+        {/* DARK MODE */}
         <div className="hidden md:flex justify-between items-center gap-5">
           <Button
             className="group cursor-pointer px-3 py-3 rounded-full bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition-colors"
@@ -83,16 +85,33 @@ const Navbar = () => {
             )}
           </Button>
         </div>
-        <Link href="/alarms" className="relative" aria-label="Alarms">
-          <Bell className="cursor-pointer" size={24} />
-          {activeAlarms > 0 && (
-            <span className="absolute -top-2 -right-1 inline-flex items-center justify-center px-[0.2rem] py-[0.02rem] text-xs font-semibold bg-primary text-background rounded-full">
-              {activeAlarms}
-            </span>
-          )}
-        </Link>
+        {/* NOTIFICATIONS */}
+        <div className="hidden md:flex justify-between items-center gap-5">
+          <Button
+            // `relative` is what anchors the unread-count badge below.
+            // Without it, the badge falls back to the nearest ancestor
+            // with position:relative and ends up in the wrong place.
+            className="group relative cursor-pointer px-3 py-3 rounded-full bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition-colors"
+            variant="secondary"
+            size="icon"
+            onClick={() => setNotificationsOpen(true)}
+            aria-label="Notifications"
+          >
+            <Bell className="transition-colors" size={18} />
+            {activeAlarms > 0 && (
+              <span className="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-4.5 h-4.5 px-1 text-[10px] font-semibold bg-primary text-background rounded-full">
+                {activeAlarms}
+              </span>
+            )}
+          </Button>
+        </div>
         <div className="w-8 h-8 rounded-full bg-secondary"></div>
       </div>
+
+      <NotificationSidePanel
+        open={notificationsOpen}
+        onClose={() => setNotificationsOpen(false)}
+      />
     </div>
   );
 };

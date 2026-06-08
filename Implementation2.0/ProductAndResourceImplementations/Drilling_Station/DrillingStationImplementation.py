@@ -84,14 +84,11 @@ Actor = "KUKAManipulator"
 
 mqtt_client = MQTTClientResource(BROKER, MQTT_PORT, CLIENT_ID, BASE_TOPIC)
 
-# ── RR3 TEST HOOK ────────────────────────────────────────────────────
-# Drop the next N outgoing ACKs to simulate dropped CMD acknowledgements.
-# - 1 = happy-path test: controller retransmits, second ACK arrives,
-#       step completes without an alarm.
-# - 2 = failure-path test: both attempts fail, CMD_NO_ACK alarm fires,
-#       OrderRecovery restarts (or aborts) the order.
-# Set to 0 (or delete) when you're done testing.
-mqtt_client._drop_acks_remaining = 0
+# Opt this station into runtime fault injection from the MES dashboard
+# (Production Monitoring → Resilience Testing). Adds a subscription on
+# <line>/<resource>/TestInjection. Safe to leave in production — does
+# nothing until the dashboard publishes an injection command.
+mqtt_client.enable_fault_injection()
 
 
 
@@ -287,7 +284,15 @@ class KUKAManipulatorBehavior(StationBehavior):
         else:
             print("This is not a skill on this resource, How did you even get here?")
             await machine.transition_to(PackMLState.STOPPING)
-        
+
+        # RR2 test hook: flip the result to INCOMPLETE if the dashboard
+        # asked for one. Quality reset to NA so the controller's
+        # JobResult parsing sees a coherent failure shape.
+        if self.mqtt_client.consume_next_incomplete():
+            print("[TEST] forcing this JobResult to INCOMPLETE")
+            self.result = MS.Result.INCOMPLETE
+            self.quality = MS.Quality.NA
+
         await machine.transition_to(PackMLState.COMPLETING)
 
     async def completing(self, machine):

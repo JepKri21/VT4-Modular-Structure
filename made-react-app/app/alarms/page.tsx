@@ -6,6 +6,7 @@ interface Alarm {
   id: number;
   source: string;
   resource_id: string | null;
+  actor_name: string | null;
   category: string;
   severity: string;
   order_id: string | null;
@@ -70,6 +71,7 @@ export default function AlarmsPage() {
       const hay = [
         a.source,
         a.resource_id ?? "",
+        a.actor_name ?? "",
         a.category,
         a.severity,
         a.order_id ?? "",
@@ -119,6 +121,7 @@ export default function AlarmsPage() {
             <tr className="border-b">
               <th className="text-left p-2 whitespace-nowrap">Source</th>
               <th className="text-left p-2 whitespace-nowrap">Resource</th>
+              <th className="text-left p-2 whitespace-nowrap">Actor</th>
               <th className="text-left p-2 whitespace-nowrap">Category</th>
               <th className="text-left p-2 whitespace-nowrap">Severity</th>
               <th className="text-left p-2 whitespace-nowrap">Order</th>
@@ -134,7 +137,7 @@ export default function AlarmsPage() {
             {filtered.length === 0 && (
               <tr>
                 <td
-                  colSpan={10}
+                  colSpan={11}
                   className="p-4 text-center text-muted-foreground"
                 >
                   No alarms{query ? " match the search" : ""}.
@@ -151,6 +154,9 @@ export default function AlarmsPage() {
                 <td className="p-2 whitespace-nowrap">{alarm.source}</td>
                 <td className="p-2 whitespace-nowrap">
                   {alarm.resource_id ?? "—"}
+                </td>
+                <td className="p-2 whitespace-nowrap">
+                  {alarm.actor_name ?? "—"}
                 </td>
                 <td className="p-2 whitespace-nowrap">{alarm.category}</td>
                 <td className="p-2 whitespace-nowrap">{alarm.severity}</td>

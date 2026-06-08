@@ -101,10 +101,10 @@ resource_inventories = {
         "AccessibleActors" : [Actor],
         "Storage" : 
         {
-            "position1": "https://aausmartlab.org/Shells/Component/TopCover/TopCoverABSBlack-2e8f481c-61eb-4652-9814-3dfa2c1c4560",
-            "position2": "https://aausmartlab.org/Shells/Component/TopCover/TopCoverABSBlack-ccfc6f64-1c58-4e16-bb15-7159fd0ed325",
-            "position3": "",
-            "position4": "",
+            "position1": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverABSBlack-f7b32661-5b4a-4349-8156-a3feb4cfef57",
+            "position2": "https://aausmartlab.org/Shells/Component/BottomCover/BottomCoverABSBlack-b1736433-eb58-4748-97fc-8b464de9262a",
+            "position3": "https://aausmartlab.org/Shells/Component/TopCover/TopCoverABSBlack-4448bd0c-f621-4cad-9bad-5bc74841ccb2",
+            "position4": "https://aausmartlab.org/Shells/Component/TopCover/TopCoverABSBlack-c8b43ea2-f7b5-426f-9843-788534df4a92",
             "position5": "https://aausmartlab.org/Shells/Component/TopCover/TopCoverABSBlack-180500f5-f3f6-47c0-8c59-4a884348b744",
             "position6": "",
             "position7": "",

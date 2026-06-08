@@ -68,21 +68,57 @@ async def process_order(mes_payload: dict) -> None:
       ]
     }
     """
-    order_number = mes_payload.get("orderNumber", "ORD-UNKNOWN")
+    batch_id = mes_payload.get("orderNumber", "ORD-UNKNOWN")
     webshop_order_id = mes_payload.get("orderId")
     products = mes_payload.get("products", [])
 
     if not products:
-        log.warning("MES payload for %s has no products — skipping", order_number)
+        log.warning("MES payload for %s has no products — skipping", batch_id)
         return
 
-    # Process first product only for now (one product per order)
-    product = products[0]
+    batch_total = len(products)
+    log.info(
+        "Processing batch %s — %d product(s)", batch_id, batch_total
+    )
+
+    # Each product in the batch becomes its own WorkOrder with order_id
+    # "<batch_id>-<n>". They share batch_id so the UI can show "n/N".
+    for product in products:
+        index = product.get("productIndex") or (products.index(product) + 1)
+        order_number = (
+            batch_id if batch_total == 1 else f"{batch_id}-{index}"
+        )
+        await _process_single_product(
+            product=product,
+            order_number=order_number,
+            webshop_order_id=webshop_order_id,
+            batch_id=batch_id,
+            batch_index=int(index),
+            batch_total=batch_total,
+        )
+
+
+async def _process_single_product(
+    *,
+    product: dict,
+    order_number: str,
+    webshop_order_id: str | None,
+    batch_id: str,
+    batch_index: int,
+    batch_total: int,
+) -> None:
+    """Pipeline for one product within a batch. Same logic as the
+    pre-batch implementation; just parameterised over (order_number,
+    product) and tagged with batch coordinates at enqueue time.
+    """
     product_name = product.get("name", "AAU Mobile Phone")
     configuration = product.get("configuration", [])
 
     order_store.add_order(order_number, webshop_id=webshop_order_id)
-    log.info("Processing order %s — product: %s", order_number, product_name)
+    log.info(
+        "Processing order %s — product: %s (batch %s/%s)",
+        order_number, product_name, batch_index, batch_total,
+    )
 
     shell_iris: dict[str, str] = {}
     try:
@@ -119,12 +155,36 @@ async def process_order(mes_payload: dict) -> None:
             return
         log.info("Selected line: %s", line_id)
 
-        # Step 6: Publish WorkOrder via MQTT
-        mqtt_client.publish_workorder(line_id, workorder)
+        # Step 6: Enqueue WorkOrder. The dispatcher (running alongside
+        # this service) is responsible for actually publishing to MQTT
+        # when line capacity is available — see queue_manager / dispatcher.
+        # The payload stored on the queue is the same dict the line
+        # controller's MES_TOPIC subscriber expects.
+        try:
+            import queue_manager
+            from mqtt_client import _workorder_to_pascal_dict
+            payload = _workorder_to_pascal_dict(workorder)
+            queue_manager.enqueue(
+                order_id=order_number,
+                payload=payload,
+                line_id=line_id,
+                product_ref=workorder.product_reference,
+                priority=getattr(workorder, "priority", 100) or 100,
+                batch_id=batch_id,
+                batch_index=batch_index,
+                batch_total=batch_total,
+            )
+        except Exception as exc:
+            log.exception("Failed to enqueue %s: %s", order_number, exc)
+            order_store.update_status(order_number, "FAILED")
+            if shell_iris:
+                shell_uploader.delete_all(shell_iris)
+            return
 
-        # Update order store with selected line
-        order_store.update_status(order_number, "PENDING", line_id)
-        log.info("Order %s dispatched to line %s", order_number, line_id)
+        # Reflect "queued, waiting for capacity" in the legacy store so
+        # the existing MES dashboard endpoints keep working.
+        order_store.update_status(order_number, "QUEUED", line_id)
+        log.info("Order %s queued for line %s", order_number, line_id)
 
     except Exception as exc:
         log.exception("Pipeline failed for order %s: %s", order_number, exc)
