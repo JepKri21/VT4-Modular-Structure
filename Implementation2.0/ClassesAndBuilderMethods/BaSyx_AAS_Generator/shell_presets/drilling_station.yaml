@@ -14,6 +14,7 @@ submodels:
     AllowedMaterials:
       - "https://aausmartlab.org/Materials/PLA"
       - "https://aausmartlab.org/Materials/ABS"
+      - "https://aausmartlab.org/Materials/PTEG"
     Parameters:
       HoleDiameter: 5.0
       DrillDepth:
@@ -50,6 +51,7 @@ submodels:
     AllowedMaterials:
       - "https://aausmartlab.org/Materials/PLA"
       - "https://aausmartlab.org/Materials/ABS"
+      - "https://aausmartlab.org/Materials/PTEG"
     Parameters:
       TargetPosition:
         XPos: ""
