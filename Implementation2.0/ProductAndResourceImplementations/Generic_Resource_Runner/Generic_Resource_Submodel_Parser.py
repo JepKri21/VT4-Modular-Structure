@@ -117,6 +117,14 @@ class AASResourceLoader:
 
 class ResourceParser:
 
+    # Submodels the runner intentionally does not consume. ResourceZones is
+    # display-only metadata (machine footprint) used by the line configurator UI
+    # in the React app, not by the resource simulation — so it is skipped
+    # silently rather than logged as an unregistered submodel.
+    IGNORED_SEMANTIC_IDS = {
+        GRM.SubmodelSemanticIDs.RESOURCEZONES,
+    }
+
     def __init__(self):
         self.parsers = {}
         self.register_defaults()
@@ -144,6 +152,9 @@ class ResourceParser:
         return parsed_submodels
 
     def _route_and_parse(self, submodel: GRM.RawSubmodel):
+        if submodel.semantic_id in self.IGNORED_SEMANTIC_IDS:
+            return None
+
         parser = self.parsers.get(submodel.semantic_id)
 
         if parser is None:
