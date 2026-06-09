@@ -410,50 +410,25 @@ class SkillExecutor:
         context.skill = skill
         context.capability = capability
 
-        # Decide whether to require a matched ProcessTransformation.
-        # ProcessTransformations only meaningfully exist when a CMD
-        # transforms a populated input set into a different populated
-        # output set (e.g. Drilling: BottomCover -> BottomCover-with-hole,
-        # Assemble: BottomCover+PCB -> BottomCoverPCB). Several CMD shapes
-        # are not transformations and must pass without a match:
-        #   1. Empty-cargo leg (no inputs and no outputs) — e.g. a shuttle
-        #      moving with no part loaded.
-        #   2. Identity leg (cmd_in == cmd_out) — Transport/Handoff that
-        #      moves an instance without changing its type.
-        #   3. Asymmetric leg (one side empty, the other populated) — the
-        #      canonical Retrieve/Store shape (Retrieve: None -> [iri];
-        #      Store: [iri] -> None) plus the asymmetric Handoff cases.
-        #   4. Capability declares no ProcessTransformations at all —
-        #      "no constraint" convention used elsewhere for
-        #      SupportedComponents / AllowedMaterials. Type-agnostic.
-        # In any of these cases we accept the CMD as-is and leave
-        # context.process_transformation = None. execute() / completing()
-        # use command.process_transformation directly, so this is safe.
-        cmd_pt = command.process_transformation or {}
-        cmd_in = cmd_pt.get("InputTypes") or []
-        cmd_out = cmd_pt.get("OutputTypes") or []
-        no_declared_transforms = not getattr(capability, "process_transformations", None)
-        identity_leg = (
-            cmd_in == cmd_out and bool(cmd_in)
+        # Strict matching: every CMD must correspond to a ProcessTransformation
+        # declared on the capability submodel. This catches accidental wrong
+        # routing (e.g. a Drilling CMD for [Fuse] -> [Fuse]) instead of
+        # silently executing it. Movement/inventory capabilities (Transport,
+        # Handoff, Retrieve, Store) MUST therefore declare entries for every
+        # CMD shape they accept — including degenerate ones like the empty
+        # Transport leg (`[] -> []`). See each capability preset for the
+        # explicit list.
+        match = self.match_process_transformation(
+            capability,
+            command.process_transformation
         )
-        empty_leg = (not cmd_in and not cmd_out)
-        asymmetric_leg = (bool(cmd_in) != bool(cmd_out))
-        if empty_leg or identity_leg or asymmetric_leg or no_declared_transforms:
-            context.process_transformation = None
-            context.input_types = cmd_in
-            context.output_types = cmd_out
-        else:
-            match = self.match_process_transformation(
-                capability,
-                command.process_transformation
-            )
 
-            if not match:
-                raise ValueError("No matching process transformation")
+        if not match:
+            raise ValueError("No matching process transformation")
 
-            context.process_transformation = match
-            context.input_types = match.input_types
-            context.output_types = match.output_types
+        context.process_transformation = match
+        context.input_types = match.input_types
+        context.output_types = match.output_types
 
         context.parameters = self.validate_parameters(
             capability,

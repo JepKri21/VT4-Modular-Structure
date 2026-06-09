@@ -240,11 +240,16 @@ class PreProcessPlanner:
         target_pos = self.transport.handoff_position(target.resource_iri)
 
         # 1) Move shuttle to the source handoff zone.
+        # Shuttle is EMPTY on this leg — it hasn't picked up the part yet
+        # (Retrieve+Handoff load it in steps 2 and 3). Pass an empty
+        # component_reference so process_transformation encodes as
+        # InputTypes=None, OutputTypes=None — matching the capability's
+        # TransportEmpty declaration.
         steps.append(self._transport_step(
             builder=builder,
             shuttle=shuttle,
             target_resource_iri=current_location.resource_iri,
-            component_reference=component_reference,
+            component_reference="",
             depends_on=None,
         ))
 
@@ -353,11 +358,14 @@ class PreProcessPlanner:
         store_pos = self.transport.handoff_position(store_destination.resource_iri)
 
         # 1) Move shuttle to the target's handoff zone.
+        # Shuttle is EMPTY here too — the finished part is still on the
+        # target; the shuttle goes to pick it up. See the matching comment
+        # in plan() for why component_reference is empty on fetch legs.
         steps.append(self._transport_step(
             builder=builder,
             shuttle=shuttle,
             target_resource_iri=target.resource_iri,
-            component_reference=component_reference,
+            component_reference="",
             depends_on=None,
         ))
 

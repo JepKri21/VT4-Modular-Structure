@@ -23,12 +23,14 @@ submodels:
         dk: "Transportoperation"
     ProcessTransformations:
       TransportEmpty:
+        # Empty leg: shuttle moving with no cargo. Use an empty list (not
+        # [null]) so the matcher's "both sides empty" branch fires —
+        # [null] would parse as a one-element list and never match an
+        # empty CMD.
         InputTypes:
-          ComponentTypeReference:
-            - null
+          ComponentTypeReference: []
         OutputTypes:
-          ComponentTypeReference:
-            - null
+          ComponentTypeReference: []
       TransportBottomCover:
         InputTypes:
           ComponentTypeReference:
