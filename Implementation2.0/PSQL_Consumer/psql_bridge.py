@@ -1,10 +1,24 @@
 """MQTT → Postgres bridge for alarms and performance metrics.
 
-Subscribes to:
-  - <line>/+/Alarms                       station-side AlarmsMessage
+At startup the bridge walks the AAS server (`AAS_BASE` env var, default
+http://localhost:8081) for every shell under `RESOURCE_IRI_PREFIX`. For
+each shell it reads the Communication submodel and pulls:
+
+  - `MQTT.ProductionLinePrefix`         e.g. "AAUSmartLab/ProductionLine1"
+  - `MQTT.Suffixes.{StateSuffix,        e.g. "PackMLState", "JobResult",
+                    JobResultSuffix,         "Alarms", "InventoryLevel"
+                    AlarmSuffix,
+                    InventoryLevelSuffix}`
+
+Concrete subscription filters are built from those, e.g.
+`AAUSmartLab/ProductionLine1/Drilling_<uuid>/PackMLState/+`. There are no
+hardcoded suffix strings — change Communication.yaml and re-run, the
+bridge picks it up.
+
+Controller-side topics are still hardcoded (they don't live on any
+resource's Communication submodel):
+
   - <line>/Controller/Alarms              controller-side ControllerAlarmMessage
-  - <line>/+/State/+                      per-actor StateMessage
-  - <line>/+/JobResult/+                  per-actor JobResultMessage
   - <line>/Controller/OrderCompleted      per-order OrderCompletedMessage
 
 Writes to the unified `alarms` table plus three metrics tables
@@ -16,15 +30,18 @@ Run as a long-lived process alongside the broker and the line controller:
     python Implementation2.0/PSQL_Consumer/psql_bridge.py
 """
 
+import base64
 import json
 import os
 import re
 import sys
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 
 import paho.mqtt.client as mqtt
 import psycopg2
+import requests
 
 # Allow importing MessageStructure from the shared classes module.
 # psql_bridge.py lives at Implementation2.0/PSQL_Consumer/, so its
@@ -40,26 +57,37 @@ MQTT_PORT = int(os.environ.get("MQTT_PORT", "1883"))
 LINE_ID = os.environ.get("LINE_ID", "ProductionLine1")
 BASE_TOPIC = f"AAUSmartLab/{LINE_ID}"
 
-# Station alarms: AAUSmartLab/<LINE_ID>/<resource_id>/Alarms
-# Controller alarms: AAUSmartLab/<LINE_ID>/Controller/Alarms
-# Both match the same wildcard; we route inside on_message.
-ALARM_TOPIC_FILTER = f"{BASE_TOPIC}/+/Alarms"
+AAS_BASE = os.environ.get("AAS_BASE", "http://localhost:8081")
+RESOURCE_IRI_PREFIX = os.environ.get(
+    "RESOURCE_IRI_PREFIX", "https://aausmartlab.org/Shells/Resources/"
+)
+
+# Controller-side topics: hardcoded because they don't live on any
+# resource's Communication submodel.
 CONTROLLER_ALARM_TOPIC = f"{BASE_TOPIC}/Controller/Alarms"
-
-# Per-actor metrics streams (topic shape: <line>/<resource>/<channel>/<actor>).
-STATE_TOPIC_FILTER = f"{BASE_TOPIC}/+/State/+"
-JOBRESULT_TOPIC_FILTER = f"{BASE_TOPIC}/+/JobResult/+"
-
-# Order-level completion events from the line controller.
 ORDER_COMPLETED_TOPIC = f"{BASE_TOPIC}/Controller/OrderCompleted"
 
-# Per-resource inventory snapshots — published by stations that have local
-# storage (Storage_*, BCPCBFuseAssembler_*, etc.). Powers MRP inventory.
-INVENTORY_TOPIC_FILTER = f"{BASE_TOPIC}/+/InventoryLevel"
+# Suffix idShort -> classification key. Used when walking each resource's
+# Communication.MQTT.Suffixes collection. If a suffix isn't in this map the
+# bridge skips it (e.g. CommandSuffix is controller→station, not consumed
+# here). Keys here MUST match the idShort fields defined in the
+# communication submodel template.
+SUFFIX_KIND_MAP: dict[str, str] = {
+    "StateSuffix": "state",
+    "JobResultSuffix": "job_result",
+    "AlarmSuffix": "station_alarm",
+    "InventoryLevelSuffix": "inventory",
+}
 
 DATABASE_URL = os.environ.get(
     "DATABASE_URL", "postgresql://made:made@localhost:5432/made_app"
 )
+
+# How often to re-walk the AAS for newly-uploaded or removed resources.
+# Each refresh is one HTTP list call + one HTTP submodel call per resource
+# — cheap enough to do every 30s at typical lab scale. Drop to 0 to
+# disable and require a bridge restart for changes (not recommended).
+DISCOVERY_INTERVAL_S = int(os.environ.get("DISCOVERY_INTERVAL_S", "30"))
 
 SCHEMA_FILE = Path(__file__).resolve().parent / "schema.sql"
 
@@ -436,47 +464,213 @@ def handle_order_completed(conn, topic: str, payload: dict) -> None:
 
 
 # ====== MQTT CALLBACKS ======
+# ====== AAS-DRIVEN RESOURCE DISCOVERY ======
+
+# Populated by discover_resources() at startup. Maps each subscription
+# filter (which may include `+` actor wildcards) to the bridge's internal
+# kind. _classify_topic walks this dict on every incoming message so we
+# never hardcode suffix strings like "PackMLState" or "JobResult".
+_topic_routes: dict[str, str] = {}
+
+
+def _b64url(value: str) -> str:
+    """BaSyx encodes shell/submodel IDs with URL-safe base64, no padding."""
+    return base64.urlsafe_b64encode(value.encode("utf-8")).decode().rstrip("=")
+
+
+def _walk_for_idshort(value, idshort):
+    """Depth-first scan for the first SubmodelElement whose idShort matches."""
+    if isinstance(value, dict):
+        if value.get("idShort") == idshort:
+            return value
+        for child in value.values():
+            found = _walk_for_idshort(child, idshort)
+            if found is not None:
+                return found
+    elif isinstance(value, list):
+        for child in value:
+            found = _walk_for_idshort(child, idshort)
+            if found is not None:
+                return found
+    return None
+
+
+def _read_property_value(elements, idshort: str) -> str | None:
+    el = _walk_for_idshort(elements, idshort)
+    if not el:
+        return None
+    val = el.get("value")
+    return val if isinstance(val, str) and val else None
+
+
+def _fetch_resource_shells() -> list[str]:
+    """Every shell IRI on the AAS server starting with RESOURCE_IRI_PREFIX."""
+    try:
+        resp = requests.get(f"{AAS_BASE}/shells?limit=1000", timeout=5)
+        resp.raise_for_status()
+        data = resp.json()
+    except Exception as exc:
+        print(f"[discover] failed to list shells from {AAS_BASE}: {exc}")
+        return []
+    shells = data.get("result") or (data if isinstance(data, list) else [])
+    return [
+        s["id"] for s in shells
+        if isinstance(s, dict)
+        and isinstance(s.get("id"), str)
+        and s["id"].startswith(RESOURCE_IRI_PREFIX)
+    ]
+
+
+def discover_resources() -> dict[str, str]:
+    """Read each Resource's Communication submodel and build the
+    topic-filter -> kind map. Populates and returns `_topic_routes`.
+    """
+    _topic_routes.clear()
+    for iri in _fetch_resource_shells():
+        sm_iri = f"{iri}/Communication"
+        try:
+            resp = requests.get(
+                f"{AAS_BASE}/submodels/{_b64url(sm_iri)}", timeout=5
+            )
+            if resp.status_code != 200:
+                print(
+                    f"[discover] {iri}: no Communication submodel "
+                    f"(HTTP {resp.status_code})"
+                )
+                continue
+            sm = resp.json()
+        except Exception as exc:
+            print(f"[discover] {iri}: failed to fetch Communication: {exc}")
+            continue
+
+        elements = sm.get("submodelElements", []) or []
+        prefix = _read_property_value(elements, "ProductionLinePrefix")
+        suffixes_el = _walk_for_idshort(elements, "Suffixes")
+        if not prefix or not suffixes_el:
+            print(
+                f"[discover] {iri}: missing ProductionLinePrefix or "
+                f"Suffixes — skipping"
+            )
+            continue
+
+        resource_id_short = iri.rstrip("/").rsplit("/", 1)[-1]
+        for child in suffixes_el.get("value", []) or []:
+            suffix_idshort = child.get("idShort")
+            suffix_value = child.get("value")
+            kind = SUFFIX_KIND_MAP.get(suffix_idshort)
+            if not kind or not isinstance(suffix_value, str) or not suffix_value:
+                continue
+            # State + JobResult are per-actor, so the filter ends with /+.
+            # Alarms + InventoryLevel are resource-level, no actor segment.
+            base = f"{prefix}/{resource_id_short}/{suffix_value}"
+            if kind in ("state", "job_result"):
+                _topic_routes[f"{base}/+"] = kind
+            else:
+                _topic_routes[base] = kind
+
+    print(f"[discover] {len(_topic_routes)} topic filter(s) registered:")
+    for filt, kind in _topic_routes.items():
+        print(f"  {filt}  -> {kind}")
+    return _topic_routes
+
+
+# Track currently-subscribed per-resource filters so we can diff on each
+# re-discovery and add/remove only the deltas.
+_subscribed: set[str] = set()
+_subscribe_lock = threading.Lock()
+
+
+def resync_subscriptions(client: mqtt.Client) -> None:
+    """Re-run AAS discovery and diff against current subscriptions.
+
+    Subscribes to any new filters and unsubscribes from any that
+    disappeared (resource deleted from the AAS or removed from the line).
+    Safe to call repeatedly; paho is fine with concurrent (un)subscribe
+    from any thread.
+    """
+    with _subscribe_lock:
+        before = set(_subscribed)
+        discover_resources()
+        after = set(_topic_routes.keys())
+
+        added = after - before
+        removed = before - after
+
+        for filt in added:
+            client.subscribe(filt)
+            _subscribed.add(filt)
+            print(f"[discover] +sub {filt}")
+        for filt in removed:
+            client.unsubscribe(filt)
+            _subscribed.discard(filt)
+            print(f"[discover] -sub {filt}")
+        if not added and not removed:
+            # Quiet path: nothing changed since last sweep.
+            pass
+
+
+def _discovery_loop(client: mqtt.Client, stop_event: threading.Event) -> None:
+    """Background re-discovery tick. Picks up resources added/removed on
+    the AAS server while the bridge is running."""
+    while not stop_event.wait(DISCOVERY_INTERVAL_S):
+        try:
+            resync_subscriptions(client)
+        except Exception as exc:
+            print(f"[discover] resync failed: {exc}")
+
+
 def on_connect(client, userdata, flags, reason_code, properties=None):
     if reason_code != 0:
         print(f"[MQTT] connect failed: rc={reason_code}")
         return
     print(f"[MQTT] connected to {MQTT_BROKER}:{MQTT_PORT}")
-    for f in (
-        ALARM_TOPIC_FILTER,
-        STATE_TOPIC_FILTER,
-        JOBRESULT_TOPIC_FILTER,
-        ORDER_COMPLETED_TOPIC,
-        INVENTORY_TOPIC_FILTER,
-    ):
-        client.subscribe(f)
-        print(f"[MQTT] subscribed to {f}")
+    for filt in _topic_routes:
+        client.subscribe(filt)
+        _subscribed.add(filt)
+        print(f"[MQTT] subscribed to {filt}")
+    for filt in (CONTROLLER_ALARM_TOPIC, ORDER_COMPLETED_TOPIC):
+        client.subscribe(filt)
+        print(f"[MQTT] subscribed to {filt}")
 
 
 def _classify_topic(topic: str) -> str:
     """Return one of: 'controller_alarm', 'station_alarm', 'state',
-    'job_result', 'order_completed', 'inventory', or 'unknown'."""
+    'job_result', 'order_completed', 'inventory', or 'unknown'.
+
+    Per-resource classification is driven by `_topic_routes`, populated at
+    startup from each Communication submodel. No suffix strings are
+    hardcoded — change the Communication YAML and a re-run picks it up.
+    """
     if topic == ORDER_COMPLETED_TOPIC:
         return "order_completed"
     if topic == CONTROLLER_ALARM_TOPIC:
         return "controller_alarm"
-    parts = topic.split("/")
-    if parts[-1] == "Alarms":
-        return "station_alarm"
-    if parts[-1] == "InventoryLevel":
-        return "inventory"
-    # Per-actor channels have shape: ...<resource>/<channel>/<actor>
-    if len(parts) >= 2:
-        channel = parts[-2]
-        if channel == "State":
-            return "state"
-        if channel == "JobResult":
-            return "job_result"
+    for filt, kind in _topic_routes.items():
+        if mqtt.topic_matches_sub(filt, topic):
+            return kind
     return "unknown"
 
 
+def _get_live_conn(userdata) -> psycopg2.extensions.connection:
+    """Return a usable connection. Reconnects if the cached one is dead.
+
+    Postgres restarts (or long-idle connections being kicked) mark the
+    cached connection as `.closed != 0`; psycopg2 then raises
+    `InterfaceError: connection already closed` on the next operation.
+    Re-establishing transparently keeps the bridge running across DB
+    blips without restart.
+    """
+    conn = userdata.get("conn")
+    if conn is None or getattr(conn, "closed", 1):
+        print("[DB] (re)connecting…")
+        conn = connect_db()
+        userdata["conn"] = conn
+    return conn
+
+
 def on_message(client, userdata, msg):
-    conn: psycopg2.extensions.connection = userdata["conn"]
     try:
+        conn = _get_live_conn(userdata)
         payload = json.loads(msg.payload.decode())
         kind = _classify_topic(msg.topic)
         if kind == "controller_alarm":
@@ -493,11 +687,18 @@ def on_message(client, userdata, msg):
             handle_inventory(conn, msg.topic, payload)
         else:
             print(f"[WARN] unhandled topic shape: {msg.topic}")
+    except (psycopg2.InterfaceError, psycopg2.OperationalError) as exc:
+        # Connection-level failure — drop the cached conn so the NEXT
+        # message rebuilds it. This message is lost but the bridge stays
+        # alive.
+        print(f"[DB] {type(exc).__name__} on {msg.topic}: {exc} — will reconnect on next message")
+        userdata["conn"] = None
     except Exception as exc:
-        # Don't crash the loop on a malformed payload — log and continue.
+        # Anything else (malformed payload, schema mismatch, …) is a
+        # per-message bug; log + roll back the transaction.
         print(f"[ERROR] {type(exc).__name__} on {msg.topic}: {exc}")
         try:
-            conn.rollback()
+            userdata.get("conn") and userdata["conn"].rollback()
         except Exception:
             pass
 
@@ -506,6 +707,10 @@ def on_message(client, userdata, msg):
 def main() -> None:
     conn = connect_db()
     ensure_schema(conn)
+
+    # Initial discovery before MQTT connect so on_connect has something to
+    # subscribe to.
+    discover_resources()
 
     client = mqtt.Client(
         client_id="MES_AlarmBridge",
@@ -516,12 +721,30 @@ def main() -> None:
     client.on_message = on_message
     client.connect(MQTT_BROKER, MQTT_PORT, keepalive=60)
 
+    # Background re-discovery: picks up resources added or removed on the
+    # AAS while the bridge is running. Each tick walks the AAS once and
+    # subscribes/unsubscribes deltas — no full resubscribe.
+    stop_event = threading.Event()
+    discovery_thread: threading.Thread | None = None
+    if DISCOVERY_INTERVAL_S > 0:
+        discovery_thread = threading.Thread(
+            target=_discovery_loop,
+            args=(client, stop_event),
+            name="aas-discovery",
+            daemon=True,
+        )
+        discovery_thread.start()
+        print(f"[discover] re-sync every {DISCOVERY_INTERVAL_S}s")
+
     print("[bridge] running — Ctrl+C to stop")
     try:
         client.loop_forever()
     except KeyboardInterrupt:
         print("\n[bridge] stopping")
     finally:
+        stop_event.set()
+        if discovery_thread is not None:
+            discovery_thread.join(timeout=2)
         client.disconnect()
         conn.close()
 

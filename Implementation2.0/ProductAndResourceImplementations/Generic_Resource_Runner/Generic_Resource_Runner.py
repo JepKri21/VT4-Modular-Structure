@@ -193,7 +193,7 @@ class GenericResourceExecutor:
             machine = actor_entry["machine"]
             state_msg = MS.StateMessage(
                 timestamp=datetime.now(),
-                resource_id=self.resource_shell_id,
+                resource_id=self.shell_id_short,
                 state=machine.state
             )
             self.mqtt_client.publish(
@@ -225,7 +225,10 @@ class GenericResourceExecutor:
                 actor_name=actor_name,
                 mqtt_client=self.mqtt_client,
                 suffixes=self.parsed_resource["Communication"].suffixes,
-                resource_id=self.resource_shell_id,
+                # All MQTT messages carry the SHORT id (not the full IRI) so
+                # downstream metrics group cleanly. The full IRI lives in
+                # the topic path; consumers can reconstruct it if needed.
+                resource_id=self.shell_id_short,
                 inventory_manager=self.inventory_manager
             )
 
