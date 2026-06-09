@@ -215,4 +215,4 @@ export const ZONES_COMPATIBLE = (a: ZoneType, b: ZoneType): boolean => {
 // 200 mm was too coarse for typical AAU line layouts where connection
 // points sit at sub-100 mm offsets within shuttle frames; 50 mm gives
 // fine-enough placement without making the grid visually noisy.
-export const MM_PER_GRID = 50;
+export const MM_PER_GRID = 25;

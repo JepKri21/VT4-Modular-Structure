@@ -106,20 +106,20 @@ submodels:
       YPos: 0.0
     ResourceGeometry:
       Points:
-        - { XPos: -150.0, YPos: -300.0 }
-        - { XPos: 150.0, YPos: -300.0 }
-        - { XPos: 300.0, YPos: -150.0 }
-        - { XPos: 300.0, YPos: 150.0 }
-        - { XPos: 150.0, YPos: 300.0 }
-        - { XPos: -150.0, YPos: 300.0 }
-        - { XPos: -300.0, YPos: 150.0 }
-        - { XPos: -300.0, YPos: -150.0 }
+        - { XPos: -75.0, YPos: -150.0 }
+        - { XPos: 75.0, YPos: -150.0 }
+        - { XPos: 150.0, YPos: -75.0 }
+        - { XPos: 150.0, YPos: 75.0 }
+        - { XPos: 75.0, YPos: 150.0 }
+        - { XPos: -75.0, YPos: 150.0 }
+        - { XPos: -150.0, YPos: 75.0 }
+        - { XPos: -150.0, YPos: -75.0 }
     InOutputZones:
       - Points:
-          - { XPos: 350.0, YPos: 350.0 }
-          - { XPos: 350.0, YPos: 350.0 }
-          - { XPos: 350.0, YPos: 550.0 }
-          - { XPos: -350.0, YPos: 550.0 }
+          - { XPos: -175.0, YPos: 175.0 }
+          - { XPos: 175.0, YPos: 175.0 }
+          - { XPos: 175.0, YPos: 375.0 }
+          - { XPos: -175.0, YPos: 375.0 }
 
   Communication:
     MQTT:
