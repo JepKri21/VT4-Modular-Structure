@@ -125,8 +125,12 @@ async def _process_single_product(
         # Step 2: Load and merge preset
         merged_preset = preset_loader.load_and_merge(product_name, configuration, order_number)
 
-        # Step 3: Upload all shells to BaSyx
-        shell_iris, final_iri = shell_uploader.upload_all(merged_preset, order_number)
+        # Step 3: Upload all shells to BaSyx (fuse sub-assembly expanded to the
+        # number of fuses ordered, so production reflects the webstore selection)
+        fuse_count = preset_loader.fuse_count(configuration)
+        shell_iris, final_iri = shell_uploader.upload_all(
+            merged_preset, order_number, fuse_count=fuse_count
+        )
         order_store.update_shell_iris(order_number, shell_iris)
         log.info("Shells uploaded. Final product IRI: %s", final_iri)
 

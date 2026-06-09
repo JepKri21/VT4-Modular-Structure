@@ -25,6 +25,7 @@ interface BomSlot {
   description: string;
   required: boolean;
   categoryFilter: string;
+  minQuantity?: number;
   maxQuantity?: number;
 }
 
@@ -115,6 +116,7 @@ function typeLabel(component: ComponentType): string {
 interface TypeCardProps {
   component: ComponentType;
   available: number;
+  minQuantity?: number;
   maxQuantity?: number;
   isSelected: boolean;
   quantity: number;
@@ -128,6 +130,7 @@ interface TypeCardProps {
 function TypeCard({
   component,
   available,
+  minQuantity = 1,
   maxQuantity,
   isSelected,
   quantity,
@@ -179,12 +182,12 @@ function TypeCard({
 
       {isSelected ? (
         <div className="flex flex-col gap-2">
-          {Math.min(maxQuantity ?? available, available) > 1 && (
+          {Math.min(maxQuantity ?? available, available) > minQuantity && (
             <div className="flex items-center gap-2 bg-primary/10 rounded-md px-2 py-1">
               <button
                 type="button"
-                onClick={() => onQuantityChange(Math.max(1, quantity - 1))}
-                disabled={quantity <= 1 || selecting}
+                onClick={() => onQuantityChange(Math.max(minQuantity, quantity - 1))}
+                disabled={quantity <= minQuantity || selecting}
                 className="p-1 hover:bg-primary/20 rounded disabled:opacity-50 transition-colors"
               >
                 <Minus className="w-3.5 h-3.5" />
@@ -736,6 +739,7 @@ export default function VirtualStorePage() {
                                 component={component}
                                 diffKeys={diffKeys}
                                 available={Math.max(0, (component.quantityAllocated ?? component.quantityAvailable ?? 0) - (component.quantityReserved ?? 0) - (otherAllocated.get(component.id) ?? 0))}
+                                minQuantity={slot.minQuantity}
                                 maxQuantity={slot.maxQuantity}
                                 isSelected={selectedForSlot?.component.id === component.id}
                                 quantity={selectedForSlot?.component.id === component.id ? selectedForSlot.quantity : 1}

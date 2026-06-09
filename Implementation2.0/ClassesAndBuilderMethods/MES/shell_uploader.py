@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "BaSyx_AAS_Generator"))
 from form_to_aas import build_environment
 
 import basyx_client
+import preset_loader
 
 log = logging.getLogger(__name__)
 
@@ -46,6 +47,7 @@ def _inject_order_number(preset: dict, order_id: str) -> dict:
 def upload_all(
     final_preset: dict,
     order_id: str,
+    fuse_count: int = 1,
     basyx_url: str = basyx_client.BASYX_URL,
 ) -> tuple[dict[str, str], str]:
     """
@@ -54,6 +56,8 @@ def upload_all(
     Args:
         final_preset: merged final product preset dict
         order_id: order ID stored as Documentation/ProductionIdentification/OrderNumber
+        fuse_count: number of fuses ordered — expands the fuse sub-assembly so
+            the uploaded shell carries one assemble step per physical fuse
         basyx_url: BaSyx server URL
 
     Returns:
@@ -64,7 +68,8 @@ def upload_all(
 
     # Upload sub-assembly shells (leaf first)
     for preset_name in SUB_ASSEMBLY_PRESET_NAMES:
-        preset = _inject_order_number(_load_preset(preset_name), order_id)
+        raw_preset = preset_loader.expand_fuse_assembly(_load_preset(preset_name), fuse_count)
+        preset = _inject_order_number(raw_preset, order_id)
         env, iri = build_environment(preset)
         asset_name = preset.get("asset_name", preset_name)
         try:
