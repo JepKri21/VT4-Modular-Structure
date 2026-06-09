@@ -186,6 +186,27 @@ class GenericResourceExecutor:
         except Exception as e:
             print(f"[MQTT HANDLE_COMMAND ERROR] {e}")
 
+            try:
+                job_result_message = MS.JobResultMessage(
+                    timestamp=datetime.now(),
+                    resource_id=self.resource_shell_id,
+                    order_id=getattr(msg, "order_id", None),
+                    job_id=getattr(msg, "job_id", None),
+                    ideal_cycle_time_ms=0,
+                    actual_cycle_time_ms=0,
+                    process_transformation=getattr(msg, "process_transformation", None),
+                    result=MS.Result.INCOMPLETE,
+                    quality=MS.Quality.NA,
+                    output_parameters=[],
+                )
+
+                self.mqtt_client.publish(
+                    f"{self.parsed_resource['Communication'].suffixes.job_result_suffix}/{msg.actor_name}",
+                    job_result_message,
+                )
+            except Exception as publish_exc:
+                print(f"[MQTT HANDLE_COMMAND RESULT ERROR] {publish_exc}")
+
     def handle_request(self, msg: MS.RequestMessage):
         print(f"[{self.resource_shell_id}] Info request for {msg.requested_topic_update}")
         suffixes = self.parsed_resource["Communication"].suffixes
