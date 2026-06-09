@@ -185,6 +185,26 @@ class GenericResourceExecutor:
 
         except Exception as e:
             print(f"[MQTT HANDLE_COMMAND ERROR] {e}")
+            try:
+                job_result_message = MS.JobResultMessage(
+                    timestamp=datetime.now(),
+                    resource_id=self.resource_shell_id,
+                    order_id=getattr(msg, "order_id", None),
+                    job_id=getattr(msg, "job_id", None),
+                    ideal_cycle_time_ms=0,
+                    actual_cycle_time_ms=0,
+                    process_transformation=getattr(msg, "process_transformation", None),
+                    result=MS.Result.INCOMPLETE,
+                    quality=MS.Quality.NA,
+                    output_parameters=[],
+                )
+
+                self.mqtt_client.publish(
+                    f"{self.parsed_resource['Communication'].suffixes.job_result_suffix}/{msg.actor_name}",
+                    job_result_message,
+                )
+            except Exception as publish_exc:
+                print(f"[MQTT HANDLE_COMMAND RESULT ERROR] {publish_exc}")
 
     def handle_request(self, msg: MS.RequestMessage):
         print(f"[{self.resource_shell_id}] Info request for {msg.requested_topic_update}")
@@ -193,7 +213,7 @@ class GenericResourceExecutor:
             machine = actor_entry["machine"]
             state_msg = MS.StateMessage(
                 timestamp=datetime.now(),
-                resource_id=self.resource_shell_id,
+                resource_id=self.shell_id_short,
                 state=machine.state
             )
             self.mqtt_client.publish(
@@ -225,7 +245,10 @@ class GenericResourceExecutor:
                 actor_name=actor_name,
                 mqtt_client=self.mqtt_client,
                 suffixes=self.parsed_resource["Communication"].suffixes,
-                resource_id=self.resource_shell_id,
+                # All MQTT messages carry the SHORT id (not the full IRI) so
+                # downstream metrics group cleanly. The full IRI lives in
+                # the topic path; consumers can reconstruct it if needed.
+                resource_id=self.shell_id_short,
                 inventory_manager=self.inventory_manager
             )
 
