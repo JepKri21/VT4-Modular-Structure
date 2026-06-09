@@ -54,8 +54,8 @@ submodels:
 
   Communication:
     MQTT:
-      ProductionLinePrefix: "AAUSmartLab/Line1"
-      BrokerID: "mqtt.aausmartlab.org"
+      ProductionLinePrefix: "AAUSmartLab/ProductionLine1"
+      BrokerID: "localhost"
       BrokerPort: 1883
       Suffixes:
         CommandSuffix: "CMD"

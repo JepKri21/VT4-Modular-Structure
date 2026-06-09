@@ -342,14 +342,31 @@ class ResourceManager:
                 # default structure
                 result[name] = {"CapabilitySubmodelReference": None,"CapabilityReference": None}
 
-                # look inside this element's "value" list, this gives us the actors, skill triggers and submodel reference
+                # Walk the skill's inner elements. We read up to TWO inline
+                # fields here:
+                #   - CapabilitySubmodelReference: link to the capability
+                #     submodel (always a ReferenceElement → keys[0].value)
+                #   - CapabilityTypeReference: the capability identity IRI
+                #     (new templates embed it inline so we don't have to
+                #     fetch the capability submodel just to read it). May
+                #     be a ReferenceElement OR a plain Property — handle
+                #     both shapes.
                 for item in skill.get("value", []):
-                    if item.get("idShort") == "CapabilitySubmodelReference":
-                        # extract the actual reference value
-                        keys = item.get("value", {}).get("keys", [])
-                        #If there is a value, then we put it into the result
+                    item_id = item.get("idShort")
+                    if item_id == "CapabilitySubmodelReference":
+                        keys = (item.get("value") or {}).get("keys", []) if isinstance(item.get("value"), dict) else []
                         if keys:
                             result[name]["CapabilitySubmodelReference"] = keys[0].get("value")
+                    elif item_id == "CapabilityTypeReference":
+                        value = item.get("value")
+                        # ReferenceElement → {"keys": [{"value": "..."}], ...}
+                        if isinstance(value, dict):
+                            keys = value.get("keys", [])
+                            if keys:
+                                result[name]["CapabilityReference"] = keys[0].get("value")
+                        # Property → plain string
+                        elif isinstance(value, str) and value:
+                            result[name]["CapabilityReference"] = value
         else:
             #There was a problem finding the id or bad connection
             print(f"There was a problem retrieving the Skills submodel: Response Status Code {response.status_code}")
@@ -362,6 +379,13 @@ class ResourceManager:
 
         #For each skill we want to look at the capability submodel
         for skill_name, skill_data in result.items():
+            # Fast path: new templates embed CapabilityTypeReference inside
+            # the Skills submodel itself. If we already have it, skip the
+            # extra HTTP fetch — and tolerate a 404 on the capability
+            # submodel, since we don't need its identity any more.
+            if skill_data.get("CapabilityReference"):
+                continue
+
             #Then we extract the CapabilitySubmodelReference from the skill
             capability_submodel_reference = skill_data.get("CapabilitySubmodelReference")
 

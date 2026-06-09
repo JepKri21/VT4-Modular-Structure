@@ -139,7 +139,11 @@ def parse_line_config(submodel: dict) -> LineConfig:
             y=_read_float(gloc, "YPos"),
             theta=_read_int(gloc, "ThetaAngle"),
         )
-        locations[id_short] = loc
+        # Key by full IRI — that's the unambiguous identifier and matches
+        # what every caller of handoff_position / resource_position now passes
+        # via ResourceEndpoint.resource_iri. id_short is kept on the value
+        # and in iri_to_id for the reverse lookup.
+        locations[iri] = loc
         iri_to_id[iri] = id_short
 
     # ConnectionPoints
@@ -451,11 +455,12 @@ class TransportPlanner:
 
     # ── Position lookup ──────────────────────────────────────────────────────
 
-    def handoff_position(self, resource_id: str) -> tuple[float, float]:
+    def handoff_position(self, resource_iri: str) -> tuple[float, float]:
         """Global (x, y) where a shuttle should sit to handoff with a resource.
 
         Args:
-            resource_id: idShort of the resource (e.g. "Drilling_12345678").
+            resource_iri: full AAS shell IRI of the resource (e.g.
+                "https://aausmartlab.org/Shells/Resources/Drilling_<uuid>").
 
         Returns:
             (x, y) in shuttle global coordinates.
@@ -463,22 +468,22 @@ class TransportPlanner:
         Raises:
             ValueError: if the resource is unknown or has no connection point.
         """
-        loc = self.config.locations.get(resource_id)
+        loc = self.config.locations.get(resource_iri)
         if loc is None:
-            raise ValueError(f"Resource '{resource_id}' not in line configuration")
+            raise ValueError(f"Resource '{resource_iri}' not in line configuration")
 
         for cp in self.config.connection_points:
             for cr in cp.connected:
                 if cr.resource_iri == loc.resource_iri:
                     return (cp.global_x, cp.global_y)
 
-        raise ValueError(f"No connection point connects to resource '{resource_id}'")
+        raise ValueError(f"No connection point connects to resource '{resource_iri}'")
 
-    def resource_position(self, resource_id: str) -> tuple[float, float]:
+    def resource_position(self, resource_iri: str) -> tuple[float, float]:
         """Global (x, y) of the resource itself (its center, not the handoff zone)."""
-        loc = self.config.locations.get(resource_id)
+        loc = self.config.locations.get(resource_iri)
         if loc is None:
-            raise ValueError(f"Resource '{resource_id}' not in line configuration")
+            raise ValueError(f"Resource '{resource_iri}' not in line configuration")
         return (loc.x, loc.y)
 
     # ── Command-parameter builder ────────────────────────────────────────────

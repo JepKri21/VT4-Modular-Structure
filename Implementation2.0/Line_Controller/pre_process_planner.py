@@ -41,12 +41,16 @@ if TYPE_CHECKING:
 class ResourceEndpoint:
     """A (resource, actor) pair plus whether the resource offers a Handoff skill.
 
+    `resource_id` is the short id (last URI segment) used in MQTT topics.
+    `resource_iri` is the full AAS shell IRI — used to look up positions in
+    the Line Configuration submodel, which is keyed by IRI.
     `has_handoff` is the capability check the matcher does upstream; the planner
     only consumes it. Shuttles typically have `has_handoff=False`.
     """
     resource_id: str
     actor_name: str
     has_handoff: bool
+    resource_iri: str = ""
 
 
 # A cargo transfer is (resource_id, actor_name, new_cargo_or_None) applied
@@ -232,8 +236,8 @@ class PreProcessPlanner:
         builder = _StepIdBuilder(bop_step_id)
         steps: list[PreProcessStep] = []
 
-        storage_pos = self.transport.handoff_position(current_location.resource_id)
-        target_pos = self.transport.handoff_position(target.resource_id)
+        storage_pos = self.transport.handoff_position(current_location.resource_iri)
+        target_pos = self.transport.handoff_position(target.resource_iri)
 
         # 1) Move shuttle to the source handoff zone.
         steps.append(self._transport_step(
@@ -345,8 +349,8 @@ class PreProcessPlanner:
         builder = _StepIdBuilder(f"{bop_step_id}-post")
         steps: list[PreProcessStep] = []
 
-        target_pos = self.transport.handoff_position(target.resource_id)
-        store_pos = self.transport.handoff_position(store_destination.resource_id)
+        target_pos = self.transport.handoff_position(target.resource_iri)
+        store_pos = self.transport.handoff_position(store_destination.resource_iri)
 
         # 1) Move shuttle to the target's handoff zone.
         steps.append(self._transport_step(
@@ -436,7 +440,7 @@ class PreProcessPlanner:
         builder = _StepIdBuilder(bop_step_id)
         steps: list[PreProcessStep] = []
 
-        target_pos = self.transport.handoff_position(target.resource_id)
+        target_pos = self.transport.handoff_position(target.resource_iri)
 
         # 1) Move the shuttle (already carrying cargo) to the target.
         steps.append(self._transport_step(

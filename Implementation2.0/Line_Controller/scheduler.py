@@ -247,11 +247,21 @@ class Scheduler:
             print(f"[reserve] AAS PATCH failed for {slot_id}: {exc}")
 
     def _release_order_reservations(self, order_id: str) -> None:
-        freed = [iri for iri, entry in self._reserved_instances.items() if entry[0] == order_id]
-        for iri in freed:
+        # Capture full entries before deletion so we can clear SlotReserved
+        # on the AAS for each freed slot. Without this, an order that ends
+        # (success or failure) leaves SlotReserved=true forever and the
+        # matcher will silently skip that slot on every future order.
+        freed_entries = [
+            (iri, entry) for iri, entry in self._reserved_instances.items()
+            if entry[0] == order_id
+        ]
+        for iri, _entry in freed_entries:
             del self._reserved_instances[iri]
-        if freed:
-            print(f"[reserve] order={order_id} released {len(freed)} instance reservation(s)")
+        for _iri, (_owner, shell_id, inv_name, slot) in freed_entries:
+            if shell_id and inv_name and slot:
+                self._patch_slot_reserved(shell_id, inv_name, slot, False)
+        if freed_entries:
+            print(f"[reserve] order={order_id} released {len(freed_entries)} instance reservation(s)")
 
     # ── Public entry point ──────────────────────────────────────────────────
 
@@ -493,6 +503,7 @@ class Scheduler:
             resource_id=ResourceManager.topic_id_for_iri(target_iri),
             actor_name=target_actors[0],
             has_handoff=self.rm.has_handoff(target_iri),
+            resource_iri=target_iri,
         )
         print(f"[bop] target  = {target}")
 
@@ -690,6 +701,7 @@ class Scheduler:
                     resource_id=holder_topic,
                     actor_name=holder_actor,
                     has_handoff=True,
+                    resource_iri=holder_iri,
                 )
                 shuttle, shuttle_iri = self._pick_shuttle(
                     component_ref,
@@ -1271,6 +1283,7 @@ class Scheduler:
             resource_id=ResourceManager.topic_id_for_iri(storage_iri),
             actor_name=actors[0],
             has_handoff=self.rm.has_handoff(storage_iri),
+            resource_iri=storage_iri,
         )
         return endpoint, storage_iri, picked_instance
 
@@ -1310,6 +1323,7 @@ class Scheduler:
                 resource_id=topic,
                 actor_name=actor,
                 has_handoff=self.rm.has_handoff(shuttle_iri),
+                resource_iri=shuttle_iri,
             )
             return endpoint, shuttle_iri
         return None
@@ -1378,6 +1392,7 @@ class Scheduler:
                     resource_id=topic,
                     actor_name=actor,
                     has_handoff=self.rm.has_handoff(shuttle_iri),
+                    resource_iri=shuttle_iri,
                 )
                 return endpoint, shuttle_iri
 
@@ -1507,6 +1522,7 @@ class Scheduler:
             resource_id=holder_topic,
             actor_name=holder_actor,
             has_handoff=self.rm.has_handoff(holder_iri),
+            resource_iri=holder_iri,
         )
         print(f"[finalize] product currently held by {holder}")
 
@@ -1520,6 +1536,7 @@ class Scheduler:
             resource_id=store_topic,
             actor_name=store_actors[0],
             has_handoff=self.rm.has_handoff(store_iri),
+            resource_iri=store_iri,
         )
 
         # ── 3. Pick a shuttle (skip if the shuttle itself is the holder) ───

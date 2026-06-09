@@ -54,13 +54,35 @@ submodels:
     BCPCBFuseAssembly:
       CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/BCPCBFuseAssembler/AssembleCapabilityOffered"
       CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Assemble"
-      SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+      SkillTriggers:
+        [
+          "START",
+          "STOP",
+          "RESET",
+          "ABORT",
+          "CLEAR",
+          "HOLD",
+          "UNHOLD",
+          "SUSPEND",
+          "UNSUSPEND",
+        ]
       Actors:
         - "KUKAManipulator"
     Handoff:
       CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/BCPCBFuseAssembler/HandoffCapabilityOffered"
       CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Handoff"
-      SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+      SkillTriggers:
+        [
+          "START",
+          "STOP",
+          "RESET",
+          "ABORT",
+          "CLEAR",
+          "HOLD",
+          "UNHOLD",
+          "SUSPEND",
+          "UNSUSPEND",
+        ]
       Actors:
         - "KUKAManipulator"
 
@@ -78,12 +100,27 @@ submodels:
       XPos: 0.0
       YPos: 0.0
     ResourceGeometry:
-      Point1: { XPos: -50.0, YPos: -50.0 }
-      Point2: { XPos:  50.0, YPos: -50.0 }
-      Point3: { XPos:  50.0, YPos:  50.0 }
-      Point4: { XPos: -50.0, YPos:  50.0 }
+      Point1: { XPos: -500.0, YPos: -500.0 }
+      Point2: { XPos: 500.0, YPos: -500.0 }
+      Point3: { XPos: 500.0, YPos: 500.0 }
+      Point4: { XPos: -500.0, YPos: 500.0 }
     InOutputZones:
-      - Point1: { XPos: -40.0, YPos:  50.0 }
-        Point2: { XPos:  40.0, YPos:  50.0 }
-        Point3: { XPos:  40.0, YPos: 130.0 }
-        Point4: { XPos: -40.0, YPos: 130.0 }
+      - Point1: { XPos: -400.0, YPos: 500.0 }
+        Point2: { XPos: 400.0, YPos: 500.0 }
+        Point3: { XPos: 400.0, YPos: 1300.0 }
+        Point4: { XPos: -400.0, YPos: 1300.0 }
+
+  Communication:
+    MQTT:
+      ProductionLinePrefix: ""
+      BrokerID: ""
+      BrokerPort: ""
+      Suffixes:
+        CommandSuffix: "CMD"
+        StateSuffix: "PackMLState"
+        JobResultSuffix: "JobResult"
+        InfoRequestSuffix: "InfoRequest"
+        ResourceAcknowledgementSuffix: "ResourceAck"
+        ControllerAcknowledgementSuffix: "ControllerAck"
+        OccupancySuffix: "Occupy"
+        InventoryLevelSuffix: "InventoryLevel"

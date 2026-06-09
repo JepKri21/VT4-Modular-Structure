@@ -42,13 +42,35 @@ submodels:
     Assemble:
       CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/AssemblySnapFit/AssembleCapabilityOffered"
       CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Assemble"
-      SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+      SkillTriggers:
+        [
+          "START",
+          "STOP",
+          "RESET",
+          "ABORT",
+          "CLEAR",
+          "HOLD",
+          "UNHOLD",
+          "SUSPEND",
+          "UNSUSPEND",
+        ]
       Actors:
         - "UR5"
     Handoff:
       CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/AssemblySnapFit/HandoffCapabilityOffered"
       CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Handoff"
-      SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+      SkillTriggers:
+        [
+          "START",
+          "STOP",
+          "RESET",
+          "ABORT",
+          "CLEAR",
+          "HOLD",
+          "UNHOLD",
+          "SUSPEND",
+          "UNSUSPEND",
+        ]
       Actors:
         - "UR5"
 
@@ -57,12 +79,27 @@ submodels:
       XPos: 0.0
       YPos: 0.0
     ResourceGeometry:
-      Point1: { XPos: -65.0, YPos: -65.0 }
-      Point2: { XPos:  65.0, YPos: -65.0 }
-      Point3: { XPos:  65.0, YPos:  65.0 }
-      Point4: { XPos: -65.0, YPos:  65.0 }
+      Point1: { XPos: -650.0, YPos: -650.0 }
+      Point2: { XPos: 650.0, YPos: -650.0 }
+      Point3: { XPos: 650.0, YPos: 650.0 }
+      Point4: { XPos: -650.0, YPos: 650.0 }
     InOutputZones:
-      - Point1: { XPos: -55.0, YPos:  65.0 }
-        Point2: { XPos:  55.0, YPos:  65.0 }
-        Point3: { XPos:  55.0, YPos: 155.0 }
-        Point4: { XPos: -55.0, YPos: 155.0 }
+      - Point1: { XPos: -550.0, YPos: 650.0 }
+        Point2: { XPos: 550.0, YPos: 650.0 }
+        Point3: { XPos: 550.0, YPos: 1550.0 }
+        Point4: { XPos: -550.0, YPos: 1550.0 }
+
+  Communication:
+    MQTT:
+      ProductionLinePrefix: ""
+      BrokerID: ""
+      BrokerPort: ""
+      Suffixes:
+        CommandSuffix: "CMD"
+        StateSuffix: "PackMLState"
+        JobResultSuffix: "JobResult"
+        InfoRequestSuffix: "InfoRequest"
+        ResourceAcknowledgementSuffix: "ResourceAck"
+        ControllerAcknowledgementSuffix: "ControllerAck"
+        OccupancySuffix: "Occupy"
+        InventoryLevelSuffix: "InventoryLevel"

@@ -95,11 +95,11 @@ class GenericResourceExecutor:
     def initialize_mqtt(self):
 
         communication = self.parsed_resource["Communication"]
-
+        
         self.mqtt_client = MQTTClientResource(
             communication.broker_id,
             communication.broker_port,
-            self.shell_id_short,
+            self.resource_shell_id.rsplit('/', 1)[-1],
             communication.production_line_prefix,
         )
         self.register_mqtt_handlers()
@@ -113,6 +113,21 @@ class GenericResourceExecutor:
     def register_mqtt_handlers(self):
 
         suffixes = self.parsed_resource["Communication"].suffixes
+        prefix = self.parsed_resource["Communication"].production_line_prefix
+        base = f"{prefix}/{self.shell_id_short}"
+
+        # Diagnostic: log every topic this resource will SUBSCRIBE to and the
+        # ones it will PUBLISH to, fully-qualified. Grep the stdout for the
+        # exact strings the controller is using and any mismatch jumps out
+        # (e.g. 'PackMLState' vs 'State', 'InfoRequest' vs 'Request').
+        print(f"[{self.resource_shell_id}] MQTT topics:")
+        print(f"  SUBSCRIBE  CommandMessage  -> {base}/{suffixes.command_suffix}")
+        print(f"  SUBSCRIBE  RequestMessage  -> {base}/{suffixes.info_request_suffix}")
+        print(f"  PUBLISH    StateMessage    -> {base}/{suffixes.state_suffix}/<actor>")
+        print(f"  PUBLISH    JobResult       -> {base}/{suffixes.job_result_suffix}/<actor>")
+        inv = getattr(suffixes, "inventory_suffix", None)
+        if inv:
+            print(f"  PUBLISH    InventoryLevel  -> {base}/{inv}")
 
         self.mqtt_client.register_subscriber(
             suffixes.command_suffix,
@@ -782,59 +797,7 @@ class GenericStationBehavior(StationBehavior):
             elements=elements
         )
 
-CLIENT_ID = "Storage_12345678"
-Actor = "UR5"
 
-params = {}
-
-test_command = MS.CommandMessage(
-    timestamp=datetime.now(),
-    resource_id=CLIENT_ID,
-    skill="Retrieve",
-    actor_name=Actor,
-    skill_trigger=MS.CommandType.START,
-    order_id="ORD-12345",
-    job_id="Retrieve_Test_001",
-    parameters=params,
-    process_transformation={
-        "InputTypes": [],
-        "OutputTypes": [
-            "https://aausmartlab.org/Shells/Component/TopCover/TopCoverABSBlack-99ea6008-1829-416b-a1d1-c9bab9700492"
-        ]
-    }
-)
-
-print(test_command.model_dump_json(indent=2))
-
-params = {
-    "TargetPosition": {
-        "XPos": 20.0,
-        "YPos": 10.0
-    }
-}
-
-test_command = MS.CommandMessage(
-    timestamp=datetime.now(),
-    resource_id=CLIENT_ID,
-    skill="Handoff",
-    actor_name=Actor,
-    skill_trigger=MS.CommandType.START,
-    order_id="ORD-12345",
-    job_id="Handoff_Test_001",
-    parameters=params,
-    process_transformation={
-        "InputTypes": [],
-        "OutputTypes": [
-            "https://aausmartlab.org/Shells/Component/TopCover/SomeID"
-        ]
-    }
-)
-
-print(test_command.model_dump_json(indent=2))
-
-
-
-resource_shell_id = "https://aausmartlab.org/Shells/Resources/Storage_12345678"
 
 #resource_executor = GenericResourceExecutor(SERVER_BASE, SUBMODEL_ENDPOINT, SHELL_ENDPOINT, resource_shell_id)
 
@@ -842,53 +805,26 @@ resource_shell_id = "https://aausmartlab.org/Shells/Resources/Storage_12345678"
 
 resource_executor = None
 
-async def main():
-    global resource_executor
-
-    resource_executor = GenericResourceExecutor(SERVER_BASE,SUBMODEL_ENDPOINT,SHELL_ENDPOINT,resource_shell_id)
-
-    loop = asyncio.get_running_loop()
-    resource_executor.attach_event_loop(loop)
-
-    await asyncio.Event().wait()
 
 if __name__ == "__main__":
-    import argparse
-    ap = argparse.ArgumentParser(description="Generic Resource Runner")
-    ap.add_argument("--shell-id", required=True, help="Full AAS shell IRI for this resource")
-    ap.add_argument("--server", default="http://localhost:8081", help="AAS server base URL")
-    _args = ap.parse_args()
+     import argparse
+     ap = argparse.ArgumentParser(description="Generic Resource Runner")
+     ap.add_argument("--shell-id", required=True, help="Full AAS shell IRI for this resource")
+     ap.add_argument("--server", default="http://localhost:8081", help="AAS server base URL")
+     _args = ap.parse_args()
 
-    _server = _args.server.rstrip("/")
-    _sub_ep = f"{_server}/submodels"
-    _shell_ep = f"{_server}/shells"
+     _server = _args.server.rstrip("/")
+     _sub_ep = f"{_server}/submodels"
+     _shell_ep = f"{_server}/shells"
 
-    async def main():
-        global resource_executor
-        resource_executor = GenericResourceExecutor(
-            _server, _sub_ep, _shell_ep, _args.shell_id
-        )
-        loop = asyncio.get_running_loop()
-        resource_executor.attach_event_loop(loop)
-        await asyncio.Event().wait()
+     async def main():
+         global resource_executor
+         resource_executor = GenericResourceExecutor(
+             _server, _sub_ep, _shell_ep, _args.shell_id
+         )
+         loop = asyncio.get_running_loop()
+         resource_executor.attach_event_loop(loop)
+         await asyncio.Event().wait()
 
-    asyncio.run(main())
+     asyncio.run(main())
 
-#resource_executor = GenericResourceExecutor(SERVER_BASE,SUBMODEL_ENDPOINT,SHELL_ENDPOINT,resource_shell_id)
-
-#inventory_parser = resource_executor.resource_parser.get_parser(GRM.SubmodelSemanticIDs.INVENTORY)
-
-#inventory_parser = parser.get_parser(GRM.SubmodelSemanticIDs.INVENTORY)
-#component_id = "https://aausmartlab.org/Shells/Component/TopCover/TopCoverABSBlack-NEW" #The one I want to add
-#
-#inventory_parser.update_slot(inventory_name="Inventory_1",slot_id="SlotEntry_10",component_id=component_id)
-#headers = {"Content-Type": "application/json"}
-#
-#inventory_submodel_data = json.dumps(inventory_parser.raw_submodel.data).encode("utf-8")
-#
-#response = requests.put(f"{SUBMODEL_ENDPOINT}/aHR0cHM6Ly9hYXVzbWFydGxhYi5vcmcvU2hlbGxzL1Jlc291cmNlcy9TdG9yYWdlXzEyMzQ1Njc4L0ludmVudG9yeQ==", headers=headers, data=inventory_submodel_data)
-#
-#if response.status_code in (200, 201, 204):
-#    print("updated")
-#else:
-#    raise RuntimeError(f"Upload failed on PUT: {response.status_code} - {response.text}")

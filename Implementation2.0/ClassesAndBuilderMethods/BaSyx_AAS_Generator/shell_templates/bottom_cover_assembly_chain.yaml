@@ -3,10 +3,10 @@ shell: "sub_assembly_shell"
 id: "https://aausmartlab.org/Shells/Assembly/BottomCoverAssemblyChain"
 
 submodel_templates:
-  Properties:       "https://aausmartlab.org/Submodels/Templates/ProductProperties"
-  Documentation:    "https://aausmartlab.org/Submodels/Templates/ProductDocumentation"
-  BillOfMaterials:  "https://aausmartlab.org/Submodels/Templates/BillOfMaterials"
-  BillOfProcesses:  "https://aausmartlab.org/Submodels/Templates/BillOfProcesses"
+  Properties: "https://aausmartlab.org/Submodels/Templates/ProductProperties"
+  Documentation: "https://aausmartlab.org/Submodels/Templates/ProductDocumentation"
+  BillOfMaterials: "https://aausmartlab.org/Submodels/Templates/BillOfMaterials"
+  BillOfProcesses: "https://aausmartlab.org/Submodels/Templates/BillOfProcesses"
 
 include:
   Properties:

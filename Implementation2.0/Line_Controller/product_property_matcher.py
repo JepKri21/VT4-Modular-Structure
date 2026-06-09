@@ -67,6 +67,11 @@ class InventoryIndexer:
 
                 for slot_id, slot in inventory_data.storage.items():
 
+                    # Skip empty slots AND slots reserved by another order.
+                    # SlotReserved is authoritative: only the Line Controller
+                    # writes it, and it does so only when actually picking an
+                    # instance for a running order. The webshop reserves at
+                    # the TYPE level in Postgres, never on the AAS.
                     if slot.component_id is None or slot.reserved:
                         continue
 

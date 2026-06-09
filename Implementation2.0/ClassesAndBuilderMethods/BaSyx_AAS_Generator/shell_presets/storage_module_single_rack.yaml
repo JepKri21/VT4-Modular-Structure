@@ -38,19 +38,52 @@ submodels:
     Store:
       CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/StorageSingleRack/StoreCapabilityOffered"
       CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Store"
-      SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+      SkillTriggers:
+        [
+          "START",
+          "STOP",
+          "RESET",
+          "ABORT",
+          "CLEAR",
+          "HOLD",
+          "UNHOLD",
+          "SUSPEND",
+          "UNSUSPEND",
+        ]
       Actors:
         - "UR5"
     Retrieve:
       CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/StorageSingleRack/RetrieveCapabilityOffered"
       CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Retrieve"
-      SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+      SkillTriggers:
+        [
+          "START",
+          "STOP",
+          "RESET",
+          "ABORT",
+          "CLEAR",
+          "HOLD",
+          "UNHOLD",
+          "SUSPEND",
+          "UNSUSPEND",
+        ]
       Actors:
         - "UR5"
     Handoff:
       CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/StorageSingleRack/HandoffCapabilityOffered"
       CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Handoff"
-      SkillTriggers: ["START", "STOP", "RESET", "ABORT", "CLEAR", "HOLD", "UNHOLD", "SUSPEND", "UNSUSPEND"]
+      SkillTriggers:
+        [
+          "START",
+          "STOP",
+          "RESET",
+          "ABORT",
+          "CLEAR",
+          "HOLD",
+          "UNHOLD",
+          "SUSPEND",
+          "UNSUSPEND",
+        ]
       Actors:
         - "UR5"
 
@@ -59,12 +92,12 @@ submodels:
       XPos: 0.0
       YPos: 0.0
     ResourceGeometry:
-      Point1: { XPos: -60.0, YPos: -60.0 }
-      Point2: { XPos:  60.0, YPos: -60.0 }
-      Point3: { XPos:  60.0, YPos:  60.0 }
-      Point4: { XPos: -60.0, YPos:  60.0 }
+      Point1: { XPos: -600.0, YPos: -600.0 }
+      Point2: { XPos: 600.0, YPos: -600.0 }
+      Point3: { XPos: 600.0, YPos: 600.0 }
+      Point4: { XPos: -600.0, YPos: 600.0 }
     InOutputZones:
-      - Point1: { XPos: -50.0, YPos:  60.0 }
-        Point2: { XPos:  50.0, YPos:  60.0 }
-        Point3: { XPos:  50.0, YPos: 150.0 }
-        Point4: { XPos: -50.0, YPos: 150.0 }
+      - Point1: { XPos: -500.0, YPos: 600.0 }
+        Point2: { XPos: 500.0, YPos: 600.0 }
+        Point3: { XPos: 500.0, YPos: 1500.0 }
+        Point4: { XPos: -500.0, YPos: 1500.0 }
