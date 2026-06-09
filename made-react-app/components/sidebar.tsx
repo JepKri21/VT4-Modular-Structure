@@ -196,12 +196,12 @@ const Sidebar = () => {
           label="Scheduling"
           isCollapsed={isSidebarCollapsed}
         />
-        <SidebarLink
+        {/* <SidebarLink
           href="/mrp"
           icon={ChartPie}
           label="MRP"
           isCollapsed={isSidebarCollapsed}
-        />
+        /> */}
 
         {/* BUSINESS */}
         <div
@@ -209,12 +209,12 @@ const Sidebar = () => {
         >
           <h3 className="text-xs text-primary ">BUSINESS</h3>
         </div>
-        <SidebarLink
+        {/* <SidebarLink
           href="/expenses"
           icon={Coins}
           label="Expenses"
           isCollapsed={isSidebarCollapsed}
-        />
+        /> */}
 
         <SidebarLink
           href="/orders"
@@ -247,12 +247,12 @@ const Sidebar = () => {
           label="Virtual Store"
           isCollapsed={isSidebarCollapsed}
         />
-        <SidebarLink
+        {/* <SidebarLink
           href="/store"
           icon={Store}
           label="Store"
           isCollapsed={isSidebarCollapsed}
-        />
+        /> */}
         {/* <SidebarLink
           href="/configurator"
           icon={Cog}
