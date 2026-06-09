@@ -86,7 +86,11 @@ const parsePoint = (col: SME): [number, number] => [
 
 const parsePolygon = (col: SME | undefined): PolygonLocal => {
   if (!col) return [];
-  const points = children(col).filter(
+  // Current AAS layout nests the points under a "Points" collection
+  // (ResourceGeometry/Points/Point1.. and Zone/Points/Point1..). Fall back to
+  // direct PointN children for the legacy flat layout.
+  const container = findChild(col, "Points") ?? col;
+  const points = children(container).filter(
     (c) => c.modelType === "SubmodelElementCollection" && /^Point\d+$/.test(c.idShort),
   );
   points.sort((a, b) => {

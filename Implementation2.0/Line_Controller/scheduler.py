@@ -787,8 +787,6 @@ class Scheduler:
                   "(unresolved inputs) — pausing")
             return
 
-        self._update_output_bom_with_inputs(handler, info)
-
         bop_job_id = f"{order_id}-{bop['step_id']}"
         handler.update_step(bop["step_id"], StepStates.IN_PROGRESS)
         start_time = datetime.now()
@@ -812,6 +810,7 @@ class Scheduler:
         if result.result == MS.Result.COMPLETE:
             self._apply_output_traceability(handler, info, result)
             self._apply_bop_cargo_transformation(info, result)
+            self._update_output_bom_with_inputs(handler, info)
             handler.update_step(bop["step_id"], StepStates.COMPLETED)
             print(f"[ok]  BoP step {bop['step_id']} -> COMPLETED")
             self._complete_process_tracking(bop, info, handler, tracking, target, chosen, start_time, result)
@@ -1071,9 +1070,17 @@ class Scheduler:
                   f"(type={type_ref})")
             return None
 
-        # Skip instances already reserved by a concurrent order.
+        # Skip instances already reserved — by any order (concurrent) or by
+        # this order for a different ingredient (same-order double-booking).
         instance = None
         for m in matches:
+            entry = self._reserved_instances.get(m.component_id)
+            if entry is not None:
+                print(
+                    f"[reserve] '{ingredient.get('name')}': skipping {m.component_id} "
+                    f"(already reserved by order {entry[0]})"
+                )
+                continue
             if order_id is None or self._reserve_instance(
                 m.component_id, order_id,
                 m.resource_shell_id, m.inventory_name, m.slot_id,
@@ -1083,15 +1090,10 @@ class Scheduler:
                 if order_id is not None:
                     self._patch_slot_reserved(m.resource_shell_id, m.inventory_name, m.slot_id, True)
                 break
-            entry = self._reserved_instances.get(m.component_id)
-            print(
-                f"[reserve] '{ingredient.get('name')}': skipping {m.component_id} "
-                f"(claimed by order {entry[0] if entry else '?'})"
-            )
         if instance is None:
             print(
                 f"[trans] all {len(matches)} match(es) for '{ingredient.get('name')}' "
-                f"are reserved by other orders — pausing"
+                f"are reserved — pausing"
             )
             return None
 
@@ -1765,13 +1767,16 @@ class Scheduler:
                 in_name = in_ing.get("name", "")
                 in_instance_iri = live.get(in_name, {}).get("ComponentReference") or ""
                 in_type_iri = live.get(in_name, {}).get("ComponentTypeReference") or ""
+                print(f"[bom] input {in_name}: instance={in_instance_iri} type={in_type_iri}")
                 if not in_instance_iri or not in_type_iri:
+                    print(f"[bom] skipping {in_name} — missing instance or type IRI")
                     continue
 
                 bom_entry = aas_writer.get_bom_entry_for_type(
                     self.aas_server_base, out_shell_iri, in_type_iri
                 )
                 if not bom_entry:
+                    print(f"[bom] no BOM entry found for type {in_type_iri} in {out_shell_iri}")
                     continue
 
                 aas_writer.write_bom_component_instance_ref(

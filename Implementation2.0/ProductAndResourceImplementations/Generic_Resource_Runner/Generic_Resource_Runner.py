@@ -478,6 +478,7 @@ class InventoryManager:
 
     STORE_CAPABILITY = "https://aausmartlab.org/Submodels/Capability/Store"
     RETRIEVE_CAPABILITY = "https://aausmartlab.org/Submodels/Capability/Retrieve"
+    ASSEMBLE_CAPABILITY = "https://aausmartlab.org/Submodels/Capability/Assemble"
 
     def __init__(self, resource_loader: AASResourceLoader, resource_parser: ResourceParser, resource_shell_id, submodel_endpoint):
         self.resource_loader = resource_loader
@@ -510,6 +511,45 @@ class InventoryManager:
 
         if cap == self.RETRIEVE_CAPABILITY:
             return await self.retrieve_component(context)
+
+        if cap == self.ASSEMBLE_CAPABILITY:
+            return await self.consume_assembled_inputs(context)
+
+    async def consume_assembled_inputs(self, context):
+        """Remove any assembly input that was sourced from this resource's own
+        inventory (e.g. a Fuse from the assembler's feeder).
+
+        Inputs not physically held here — the transported-in sub-assembly, or
+        the previous partial assembly carried over as an input on a subsequent
+        assemble step — aren't in this inventory, so find_component_slot_optional
+        returns None for them and they're left untouched. Without this, the
+        consumed fuse stays listed in the assembler's Inventory submodel forever
+        and every new order's matcher picks the same instance again.
+        """
+        input_ids = context.command.process_transformation.get("InputTypes") or []
+        output_ids = set(context.command.process_transformation.get("OutputTypes") or [])
+
+        consumed = []
+        async with self._lock:
+            model = self.load()
+            for component_id in input_ids:
+                if not component_id or component_id in output_ids:
+                    continue
+                slot = self.find_component_slot_optional(model, component_id)
+                if slot is None:
+                    continue
+                inventory_name, slot_id = slot
+                self.inventory_parser.update_slot(
+                    inventory_name=inventory_name,
+                    slot_id=slot_id,
+                    component_id=None,
+                )
+                consumed.append(component_id)
+            if consumed:
+                self.upload()
+
+        print(f"[inventory] Assemble consumed from own inventory: {consumed}")
+        return consumed
 
     async def retrieve_component(self, context):
 
@@ -554,12 +594,19 @@ class InventoryManager:
         return slot_id
 
     def find_component_slot(self, model, component_id):
+        slot = self.find_component_slot_optional(model, component_id)
+        if slot is None:
+            raise ValueError(f"Component not found: {component_id}")
+        return slot
+
+    def find_component_slot_optional(self, model, component_id):
+        """Like find_component_slot but returns None instead of raising when the
+        component isn't held in any of this resource's inventories."""
         for inv_name, inv in model.inventories.items():
             for slot_id, slot in inv.storage.items():
                 if slot.component_id == component_id:
                     return inv_name, slot_id
-
-        raise ValueError(f"Component not found: {component_id}")
+        return None
 
     def find_free_slot(self, model, component_id):
         for inv_name, inv in model.inventories.items():

@@ -96,7 +96,7 @@ submodels:
   Inventory:
     Inventories:
       - Specifications:
-          InventorySize: 30
+          InventorySize: 20
         SupportedComponents:
           - "https://aausmartlab.org/Shells/Component/PCB"
         Actors:
