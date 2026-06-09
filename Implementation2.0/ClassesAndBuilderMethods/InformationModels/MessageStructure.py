@@ -403,55 +403,11 @@ class InventoryLevelMessage(BaseModel):
 #this means we don't have to define any specific request types and we don't have to make specific structures for EVERY kind of response
 #It is already baked into the topic messages that we are sending, using the definitions above.
 
-
-#class StandardRequestType(str, enum.Enum):
-#    STATE = "STATE"
-#    ALARMS = "ALARMS"
-#    INVENTORY_LEVELS = "INVENTORY_LEVELS"
-
 class RequestMessage(BaseModel):
     timestamp: datetime
     requested_topic_update: str
     resource_id: str
     seq_no: int | None = None
-
-
-#class StateResponse(BaseModel):
-#    state: PackMLState
-#
-#class AlarmResponse(BaseModel):
-#    alarm_ids: List[str]
-#
-#class InventoryResponse(BaseModel):
-#    inventory: Dict[str, Dict[str, int]]
-#
-#class ResponseMessage(BaseModel):
-#    timestamp: datetime
-#    requested_data: StandardRequestType
-#    resource_id: str
-#    data: StateResponse | AlarmResponse | InventoryResponse
-#    seq_no: int | None = None
-#
-#    @model_validator(mode="after")
-#    def validate_data_matches_request(self):
-#        match self.requested_data:
-#            case StandardRequestType.STATE:
-#                if not isinstance(self.data, StateResponse):
-#                    raise ValueError("STATE request requires StateResponse")
-#                
-#            case StandardRequestType.ALARMS:
-#                if not isinstance(self.data, AlarmResponse):
-#                    raise ValueError("STATE request requires AlarmResponse")
-#            
-#            case StandardRequestType.INVENTORY_LEVELS:
-#                if not isinstance(self.data, InventoryResponse):
-#                    raise ValueError("STATE request requires InventoryResponse")
-#        
-#        return self
-
-
-
-
 
 #=============================================================================
 #============================== MES WorkOrder ================================

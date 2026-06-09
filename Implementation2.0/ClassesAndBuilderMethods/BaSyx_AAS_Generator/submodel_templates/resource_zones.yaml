@@ -25,57 +25,27 @@ elements:
 
   - type: collection
     id_short: "ResourceGeometry"
-    description: "Polygon defining the physical footprint of the resource (four corner points, clockwise)"
+    description: "Polygon defining the physical footprint of the resource (ordered points, clockwise)"
     cardinality: "One"
     elements:
       - type: collection
-        id_short: "Point1"
-        cardinality: "One"
+        id_short: "Points"
+        extensible: true
+        entry_template: "Point{N}"
+        cardinality: "ZeroToMany"
         elements:
-          - type: property
-            id_short: "XPos"
-            value_type: "xs:float"
+          - type: collection
+            id_short: "Point"
             cardinality: "One"
-          - type: property
-            id_short: "YPos"
-            value_type: "xs:float"
-            cardinality: "One"
-      - type: collection
-        id_short: "Point2"
-        cardinality: "One"
-        elements:
-          - type: property
-            id_short: "XPos"
-            value_type: "xs:float"
-            cardinality: "One"
-          - type: property
-            id_short: "YPos"
-            value_type: "xs:float"
-            cardinality: "One"
-      - type: collection
-        id_short: "Point3"
-        cardinality: "One"
-        elements:
-          - type: property
-            id_short: "XPos"
-            value_type: "xs:float"
-            cardinality: "One"
-          - type: property
-            id_short: "YPos"
-            value_type: "xs:float"
-            cardinality: "One"
-      - type: collection
-        id_short: "Point4"
-        cardinality: "One"
-        elements:
-          - type: property
-            id_short: "XPos"
-            value_type: "xs:float"
-            cardinality: "One"
-          - type: property
-            id_short: "YPos"
-            value_type: "xs:float"
-            cardinality: "One"
+            elements:
+              - type: property
+                id_short: "XPos"
+                value_type: "xs:float"
+                cardinality: "One"
+              - type: property
+                id_short: "YPos"
+                value_type: "xs:float"
+                cardinality: "One"
 
   - type: collection
     id_short: "InputZones"
@@ -86,57 +56,27 @@ elements:
     elements:
       - type: collection
         id_short: "Zone"
-        description: "A zone defined by four corner points"
+        description: "A zone defined by an ordered list of points"
         cardinality: "One"
         elements:
           - type: collection
-            id_short: "Point1"
-            cardinality: "One"
+            id_short: "Points"
+            extensible: true
+            entry_template: "Point{N}"
+            cardinality: "ZeroToMany"
             elements:
-              - type: property
-                id_short: "XPos"
-                value_type: "xs:float"
+              - type: collection
+                id_short: "Point"
                 cardinality: "One"
-              - type: property
-                id_short: "YPos"
-                value_type: "xs:float"
-                cardinality: "One"
-          - type: collection
-            id_short: "Point2"
-            cardinality: "One"
-            elements:
-              - type: property
-                id_short: "XPos"
-                value_type: "xs:float"
-                cardinality: "One"
-              - type: property
-                id_short: "YPos"
-                value_type: "xs:float"
-                cardinality: "One"
-          - type: collection
-            id_short: "Point3"
-            cardinality: "One"
-            elements:
-              - type: property
-                id_short: "XPos"
-                value_type: "xs:float"
-                cardinality: "One"
-              - type: property
-                id_short: "YPos"
-                value_type: "xs:float"
-                cardinality: "One"
-          - type: collection
-            id_short: "Point4"
-            cardinality: "One"
-            elements:
-              - type: property
-                id_short: "XPos"
-                value_type: "xs:float"
-                cardinality: "One"
-              - type: property
-                id_short: "YPos"
-                value_type: "xs:float"
-                cardinality: "One"
+                elements:
+                  - type: property
+                    id_short: "XPos"
+                    value_type: "xs:float"
+                    cardinality: "One"
+                  - type: property
+                    id_short: "YPos"
+                    value_type: "xs:float"
+                    cardinality: "One"
 
   - type: collection
     id_short: "OutputZones"
@@ -147,115 +87,55 @@ elements:
     elements:
       - type: collection
         id_short: "Zone"
-        description: "A zone defined by four corner points"
+        description: "A zone defined by an ordered list of points"
         cardinality: "One"
         elements:
           - type: collection
-            id_short: "Point1"
-            cardinality: "One"
+            id_short: "Points"
+            extensible: true
+            entry_template: "Point{N}"
+            cardinality: "ZeroToMany"
             elements:
-              - type: property
-                id_short: "XPos"
-                value_type: "xs:float"
+              - type: collection
+                id_short: "Point"
                 cardinality: "One"
-              - type: property
-                id_short: "YPos"
-                value_type: "xs:float"
-                cardinality: "One"
-          - type: collection
-            id_short: "Point2"
-            cardinality: "One"
-            elements:
-              - type: property
-                id_short: "XPos"
-                value_type: "xs:float"
-                cardinality: "One"
-              - type: property
-                id_short: "YPos"
-                value_type: "xs:float"
-                cardinality: "One"
-          - type: collection
-            id_short: "Point3"
-            cardinality: "One"
-            elements:
-              - type: property
-                id_short: "XPos"
-                value_type: "xs:float"
-                cardinality: "One"
-              - type: property
-                id_short: "YPos"
-                value_type: "xs:float"
-                cardinality: "One"
-          - type: collection
-            id_short: "Point4"
-            cardinality: "One"
-            elements:
-              - type: property
-                id_short: "XPos"
-                value_type: "xs:float"
-                cardinality: "One"
-              - type: property
-                id_short: "YPos"
-                value_type: "xs:float"
-                cardinality: "One"
+                elements:
+                  - type: property
+                    id_short: "XPos"
+                    value_type: "xs:float"
+                    cardinality: "One"
+                  - type: property
+                    id_short: "YPos"
+                    value_type: "xs:float"
+                    cardinality: "One"
 
   - type: collection
     id_short: "InOutputZones"
-    description: "Zones that serve as both input and output â€” used for component handoff"
+    description: "Zones that serve as both input and output — used for component handoff"
     extensible: true
     entry_template: "Zone{N}"
     cardinality: "ZeroToMany"
     elements:
       - type: collection
         id_short: "Zone"
-        description: "A zone defined by four corner points"
+        description: "A zone defined by an ordered list of points"
         cardinality: "One"
         elements:
           - type: collection
-            id_short: "Point1"
-            cardinality: "One"
+            id_short: "Points"
+            extensible: true
+            entry_template: "Point{N}"
+            cardinality: "ZeroToMany"
             elements:
-              - type: property
-                id_short: "XPos"
-                value_type: "xs:float"
+              - type: collection
+                id_short: "Point"
                 cardinality: "One"
-              - type: property
-                id_short: "YPos"
-                value_type: "xs:float"
-                cardinality: "One"
-          - type: collection
-            id_short: "Point2"
-            cardinality: "One"
-            elements:
-              - type: property
-                id_short: "XPos"
-                value_type: "xs:float"
-                cardinality: "One"
-              - type: property
-                id_short: "YPos"
-                value_type: "xs:float"
-                cardinality: "One"
-          - type: collection
-            id_short: "Point3"
-            cardinality: "One"
-            elements:
-              - type: property
-                id_short: "XPos"
-                value_type: "xs:float"
-                cardinality: "One"
-              - type: property
-                id_short: "YPos"
-                value_type: "xs:float"
-                cardinality: "One"
-          - type: collection
-            id_short: "Point4"
-            cardinality: "One"
-            elements:
-              - type: property
-                id_short: "XPos"
-                value_type: "xs:float"
-                cardinality: "One"
-              - type: property
-                id_short: "YPos"
-                value_type: "xs:float"
-                cardinality: "One"
+                elements:
+                  - type: property
+                    id_short: "XPos"
+                    value_type: "xs:float"
+                    cardinality: "One"
+                  - type: property
+                    id_short: "YPos"
+                    value_type: "xs:float"
+                    cardinality: "One"
