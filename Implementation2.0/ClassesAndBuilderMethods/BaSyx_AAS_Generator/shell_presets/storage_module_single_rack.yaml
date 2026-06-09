@@ -101,3 +101,18 @@ submodels:
         Point2: { XPos: 500.0, YPos: 600.0 }
         Point3: { XPos: 500.0, YPos: 1500.0 }
         Point4: { XPos: -500.0, YPos: 1500.0 }
+
+  Communication:
+    MQTT:
+      ProductionLinePrefix: ""
+      BrokerID: ""
+      BrokerPort: ""
+      Suffixes:
+        CommandSuffix: "CMD"
+        StateSuffix: "PackMLState"
+        JobResultSuffix: "JobResult"
+        InfoRequestSuffix: "InfoRequest"
+        ResourceAcknowledgementSuffix: "ResourceAck"
+        ControllerAcknowledgementSuffix: "ControllerAck"
+        OccupancySuffix: "Occupy"
+        InventoryLevelSuffix: "InventoryLevel"

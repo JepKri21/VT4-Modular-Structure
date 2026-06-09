@@ -243,7 +243,7 @@ class PreProcessPlanner:
         steps.append(self._transport_step(
             builder=builder,
             shuttle=shuttle,
-            target_position=storage_pos,
+            target_resource_iri=current_location.resource_iri,
             component_reference=component_reference,
             depends_on=None,
         ))
@@ -275,7 +275,7 @@ class PreProcessPlanner:
         steps.append(self._transport_step(
             builder=builder,
             shuttle=shuttle,
-            target_position=target_pos,
+            target_resource_iri=target.resource_iri,
             component_reference=component_reference,
             depends_on=last_id,
         ))
@@ -356,7 +356,7 @@ class PreProcessPlanner:
         steps.append(self._transport_step(
             builder=builder,
             shuttle=shuttle,
-            target_position=target_pos,
+            target_resource_iri=target.resource_iri,
             component_reference=component_reference,
             depends_on=None,
         ))
@@ -377,7 +377,7 @@ class PreProcessPlanner:
         steps.append(self._transport_step(
             builder=builder,
             shuttle=shuttle,
-            target_position=store_pos,
+            target_resource_iri=store_destination.resource_iri,
             component_reference=component_reference,
             depends_on=last_id,
         ))
@@ -446,7 +446,7 @@ class PreProcessPlanner:
         steps.append(self._transport_step(
             builder=builder,
             shuttle=shuttle,
-            target_position=target_pos,
+            target_resource_iri=target.resource_iri,
             component_reference=component_reference,
             depends_on=None,
         ))
@@ -484,16 +484,24 @@ class PreProcessPlanner:
         *,
         builder: "_StepIdBuilder",
         shuttle: ResourceEndpoint,
-        target_position: tuple[float, float],
+        target_resource_iri: str,
         component_reference: str,
         depends_on: str | None,
     ) -> PreProcessStep:
+        # The Transport CMD's TargetPosition must be in the SHUTTLE's local
+        # coordinate frame (bounded by the table size, e.g. 600..6600 mm),
+        # not the global frame. The LineConfiguration's ConnectionPoint
+        # records every connected resource with both global and local
+        # coords; local_handoff_position picks out the shuttle's local view.
+        local_target = self.transport.local_handoff_position(
+            target_resource_iri, shuttle.resource_iri
+        )
         return PreProcessStep(
             step_id=builder.next("transport"),
             skill="Transport",
             resource_id=shuttle.resource_id,
             actor_name=shuttle.actor_name,
-            parameters=self.transport.transport_params(target_position, component_reference),
+            parameters=self.transport.transport_params(local_target, component_reference),
             component_reference=component_reference,
             depends_on=depends_on,
         )

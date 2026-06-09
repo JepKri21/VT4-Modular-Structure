@@ -67,12 +67,14 @@ class InventoryIndexer:
 
                 for slot_id, slot in inventory_data.storage.items():
 
-                    # Skip empty slots AND slots reserved by another order.
-                    # SlotReserved is authoritative: only the Line Controller
-                    # writes it, and it does so only when actually picking an
-                    # instance for a running order. The webshop reserves at
-                    # the TYPE level in Postgres, never on the AAS.
-                    if slot.component_id is None or slot.reserved:
+                    # Index every slot that physically holds a component. The
+                    # `reserved` flag is carried on the IndexedComponent and
+                    # consulted by `find_by_component_type` (which excludes
+                    # reserved entries from the "freely pickable" pool).
+                    # `find_by_component_id` returns reserved entries too —
+                    # they still exist physically, so an exact-instance
+                    # lookup must succeed.
+                    if slot.component_id is None:
                         continue
 
                     indexed_component = self._create_indexed_component(
@@ -80,7 +82,8 @@ class InventoryIndexer:
                         resource_shell_id=resource_shell_id,
                         inventory_name=inventory_name,
                         slot_id=slot_id,
-                        accessible_actors=accessible_actors
+                        accessible_actors=accessible_actors,
+                        reserved=bool(slot.reserved),
                     )
 
                     self._add_to_indexes(indexed_component)
@@ -124,10 +127,13 @@ class InventoryIndexer:
                 for slot in (stored or {}).get("value", []):
                     slot_id = slot.get("idShort", "")
 
+                    # Carry SlotReserved through; find_by_component_type
+                    # filters reserved entries out of the freely-pickable
+                    # pool, find_by_component_id returns them so exact
+                    # instance lookups (e.g. "where is this IRI?") still
+                    # succeed for parts already claimed by a running order.
                     reserved_el = _find_el(slot.get("value", []), "SlotReserved")
                     reserved = (reserved_el or {}).get("value") == "true"
-                    if reserved:
-                        continue
 
                     ref_el = _find_el(slot.get("value", []), "ComponentShellReference")
                     if ref_el is None:
@@ -149,6 +155,7 @@ class InventoryIndexer:
                         inventory_name=inventory_name,
                         slot_id=slot_id,
                         accessible_actors=actors,
+                        reserved=reserved,
                     )
                     self._add_to_indexes(indexed)
 
@@ -163,8 +170,14 @@ class InventoryIndexer:
         return self.component_id_index.get(component_id)
 
     def find_by_component_type(self,component_type: str) -> List[MS.IndexedComponent]:
-
-        return self.component_type_index.get(component_type, [])
+        # Exclude entries reserved by a running order — they're not freely
+        # pickable by a new order. Exact-instance lookups go through
+        # find_by_component_id, which deliberately returns reserved entries
+        # so an already-resolved instance can still be located.
+        return [
+            c for c in self.component_type_index.get(component_type, [])
+            if not c.reserved
+        ]
 
     def get_all_components(self) -> List[MS.IndexedComponent]:
 
@@ -180,12 +193,14 @@ class InventoryIndexer:
         resource_shell_id: str,
         inventory_name: str,
         slot_id: str,
-        accessible_actors: List[str]
+        accessible_actors: List[str],
+        reserved: bool = False,
     ) -> MS.IndexedComponent:
 
         parsed = self._parse_component_reference(component_id)
 
         return MS.IndexedComponent(
+            reserved=reserved,
             component_id=component_id,
 
             component_category=parsed["component_category"],

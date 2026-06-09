@@ -9,11 +9,15 @@ submodels:
     SupportedComponents:
       - "https://aausmartlab.org/Shells/Component/BottomCover"
       - "https://aausmartlab.org/Shells/Component/TopCover"
-      - "https://aausmartlab.org/Shells/Component/BottomCoverDrilled"
+      - "https://aausmartlab.org/Shells/Component/PCB"
+      - "https://aausmartlab.org/Shells/Component/Fuse"
+      - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
+      - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
+      - "https://aausmartlab.org/Shells/Product/MobilePhone"
     Parameters:
       TargetPosition:
-        XPos: { min: 60.0, max: 660.0 }
-        YPos: { min: 60.0, max: 900.0 }
+        XPos: { min: 600.0, max: 6600.0 }
+        YPos: { min: 600.0, max: 9000.0 }
       OperationLabel:
         en: "Transport operation"
         dk: "Transportoperation"

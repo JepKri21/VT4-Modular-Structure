@@ -1468,24 +1468,26 @@ class Scheduler:
         result: MS.JobResultMessage,
         order_id: str,
     ) -> None:
-        """If the step was a Retrieve, record the specific instance picked.
+        """If the step was a Retrieve, record the picked instance and free
+        its slot reservation.
 
-        The storage station puts the actual item IRI in
-        `result.output_parameters["ComponentReference"]`. We don't currently
-        know which `ingredient_name` requested this step (the pre-process
-        planner doesn't carry it), so we use `component_reference` from the
-        step as the key — same value the work order's `Ingredients` map uses.
+        Historically this read the IRI back from
+        `result.output_parameters["ComponentReference"]`, but the scheduler
+        now pre-resolves the instance via _resolve_input_instance before
+        sending the CMD — `step.component_reference` is already the IRI
+        the storage station retrieved. Reading the JobResult is redundant
+        AND breaks against the generic runner, which returns
+        `output_parameters` as a pydantic CollectionElement (not a dict).
         """
         if step.skill != "Retrieve":
             return
-        outputs = result.output_parameters or {}
-        instance = outputs.get("ComponentReference")
+        instance = step.component_reference
         if not instance:
             return
-        self._traceability.setdefault(order_id, {})[step.component_reference] = instance
-        print(f"[trace] {order_id}: {step.component_reference} -> {instance}")
+        self._traceability.setdefault(order_id, {})[instance] = instance
+        print(f"[trace] {order_id}: Retrieve -> {instance}")
         # Slot is now empty — release reservation so future orders can use it.
-        self._release_instance_reservation(step.component_reference, order_id)
+        self._release_instance_reservation(instance, order_id)
 
     # ── Finalization (post-process + AAS writeback + status) ────────────────
 

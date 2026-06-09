@@ -486,6 +486,34 @@ class TransportPlanner:
             raise ValueError(f"Resource '{resource_iri}' not in line configuration")
         return (loc.x, loc.y)
 
+    def local_handoff_position(
+        self, target_resource_iri: str, transport_iri: str
+    ) -> tuple[float, float]:
+        """Handoff position for `target_resource_iri` expressed in
+        `transport_iri`'s LOCAL coordinate frame.
+
+        Transport stations (shuttles, conveyors) typically declare moves
+        in their own local coordinate system, bounded by the table size
+        (e.g. 0..6600 mm). The connection-point's global coords would be
+        out of range; we need the same point in the shuttle's frame.
+
+        Each ConnectionPoint lists every connected resource with both
+        global and local coords. The local coord on the transport's
+        ConnectedResource entry IS the CP location in that transport's
+        frame — exactly what the CMD needs.
+        """
+        for cp in self.config.connection_points:
+            iris = {cr.resource_iri for cr in cp.connected}
+            if target_resource_iri not in iris or transport_iri not in iris:
+                continue
+            for cr in cp.connected:
+                if cr.resource_iri == transport_iri:
+                    return (cr.local_x, cr.local_y)
+        raise ValueError(
+            f"No connection point links transport '{transport_iri}' to "
+            f"target '{target_resource_iri}'"
+        )
+
     # ── Command-parameter builder ────────────────────────────────────────────
 
     def transport_params(

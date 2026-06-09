@@ -21,8 +21,8 @@ submodels:
         min: 0.0
         max: 200.0
       TargetPosition:
-        XPos: { min: -60.0, max: 60.0 }
-        YPos: { min: -60.0, max: 60.0 }
+        XPos: { min: -600.0, max: 600.0 }
+        YPos: { min: -600.0, max: 600.0 }
       OperationLabel:
         en: "Drilling operation"
         dk: "Boreoperation"
