@@ -9,6 +9,11 @@ interface RawBomEntry {
   Quantity?: number;
   Required?: boolean;
   ProductFamilyRef?: string;
+  // Per-unit template markers (fuse sub-assembly). When present, MinQuantity/
+  // MaxQuantity are the authoritative slot bounds rather than the summed Quantity.
+  PerFuseUnit?: boolean;
+  MinQuantity?: number;
+  MaxQuantity?: number;
 }
 
 export interface BomSlotDef {
@@ -17,6 +22,7 @@ export interface BomSlotDef {
   description: string;
   required: boolean;
   categoryFilter: string;
+  minQuantity: number;
   maxQuantity: number;
 }
 
@@ -33,7 +39,7 @@ function categoryFromIri(iri: string): string | null {
 function slotsFromEntries(entries: RawBomEntry[]): BomSlotDef[] {
   const grouped = new Map<
     string,
-    { label: string; description: string; required: boolean; maxQuantity: number; categoryFilter: string }
+    { label: string; description: string; required: boolean; minQuantity: number; maxQuantity: number; categoryFilter: string; explicitBounds: boolean }
   >();
 
   for (const entry of entries) {
@@ -43,23 +49,36 @@ function slotsFromEntries(entries: RawBomEntry[]): BomSlotDef[] {
 
     const id = category.toLowerCase().replace(/\s+/g, "_");
     const qty = entry.Quantity ?? 1;
+    // A per-unit template entry (e.g. fuse) carries the authoritative bounds in
+    // Min/MaxQuantity — use them verbatim instead of summing Quantity.
+    const hasExplicitBounds = entry.PerFuseUnit === true || entry.MaxQuantity != null;
 
     if (grouped.has(id)) {
       const existing = grouped.get(id)!;
-      existing.maxQuantity += qty;
+      if (hasExplicitBounds) {
+        existing.minQuantity = entry.MinQuantity ?? existing.minQuantity;
+        existing.maxQuantity = entry.MaxQuantity ?? existing.maxQuantity;
+        existing.explicitBounds = true;
+      } else if (!existing.explicitBounds) {
+        existing.maxQuantity += qty;
+      }
       if (entry.Required) existing.required = true;
     } else {
       grouped.set(id, {
         label: category,
         description: entry.Description ?? category,
         required: entry.Required ?? false,
-        maxQuantity: qty,
+        minQuantity: hasExplicitBounds ? (entry.MinQuantity ?? 1) : 1,
+        maxQuantity: hasExplicitBounds ? (entry.MaxQuantity ?? qty) : qty,
         categoryFilter: category,
+        explicitBounds: hasExplicitBounds,
       });
     }
   }
 
-  return Array.from(grouped.entries()).map(([id, slot]) => ({ id, ...slot }));
+  return Array.from(grouped.entries()).map(
+    ([id, { explicitBounds: _ignore, ...slot }]) => ({ id, ...slot }),
+  );
 }
 
 // ── AAS server helpers ────────────────────────────────────────────────────
@@ -252,6 +271,9 @@ function collectRawEntries(
         Description: entry.Description as string | undefined,
         Quantity: entry.Quantity as number | undefined,
         Required: entry.Required as boolean | undefined,
+        PerFuseUnit: entry.PerFuseUnit as boolean | undefined,
+        MinQuantity: entry.MinQuantity as number | undefined,
+        MaxQuantity: entry.MaxQuantity as number | undefined,
         ProductFamilyRef: iri,
       });
     }

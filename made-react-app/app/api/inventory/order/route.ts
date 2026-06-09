@@ -14,6 +14,7 @@ import {
   type PlacedOrder,
 } from "@/lib/inventory";
 import { randomUUID } from "crypto";
+import { getFuseBounds } from "@/lib/fuseBounds";
 
 async function ensureTables() {
   await pool.query(CREATE_COMPONENT_TYPES_TABLE_SQL);
@@ -141,6 +142,26 @@ export async function POST(req: NextRequest) {
 
   if (!items?.length || !session) {
     return NextResponse.json({ error: "items array and session are required" }, { status: 400 });
+  }
+
+  // Enforce the fuse bounds defined in the preset template (single source of
+  // truth). Reject out-of-range orders before reserving any inventory so a
+  // hand-crafted or buggy request can never push an unbuildable fuse count
+  // into production.
+  if (productConfigs && productConfigs.length > 0) {
+    const { min, max } = getFuseBounds();
+    for (let i = 0; i < productConfigs.length; i++) {
+      const fuseQty = productConfigs[i].items
+        .filter((it) => it.slotLabel?.toLowerCase().includes("fuse"))
+        .reduce((sum, it) => sum + (it.quantity ?? 0), 0);
+      if (fuseQty < min || fuseQty > max) {
+        const range = Number.isFinite(max) ? `${min}–${max}` : `at least ${min}`;
+        return NextResponse.json(
+          { error: `Product ${i + 1}: fuse count ${fuseQty} is outside the allowed range (${range}).` },
+          { status: 400 },
+        );
+      }
+    }
   }
 
   await ensureTables();

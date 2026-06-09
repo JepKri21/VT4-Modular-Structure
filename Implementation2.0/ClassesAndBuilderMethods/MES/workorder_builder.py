@@ -21,6 +21,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "InformationModels"))
 sys.path.insert(0, str(Path(__file__).parent))
 from MessageStructure import WorkOrderMessage
 import basyx_client
+import preset_loader
 
 log = logging.getLogger(__name__)
 
@@ -408,6 +409,12 @@ def build_workorder(
     assemblies: dict[str, dict] = {}
     process_steps: dict[str, dict] = {}
 
+    # Number of fuses ordered — drives expansion of the fuse sub-assembly so the
+    # workorder traverses one assemble step per physical fuse. Must match the
+    # count used by shell_uploader so the generated operation names line up with
+    # what was uploaded to BaSyx.
+    fuse_count = preset_loader.fuse_count(configuration)
+
     _name_count: dict[str, int] = {}
     _step_counter = [0]
     _last_step_id: list[str | None] = [None]  # global across recursion levels
@@ -491,7 +498,9 @@ def build_workorder(
                 if not sub_preset_name:
                     log.warning("No preset mapping for sub-assembly IRI: %s", ref_iri)
                     continue
-                sub_preset = _load_preset(sub_preset_name)
+                sub_preset = preset_loader.expand_fuse_assembly(
+                    _load_preset(sub_preset_name), fuse_count
+                )
                 sub_output_ids = resolve(sub_preset)
                 input_ids.extend(sub_output_ids)
             else:
