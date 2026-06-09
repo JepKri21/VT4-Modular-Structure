@@ -292,6 +292,19 @@ class SkillExecutor:
         cmd_in = command_pt.get("InputTypes") or []
         cmd_out = command_pt.get("OutputTypes") or []
 
+        # Diagnostic: dump exactly what the CMD asked for AND what the
+        # capability declares, so any mismatch is obvious from the log.
+        print(
+            f"[match-pt] cmd in={cmd_in!r} out={cmd_out!r}",
+            flush=True,
+        )
+        for pt_name, pt in capability.process_transformations.items():
+            print(
+                f"[match-pt]   declared '{pt_name}': "
+                f"in={pt.input_types!r} out={pt.output_types!r}",
+                flush=True,
+            )
+
         for pt in capability.process_transformations.values():
 
             cap_inputs = pt.input_types

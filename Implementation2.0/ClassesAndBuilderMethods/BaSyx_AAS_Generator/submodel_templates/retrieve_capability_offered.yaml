@@ -4,7 +4,6 @@ description: "Offered retrieve capability â€” used by storage-type resource
 semantic_id: "https://aausmartlab.org/Semantics/SubmodelTypes/Capability"
 
 elements:
-
   - type: property
     id_short: "CapabilityCategory"
     value_type: "xs:string"
@@ -26,7 +25,6 @@ elements:
     description: "Parameters defining the retrieve capability envelope"
     cardinality: "One"
     elements:
-
       - type: multi_language_property
         id_short: "OperationLabel"
         semantic_id: "https://aausmartlab.org/Semantics/OperationLabel"
@@ -56,3 +54,42 @@ elements:
     cardinality: "One"
     reference_type: "model"
     reference_target: "shell"
+
+  - type: collection
+    id_short: "ProcessTransformations"
+    semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformations"
+    description: "Mappings between component input types and the resulting output type this resource can produce"
+    cardinality: "One"
+    extensible: true
+    entry_template: "{Name}"
+    elements:
+      - type: collection
+        id_short: "Transformation1"
+        semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation"
+        description: "A single input-to-output component type mapping"
+        cardinality: "One"
+        elements:
+          - type: collection
+            id_short: "InputTypes"
+            semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation/InputTypes"
+            description: "Component or assembly type URIs required as inputs for this transformation"
+            cardinality: "One"
+            elements:
+              - type: list
+                id_short: "ComponentTypeReference"
+                semantic_id: "https://aausmartlab.org/Semantics/ComponentTypeReference"
+                description: "Type IRIs of the input components or assemblies"
+                element_type: "property"
+                value_type: "xs:string"
+          - type: collection
+            id_short: "OutputTypes"
+            semantic_id: "https://aausmartlab.org/Semantics/ProcessTransformation/OutputTypes"
+            description: "Component or assembly type URIs produced by this transformation"
+            cardinality: "One"
+            elements:
+              - type: list
+                id_short: "ComponentTypeReference"
+                semantic_id: "https://aausmartlab.org/Semantics/ComponentTypeReference"
+                description: "Type IRIs of the output components or assemblies"
+                element_type: "property"
+                value_type: "xs:string"

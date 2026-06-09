@@ -16,13 +16,14 @@ id: "https://aausmartlab.org/Shells/Resources/TransportStation"
 
 submodel_templates:
   TransportCapabilityOffered: "https://aausmartlab.org/Submodels/Templates/TransportCapabilityOffered"
-  Skills:                     "https://aausmartlab.org/Submodels/Templates/Skills"
-  ResourceZones:              "https://aausmartlab.org/Submodels/Templates/ResourceZones"
-  Communication:              "https://aausmartlab.org/Submodels/Templates/Communication"
+  Skills: "https://aausmartlab.org/Submodels/Templates/Skills"
+  ResourceZones: "https://aausmartlab.org/Submodels/Templates/ResourceZones"
+  Communication: "https://aausmartlab.org/Submodels/Templates/Communication"
 
 include:
   TransportCapabilityOffered:
     - Parameters
+    - ProcessTransformations
     - SupportedComponents
     - AllowedMaterials
   Skills: []

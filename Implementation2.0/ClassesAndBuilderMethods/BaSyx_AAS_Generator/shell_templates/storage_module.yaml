@@ -15,26 +15,29 @@ asset_category: "Resource"
 id: "https://aausmartlab.org/Shells/Resources/StorageModule"
 
 submodel_templates:
-  StoreCapabilityOffered:    "https://aausmartlab.org/Submodels/Templates/StoreCapabilityOffered"
+  StoreCapabilityOffered: "https://aausmartlab.org/Submodels/Templates/StoreCapabilityOffered"
   RetrieveCapabilityOffered: "https://aausmartlab.org/Submodels/Templates/RetrieveCapabilityOffered"
-  HandoffCapabilityOffered:  "https://aausmartlab.org/Submodels/Templates/HandoffCapabilityOffered"
-  Skills:                    "https://aausmartlab.org/Submodels/Templates/Skills"
-  ResourceZones:             "https://aausmartlab.org/Submodels/Templates/ResourceZones"
-  Inventory:                 "https://aausmartlab.org/Submodels/Templates/Inventory"
-  Communication:             "https://aausmartlab.org/Submodels/Templates/Communication"
+  HandoffCapabilityOffered: "https://aausmartlab.org/Submodels/Templates/HandoffCapabilityOffered"
+  Skills: "https://aausmartlab.org/Submodels/Templates/Skills"
+  ResourceZones: "https://aausmartlab.org/Submodels/Templates/ResourceZones"
+  Inventory: "https://aausmartlab.org/Submodels/Templates/Inventory"
+  Communication: "https://aausmartlab.org/Submodels/Templates/Communication"
 
 include:
   StoreCapabilityOffered:
     - Parameters
     - SupportedComponents
+    - ProcessTransformations
     - AllowedMaterials
   RetrieveCapabilityOffered:
     - Parameters
     - SupportedComponents
+    - ProcessTransformations
     - AllowedMaterials
   HandoffCapabilityOffered:
     - Parameters
     - SupportedComponents
+    - ProcessTransformations
     - AllowedMaterials
   Skills: []
   Inventory:

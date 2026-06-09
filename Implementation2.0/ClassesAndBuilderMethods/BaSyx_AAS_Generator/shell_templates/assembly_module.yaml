@@ -17,11 +17,11 @@ id: "https://aausmartlab.org/Shells/Resources/AssemblyModule"
 
 submodel_templates:
   AssembleCapabilityOffered: "https://aausmartlab.org/Submodels/Templates/AssembleCapabilityOffered"
-  HandoffCapabilityOffered:  "https://aausmartlab.org/Submodels/Templates/HandoffCapabilityOffered"
-  Skills:                    "https://aausmartlab.org/Submodels/Templates/Skills"
-  ResourceZones:             "https://aausmartlab.org/Submodels/Templates/ResourceZones"
-  Inventory:                 "https://aausmartlab.org/Submodels/Templates/Inventory"
-  Communication:             "https://aausmartlab.org/Submodels/Templates/Communication"
+  HandoffCapabilityOffered: "https://aausmartlab.org/Submodels/Templates/HandoffCapabilityOffered"
+  Skills: "https://aausmartlab.org/Submodels/Templates/Skills"
+  ResourceZones: "https://aausmartlab.org/Submodels/Templates/ResourceZones"
+  Inventory: "https://aausmartlab.org/Submodels/Templates/Inventory"
+  Communication: "https://aausmartlab.org/Submodels/Templates/Communication"
 
 include:
   AssembleCapabilityOffered:
@@ -32,6 +32,7 @@ include:
   HandoffCapabilityOffered:
     - Parameters
     - SupportedComponents
+    - ProcessTransformations
     - AllowedMaterials
   Skills: []
   Inventory:

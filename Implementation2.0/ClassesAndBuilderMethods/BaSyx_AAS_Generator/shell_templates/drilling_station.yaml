@@ -16,19 +16,15 @@ id: "https://aausmartlab.org/Shells/Resources/DrillingStation"
 
 submodel_templates:
   DrillingCapabilityOffered: "https://aausmartlab.org/Submodels/Templates/DrillingCapabilityOffered"
-  HandoffCapabilityOffered:  "https://aausmartlab.org/Submodels/Templates/HandoffCapabilityOffered"
-  Skills:                    "https://aausmartlab.org/Submodels/Templates/Skills"
-  ResourceZones:             "https://aausmartlab.org/Submodels/Templates/ResourceZones"
-  Communication:             "https://aausmartlab.org/Submodels/Templates/Communication"
+  HandoffCapabilityOffered: "https://aausmartlab.org/Submodels/Templates/HandoffCapabilityOffered"
+  Skills: "https://aausmartlab.org/Submodels/Templates/Skills"
+  ResourceZones: "https://aausmartlab.org/Submodels/Templates/ResourceZones"
+  Communication: "https://aausmartlab.org/Submodels/Templates/Communication"
 
 include:
   DrillingCapabilityOffered:
     - Parameters
     - ProcessTransformations
-    - SupportedComponents
-    - AllowedMaterials
-  HandoffCapabilityOffered:
-    - Parameters
     - SupportedComponents
     - AllowedMaterials
   Skills: []
