@@ -295,6 +295,7 @@ async def main() -> None:
         product_matcher=_product_matcher,
         occupancy=occupancy,
         aas_server_base=AAS_SERVER_BASE,
+        locations=line_config.locations,
         recovery=recovery,
     )
 
@@ -327,14 +328,6 @@ async def main() -> None:
     # Initial inventory load from AAS before any work orders arrive.
     _product_matcher.poll_inventory_from_aas(line_config.locations)
     print("[init] initial inventory loaded from AAS")
-
-    async def _inventory_poll_loop(locations, interval: float = 5.0) -> None:
-        while True:
-            await asyncio.sleep(interval)
-            if _product_matcher is not None:
-                _product_matcher.poll_inventory_from_aas(locations)
-
-    asyncio.create_task(_inventory_poll_loop(line_config.locations))
 
     # Periodic orchestration snapshot for the MES Production Monitoring UI.
     # Retained publish so a late-joining subscriber sees the current picture.

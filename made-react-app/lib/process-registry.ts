@@ -1,5 +1,8 @@
 import { ChildProcess, spawn } from "child_process";
 import path from "path";
+import fs from "fs";
+import os from "os";
+import crypto from "crypto";
 import { pool } from "@/lib/db";
 import { CREATE_RESOURCE_PROCESSES_TABLE_SQL } from "@/lib/inventory";
 import { getResourceRunnerConfig } from "@/lib/aas-config";
@@ -7,26 +10,36 @@ import { getResourceRunnerConfig } from "@/lib/aas-config";
 // Module-level singleton — one instance per Next.js server process
 const registry = new Map<string, ChildProcess>();
 
-// Keeps the last 200 lines of stdout+stderr per shell, survives process exit so crashes are visible
-const LOG_MAX = 200;
-const logBuffers = new Map<string, string[]>();
+const LOG_MAX_LINES = 200;
+const LOG_DIR = path.join(os.tmpdir(), "resource-runner-logs");
+
+function ensureLogDir(): void {
+  if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true });
+}
+
+function logFilePath(shellId: string): string {
+  const hash = crypto.createHash("sha1").update(shellId).digest("hex").slice(0, 16);
+  return path.join(LOG_DIR, `${hash}.log`);
+}
 
 function appendLog(shellId: string, chunk: Buffer | string): void {
-  const lines = chunk.toString("utf-8").split(/\r?\n/);
-  const buf = logBuffers.get(shellId) ?? [];
-  for (const line of lines) {
-    if (line) buf.push(line);
-  }
-  if (buf.length > LOG_MAX) buf.splice(0, buf.length - LOG_MAX);
-  logBuffers.set(shellId, buf);
+  ensureLogDir();
+  const text = chunk.toString("utf-8");
+  fs.appendFileSync(logFilePath(shellId), text, "utf-8");
 }
 
 export function getProcessLogs(shellId: string): string[] {
-  return logBuffers.get(shellId) ?? [];
+  const file = logFilePath(shellId);
+  if (!fs.existsSync(file)) return [];
+  const content = fs.readFileSync(file, "utf-8");
+  const lines = content.split(/\r?\n/).filter((l) => l.length > 0);
+  // Return only the last LOG_MAX_LINES lines
+  return lines.slice(-LOG_MAX_LINES);
 }
 
 export function clearProcessLogs(shellId: string): void {
-  logBuffers.delete(shellId);
+  const file = logFilePath(shellId);
+  if (fs.existsSync(file)) fs.unlinkSync(file);
 }
 
 async function ensureTable(): Promise<void> {
@@ -90,10 +103,14 @@ export async function startRunner(shellId: string, serverUrl: string): Promise<S
     return { ok: false, error: "Resource runner path not configured. Set it in the Resource Control settings." };
   }
 
+  // Clear log file from previous run
+  clearProcessLogs(shellId);
+
   const cwd = path.dirname(runnerPath);
-  const child = spawn(pythonExe, [runnerPath, "--shell-id", shellId, "--server", serverUrl], {
+  // -u / PYTHONUNBUFFERED: force unbuffered stdout/stderr so output streams immediately
+  const child = spawn(pythonExe, ["-u", runnerPath, "--shell-id", shellId, "--server", serverUrl], {
     cwd,
-    env: { ...process.env, PYTHONIOENCODING: "utf-8" },
+    env: { ...process.env, PYTHONIOENCODING: "utf-8", PYTHONUNBUFFERED: "1" },
     detached: false,
   });
 
@@ -101,10 +118,9 @@ export async function startRunner(shellId: string, serverUrl: string): Promise<S
     return { ok: false, error: "Failed to spawn process (no PID assigned)" };
   }
 
-  // Clear stale logs from a previous run before buffering fresh output
-  logBuffers.delete(shellId);
   registry.set(shellId, child);
 
+  // Write stdout/stderr to a file so logs survive Next.js HMR reloads
   child.stdout?.on("data", (chunk: Buffer) => appendLog(shellId, chunk));
   child.stderr?.on("data", (chunk: Buffer) => appendLog(shellId, chunk));
 

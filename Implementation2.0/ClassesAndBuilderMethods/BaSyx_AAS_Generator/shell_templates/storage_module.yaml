@@ -71,6 +71,9 @@ submodels:
 
   Communication:
     MQTT:
+      ProductionLinePrefix: ""
+      BrokerID: ""
+      BrokerPort: ""
       Suffixes:
         CommandSuffix: "CMD"
         StateSuffix: "PackMLState"
