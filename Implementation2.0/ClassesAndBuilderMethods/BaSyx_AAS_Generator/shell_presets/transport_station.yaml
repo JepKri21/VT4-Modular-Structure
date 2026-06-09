@@ -21,6 +21,49 @@ submodels:
       OperationLabel:
         en: "Transport operation"
         dk: "Transportoperation"
+    ProcessTransformations:
+      TransportEmpty:
+        InputTypes:
+          ComponentTypeReference:
+            - null
+        OutputTypes:
+          ComponentTypeReference:
+            - null
+      TransportBottomCover:
+        InputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Component/BottomCover"
+        OutputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Component/BottomCover"
+      TransportTopCover:
+        InputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Component/TopCover"
+        OutputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Component/TopCover"
+      TransportBottomCoverPCB:
+        InputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB" 
+        OutputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
+      TransportBottomCoverPCBFuse:
+        InputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse" 
+        OutputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
+      TransportMobilePhone:
+        InputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Product/MobilePhone"
+        OutputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Product/MobilePhone"
 
   Skills:
     Transport:

@@ -41,6 +41,21 @@ submodels:
       OperationLabel:
         en: "Handoff operation"
         dk: "Afleveringsoperation"
+    ProcessTransformations:
+      ReceiveBottomCover:
+        InputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Component/BottomCover"
+        OutputTypes:
+          ComponentTypeReference:
+            - null
+      ProvideBottomCoverPCB:
+        InputTypes:
+          ComponentTypeReference:
+            - null
+        OutputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
 
   Skills:
     Assemble:
@@ -81,7 +96,7 @@ submodels:
   Inventory:
     Inventories:
       - Specifications:
-          InventorySize: 10
+          InventorySize: 30
         SupportedComponents:
           - "https://aausmartlab.org/Shells/Component/PCB"
         Actors:

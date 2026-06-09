@@ -15,10 +15,33 @@ submodels:
     AllowedMaterials:
       - "https://aausmartlab.org/Materials/PLA"
       - "https://aausmartlab.org/Materials/ABS"
+      - "https://aausmartlab.org/Materials/PETG"
     Parameters:
       OperationLabel:
         en: "Store operation"
         dk: "Lageroperation"
+    ProcessTransformations:
+      ReceiveBottomCover:
+        InputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Component/BottomCover"
+        OutputTypes:
+          ComponentTypeReference:
+            - null
+      ReceiveTopCover:
+        InputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Component/TopCover"
+        OutputTypes:
+          ComponentTypeReference:
+            - null
+      ReceiveMobilePhone:
+        InputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Product/MobilePhone"
+        OutputTypes:
+          ComponentTypeReference:
+            - null
 
   RetrieveCapabilityOffered:
     CapabilityCategory: "Offered"
@@ -30,10 +53,33 @@ submodels:
     AllowedMaterials:
       - "https://aausmartlab.org/Materials/PLA"
       - "https://aausmartlab.org/Materials/ABS"
+      - "https://aausmartlab.org/Materials/PETG"
     Parameters:
       OperationLabel:
         en: "Retrieve operation"
         dk: "Henteoperation"
+    ProcessTransformations:
+      ProvideBottomCover:
+        InputTypes:
+          ComponentTypeReference:
+            - null
+        OutputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Component/BottomCover"
+      ProvideTopCover:
+        InputTypes:
+          ComponentTypeReference:
+            - null
+        OutputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Component/TopCover"
+      ProvideMobilePhone:
+        InputTypes:
+          ComponentTypeReference:
+            - null
+        OutputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Product/MobilePhone"
 
   HandoffCapabilityOffered:
     CapabilityCategory: "Offered"
@@ -45,6 +91,7 @@ submodels:
     AllowedMaterials:
       - "https://aausmartlab.org/Materials/PLA"
       - "https://aausmartlab.org/Materials/ABS"
+      - "https://aausmartlab.org/Materials/PETG"
     Parameters:
       TargetPosition:
         XPos: ""
@@ -52,6 +99,49 @@ submodels:
       OperationLabel:
         en: "Handoff operation"
         dk: "Afleveringsoperation"
+    ProcessTransformations:
+      ProvideBottomCover:
+        InputTypes:
+          ComponentTypeReference:
+            - null
+        OutputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Component/BottomCover"
+      ProvideTopCover:
+        InputTypes:
+          ComponentTypeReference:
+            - null
+        OutputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Component/TopCover"
+      ProvideMobilePhone:
+        InputTypes:
+          ComponentTypeReference:
+            - null
+        OutputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Product/MobilePhone"
+      ReceiveBottomCover:
+        InputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Component/BottomCover"
+        OutputTypes:
+          ComponentTypeReference:
+            - null
+      ReceiveTopCover:
+        InputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Component/TopCover"
+        OutputTypes:
+          ComponentTypeReference:
+            - null
+      ReceiveMobilePhone:
+        InputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Product/MobilePhone"
+        OutputTypes:
+          ComponentTypeReference:
+            - null
 
   Skills:
     Store:
@@ -109,14 +199,14 @@ submodels:
   Inventory:
     Inventories:
       - Specifications:
-          InventorySize: 10
+          InventorySize: 40
         SupportedComponents:
           - "https://aausmartlab.org/Shells/Component/BottomCover"
           - "https://aausmartlab.org/Shells/Component/TopCover"
         Actors:
           - "UR5"
       - Specifications:
-          InventorySize: 5
+          InventorySize: 20
         SupportedComponents:
           - "https://aausmartlab.org/Shells/Product/MobilePhone"
         Actors:

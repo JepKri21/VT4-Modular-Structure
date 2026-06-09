@@ -41,6 +41,28 @@ submodels:
       OperationLabel:
         en: "Handoff operation"
         dk: "Afleveringsoperation"
+    ProcessTransformations:
+      ReceiveBottomCoverPCBFuse:
+        InputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
+        OutputTypes:
+          ComponentTypeReference:
+            - null
+      ReceiveTopCover:
+        InputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Component/TopCover"
+        OutputTypes:
+          ComponentTypeReference:
+            - null
+      ProvideMobilePhone:
+        InputTypes:
+          ComponentTypeReference:
+            - null
+        OutputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Product/MobilePhone"
 
   Skills:
     PhoneAssembly:
