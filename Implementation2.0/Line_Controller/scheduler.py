@@ -1221,6 +1221,16 @@ class Scheduler:
         storage_iri: str | None = None
 
         if component_ref:
+            # Fast path: if this instance is already reserved we already know
+            # which resource holds it — skip the inventory index entirely.
+            # (Reserved slots are excluded from the index, so find_component_location
+            # would return None and the fallback would misfire.)
+            entry = self._reserved_instances.get(component_ref)
+            if entry is not None and entry[1]:
+                storage_iri = entry[1]
+                picked_instance = component_ref
+
+        if storage_iri is None and component_ref:
             # Preferred path: component_ref is a concrete instance IRI
             # (already resolved by _resolve_input_instance). Look it up in
             # the inventory index directly.
