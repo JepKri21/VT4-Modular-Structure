@@ -9,6 +9,7 @@ import {
   CREATE_RESOURCE_ALLOCATIONS_TABLE_SQL,
   CREATE_ALLOCATED_INSTANCES_TABLE_SQL,
   MIGRATE_COMPONENT_TYPES_SQL,
+  RESERVED_BY_TYPE_SUBQUERY,
 } from "@/lib/inventory";
 
 async function ensureTables() {
@@ -30,14 +31,20 @@ async function findAvailableInstances(
   quantity: number,
   excludeIris: Set<string>
 ): Promise<string[]> {
-  const res = await fetch(`${base}/shells?limit=1000`);
-  if (!res.ok) throw new Error(`AAS server returned ${res.status} when fetching instances`);
-
-  const data = (await res.json()) as { result?: unknown[] };
-  const shells = (data.result ?? (Array.isArray(data) ? data : [])) as Array<{
-    id: string;
-    assetInformation?: { assetKind?: string };
-  }>;
+  type RawShell = { id: string; assetInformation?: { assetKind?: string } };
+  const shells: RawShell[] = [];
+  let cursor: string | undefined;
+  do {
+    const url = cursor
+      ? `${base}/shells?limit=100&cursor=${encodeURIComponent(cursor)}`
+      : `${base}/shells?limit=100`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`AAS server returned ${res.status} when fetching instances`);
+    const data = (await res.json()) as { result?: RawShell[]; paging_metadata?: { cursor?: string } };
+    const page = data.result ?? (Array.isArray(data) ? (data as unknown as RawShell[]) : []);
+    shells.push(...page);
+    cursor = data.paging_metadata?.cursor;
+  } while (cursor);
 
   const typePrefix = aasTypeIri + "-";
   const available = shells.filter((s) => {
@@ -279,12 +286,14 @@ export async function POST(req: NextRequest) {
   // Validate each type's stock level
   for (const item of items) {
     const invResult = await pool.query(
-      `SELECT i.quantity_available, i.quantity_reserved,
+      `SELECT i.quantity_available,
+              COALESCE(open_res.reserved, 0) AS quantity_reserved,
               COALESCE(SUM(ra.quantity), 0) AS already_allocated
        FROM inventory i
        LEFT JOIN resource_allocations ra ON ra.component_type_id = i.component_type_id
+       LEFT JOIN (${RESERVED_BY_TYPE_SUBQUERY}) open_res ON open_res.component_type_id = i.component_type_id
        WHERE i.component_type_id = $1
-       GROUP BY i.quantity_available, i.quantity_reserved`,
+       GROUP BY i.quantity_available, open_res.reserved`,
       [item.componentTypeId]
     );
     if (invResult.rows.length === 0) {
@@ -293,7 +302,7 @@ export async function POST(req: NextRequest) {
     const row = invResult.rows[0];
     const netAvailable =
       (row.quantity_available ?? 0) -
-      (row.quantity_reserved ?? 0) -
+      (parseInt(row.quantity_reserved) || 0) -
       (parseInt(row.already_allocated) || 0);
     if (netAvailable < item.quantity) {
       return NextResponse.json(

@@ -38,6 +38,8 @@ if str(THIS_DIR) not in sys.path:
     sys.path.insert(0, str(THIS_DIR))
 
 import queue_manager  # noqa: E402
+import order_store    # noqa: E402
+import webshop_notify  # noqa: E402
 
 # Pull in the shared MessageStructure so we can parse OrderCompleted
 # messages without re-declaring the schema.
@@ -135,6 +137,48 @@ def on_connect(client: mqtt.Client, userdata, flags, rc):
     try_release(client)
 
 
+def _notify_webshop_if_batch_complete(order_id: str) -> None:
+    """Mark the webshop order fulfilled once every MES sibling is COMPLETED.
+
+    A webshop order can fan out into several per-product MES orders. We only
+    call complete_order when the last one finishes so it isn't called twice.
+    order_store re-reads from disk on miss, so this works even when the order
+    was added by the mes_api process after the dispatcher started.
+    """
+    all_done, batch_id = queue_manager.batch_all_completed(order_id)
+    if not all_done:
+        return
+    order = order_store.get_order(order_id)
+    if not order:
+        log.debug("[dispatch] no order_store entry for %s — cannot notify webshop", order_id)
+        return
+    webshop_id = order.get("webshop_id")
+    if not webshop_id:
+        log.debug("[dispatch] order %s has no webshop_id — skipping webshop notify", order_id)
+        return
+    log.info("[dispatch] batch %s complete — fulfilling webshop order %s", batch_id, webshop_id)
+    webshop_notify.complete_order(webshop_id)
+
+
+def _cancel_webshop_on_final_abort(order_id: str) -> None:
+    """Cancel the webshop order after all dispatcher retry attempts are exhausted.
+
+    A webshop order may fan out into several per-product MES orders sharing the same
+    webshop_id. We only cancel when the FIRST sibling hits the retry limit — further
+    siblings arriving later will get a 404/400 from the webshop (order already
+    cancelled) which webshop_notify ignores. Safe to call multiple times.
+    """
+    order = order_store.get_order(order_id)
+    if not order:
+        log.debug("[dispatch] no order_store entry for %s — cannot cancel webshop", order_id)
+        return
+    webshop_id = order.get("webshop_id")
+    if not webshop_id:
+        return
+    log.info("[dispatch] final abort for %s — cancelling webshop order %s", order_id, webshop_id)
+    webshop_notify.cancel_order(webshop_id, reason="Order aborted after all retry attempts")
+
+
 def on_message(client: mqtt.Client, userdata, msg):
     if msg.topic != ORDER_COMPLETED_TOPIC:
         return
@@ -156,6 +200,9 @@ def on_message(client: mqtt.Client, userdata, msg):
         completed.order_id, terminal, completed.attempt_count,
     )
 
+    if terminal == "COMPLETED":
+        _notify_webshop_if_batch_complete(completed.order_id)
+
     # Dispatcher-level retry on ABORTED. Look up the current
     # attempt_count via the queue (the controller's attempt_count in
     # the message is its own retry counter, separate from ours).
@@ -176,6 +223,11 @@ def on_message(client: mqtt.Client, userdata, msg):
                 "[dispatch] %s exhausted %s/%s dispatcher attempts — final ABORT",
                 completed.order_id, cur_attempt, MAX_ATTEMPTS,
             )
+            # All retries exhausted — release the webshop reservation so the
+            # parts return to available stock. Parts already assembled into
+            # completed sub-assemblies stay consumed (their shells remain
+            # referenced in product BOMs). Best-effort; never raises.
+            _cancel_webshop_on_final_abort(completed.order_id)
 
     try_release(client)
 

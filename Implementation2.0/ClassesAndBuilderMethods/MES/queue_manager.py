@@ -183,6 +183,28 @@ def set_priority(order_id: str, priority: int) -> bool:
     return ok
 
 
+def set_priority_by_batch(batch_id: str, priority: int) -> int:
+    """Operator action: set priority on every still-PENDING row of a batch.
+
+    A webshop order maps to one MES batch (batch_id = "ORD-<8hex>") that may
+    contain several per-product rows. Only PENDING rows are affected — already
+    released/in-flight work cannot be reordered. Returns the number of rows updated.
+    """
+    sql = """
+        UPDATE mes_orders
+        SET priority = %s
+        WHERE batch_id = %s
+          AND status = 'PENDING'
+    """
+    conn = _connect()
+    with conn.cursor() as cur:
+        cur.execute(sql, (priority, batch_id))
+        updated = cur.rowcount
+    conn.commit()
+    log.info("[queue] set priority=%s on %s PENDING row(s) of batch %s", priority, updated, batch_id)
+    return updated
+
+
 def mark_released(order_id: str, line_id: str | None = None) -> bool:
     """Flip the order to RELEASED. Returns False if it had already been
     released or completed (lost race against another dispatcher tick).
@@ -290,7 +312,7 @@ def list_orders(limit: int = 100) -> list[dict[str, Any]]:
 def get_order(order_id: str) -> dict[str, Any] | None:
     sql = """
         SELECT id, order_id, line_id, product_ref, priority, payload,
-               status, issued_at, released_at, completed_at
+               status, issued_at, released_at, completed_at, batch_id
         FROM mes_orders
         WHERE order_id = %s
     """
@@ -299,3 +321,28 @@ def get_order(order_id: str) -> dict[str, Any] | None:
         cur.execute(sql, (order_id,))
         row = cur.fetchone()
     return dict(row) if row else None
+
+
+def batch_all_completed(order_id: str) -> tuple[bool, str | None]:
+    """Return (all_completed, batch_id). True when every mes_orders row for
+    the same batch as `order_id` has status = 'COMPLETED' and at least one row exists.
+    """
+    row = get_order(order_id)
+    if not row:
+        return False, None
+    batch_id = row.get("batch_id")
+    if not batch_id:
+        return False, None
+    sql = """
+        SELECT
+            COUNT(*)                                      AS total,
+            COUNT(*) FILTER (WHERE status = 'COMPLETED') AS done
+        FROM mes_orders
+        WHERE batch_id = %s
+    """
+    conn = _connect()
+    with conn.cursor() as cur:
+        cur.execute(sql, (batch_id,))
+        r = cur.fetchone()
+    total, done = int(r[0]), int(r[1])
+    return total > 0 and total == done, batch_id

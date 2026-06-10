@@ -30,21 +30,55 @@ export async function DELETE(
   context: { params: Promise<{ order_id: string }> },
 ) {
   const { order_id } = await context.params;
-  const res = await pool.query(
-    `UPDATE mes_orders
-     SET status = 'CANCELLED', completed_at = NOW()
-     WHERE order_id = $1
-       AND status = 'PENDING'
-     RETURNING order_id, status`,
+
+  // Fetch the batch_id before cancelling so we can cancel siblings and the webshop order.
+  const lookup = await pool.query(
+    `SELECT batch_id FROM mes_orders WHERE order_id = $1 AND status = 'PENDING'`,
     [order_id],
   );
-  if (res.rowCount === 0) {
+  if (lookup.rowCount === 0) {
     return NextResponse.json(
       { error: "order not pending (already released or finished)" },
       { status: 409 },
     );
   }
-  return NextResponse.json({ success: true, order_id });
+  const batchId: string | null = lookup.rows[0].batch_id;
+
+  // Cancel every PENDING row in the same batch (handles multi-product orders).
+  await pool.query(
+    `UPDATE mes_orders
+     SET status = 'CANCELLED', completed_at = NOW()
+     WHERE batch_id = $1
+       AND status = 'PENDING'`,
+    [batchId],
+  );
+
+  // batch_id is "ORD-<first 8 hex chars of the webshop UUID uppercase>".
+  // Use that to find and cancel the matching webshop order so its inventory
+  // reservation is released in the same action — no need to cancel separately
+  // on the orders page.
+  if (batchId) {
+    const hexPrefix = batchId.replace(/^ORD-/i, "").toLowerCase();
+    if (hexPrefix.length === 8) {
+      await pool.query(
+        `UPDATE aas_orders
+         SET cancelled_at = NOW(), status = 'cancelled',
+             cancellation_reason = 'Cancelled from scheduling queue'
+         WHERE LEFT(order_id::text, 8) = $1
+           AND cancelled_at IS NULL`,
+        [hexPrefix],
+      );
+
+      // Ask the MES to clean up BaSyx shells (fire-and-forget — non-fatal).
+      const batchUuidPrefix = hexPrefix;
+      const shellCleanupId = `${batchUuidPrefix}`;
+      void fetch(`http://localhost:8000/api/v1/orders/${shellCleanupId}/shells`, {
+        method: "DELETE",
+      }).catch(() => {});
+    }
+  }
+
+  return NextResponse.json({ success: true, order_id, batch_id: batchId });
 }
 
 // PATCH — change priority on a PENDING row. Body: { priority: number }.

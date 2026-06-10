@@ -14,10 +14,11 @@ from typing import Optional
 import paho.mqtt.client as mqtt
 
 import order_store
+import webshop_notify
 from sys import path as _path
 from pathlib import Path as _Path
 _path.insert(0, str(_Path(__file__).parent.parent / "InformationModels"))
-from MessageStructure import WorkOrderMessage, WorkOrderStatusMessage
+from MessageStructure import WorkOrderMessage, WorkOrderStatus, WorkOrderStatusMessage
 
 log = logging.getLogger(__name__)
 
@@ -59,8 +60,31 @@ def _on_message(client, userdata, msg):
             status_msg.line_id,
         )
         log.info("WorkOrderStatus %s → %s", status_msg.order_id, status_msg.status)
+        if status_msg.status == WorkOrderStatus.COMPLETE:
+            _notify_webshop_if_batch_complete(status_msg.order_id)
     except Exception as exc:
         log.warning("Failed to parse WorkOrderStatus: %s", exc)
+
+
+def _notify_webshop_if_batch_complete(order_id: str) -> None:
+    """Release a webshop order's reservation once all of its per-product work
+    orders have completed.
+
+    A single webshop order can fan out into several per-product work orders that
+    share the same webshop_id (e.g. "ORD-XXXX-1", "ORD-XXXX-2"). Only the last one
+    to complete should mark the webshop order fulfilled, so we require every
+    sibling to be COMPLETE before notifying. Safe if called again: the webshop
+    rejects a repeat transition and won't double-release.
+    """
+    order = order_store.get_order(order_id)
+    if not order:
+        return
+    webshop_id = order.get("webshop_id")
+    if not webshop_id:
+        return
+    siblings = [o for o in order_store.get_all() if o.get("webshop_id") == webshop_id]
+    if siblings and all(o.get("status") == WorkOrderStatus.COMPLETE.value for o in siblings):
+        webshop_notify.complete_order(webshop_id)
 
 
 def _workorder_to_pascal_dict(wo: WorkOrderMessage) -> dict:

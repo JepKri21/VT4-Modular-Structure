@@ -5,8 +5,18 @@ import {
   CREATE_INVENTORY_TABLE_SQL,
   CREATE_ORDERS_TABLE_SQL,
   CREATE_ORDER_ITEMS_TABLE_SQL,
+  CREATE_RESOURCE_SLOTS_TABLE_SQL,
+  CREATE_RESOURCE_ALLOCATIONS_TABLE_SQL,
+  CREATE_ALLOCATED_INSTANCES_TABLE_SQL,
   MIGRATE_COMPONENT_TYPES_SQL,
 } from "@/lib/inventory";
+import { fetchResourceInventories, type ResourceInventory } from "@/lib/resource-inventory";
+
+// IRI pattern: https://aausmartlab.org/Shells/Component/{Category}/{Type}-{UUID}
+// The UUID is appended to the last segment with a hyphen/underscore prefix.
+const UUID_SUFFIX_RE = /[-_][0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// Plain UUIDs that appear as a full path segment (legacy/fallback).
+const UUID_SEGMENT_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type ParsedProperties = {
   material?: string;
@@ -90,6 +100,64 @@ async function fetchComponentProperties(base: string, shellId: string): Promise<
   }
 }
 
+/**
+ * Fetch every page of a BaSyx collection endpoint (e.g. "/shells", "/submodels"),
+ * following the cursor in paging_metadata. Replaces the old `?limit=100` cap that
+ * silently dropped everything past the first 100 entries.
+ */
+async function fetchAllPaged(base: string, path: string): Promise<Record<string, unknown>[]> {
+  const out: Record<string, unknown>[] = [];
+  let cursor: string | undefined;
+  for (let i = 0; i < 100; i++) {
+    const sep = path.includes("?") ? "&" : "?";
+    const url = `${base}${path}${sep}limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      if (i === 0) {
+        throw new Error(`${res.status}: ${await res.text().catch(() => "")}`);
+      }
+      break; // partial failure mid-pagination — return what we have
+    }
+    const data = (await res.json()) as { result?: unknown[]; paging_metadata?: { cursor?: string } };
+    const batch = (data.result ?? (Array.isArray(data) ? data : [])) as Record<string, unknown>[];
+    out.push(...batch);
+    cursor = data.paging_metadata?.cursor;
+    if (!cursor) break;
+  }
+  return out;
+}
+
+/**
+ * Collect the IRIs of component instances that have already been consumed into a
+ * product. Assembly does NOT delete the component shell — it records the link by
+ * writing the instance IRI into the product's BillOfMaterials
+ * (`BOMEntries.<entry>.ComponentShellReference`). Those instances stay on the AAS
+ * but must not count as available stock.
+ */
+function collectConsumedIris(submodels: Record<string, unknown>[]): Set<string> {
+  const consumed = new Set<string>();
+
+  const walk = (el: unknown): void => {
+    if (!el || typeof el !== "object") return;
+    const e = el as Record<string, unknown>;
+    if (e.idShort === "ComponentShellReference") {
+      const v = e.value as { keys?: { value?: string }[] } | undefined;
+      const iri = v?.keys?.[0]?.value;
+      if (typeof iri === "string" && iri.trim()) consumed.add(iri.trim());
+    }
+    if (Array.isArray(e.value)) e.value.forEach(walk);
+    if (Array.isArray(e.submodelElements)) e.submodelElements.forEach(walk);
+  };
+
+  for (const sm of submodels) {
+    if (sm.idShort !== "BillOfMaterials") continue;
+    const id = (sm.id as string) ?? "";
+    if (id.includes("/Submodels/Templates/")) continue; // skip the BOM template
+    if (Array.isArray(sm.submodelElements)) sm.submodelElements.forEach(walk);
+  }
+  return consumed;
+}
+
 export async function POST(req: NextRequest) {
   const { serverUrl } = (await req.json()) as { serverUrl: string };
 
@@ -100,22 +168,43 @@ export async function POST(req: NextRequest) {
   const base = serverUrl.replace(/\/$/, "");
 
   try {
-    const res = await fetch(`${base}/shells?limit=100`);
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
+    let rawShells: Record<string, unknown>[];
+    try {
+      rawShells = await fetchAllPaged(base, "/shells");
+    } catch (err) {
       return NextResponse.json(
-        { error: `AAS Server returned ${res.status}: ${text}` },
+        { error: `AAS Server returned ${String(err)}` },
         { status: 502 }
       );
     }
 
-    const data = (await res.json()) as { result?: unknown[] };
-    const rawShells = (data.result ?? (Array.isArray(data) ? data : [])) as Record<string, unknown>[];
+    // Detect component instances already consumed into a product so they are not
+    // counted as available stock. Best-effort: if the submodels can't be read,
+    // fall back to counting every shell (nothing excluded).
+    let consumedIris = new Set<string>();
+    try {
+      const rawSubmodels = await fetchAllPaged(base, "/submodels");
+      consumedIris = collectConsumedIris(rawSubmodels);
+    } catch {
+      /* ignore — degrade to counting all shells */
+    }
+
+    // Resource StoredComponents are the physical ground truth for stock. Best-effort:
+    // if they can't be read, the allocation rebuild below is skipped (allocations untouched).
+    let resourceInventories: ResourceInventory[] = [];
+    try {
+      resourceInventories = await fetchResourceInventories(base, rawShells);
+    } catch {
+      /* ignore — leave resource allocations as-is */
+    }
 
     await pool.query(CREATE_COMPONENT_TYPES_TABLE_SQL);
     await pool.query(CREATE_INVENTORY_TABLE_SQL);
     await pool.query(CREATE_ORDERS_TABLE_SQL);
     await pool.query(CREATE_ORDER_ITEMS_TABLE_SQL);
+    await pool.query(CREATE_RESOURCE_SLOTS_TABLE_SQL);
+    await pool.query(CREATE_RESOURCE_ALLOCATIONS_TABLE_SQL);
+    await pool.query(CREATE_ALLOCATED_INSTANCES_TABLE_SQL);
     for (const sql of MIGRATE_COMPONENT_TYPES_SQL) {
       await pool.query(sql);
     }
@@ -130,14 +219,7 @@ export async function POST(req: NextRequest) {
       `DELETE FROM component_types WHERE id ~ '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'`
     );
 
-    // Parse IRI and extract component type info.
-    // IRI pattern: https://aausmartlab.org/Shells/Component/{AssetType}/{AssetName}-{UUID}
-    // The UUID is appended to the last segment with a hyphen prefix.
-    const UUID_SUFFIX_RE = /[-_][0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    // Also handle plain UUIDs as full path segments (legacy/fallback)
-    const UUID_SEGMENT_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-    // Count shells per component type
+    // Count shells per component type (UUID regexes are module-scope: UUID_SUFFIX_RE / UUID_SEGMENT_RE)
     const typeCounts: Record<string, { category: string; type: string; name: string; count: number; shellId: string }> = {};
 
     for (const shell of rawShells) {
@@ -166,6 +248,16 @@ export async function POST(req: NextRequest) {
       if (!typeCounts[componentTypeId]) {
         // Store this instance's IRI for property fetching (any instance of the same type works)
         typeCounts[componentTypeId] = { category, type: typeSegment, name, count: 0, shellId: id };
+      }
+
+      // Consumed instances stay on the AAS but are no longer available stock.
+      // The type is still registered above (so it shows with the correct count,
+      // even 0, rather than vanishing), but its count is not incremented.
+      if (consumedIris.has(id)) continue;
+
+      // Prefer a non-consumed instance as the property representative.
+      if (consumedIris.has(typeCounts[componentTypeId].shellId)) {
+        typeCounts[componentTypeId].shellId = id;
       }
       typeCounts[componentTypeId].count++;
     }
@@ -252,11 +344,97 @@ export async function POST(req: NextRequest) {
       await pool.query(`DELETE FROM component_types WHERE description LIKE 'Synced from %'`);
     }
 
+    // ── Rebuild resource allocations from the physical AAS inventories ──
+    // The webshop sells from `quantityAllocated` (SUM of resource_allocations), and the
+    // per-zone view shows the same. Those were written once at allocation time and never
+    // decremented when production consumed a part, so consumed/assembled components kept
+    // counting as sellable stock. Mirror each resource's actual StoredComponents into
+    // resource_slots / resource_allocations / allocated_instances so the counts reflect
+    // what is physically present right now.
+    let resourcesReconciled = 0;
+    let instancesReconciled = 0;
+    if (resourceInventories.length > 0) {
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        const resourceIds = resourceInventories.map((r) => r.resourceId);
+        const ph = resourceIds.map((_, i) => `$${i + 1}`).join(", ");
+
+        // Upsert capacity + categories for every live resource.
+        for (const r of resourceInventories) {
+          await client.query(
+            `INSERT INTO resource_slots (resource_id, resource_name, inventory_size, supported_categories, last_synced)
+             VALUES ($1, $2, $3, $4, NOW())
+             ON CONFLICT (resource_id) DO UPDATE SET
+               resource_name = EXCLUDED.resource_name,
+               inventory_size = EXCLUDED.inventory_size,
+               supported_categories = EXCLUDED.supported_categories,
+               last_synced = EXCLUDED.last_synced`,
+            [r.resourceId, r.resourceName, r.capacity, JSON.stringify(r.categories)]
+          );
+        }
+
+        // Drop resource_slots no longer on the AAS (CASCADE clears their allocations).
+        await client.query(
+          `DELETE FROM resource_slots
+            WHERE resource_id LIKE '%/Shells/Resources/%' AND resource_id NOT IN (${ph})`,
+          resourceIds
+        );
+
+        // Replace each live resource's allocations with its physical slot contents.
+        await client.query(
+          `DELETE FROM resource_allocations WHERE resource_id IN (${ph})`,
+          resourceIds
+        );
+
+        for (const r of resourceInventories) {
+          const byType = new Map<string, string[]>();
+          for (const slot of r.filled) {
+            const list = byType.get(slot.componentTypeId) ?? [];
+            list.push(slot.instanceIri);
+            byType.set(slot.componentTypeId, list);
+          }
+          for (const [componentTypeId, iris] of byType) {
+            // FK guard: only allocate types known to component_types.
+            const typeExists = await client.query(
+              `SELECT 1 FROM component_types WHERE id = $1`,
+              [componentTypeId]
+            );
+            if (typeExists.rowCount === 0) continue;
+
+            const allocationId = crypto.randomUUID();
+            await client.query(
+              `INSERT INTO resource_allocations (allocation_id, resource_id, component_type_id, quantity, notes)
+               VALUES ($1, $2, $3, $4, $5)`,
+              [allocationId, r.resourceId, componentTypeId, iris.length, "Reconciled from AAS inventory"]
+            );
+            for (const iri of iris) {
+              await client.query(
+                `INSERT INTO allocated_instances (allocation_id, instance_iri)
+                 VALUES ($1, $2) ON CONFLICT (instance_iri) DO NOTHING`,
+                [allocationId, iri]
+              );
+            }
+            resourcesReconciled++;
+            instancesReconciled += iris.length;
+          }
+        }
+        await client.query("COMMIT");
+      } catch (e) {
+        await client.query("ROLLBACK");
+        console.error("resource allocation rebuild failed:", e);
+      } finally {
+        client.release();
+      }
+    }
+
     return NextResponse.json({
       synced: rawShells.length,
       created,
       updated: Object.keys(typeCounts).length - created,
-      message: `Found ${rawShells.length} shell(s) on server, synchronized ${Object.keys(typeCounts).length} component type(s).`,
+      resourcesReconciled,
+      instancesReconciled,
+      message: `Found ${rawShells.length} shell(s) on server, synchronized ${Object.keys(typeCounts).length} component type(s); reconciled ${instancesReconciled} allocated instance(s) across ${resourceInventories.length} resource(s) from physical inventory.`,
     });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });

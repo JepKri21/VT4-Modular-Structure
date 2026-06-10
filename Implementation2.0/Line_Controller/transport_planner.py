@@ -203,9 +203,19 @@ def load_line_config_from_aas(
     def _b64(value: str) -> str:
         return base64.urlsafe_b64encode(value.encode("utf-8")).decode("ascii").rstrip("=")
 
-    shells_resp = requests.get(f"{aas_server_base}/shells")
-    shells_resp.raise_for_status()
-    shells = shells_resp.json().get("result", [])
+    shells: list[dict] = []
+    cursor: str | None = None
+    while True:
+        url = f"{aas_server_base}/shells?limit=100"
+        if cursor:
+            url += f"&cursor={requests.utils.quote(cursor, safe='')}"
+        resp = requests.get(url)
+        resp.raise_for_status()
+        data = resp.json()
+        shells.extend(data.get("result", []))
+        cursor = (data.get("paging_metadata") or {}).get("cursor")
+        if not cursor:
+            break
 
     line_shell_id = next(
         (s["id"] for s in shells if s["id"].startswith(line_shell_prefix)),

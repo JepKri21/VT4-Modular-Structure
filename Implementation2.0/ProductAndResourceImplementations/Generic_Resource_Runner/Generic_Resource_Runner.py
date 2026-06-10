@@ -125,7 +125,13 @@ class GenericResourceExecutor:
 
         suffixes = self.parsed_resource["Communication"].suffixes
         prefix = self.parsed_resource["Communication"].production_line_prefix
-        base = f"{prefix}/{self.shell_id_short}"
+        # Build the diagnostic base from the SAME identifier the MQTT client
+        # actually subscribes/publishes with (client_id = the shell IRI's last
+        # segment, e.g. "PhoneAssembler_<uuid>"), NOT shell_id_short (the AAS
+        # id_short, e.g. "PhoneAssembler"). These differ when the IRI carries a
+        # UUID; printing id_short here makes the log show a topic the resource
+        # is not really listening on — defeating the whole point of this dump.
+        base = f"{prefix}/{self.mqtt_client.client_id}"
 
         # Diagnostic: log every topic this resource will SUBSCRIBE to and the
         # ones it will PUBLISH to, fully-qualified. Grep the stdout for the
@@ -196,7 +202,7 @@ class GenericResourceExecutor:
                     process_transformation=getattr(msg, "process_transformation", None),
                     result=MS.Result.INCOMPLETE,
                     quality=MS.Quality.NA,
-                    output_parameters=[],
+                    output_parameters=None,
                 )
 
                 self.mqtt_client.publish(
@@ -531,7 +537,16 @@ class InventoryManager:
 
         consumed = []
         async with self._lock:
-            model = self.load()
+            try:
+                model = self.load()
+            except Exception as e:
+                # Assemblers that only combine transported-in parts (e.g. the final
+                # PhoneAssembler) have no own feeder Inventory submodel — there is
+                # nothing here to consume, so skip gracefully instead of failing the
+                # job. Without this guard the missing submodel raises and the whole
+                # assemble step is reported INCOMPLETE, aborting the order.
+                print(f"[inventory] {self.resource_shell_id}: no Inventory submodel — nothing to consume ({e})")
+                return consumed
             for component_id in input_ids:
                 if not component_id or component_id in output_ids:
                     continue

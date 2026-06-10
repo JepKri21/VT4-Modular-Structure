@@ -172,11 +172,19 @@ function parseBomFromSubmodelElements(submodelElements: unknown[]): RawBomEntry[
 async function fetchBomFromServer(serverUrl: string): Promise<BomSlotDef[] | null> {
   const base = serverUrl.replace(/\/$/, "");
 
-  const shellsRes = await fetch(`${base}/shells?limit=100`);
-  if (!shellsRes.ok) return null;
-
-  const data = (await shellsRes.json()) as { result?: unknown[] };
-  const shells = (data.result ?? (Array.isArray(data) ? data : [])) as AasElement[];
+  const shells: AasElement[] = [];
+  let cursor: string | undefined;
+  do {
+    const url = cursor
+      ? `${base}/shells?limit=100&cursor=${encodeURIComponent(cursor)}`
+      : `${base}/shells?limit=100`;
+    const shellsRes = await fetch(url);
+    if (!shellsRes.ok) return null;
+    const data = (await shellsRes.json()) as { result?: AasElement[]; paging_metadata?: { cursor?: string } };
+    const page = data.result ?? (Array.isArray(data) ? (data as unknown as AasElement[]) : []);
+    shells.push(...page);
+    cursor = data.paging_metadata?.cursor;
+  } while (cursor);
 
   for (const shell of shells) {
     const shellId = shell.id as string | undefined;

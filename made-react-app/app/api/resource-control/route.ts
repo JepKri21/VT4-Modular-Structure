@@ -35,22 +35,27 @@ export async function GET(req: NextRequest): Promise<NextResponse<ResourceContro
   }
 
   try {
-    const res = await fetch(`${serverUrl}/shells?limit=100`, { signal: AbortSignal.timeout(5000) });
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      return NextResponse.json(
-        { resources: [], configOk, error: `AAS server returned ${res.status}: ${text}` }
-      );
-    }
+    type RawShell = { id: string; idShort?: string; assetInformation?: { assetKind?: string } };
+    const allShells: RawShell[] = [];
+    let cursor: string | undefined;
+    do {
+      const url = cursor
+        ? `${serverUrl}/shells?limit=100&cursor=${encodeURIComponent(cursor)}`
+        : `${serverUrl}/shells?limit=100`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        return NextResponse.json(
+          { resources: [], configOk, error: `AAS server returned ${res.status}: ${text}` }
+        );
+      }
+      const data = (await res.json()) as { result?: RawShell[]; paging_metadata?: { cursor?: string } };
+      const page = data.result ?? (Array.isArray(data) ? (data as unknown as RawShell[]) : []);
+      allShells.push(...page);
+      cursor = data.paging_metadata?.cursor;
+    } while (cursor);
 
-    const data = (await res.json()) as { result?: unknown[] };
-    const rawShells = (data.result ?? (Array.isArray(data) ? data : [])) as Array<{
-      id: string;
-      idShort?: string;
-      assetInformation?: { assetKind?: string };
-    }>;
-
-    const resourceShells = rawShells.filter(
+    const resourceShells = allShells.filter(
       (s) =>
         s.id?.includes("/Shells/Resources/") &&
         !s.id?.includes("/ProductionLine/") &&
@@ -62,6 +67,7 @@ export async function GET(req: NextRequest): Promise<NextResponse<ResourceContro
       displayName: (s.idShort ?? s.id.split("/").pop() ?? s.id).replace(/_/g, " "),
       running: liveIds.has(s.id),
     }));
+
 
     return NextResponse.json({ resources, configOk });
   } catch (err) {

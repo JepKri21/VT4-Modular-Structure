@@ -16,6 +16,12 @@ log = logging.getLogger(__name__)
 
 BASYX_URL = "http://localhost:8081"
 
+# (connect, read) timeout in seconds for every BaSyx call. Without this,
+# requests blocks forever if BaSyx stalls — and because the MES pipeline runs
+# these calls, an untimed hang freezes the whole order. A bounded timeout turns
+# that into a clean RuntimeError the pipeline can recover from.
+HTTP_TIMEOUT = (5, 30)
+
 
 def _b64(iri: str) -> str:
     return base64.urlsafe_b64encode(iri.encode("utf-8")).decode("ascii")
@@ -30,12 +36,12 @@ def _headers() -> dict:
 def upload_shell(shell_json: dict, basyx_url: str = BASYX_URL) -> None:
     url = basyx_url.rstrip("/")
     data = json.dumps(shell_json, ensure_ascii=False).encode("utf-8")
-    r = requests.post(f"{url}/shells", headers=_headers(), data=data)
+    r = requests.post(f"{url}/shells", headers=_headers(), data=data, timeout=HTTP_TIMEOUT)
     if r.status_code in (200, 201):
         return
     if r.status_code == 409:
         shell_id = shell_json.get("id", "")
-        r2 = requests.put(f"{url}/shells/{_b64(shell_id)}", headers=_headers(), data=data)
+        r2 = requests.put(f"{url}/shells/{_b64(shell_id)}", headers=_headers(), data=data, timeout=HTTP_TIMEOUT)
         if r2.status_code not in (200, 201, 204):
             raise RuntimeError(f"Shell PUT failed: {r2.status_code} {r2.text}")
     else:
@@ -45,12 +51,12 @@ def upload_shell(shell_json: dict, basyx_url: str = BASYX_URL) -> None:
 def upload_submodel(submodel_json: dict, basyx_url: str = BASYX_URL) -> None:
     url = basyx_url.rstrip("/")
     data = json.dumps(submodel_json, ensure_ascii=False).encode("utf-8")
-    r = requests.post(f"{url}/submodels", headers=_headers(), data=data)
+    r = requests.post(f"{url}/submodels", headers=_headers(), data=data, timeout=HTTP_TIMEOUT)
     if r.status_code in (200, 201):
         return
     if r.status_code == 409:
         sm_id = submodel_json.get("id", "")
-        r2 = requests.put(f"{url}/submodels/{_b64(sm_id)}", headers=_headers(), data=data)
+        r2 = requests.put(f"{url}/submodels/{_b64(sm_id)}", headers=_headers(), data=data, timeout=HTTP_TIMEOUT)
         if r2.status_code not in (200, 201, 204):
             raise RuntimeError(f"Submodel PUT failed: {r2.status_code} {r2.text}")
     else:
@@ -69,7 +75,7 @@ def upload_environment(env: dict, basyx_url: str = BASYX_URL) -> None:
 
 def fetch_submodel(submodel_iri: str, basyx_url: str = BASYX_URL) -> Optional[dict]:
     url = basyx_url.rstrip("/")
-    r = requests.get(f"{url}/submodels/{_b64(submodel_iri)}")
+    r = requests.get(f"{url}/submodels/{_b64(submodel_iri)}", timeout=HTTP_TIMEOUT)
     if r.status_code == 200:
         return r.json()
     log.debug("fetch_submodel %s → %s", submodel_iri, r.status_code)
@@ -78,7 +84,7 @@ def fetch_submodel(submodel_iri: str, basyx_url: str = BASYX_URL) -> Optional[di
 
 def fetch_shell(shell_iri: str, basyx_url: str = BASYX_URL) -> Optional[dict]:
     url = basyx_url.rstrip("/")
-    r = requests.get(f"{url}/shells/{_b64(shell_iri)}")
+    r = requests.get(f"{url}/shells/{_b64(shell_iri)}", timeout=HTTP_TIMEOUT)
     if r.status_code == 200:
         return r.json()
     log.debug("fetch_shell %s → %s", shell_iri, r.status_code)
@@ -88,7 +94,7 @@ def fetch_shell(shell_iri: str, basyx_url: str = BASYX_URL) -> Optional[dict]:
 def list_shells(basyx_url: str = BASYX_URL) -> list[dict]:
     """Return all shells from BaSyx (paginated, up to 10000)."""
     url = basyx_url.rstrip("/")
-    r = requests.get(f"{url}/shells", params={"limit": 10000})
+    r = requests.get(f"{url}/shells", params={"limit": 10000}, timeout=HTTP_TIMEOUT)
     if r.status_code == 200:
         data = r.json()
         return data.get("result", data) if isinstance(data, dict) else data
@@ -100,7 +106,7 @@ def find_shell_by_idshort(id_short: str, basyx_url: str = BASYX_URL) -> Optional
     """Find a shell by idShort. Returns the first match or None."""
     url = basyx_url.rstrip("/")
     # BaSyx v3 supports filtering by idShort query param
-    r = requests.get(f"{url}/shells", params={"idShort": id_short, "limit": 10})
+    r = requests.get(f"{url}/shells", params={"idShort": id_short, "limit": 10}, timeout=HTTP_TIMEOUT)
     if r.status_code == 200:
         data = r.json()
         results = data.get("result", data) if isinstance(data, dict) else data
@@ -147,14 +153,14 @@ def get_submodel_refs_for_shell(shell_iri: str, basyx_url: str = BASYX_URL) -> l
 
 def delete_shell(shell_iri: str, basyx_url: str = BASYX_URL) -> None:
     url = basyx_url.rstrip("/")
-    r = requests.delete(f"{url}/shells/{_b64(shell_iri)}")
+    r = requests.delete(f"{url}/shells/{_b64(shell_iri)}", timeout=HTTP_TIMEOUT)
     if r.status_code not in (200, 204, 404):
         log.warning("delete_shell %s → %s %s", shell_iri, r.status_code, r.text)
 
 
 def delete_submodel(submodel_iri: str, basyx_url: str = BASYX_URL) -> None:
     url = basyx_url.rstrip("/")
-    r = requests.delete(f"{url}/submodels/{_b64(submodel_iri)}")
+    r = requests.delete(f"{url}/submodels/{_b64(submodel_iri)}", timeout=HTTP_TIMEOUT)
     if r.status_code not in (200, 204, 404):
         log.warning("delete_submodel %s → %s %s", submodel_iri, r.status_code, r.text)
 

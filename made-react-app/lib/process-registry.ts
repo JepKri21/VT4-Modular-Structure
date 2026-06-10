@@ -5,7 +5,7 @@ import os from "os";
 import crypto from "crypto";
 import { pool } from "@/lib/db";
 import { CREATE_RESOURCE_PROCESSES_TABLE_SQL } from "@/lib/inventory";
-import { getResourceRunnerConfig } from "@/lib/aas-config";
+import { getResourceRunnerConfig, getLineControllerConfig, getMesApiConfig } from "@/lib/aas-config";
 
 // Module-level singleton — one instance per Next.js server process
 const registry = new Map<string, ChildProcess>();
@@ -135,6 +135,111 @@ export async function startRunner(shellId: string, serverUrl: string): Promise<S
     appendLog(shellId, `\n[process exited — code=${code ?? "null"} signal=${signal ?? "null"}]`);
     registry.delete(shellId);
     pool.query("DELETE FROM resource_processes WHERE shell_id = $1", [shellId]).catch(() => {});
+  });
+
+  return { ok: true, pid: child.pid };
+}
+
+export const LINE_CONTROLLER_ID = "line-controller";
+
+export async function startLineController(): Promise<StartResult> {
+  await ensureTable();
+
+  const existing = registry.get(LINE_CONTROLLER_ID);
+  if (existing && existing.exitCode === null && existing.signalCode === null) {
+    return { ok: false, error: "Already running" };
+  }
+  if (existing) registry.delete(LINE_CONTROLLER_ID);
+
+  const { scriptPath, pythonExe } = getLineControllerConfig();
+  if (!scriptPath) {
+    return { ok: false, error: "Line Controller path not configured. Set it in the Line Controller settings." };
+  }
+
+  clearProcessLogs(LINE_CONTROLLER_ID);
+
+  const cwd = path.dirname(scriptPath);
+  const child = spawn(pythonExe, ["-u", scriptPath], {
+    cwd,
+    env: { ...process.env, PYTHONIOENCODING: "utf-8", PYTHONUNBUFFERED: "1" },
+    detached: false,
+  });
+
+  if (!child.pid) {
+    return { ok: false, error: "Failed to spawn process (no PID assigned)" };
+  }
+
+  registry.set(LINE_CONTROLLER_ID, child);
+
+  child.stdout?.on("data", (chunk: Buffer) => appendLog(LINE_CONTROLLER_ID, chunk));
+  child.stderr?.on("data", (chunk: Buffer) => appendLog(LINE_CONTROLLER_ID, chunk));
+
+  await pool.query(
+    `INSERT INTO resource_processes (shell_id, pid, started_at)
+     VALUES ($1, $2, NOW())
+     ON CONFLICT (shell_id) DO UPDATE SET pid = EXCLUDED.pid, started_at = EXCLUDED.started_at`,
+    [LINE_CONTROLLER_ID, child.pid]
+  );
+
+  child.on("exit", (code, signal) => {
+    appendLog(LINE_CONTROLLER_ID, `\n[process exited — code=${code ?? "null"} signal=${signal ?? "null"}]`);
+    registry.delete(LINE_CONTROLLER_ID);
+    pool.query("DELETE FROM resource_processes WHERE shell_id = $1", [LINE_CONTROLLER_ID]).catch(() => {});
+  });
+
+  return { ok: true, pid: child.pid };
+}
+
+export const MES_API_ID = "mes-api";
+
+export async function startMesApi(): Promise<StartResult> {
+  await ensureTable();
+
+  const existing = registry.get(MES_API_ID);
+  if (existing && existing.exitCode === null && existing.signalCode === null) {
+    return { ok: false, error: "Already running" };
+  }
+  if (existing) registry.delete(MES_API_ID);
+
+  const { scriptPath, pythonExe, port } = getMesApiConfig();
+  if (!scriptPath) {
+    return { ok: false, error: "MES API path not configured. Set it in the MES API settings." };
+  }
+
+  clearProcessLogs(MES_API_ID);
+
+  const cwd = path.dirname(scriptPath);
+  const moduleName = path.basename(scriptPath, ".py");
+  const child = spawn(
+    pythonExe,
+    ["-u", "-m", "uvicorn", `${moduleName}:app`, "--host", "0.0.0.0", "--port", String(port)],
+    {
+      cwd,
+      env: { ...process.env, PYTHONIOENCODING: "utf-8", PYTHONUNBUFFERED: "1" },
+      detached: false,
+    }
+  );
+
+  if (!child.pid) {
+    return { ok: false, error: "Failed to spawn process (no PID assigned)" };
+  }
+
+  registry.set(MES_API_ID, child);
+
+  child.stdout?.on("data", (chunk: Buffer) => appendLog(MES_API_ID, chunk));
+  child.stderr?.on("data", (chunk: Buffer) => appendLog(MES_API_ID, chunk));
+
+  await pool.query(
+    `INSERT INTO resource_processes (shell_id, pid, started_at)
+     VALUES ($1, $2, NOW())
+     ON CONFLICT (shell_id) DO UPDATE SET pid = EXCLUDED.pid, started_at = EXCLUDED.started_at`,
+    [MES_API_ID, child.pid]
+  );
+
+  child.on("exit", (code, signal) => {
+    appendLog(MES_API_ID, `\n[process exited — code=${code ?? "null"} signal=${signal ?? "null"}]`);
+    registry.delete(MES_API_ID);
+    pool.query("DELETE FROM resource_processes WHERE shell_id = $1", [MES_API_ID]).catch(() => {});
   });
 
   return { ok: true, pid: child.pid };

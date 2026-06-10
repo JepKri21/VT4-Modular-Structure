@@ -51,6 +51,11 @@ PRE_PROCESS_TIMEOUT_S = 60.0
 BOP_TIMEOUT_S = 180.0
 IDLE_WAIT_S = 15.0
 TICK_INTERVAL_S = 0.5
+# How many consecutive ticks a step may fail arrival planning before we give
+# up and let it abort. At TICK_INTERVAL_S=0.5s this is ~60s of retrying — long
+# enough for a busy shuttle to free up, short enough that a truly un-runnable
+# step (missing input, no capable transport) doesn't park the order forever.
+PLAN_RETRY_BUDGET = 120
 
 CAP_HANDOFF = "https://aausmartlab.org/Submodels/Capability/Handoff"
 
@@ -195,6 +200,14 @@ class Scheduler:
         # instead of always grabbing the first one in the list.
         self._shuttle_pick_cursor: int = 0
 
+        # Bounded retry for arrival planning. A step that can't be planned
+        # (no free/ capable transport, missing input) pauses and retries so
+        # a *transient* shortage clears — but only up to PLAN_RETRY_BUDGET
+        # ticks. Past that we treat it as un-runnable and let the failure
+        # propagate to recovery, which aborts the order instead of leaving
+        # it parked in the dispatch queue forever. Keyed by (order, step).
+        self._plan_retry_counts: dict[tuple[str, str], int] = {}
+
     # ── Cross-order instance reservation ────────────────────────────────────
 
     def _reserve_instance(
@@ -334,6 +347,9 @@ class Scheduler:
                     return
         finally:
             self._active_orders.pop(order_id, None)
+            # Drop this order's arrival-planning retry counters.
+            for key in [k for k in self._plan_retry_counts if k[0] == order_id]:
+                self._plan_retry_counts.pop(key, None)
             self._release_order_reservations(order_id)
             # release() leaves stuck cargo claimed — exactly what we want
             # when an order aborts mid-flight with a part on a shuttle.
@@ -539,8 +555,12 @@ class Scheduler:
         iri_by_topic: dict[str, str] = {target.resource_id: target_iri}
         reservations: list[tuple[str, str]] = [(target.resource_id, target.actor_name)]
         shuttles_used: list[tuple[str, str]] = []
+        # Terminal step id of the last sub-plan that used each shuttle. When a
+        # later input reuses a shuttle (degraded fleet), its legs are chained
+        # after this id so the shuttle isn't asked to carry two parts at once.
+        shuttle_tail: dict[tuple[str, str], str] = {}
 
-        for ing in inputs:
+        for input_index, ing in enumerate(inputs):
             try:
                 sub_plan, sub_iris, sub_reservations = self._plan_arrival_for_input(
                     handler=handler,
@@ -551,13 +571,56 @@ class Scheduler:
                     target_iri=target_iri,
                     material=material,
                     prior_reservations=reservations,
+                    input_index=input_index,
                 )
             except RuntimeError as exc:
-                print(f"[bop] cannot plan arrival for input '{ing.get('name')}': {exc}")
+                # Arrival planning failed. Usually a *transient* shortage of
+                # free Transport actors (every shuttle is busy on another
+                # order); rolling the step back to PENDING and pausing lets the
+                # next tick re-attempt once a shuttle frees. But if it keeps
+                # failing past PLAN_RETRY_BUDGET ticks the step is effectively
+                # un-runnable (input lost, no capable transport, fleet too
+                # degraded) — so we stop retrying and let the error propagate
+                # to recovery, which aborts the order. That clears it out of
+                # the dispatch queue and frees its reservations instead of
+                # leaving it parked at N% forever.
+                key = (order_id, bop["step_id"])
+                attempts = self._plan_retry_counts.get(key, 0) + 1
+                self._plan_retry_counts[key] = attempts
+                if attempts > PLAN_RETRY_BUDGET:
+                    self._plan_retry_counts.pop(key, None)
+                    print(
+                        f"[bop] cannot plan arrival for input '{ing.get('name')}': "
+                        f"{exc} — gave up after {PLAN_RETRY_BUDGET} retries; aborting step"
+                    )
+                    raise
+                print(
+                    f"[bop] cannot plan arrival for input '{ing.get('name')}': "
+                    f"{exc} — pausing step for retry ({attempts}/{PLAN_RETRY_BUDGET})"
+                )
+                handler.update_step(bop["step_id"], StepStates.PENDING)
+                await asyncio.sleep(TICK_INTERVAL_S)
                 return
             if sub_plan is None:
                 # Already at target; nothing to transport.
                 continue
+
+            # If this sub-plan reuses a shuttle an earlier input already used,
+            # serialize: a shuttle can't carry two parts simultaneously, so
+            # this sub-plan's root steps wait for the prior sub-plan's tail.
+            sub_shuttle = sub_reservations[0] if sub_reservations else None
+            if sub_shuttle is not None and sub_shuttle in shuttle_tail:
+                prev_tail = shuttle_tail[sub_shuttle]
+                print(
+                    f"[plan] serializing input '{ing.get('name')}' after "
+                    f"{prev_tail} (shuttle {sub_shuttle[0]}/{sub_shuttle[1]} reused)"
+                )
+                for s in sub_plan.steps:
+                    if s.depends_on is None:
+                        s.depends_on = prev_tail
+            if sub_shuttle is not None and sub_plan.steps:
+                shuttle_tail[sub_shuttle] = self._plan_terminal_step_id(sub_plan.steps)
+
             combined_steps.extend(sub_plan.steps)
             combined_occupies.extend(sub_plan.occupies_through_bop)
             iri_by_topic.update(sub_iris)
@@ -566,6 +629,11 @@ class Scheduler:
                     reservations.append(res)
                     if res not in shuttles_used and res[0] != target.resource_id:
                         shuttles_used.append(res)
+
+        # Planning succeeded for every input — clear this step's retry budget
+        # so a later transient stall starts fresh rather than inheriting a
+        # near-exhausted count.
+        self._plan_retry_counts.pop((order_id, bop["step_id"]), None)
 
         plan = PreProcessPlan(
             bop_step_id=bop["step_id"],
@@ -604,6 +672,18 @@ class Scheduler:
                 self.occupancy.release_one(resource_id, actor_name, order_id)
             self.occupancy.release_one(target.resource_id, target.actor_name, order_id)
 
+    @staticmethod
+    def _plan_terminal_step_id(steps: list[PreProcessStep]) -> str:
+        """Return the tail of a sub-plan's dependency chain — the step on
+        which nothing else in `steps` depends. Used to serialize a reused
+        shuttle's next sub-plan after this one finishes.
+        """
+        referenced = {s.depends_on for s in steps if s.depends_on is not None}
+        tails = [s.step_id for s in steps if s.step_id not in referenced]
+        # A well-formed linear sub-plan has exactly one tail; if more than one
+        # surfaces, the last-appended step is the true end of the chain.
+        return tails[-1] if tails else steps[-1].step_id
+
     def _plan_arrival_for_input(
         self,
         *,
@@ -615,13 +695,23 @@ class Scheduler:
         target_iri: str,
         material: str | None,
         prior_reservations: list[tuple[str, str]] | None = None,
+        input_index: int = 0,
     ) -> tuple[PreProcessPlan | None, dict[str, str], list[tuple[str, str]]]:
         """Build a PreProcessPlan that gets one input ingredient to `target`.
 
         Returns (plan, iri_by_topic_additions, reservations). `plan` is None
         when the input is already at the target (no transport needed).
+
+        `input_index` namespaces the generated pre-process step ids so that
+        two inputs of the SAME BoP step (e.g. an Assemble that consumes two
+        parts, each fetched via its own transport leg) don't produce colliding
+        step ids — and therefore colliding job ids. Without it, both sub-plans
+        would emit `<step>-pp1-transport`, breaking JobResult correlation and
+        the DAG executor's steps_by_id map.
         """
         ingredient_name = ingredient.get("name")
+        # Distinct step-id prefix per input of this BoP step.
+        plan_step_id = f"{bop_step_id}-in{input_index}"
         iris: dict[str, str] = {}
         reservations: list[tuple[str, str]] = []
 
@@ -683,7 +773,7 @@ class Scheduler:
             iris[shuttle.resource_id] = shuttle_iri
             reservations.append((shuttle.resource_id, shuttle.actor_name))
             plan = self.planner.plan_shuttle_to_target(
-                bop_step_id=bop_step_id,
+                bop_step_id=plan_step_id,
                 order_id=order_id,
                 component_reference=component_ref,
                 shuttle=shuttle,
@@ -723,7 +813,7 @@ class Scheduler:
                     f"{source.resource_id}/{source.actor_name} (release={release_skills})"
                 )
                 plan = self.planner.plan(
-                    bop_step_id=bop_step_id,
+                    bop_step_id=plan_step_id,
                     order_id=order_id,
                     component_reference=component_ref,
                     current_location=source,
@@ -757,7 +847,7 @@ class Scheduler:
         )
         print(f"[plan] release sequence at source for '{ingredient_name}': {release_skills}")
         plan = self.planner.plan(
-            bop_step_id=bop_step_id,
+            bop_step_id=plan_step_id,
             order_id=order_id,
             component_reference=component_ref,
             current_location=storage,
@@ -998,8 +1088,25 @@ class Scheduler:
         """
         idle = await self._wait_for_idle(resource_topic, actor_name, timeout=IDLE_WAIT_S)
         if not idle:
+            # A station that started AFTER the order's initial state-seed never
+            # received an InfoRequest, so it never reported IDLE — even though
+            # it may be up, subscribed, and ready. Send a targeted probe to
+            # prompt it and re-wait once before committing the CMD. This is the
+            # late-subscribing-station case that otherwise fires a CMD into a
+            # resource that hasn't confirmed reachability, producing a false
+            # CMD_NO_ACK (and, for a sole-capable resource, an aborted order
+            # with stranded cargo).
             print(
-                f"[warn] never saw IDLE for {resource_topic}/{actor_name}; "
+                f"[gate] never saw IDLE for {resource_topic}/{actor_name}; "
+                "probing and re-waiting before CMD"
+            )
+            self.controller.request_data(MS.StateMessage, target_iri)
+            idle = await self._wait_for_idle(
+                resource_topic, actor_name, timeout=IDLE_WAIT_S
+            )
+        if not idle:
+            print(
+                f"[warn] {resource_topic}/{actor_name} still not IDLE after probe; "
                 "sending CMD anyway"
             )
 
@@ -1015,6 +1122,13 @@ class Scheduler:
             parameters=parameters,
         )
         print(f"[cmd]       -> {resource_topic}/{actor_name}  skill={skill}  job={job_id}")
+        # Drop any stale JobResult for this job_id before issuing the CMD.
+        # Job ids are reused across retries and across reruns of the same
+        # order, and the shared job_result dict is never cleared — without
+        # this, wait_for() below would instantly match a leftover result
+        # from a previous attempt/run and fail (or falsely pass) the step
+        # before this CMD has actually executed.
+        self.jobs.forget(job_id)
         # send_command_with_ack assigns a seq_no, publishes, and waits for
         # the station ACK. Raises CmdNoAckError after retries are exhausted;
         # we let that propagate — the existing exception path treats it the
@@ -1384,6 +1498,15 @@ class Scheduler:
 
         excluded_set: set[tuple[str, str]] = set(excluded or [])
 
+        # If every distinct shuttle is taken by an earlier input of the SAME
+        # step (i.e. only `excluded` shuttles remain available), we fall back
+        # to reusing one of them. A single shuttle can serve several inputs as
+        # long as their transport legs run sequentially — the caller chains
+        # the reusing sub-plan after the prior one. This is what keeps a line
+        # whose fleet is degraded to one shuttle (e.g. the other is STUCK)
+        # from deadlocking on a multi-input step; it just runs slower.
+        reuse: tuple[str, str, str, int] | None = None  # (topic, actor, iri, next_cursor)
+
         for shuttle_iri, topic, actors in offering:
             if not self._transport_supports(shuttle_iri, component_ref, material):
                 print(
@@ -1402,9 +1525,14 @@ class Scheduler:
 
             for offset in range(n):
                 actor = actors[(start + offset) % n]
-                if (topic, actor) in excluded_set:
-                    continue
                 if not self.occupancy.is_available(topic, actor):
+                    continue
+                if (topic, actor) in excluded_set:
+                    # Already claimed for an earlier input of this step.
+                    # Remember the first such shuttle as a reuse fallback,
+                    # but keep looking for a genuinely free one first.
+                    if reuse is None:
+                        reuse = (topic, actor, shuttle_iri, (start + offset + 1) % n)
                     continue
                 self._shuttle_pick_cursor = (start + offset + 1) % n
                 endpoint = ResourceEndpoint(
@@ -1414,6 +1542,21 @@ class Scheduler:
                     resource_iri=shuttle_iri,
                 )
                 return endpoint, shuttle_iri
+
+        if reuse is not None:
+            topic, actor, shuttle_iri, next_cursor = reuse
+            self._shuttle_pick_cursor = next_cursor
+            print(
+                f"[plan] no spare shuttle free; reusing {topic}/{actor} "
+                "sequentially for another input of this step"
+            )
+            endpoint = ResourceEndpoint(
+                resource_id=topic,
+                actor_name=actor,
+                has_handoff=self.rm.has_handoff(shuttle_iri),
+                resource_iri=shuttle_iri,
+            )
+            return endpoint, shuttle_iri
 
         raise RuntimeError(
             f"No free Transport actor that supports {component_ref} / {material}"

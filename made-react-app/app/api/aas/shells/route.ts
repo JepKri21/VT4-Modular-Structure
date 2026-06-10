@@ -26,14 +26,23 @@ export async function DELETE(req: NextRequest) {
   const base = (body.server ?? "http://localhost:8081").replace(/\/$/, "");
 
   try {
-    // Fetch full shell list to resolve submodel references
-    const listRes = await fetch(`${base}/shells`);
-    if (!listRes.ok) {
-      return NextResponse.json({ error: "Failed to list shells" }, { status: 502 });
-    }
-    const listData = await listRes.json();
     type RawShell = { id: string; submodels?: { keys: { value: string }[] }[] };
-    let shells: RawShell[] = listData.result ?? [];
+    const allShells: RawShell[] = [];
+    let cursor: string | undefined;
+    do {
+      const url = cursor
+        ? `${base}/shells?limit=100&cursor=${encodeURIComponent(cursor)}`
+        : `${base}/shells?limit=100`;
+      const listRes = await fetch(url);
+      if (!listRes.ok) {
+        return NextResponse.json({ error: "Failed to list shells" }, { status: 502 });
+      }
+      const listData = await listRes.json() as { result?: RawShell[]; paging_metadata?: { cursor?: string } };
+      const page = listData.result ?? [];
+      allShells.push(...page);
+      cursor = listData.paging_metadata?.cursor;
+    } while (cursor);
+    let shells: RawShell[] = allShells;
 
     // Filter to requested IDs if provided
     if (body.ids && body.ids.length > 0) {

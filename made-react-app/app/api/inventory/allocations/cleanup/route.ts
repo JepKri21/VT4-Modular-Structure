@@ -81,22 +81,29 @@ export async function POST(req: NextRequest) {
 
   const base = serverUrl.replace(/\/$/, "");
 
-  // Fetch all shells currently on the AAS server
-  const shellsRes = await fetch(`${base}/shells?limit=1000`);
-  if (!shellsRes.ok) {
-    return NextResponse.json(
-      { error: `AAS server returned ${shellsRes.status}` },
-      { status: 502 }
-    );
-  }
-  const shellsData = (await shellsRes.json()) as { result?: unknown[] };
-  const liveIris = new Set(
-    (
-      (shellsData.result ?? (Array.isArray(shellsData) ? shellsData : [])) as Array<{
-        id: string;
-      }>
-    ).map((s) => s.id)
-  );
+  // Fetch all shells currently on the AAS server (paginated)
+  const liveIriList: string[] = [];
+  let shellCursor: string | undefined;
+  do {
+    const url = shellCursor
+      ? `${base}/shells?limit=100&cursor=${encodeURIComponent(shellCursor)}`
+      : `${base}/shells?limit=100`;
+    const shellsRes = await fetch(url);
+    if (!shellsRes.ok) {
+      return NextResponse.json(
+        { error: `AAS server returned ${shellsRes.status}` },
+        { status: 502 }
+      );
+    }
+    const shellsData = (await shellsRes.json()) as {
+      result?: Array<{ id: string }>;
+      paging_metadata?: { cursor?: string };
+    };
+    const page = shellsData.result ?? (Array.isArray(shellsData) ? (shellsData as unknown as Array<{ id: string }>) : []);
+    liveIriList.push(...page.map((s) => s.id));
+    shellCursor = shellsData.paging_metadata?.cursor;
+  } while (shellCursor);
+  const liveIris = new Set(liveIriList);
 
   // ── Case 1: resource shell deleted ──────────────────────────────────────
   // If the resource itself no longer exists on the AAS server, free every

@@ -229,9 +229,18 @@ class ResourceManager:
             self._allowed_iris = set(allowed_iris)
         effective_filter = self._allowed_iris
 
-        response = requests.get(self.SHELL_ENDPOINT)
-        data = response.json()
-        resource_shells = data.get("result", [])
+        resource_shells = []
+        cursor = None
+        while True:
+            url = f"{self.SHELL_ENDPOINT}?limit=100"
+            if cursor:
+                url += f"&cursor={requests.utils.quote(cursor, safe='')}"
+            response = requests.get(url)
+            data = response.json()
+            resource_shells.extend(data.get("result", []))
+            cursor = (data.get("paging_metadata") or {}).get("cursor")
+            if not cursor:
+                break
         for resource_shell in resource_shells:
             resoruce_shell_id = resource_shell["id"]
             if not resoruce_shell_id.startswith(self.RESOURCE_URL):

@@ -746,8 +746,8 @@ class MQTTClientController:
         resource_shell_id: str,
         command_message,
         *,
-        timeout: float = 1.0,
-        max_retries: int = 1,
+        timeout: float = 2.0,
+        max_retries: int = 2,
     ):
         """Publish a CommandMessage and wait for its acknowledgement.
 

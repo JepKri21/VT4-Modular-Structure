@@ -9,6 +9,7 @@ Steps:
   6. Publish WorkOrder via MQTT
 """
 
+import asyncio
 import logging
 
 import requests
@@ -83,12 +84,20 @@ async def process_order(mes_payload: dict) -> None:
 
     # Each product in the batch becomes its own WorkOrder with order_id
     # "<batch_id>-<n>". They share batch_id so the UI can show "n/N".
+    #
+    # The per-product pipeline is fully synchronous (YAML, blocking BaSyx HTTP,
+    # blocking psycopg2). Running it directly on the event loop would freeze the
+    # whole FastAPI server for the duration — and with several products that
+    # window multiplies, which is exactly what made multi-product orders appear
+    # to "hang". Offload each product to a worker thread so the API stays
+    # responsive; awaiting them in turn preserves the one-by-one ordering.
     for product in products:
         index = product.get("productIndex") or (products.index(product) + 1)
         order_number = (
             batch_id if batch_total == 1 else f"{batch_id}-{index}"
         )
-        await _process_single_product(
+        await asyncio.to_thread(
+            _process_single_product,
             product=product,
             order_number=order_number,
             webshop_order_id=webshop_order_id,
@@ -98,7 +107,7 @@ async def process_order(mes_payload: dict) -> None:
         )
 
 
-async def _process_single_product(
+def _process_single_product(
     *,
     product: dict,
     order_number: str,

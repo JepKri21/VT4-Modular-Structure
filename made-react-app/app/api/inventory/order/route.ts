@@ -7,9 +7,8 @@ import {
   CREATE_ORDER_ITEMS_TABLE_SQL,
   MIGRATE_COMPONENT_TYPES_SQL,
   MIGRATE_ORDERS_SQL,
+  RESERVED_FOR_TYPE_SQL,
   rowToComponentType,
-  rowToOrder,
-  rowToOrderItem,
   type OrderStatus,
   type PlacedOrder,
 } from "@/lib/inventory";
@@ -32,6 +31,32 @@ async function ensureTables() {
 // List all placed orders with their line items and component details
 export async function GET() {
   await ensureTables();
+
+  // Auto-heal: if the dispatcher missed notifying us (e.g. mes_api was down),
+  // mark fulfilled any webshop order whose entire MES batch is COMPLETED.
+  await pool.query(`
+    UPDATE aas_orders ao
+    SET status = 'fulfilled',
+        fulfilled_at = COALESCE(
+          (SELECT MAX(completed_at)
+           FROM mes_orders
+           WHERE batch_id = 'ORD-' || UPPER(LEFT(ao.order_id::text, 8))),
+          NOW()
+        )
+    WHERE ao.cancelled_at IS NULL
+      AND ao.status NOT IN ('fulfilled', 'cancelled')
+      AND EXISTS (
+        SELECT 1 FROM mes_orders
+        WHERE batch_id = 'ORD-' || UPPER(LEFT(ao.order_id::text, 8))
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM mes_orders
+        WHERE batch_id = 'ORD-' || UPPER(LEFT(ao.order_id::text, 8))
+          AND status != 'COMPLETED'
+      )
+  `).catch(() => {
+    // mes_orders table may not exist yet; heal is best-effort
+  });
 
   const res = await pool.query(`
     SELECT
@@ -120,6 +145,10 @@ export async function PATCH(req: NextRequest) {
     status === "in_production" ? ", started_at = NOW()" :
     status === "fulfilled"     ? ", fulfilled_at = NOW()" : "";
 
+  // No inventory write needed: reserved is derived from open orders (B2), so
+  // moving the order to 'fulfilled' (out of the open set) releases its
+  // reservation automatically. The consumed instances drop out of
+  // quantity_available via sync once their shells are referenced by a product BOM.
   await pool.query(
     `UPDATE aas_orders SET status = $1${timestampField} WHERE order_id = $2`,
     [status, orderId]
@@ -196,6 +225,24 @@ export async function POST(req: NextRequest) {
   try {
     await client.query("BEGIN");
 
+    // Lock every involved type's inventory row up front, in a deterministic order,
+    // so concurrent orders for the same type serialize here (preventing oversell)
+    // without risking a deadlock between multi-type orders. We don't write these
+    // rows — reserved is derived from open orders — we only need the lock + the
+    // available count. A missing row means the type has no inventory entry.
+    const typeIds = dedupedItems.map((i) => i.componentTypeId);
+    const locked = await client.query(
+      `SELECT component_type_id, quantity_available
+       FROM inventory
+       WHERE component_type_id = ANY($1)
+       ORDER BY component_type_id
+       FOR UPDATE`,
+      [typeIds]
+    );
+    const availableByType = new Map<string, number>(
+      locked.rows.map((r) => [r.component_type_id, r.quantity_available as number])
+    );
+
     await client.query(
       `INSERT INTO aas_orders (order_id, placed_at, reserved_session, cancelled_at)
        VALUES ($1, $2, $3, NULL)`,
@@ -203,20 +250,16 @@ export async function POST(req: NextRequest) {
     );
 
     for (const item of dedupedItems) {
-      const typeCheck = await client.query(
-        "SELECT id FROM component_types WHERE id = $1",
-        [item.componentTypeId]
-      );
-      if (typeCheck.rows.length === 0) {
+      if (!availableByType.has(item.componentTypeId)) {
         throw new Error(`Component type not found: ${item.componentTypeId}`);
       }
 
-      const invCheck = await client.query(
-        `SELECT GREATEST(0, inv.quantity_available - inv.quantity_reserved) AS effective_available
-         FROM inventory inv WHERE inv.component_type_id = $1`,
-        [item.componentTypeId]
-      );
-      const available = invCheck.rows[0]?.effective_available ?? 0;
+      // Reserved = demand from other open orders (this order isn't inserted into
+      // order_items yet, so it is not double-counted). Effective free stock is
+      // available minus that reserved demand.
+      const reservedRes = await client.query(RESERVED_FOR_TYPE_SQL, [item.componentTypeId]);
+      const reserved = parseInt(reservedRes.rows[0]?.reserved ?? "0", 10) || 0;
+      const available = Math.max(0, (availableByType.get(item.componentTypeId) ?? 0) - reserved);
       if (available < item.quantity) {
         throw new Error(
           `Insufficient inventory for ${item.componentTypeId}: need ${item.quantity}, have ${available}`
@@ -227,13 +270,6 @@ export async function POST(req: NextRequest) {
         `INSERT INTO order_items (order_item_id, order_id, component_type_id, quantity, added_at)
          VALUES ($1, $2, $3, $4, NOW())`,
         [randomUUID(), orderId, item.componentTypeId, item.quantity]
-      );
-
-      await client.query(
-        `UPDATE inventory
-         SET quantity_reserved = quantity_reserved + $1, last_updated = NOW()
-         WHERE component_type_id = $2`,
-        [item.quantity, item.componentTypeId]
       );
     }
 
@@ -322,7 +358,8 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true, orderId, mesPayload });
 }
 
-// Cancel an order: release reservations back to available
+// Cancel an order: marking it cancelled removes it from the open set, which
+// releases its reservation automatically (reserved is derived from open orders).
 export async function DELETE(req: NextRequest) {
   const url = new URL(req.url);
   const orderId = url.searchParams.get("orderId");
@@ -333,43 +370,30 @@ export async function DELETE(req: NextRequest) {
 
   await ensureTables();
 
-  const client = await pool.connect();
+  const batchId = `ORD-${orderId.slice(0, 8).toUpperCase()}`;
 
   try {
-    await client.query("BEGIN");
-
-    // Get all order items to know what to unreserve
-    const itemsRes = await client.query(
-      `SELECT component_type_id, quantity FROM order_items WHERE order_id = $1`,
-      [orderId]
-    );
-
-    // Unreserve inventory for each item
-    for (const row of itemsRes.rows) {
-      await client.query(
-        `UPDATE inventory
-         SET quantity_reserved = GREATEST(0, quantity_reserved - $1), last_updated = NOW()
-         WHERE component_type_id = $2`,
-        [row.quantity, row.component_type_id]
-      );
-    }
-
-    // Mark order as cancelled
-    await client.query(
+    await pool.query(
       `UPDATE aas_orders SET cancelled_at = NOW(), status = 'cancelled', cancellation_reason = $2 WHERE order_id = $1`,
       [orderId, reason]
     );
-
-    await client.query("COMMIT");
   } catch (error) {
-    await client.query("ROLLBACK");
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to cancel order" },
       { status: 400 }
     );
-  } finally {
-    client.release();
   }
+
+  // Cancel any PENDING MES queue entries for this webshop order so the
+  // user doesn't need to cancel separately on the scheduling page.
+  // batch_id in mes_orders = "ORD-<first 8 hex chars of webshop UUID uppercase>" (batchId above).
+  await pool.query(
+    `UPDATE mes_orders
+     SET status = 'CANCELLED', completed_at = NOW()
+     WHERE batch_id = $1
+       AND status = 'PENDING'`,
+    [batchId],
+  );
 
   // Fire-and-forget: ask MES to delete BaSyx shells for this order
   fetch(`http://localhost:8000/api/v1/orders/${orderId}/shells`, {

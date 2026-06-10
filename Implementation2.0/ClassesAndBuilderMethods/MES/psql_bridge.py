@@ -27,7 +27,7 @@ Next.js dashboard.
 
 Run as a long-lived process alongside the broker and the line controller:
 
-    python Implementation2.0/PSQL_Consumer/psql_bridge.py
+    python Implementation2.0/ClassesAndBuilderMethods/MES/psql_bridge.py
 """
 
 import base64
@@ -44,9 +44,9 @@ import psycopg2
 import requests
 
 # Allow importing MessageStructure from the shared classes module.
-# psql_bridge.py lives at Implementation2.0/PSQL_Consumer/, so its
-# parent's parent IS Implementation2.0 — append that directly.
-sys.path.append(str(Path(__file__).resolve().parent.parent))
+# psql_bridge.py lives at Implementation2.0/ClassesAndBuilderMethods/MES/,
+# so parent.parent.parent IS Implementation2.0.
+sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 
 from ClassesAndBuilderMethods.InformationModels import MessageStructure as MS  # noqa: E402
 

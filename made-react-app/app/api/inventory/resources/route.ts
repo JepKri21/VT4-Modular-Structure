@@ -78,27 +78,39 @@ export async function GET(req: NextRequest) {
   const base = serverUrl.replace(/\/$/, "");
 
   try {
-    const res = await fetch(`${base}/shells?limit=100`);
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      return NextResponse.json(
-        { error: `AAS server returned ${res.status}: ${text}` },
-        { status: 502 }
-      );
-    }
-
-    const data = (await res.json()) as { result?: unknown[] };
-    const rawShells = (
-      data.result ?? (Array.isArray(data) ? data : [])
-    ) as Array<{
+    type RawShell = {
       id: string;
       idShort?: string;
       assetInformation?: { assetKind?: string };
       submodels?: Array<{ keys?: Array<{ value: string }> }>;
-    }>;
+    };
+
+    // Paginate through all shells — BaSyx V3 uses cursor-based pagination
+    const allShells: RawShell[] = [];
+    let cursor: string | undefined;
+    do {
+      const url = cursor
+        ? `${base}/shells?limit=100&cursor=${encodeURIComponent(cursor)}`
+        : `${base}/shells?limit=100`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        return NextResponse.json(
+          { error: `AAS server returned ${res.status}: ${text}` },
+          { status: 502 }
+        );
+      }
+      const data = (await res.json()) as {
+        result?: RawShell[];
+        paging_metadata?: { cursor?: string };
+      };
+      const page = data.result ?? (Array.isArray(data) ? (data as unknown as RawShell[]) : []);
+      allShells.push(...page);
+      cursor = data.paging_metadata?.cursor;
+    } while (cursor);
 
     // Only instance shells — exclude Type/template shells (AssemblyModule, StorageModule, etc.)
-    const resourceShells = rawShells.filter(
+    const resourceShells = allShells.filter(
       (s) =>
         s.id?.includes("/Shells/Resources/") &&
         s.assetInformation?.assetKind !== "Type"
