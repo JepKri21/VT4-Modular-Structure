@@ -46,6 +46,7 @@ export interface AasOrder {
   status: OrderStatus;
   startedAt: string | null;
   fulfilledAt: string | null;
+  totalProducts: number | null;
 }
 
 export interface PlacedOrder extends AasOrder {
@@ -91,6 +92,7 @@ export const MIGRATE_ORDERS_SQL = [
   `ALTER TABLE aas_orders ADD COLUMN IF NOT EXISTS started_at TIMESTAMPTZ`,
   `ALTER TABLE aas_orders ADD COLUMN IF NOT EXISTS fulfilled_at TIMESTAMPTZ`,
   `ALTER TABLE aas_orders ADD COLUMN IF NOT EXISTS cancellation_reason TEXT`,
+  `ALTER TABLE aas_orders ADD COLUMN IF NOT EXISTS total_products INTEGER`,
 ];
 
 export const CREATE_INVENTORY_TABLE_SQL = `

@@ -29,6 +29,12 @@ function typeLabel(component: { material?: string; color?: string; finish?: stri
   return parts.length > 0 ? parts.join(" · ") : "Standard";
 }
 
+function productCount(order: PlacedOrder): number {
+  if (order.totalProducts != null) return order.totalProducts;
+  if (order.items.length === 0) return 1;
+  return Math.min(...order.items.map((i) => i.quantity));
+}
+
 function shortIri(iri: string | null): string {
   if (!iri) return "";
   const segs = iri.split("/");
@@ -342,11 +348,13 @@ export default function AasOrdersPage() {
                     </div>
 
                     <div className="flex gap-3">
-                      <div className="rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm">
-                        <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                          Items
+                      <div className="rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm min-w-0">
+                        <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
+                          Products ordered
                         </div>
-                        <div className="mt-1 text-lg font-semibold">{order.items.length}</div>
+                        <p className="text-sm font-medium">
+                          {productCount(order)} × AAU Mobile Phone
+                        </p>
                       </div>
                       {state === "in_progress" && (
                         <div className="inline-flex items-center gap-2 rounded-xl border border-blue-300 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 dark:border-blue-700 dark:bg-blue-950 dark:text-blue-300">
@@ -388,7 +396,11 @@ export default function AasOrdersPage() {
                     </div>
                   </div>
 
-                  <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="mt-5 space-y-3">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Components used
+                  </h3>
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {order.items.map((item) => (
                       <div key={item.orderItemId} className="rounded-xl border border-border bg-background p-4">
                         <div className="flex items-start justify-between gap-3">
@@ -409,6 +421,7 @@ export default function AasOrdersPage() {
                         )}
                       </div>
                     ))}
+                  </div>
                   </div>
                 </article>
               );

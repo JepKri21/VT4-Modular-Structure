@@ -62,6 +62,11 @@ export async function GET() {
     SELECT
       o.order_id, o.placed_at, o.cancelled_at, o.cancellation_reason, o.reserved_session,
       o.status, o.started_at, o.fulfilled_at,
+      COALESCE(o.total_products, (
+        SELECT MAX(m.batch_total)
+        FROM mes_orders m
+        WHERE m.batch_id = 'ORD-' || UPPER(LEFT(o.order_id::text, 8))
+      )) AS total_products,
       oi.order_item_id, oi.component_type_id, oi.quantity, oi.added_at,
       ct.id, ct.category, ct.material, ct.color, ct.version, ct.name, ct.description, ct.created_at
     FROM aas_orders o
@@ -87,6 +92,7 @@ export async function GET() {
         status: (row.status ?? "pending") as OrderStatus,
         startedAt: row.started_at instanceof Date ? row.started_at.toISOString() : (row.started_at ?? null),
         fulfilledAt: row.fulfilled_at instanceof Date ? row.fulfilled_at.toISOString() : (row.fulfilled_at ?? null),
+        totalProducts: row.total_products != null ? Number(row.total_products) : null,
         items: [],
       };
     }
@@ -243,10 +249,11 @@ export async function POST(req: NextRequest) {
       locked.rows.map((r) => [r.component_type_id, r.quantity_available as number])
     );
 
+    const productCount = totalProducts ?? (productConfigs?.length ?? 1);
     await client.query(
-      `INSERT INTO aas_orders (order_id, placed_at, reserved_session, cancelled_at)
-       VALUES ($1, $2, $3, NULL)`,
-      [orderId, placedAt.toISOString(), session]
+      `INSERT INTO aas_orders (order_id, placed_at, reserved_session, cancelled_at, total_products)
+       VALUES ($1, $2, $3, NULL, $4)`,
+      [orderId, placedAt.toISOString(), session, productCount]
     );
 
     for (const item of dedupedItems) {
