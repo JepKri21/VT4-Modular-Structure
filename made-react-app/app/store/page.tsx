@@ -16,9 +16,10 @@
 // with an <Image> that points at `/store/bottom-${color}-${material}.png`
 // + `/store/top-${color}-${material}.png` (or a single composite).
 
-import { useEffect, useMemo, useState } from "react";
-import { ShoppingCart, X, Plus, Minus } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ShoppingCart, X, Plus, Minus, Star } from "lucide-react";
 import type { ComponentWithInventory } from "@/lib/inventory";
+import PhoneConfigurator from "@/components/PhoneConfigurator";
 
 interface CartItem {
   id: string;
@@ -48,21 +49,21 @@ const SKUS: Sku[] = [
     id: "phone-1f",
     fuseCount: 1,
     name: "AAU Mobile Phone",
-    tagline: "Telefon Pro",
+    tagline: "Telefon",
     basePrice: 1399,
   },
   {
     id: "phone-2f",
     fuseCount: 2,
     name: "AAU Mobile Phone",
-    tagline: "Telefon Pro Max",
+    tagline: "Telefon Pro",
     basePrice: 1599,
   },
   {
     id: "phone-3f",
     fuseCount: 3,
     name: "AAU Mobile Phone",
-    tagline: "Telefon Ultra",
+    tagline: "Telefon Pro Max",
     basePrice: 1799,
   },
 ];
@@ -98,6 +99,54 @@ function useSessionId(): string {
 
 function makeCartId(): string {
   return `cart_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+// Reservation accounting — cart items hold a virtual claim on inventory
+// so a shopper can't add the same configuration twice when only one kit
+// is in stock, nor over-fill the quantity past availability. Fuses scale
+// by the kit's fuseCount (a "3-fuse" kit reserves three fuses per unit).
+function reservedFor(
+  componentId: string,
+  cart: CartItem[],
+  excludeCartId?: string,
+): number {
+  let n = 0;
+  for (const it of cart) {
+    if (excludeCartId && it.id === excludeCartId) continue;
+    if (it.bottomCoverId === componentId) n += it.quantity;
+    if (it.topCoverId === componentId) n += it.quantity;
+    if (it.pcbId === componentId) n += it.quantity;
+    if (it.fuseId === componentId) n += it.quantity * it.fuseCount;
+  }
+  return n;
+}
+
+interface ConfigIds {
+  bottomCoverId: string;
+  topCoverId: string;
+  pcbId: string;
+  fuseId: string;
+  fuseCount: number;
+}
+
+function kitsAvailable(
+  ids: ConfigIds,
+  components: ComponentWithInventory[],
+  cart: CartItem[],
+  excludeCartId?: string,
+): number {
+  const qty = (id: string) =>
+    components.find((c) => c.id === id)?.quantityAvailable ?? 0;
+  const free = (id: string, perKit: number) =>
+    Math.floor(
+      Math.max(0, qty(id) - reservedFor(id, cart, excludeCartId)) / perKit,
+    );
+  return Math.min(
+    free(ids.bottomCoverId, 1),
+    free(ids.topCoverId, 1),
+    free(ids.pcbId, 1),
+    free(ids.fuseId, ids.fuseCount),
+  );
 }
 
 export default function StorePage() {
@@ -150,10 +199,7 @@ export default function StorePage() {
   );
   const cartTotal = useMemo(
     () =>
-      cart.reduce(
-        (s, it) => s + it.quantity * skuById(it.skuId).basePrice,
-        0,
-      ),
+      cart.reduce((s, it) => s + it.quantity * skuById(it.skuId).basePrice, 0),
     [cart],
   );
 
@@ -200,22 +246,44 @@ export default function StorePage() {
     try {
       const merged = new Map<string, number>();
       const productConfigs: {
-        items: { slotLabel: string; componentTypeId: string; quantity: number }[];
+        items: {
+          slotLabel: string;
+          componentTypeId: string;
+          quantity: number;
+        }[];
       }[] = [];
       for (const item of cart) {
         for (let i = 0; i < item.quantity; i++) {
           productConfigs.push({
             items: [
-              { slotLabel: "BottomCover", componentTypeId: item.bottomCoverId, quantity: 1 },
-              { slotLabel: "PCB",         componentTypeId: item.pcbId,         quantity: 1 },
-              { slotLabel: "Fuse",        componentTypeId: item.fuseId,        quantity: item.fuseCount },
-              { slotLabel: "TopCover",    componentTypeId: item.topCoverId,    quantity: 1 },
+              {
+                slotLabel: "BottomCover",
+                componentTypeId: item.bottomCoverId,
+                quantity: 1,
+              },
+              { slotLabel: "PCB", componentTypeId: item.pcbId, quantity: 1 },
+              {
+                slotLabel: "Fuse",
+                componentTypeId: item.fuseId,
+                quantity: item.fuseCount,
+              },
+              {
+                slotLabel: "TopCover",
+                componentTypeId: item.topCoverId,
+                quantity: 1,
+              },
             ],
           });
-          merged.set(item.bottomCoverId, (merged.get(item.bottomCoverId) ?? 0) + 1);
-          merged.set(item.pcbId,         (merged.get(item.pcbId)         ?? 0) + 1);
-          merged.set(item.fuseId,        (merged.get(item.fuseId)        ?? 0) + item.fuseCount);
-          merged.set(item.topCoverId,    (merged.get(item.topCoverId)    ?? 0) + 1);
+          merged.set(
+            item.bottomCoverId,
+            (merged.get(item.bottomCoverId) ?? 0) + 1,
+          );
+          merged.set(item.pcbId, (merged.get(item.pcbId) ?? 0) + 1);
+          merged.set(
+            item.fuseId,
+            (merged.get(item.fuseId) ?? 0) + item.fuseCount,
+          );
+          merged.set(item.topCoverId, (merged.get(item.topCoverId) ?? 0) + 1);
         }
       }
 
@@ -300,6 +368,7 @@ export default function StorePage() {
         <ProductPanel
           sku={openSku}
           components={components}
+          cart={cart}
           onClose={() => setOpenSku(null)}
           onAdd={addToCart}
         />
@@ -308,6 +377,7 @@ export default function StorePage() {
       {cartOpen && (
         <CartPanel
           items={cart}
+          components={components}
           total={cartTotal}
           ordering={ordering}
           onClose={() => setCartOpen(false)}
@@ -326,6 +396,11 @@ function skuById(id: string): Sku {
 
 /* ── Product card ───────────────────────────────────────────────────── */
 
+// 3D-tilt product card. The tilt math runs on the un-rotated bounding
+// box: `getBoundingClientRect()` already reflects the rendered transform,
+// so reading it while a transform is applied would feed back into itself
+// and make the angle jitter. Instead we capture the rect on pointer-enter
+// and reuse it for the duration of the hover.
 function ProductCard({
   sku,
   disabled,
@@ -335,83 +410,135 @@ function ProductCard({
   disabled: boolean;
   onClick: () => void;
 }) {
+  const innerRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const rectRef = useRef<DOMRect | null>(null);
+
+  const onPointerEnter = (e: React.PointerEvent<HTMLButtonElement>) => {
+    rectRef.current = e.currentTarget.getBoundingClientRect();
+  };
+
+  const onPointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const el = innerRef.current;
+    const img = imgRef.current;
+    const rect = rectRef.current;
+    if (!el || !rect) return;
+    const x = (e.clientX - rect.left) / rect.width; // 0..1
+    const y = (e.clientY - rect.top) / rect.height; // 0..1
+    const tiltY = (x - 0.5) * 12; // left/right rotation
+    const tiltX = (0.5 - y) * 12; // up/down rotation
+    el.style.transform = `perspective(900px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale(1.02)`;
+    el.style.setProperty("--glare-x", `${x * 100}%`);
+    el.style.setProperty("--glare-y", `${y * 100}%`);
+    // Image is a sibling of the rotating card, so it never inherits the
+    // tilt. It only "jumps up" with the same scale + a small lift to
+    // sell the floating-above-the-card illusion.
+    if (img) {
+      img.style.transform = "translateY(-5px) scale(1.04)";
+    }
+  };
+
+  const onPointerLeave = () => {
+    const el = innerRef.current;
+    const img = imgRef.current;
+    if (el)
+      el.style.transform =
+        "perspective(900px) rotateX(0deg) rotateY(0deg) scale(1)";
+    if (img) img.style.transform = "translateY(0) scale(1)";
+    rectRef.current = null;
+  };
+
   return (
     <button
       type="button"
       onClick={onClick}
+      onPointerEnter={onPointerEnter}
+      onPointerMove={onPointerMove}
+      onPointerLeave={onPointerLeave}
       disabled={disabled}
-      className="group text-left rounded-2xl border bg-muted/40 hover:bg-muted/60 transition-colors p-4 disabled:opacity-50"
+      className="group text-left disabled:opacity-50 relative"
+      style={{ perspective: "900px" }}
     >
-      <div className="relative aspect-square rounded-xl bg-muted overflow-hidden mb-3">
-        <RepeatedTextBg />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <PhonePreview
-            topColor="Black"
-            bottomColor="Black"
+      <div
+        ref={innerRef}
+        className="rounded-2xl border bg-background shadow-md hover:shadow-2xl p-3 transition-[box-shadow,transform] duration-200 ease-out will-change-transform"
+        style={{
+          transform: "perspective(900px) rotateX(0deg) rotateY(0deg) scale(1)",
+          transformStyle: "preserve-3d",
+        }}
+      >
+        <div
+          className="relative aspect-square rounded-xl overflow-hidden mb-3"
+          style={{
+            backgroundImage:
+              "linear-gradient(135deg, #211955 0%, #0E063E 100%)",
+          }}
+        >
+          <RepeatedTextBg />
+          <span className="absolute top-2 right-2 inline-flex items-center rounded-full bg-white/90 text-[#211955] text-[10px] font-semibold px-2 py-0.5 z-10">
+            {sku.fuseCount} × FUSE
+          </span>
+          {/* Glare highlight tracking the cursor. Pointer-events-none so
+              it never blocks the underlying button. */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+            style={{
+              background:
+                "radial-gradient(circle at var(--glare-x,50%) var(--glare-y,50%), rgba(255,255,255,0.05), transparent 100%)",
+            }}
           />
         </div>
-        <span className="absolute top-2 right-2 inline-flex items-center rounded-full bg-primary text-background text-[10px] font-semibold px-2 py-0.5">
-          {sku.fuseCount} × FUSE
-        </span>
-      </div>
-      <div className="flex items-baseline justify-between">
-        <div>
-          <div className="font-bold text-primary uppercase text-sm">
-            {sku.name}
+        <div className="flex items-end justify-between px-1">
+          <div>
+            <div className="text-lg font-bold text-primary">
+              {formatPrice(sku.basePrice)}
+            </div>
+            <div className="text-xs text-muted-foreground">{sku.tagline}</div>
           </div>
-          <div className="text-xs text-muted-foreground">{sku.tagline}</div>
-        </div>
-        <div className="text-sm font-bold text-primary">
-          {formatPrice(sku.basePrice)}
+          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+            <Star size={16} className="fill-amber-400 text-amber-400" />
+            <span className="tabular-nums">4,7</span>
+          </div>
         </div>
       </div>
+      {/* Phone image — sibling of the rotating card so it never inherits
+          the tilt. It mirrors the image-well box (inner has p-3, image
+          well is aspect-square at the top), and on hover takes only the
+          shared scale + a small Y-lift to read as "floating above" the
+          tilting card. */}
+      <img
+        ref={imgRef}
+        src="/ProductCardImages/ProductCardOriginal.png"
+        alt={sku.name}
+        aria-hidden
+        className="pointer-events-none absolute top-3 left-3 right-3 aspect-square object-contain will-change-transform transition-transform duration-200 ease-out drop-shadow-xl"
+        style={{ transform: "translateY(0) scale(1)" }}
+      />
     </button>
   );
 }
 
+// Repeating "AAU MOBILE PHONE" wordmark behind the product image. The
+// text is colored #211955 — slightly darker than the gradient — so it
+// reads as a watermark rather than a label.
 function RepeatedTextBg() {
-  const rows = Array.from({ length: 12 });
+  const rows = Array.from({ length: 14 });
   return (
-    <div className="absolute inset-0 overflow-hidden text-muted-foreground/15 select-none pointer-events-none">
+    <div
+      aria-hidden
+      className="absolute inset-0 overflow-hidden select-none pointer-events-none text-primary"
+      style={{ color: "text-primary" }}
+    >
       {rows.map((_, i) => (
         <div
           key={i}
-          className="text-[28px] md:text-[36px] font-extrabold uppercase whitespace-nowrap"
-          style={{ transform: `translateX(${(i % 2) * -40}px)` }}
+          className="text-[22px] md:text-[26px] font-extrabold uppercase whitespace-nowrap leading-[1.1] tracking-tight"
+          style={{ transform: `translateX(${(i % 2) * -32}px)` }}
         >
           AAU MOBILE PHONE AAU MOBILE PHONE AAU MOBILE PHONE
         </div>
       ))}
-    </div>
-  );
-}
-
-// Visual stand-in for the phone — stacked rectangles tinted to match the
-// chosen covers. When Blender renders are available drop them into
-// /public/store/ and swap to an <Image> here.
-function PhonePreview({
-  topColor,
-  bottomColor,
-}: {
-  topColor: string;
-  bottomColor: string;
-}) {
-  const top = COLOR_HEX[topColor] ?? "#1a1a1a";
-  const bottom = COLOR_HEX[bottomColor] ?? "#1a1a1a";
-  return (
-    <div className="w-24 h-44 md:w-28 md:h-52 rounded-xl shadow-xl overflow-hidden flex flex-col">
-      <div
-        className="h-1/3 flex items-center justify-center"
-        style={{ backgroundColor: top }}
-      >
-        <div className="w-3 h-3 rounded-sm bg-emerald-400/80" />
-      </div>
-      <div
-        className="flex-1 flex items-center justify-center"
-        style={{ backgroundColor: bottom }}
-      >
-        <div className="w-14 h-14 rounded-md bg-black/30" />
-      </div>
     </div>
   );
 }
@@ -421,11 +548,13 @@ function PhonePreview({
 function ProductPanel({
   sku,
   components,
+  cart,
   onClose,
   onAdd,
 }: {
   sku: Sku;
   components: ComponentWithInventory[];
+  cart: CartItem[];
   onClose: () => void;
   onAdd: (item: CartItem) => void;
 }) {
@@ -453,7 +582,9 @@ function ProductPanel({
   const bottomColors = uniqueSorted(bottomCovers.map((c) => c.color));
   const topColors = uniqueSorted(topCovers.map((c) => c.color));
 
-  const [bottomMaterial, setBottomMaterial] = useState(bottomMaterials[0] ?? "");
+  const [bottomMaterial, setBottomMaterial] = useState(
+    bottomMaterials[0] ?? "",
+  );
   const [bottomColor, setBottomColor] = useState(bottomColors[0] ?? "");
   const [topMaterial, setTopMaterial] = useState(topMaterials[0] ?? "");
   const [topColor, setTopColor] = useState(topColors[0] ?? "");
@@ -461,11 +592,21 @@ function ProductPanel({
 
   // Seed defaults once data lands.
   useEffect(() => {
-    if (!bottomMaterial && bottomMaterials.length) setBottomMaterial(bottomMaterials[0]);
+    if (!bottomMaterial && bottomMaterials.length)
+      setBottomMaterial(bottomMaterials[0]);
     if (!bottomColor && bottomColors.length) setBottomColor(bottomColors[0]);
     if (!topMaterial && topMaterials.length) setTopMaterial(topMaterials[0]);
     if (!topColor && topColors.length) setTopColor(topColors[0]);
-  }, [bottomMaterial, bottomMaterials, bottomColor, bottomColors, topMaterial, topMaterials, topColor, topColors]);
+  }, [
+    bottomMaterial,
+    bottomMaterials,
+    bottomColor,
+    bottomColors,
+    topMaterial,
+    topMaterials,
+    topColor,
+    topColors,
+  ]);
 
   const pickByMaterialColor = (
     pool: ComponentWithInventory[],
@@ -498,11 +639,40 @@ function ProductPanel({
         c.quantityAvailable > 0,
     );
 
-  const canAdd = !!bottom && !!top && !!fuse && !!pcb;
+  const hasParts = !!bottom && !!top && !!fuse && !!pcb;
 
-  const stockMessage = canAdd
-    ? `${Math.min(bottom!.quantityAvailable, top!.quantityAvailable)} matching kits available`
-    : "This combination isn't currently in stock";
+  // Maximum quantity we can still add. Reservation excludes nothing —
+  // an exact match already in the cart counts against the available
+  // pool, so re-opening the same configuration shows the remaining
+  // headroom (zero if the cart already holds the last unit).
+  const maxAddable = hasParts
+    ? kitsAvailable(
+        {
+          bottomCoverId: bottom!.id,
+          topCoverId: top!.id,
+          pcbId: pcb!.id,
+          fuseId: fuse!.id,
+          fuseCount: sku.fuseCount,
+        },
+        components,
+        cart,
+      )
+    : 0;
+
+  // Re-clamp the chosen quantity whenever the selection (and therefore
+  // maxAddable) changes — otherwise switching from a high-stock config
+  // to a low-stock one would leave the spinner above the cap.
+  useEffect(() => {
+    if (quantity > maxAddable) setQuantity(Math.max(1, maxAddable));
+  }, [maxAddable, quantity]);
+
+  const canAdd = hasParts && maxAddable >= quantity && quantity > 0;
+
+  const stockMessage = !hasParts
+    ? "This combination isn't currently in stock"
+    : maxAddable === 0
+      ? "No more of this configuration available — adjust your selection or remove from cart"
+      : `${maxAddable} matching kit${maxAddable === 1 ? "" : "s"} available`;
 
   const submit = () => {
     if (!canAdd) return;
@@ -538,16 +708,20 @@ function ProductPanel({
         </header>
         <div className="grid md:grid-cols-2">
           <div className="relative aspect-square bg-muted">
-            <RepeatedTextBg />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <PhonePreview topColor={topColor} bottomColor={bottomColor} />
-            </div>
+            <PhoneConfigurator
+              topColor={topColor || "Black"}
+              bottomColor={bottomColor || "Black"}
+              fuseCount={sku.fuseCount}
+              className="absolute inset-0 w-full h-full object-contain"
+            />
           </div>
           <div className="p-5 space-y-5">
             <div className="flex items-baseline justify-between">
               <div>
                 <div className="text-xl font-bold text-primary">{sku.name}</div>
-                <div className="text-xs text-muted-foreground">{sku.tagline}</div>
+                <div className="text-xs text-muted-foreground">
+                  {sku.tagline}
+                </div>
               </div>
               <div className="text-lg font-bold text-primary">
                 {formatPrice(sku.basePrice)}
@@ -586,7 +760,8 @@ function ProductPanel({
               <div className="inline-flex items-center gap-2">
                 <button
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  className="p-1 rounded-md border hover:bg-muted"
+                  disabled={quantity <= 1}
+                  className="p-1 rounded-md border hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <Minus size={14} />
                 </button>
@@ -594,8 +769,11 @@ function ProductPanel({
                   {quantity}
                 </span>
                 <button
-                  onClick={() => setQuantity((q) => Math.min(99, q + 1))}
-                  className="p-1 rounded-md border hover:bg-muted"
+                  onClick={() =>
+                    setQuantity((q) => Math.min(maxAddable, q + 1))
+                  }
+                  disabled={quantity >= maxAddable}
+                  className="p-1 rounded-md border hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <Plus size={14} />
                 </button>
@@ -607,7 +785,9 @@ function ProductPanel({
               disabled={!canAdd}
               className="w-full py-3 rounded-full bg-primary text-background font-bold uppercase tracking-wider disabled:opacity-50"
             >
-              Add to cart · {formatPrice(sku.basePrice * quantity)}
+              {maxAddable === 0
+                ? "Out of stock"
+                : `Add to cart · ${formatPrice(sku.basePrice * quantity)}`}
             </button>
           </div>
         </div>
@@ -712,6 +892,7 @@ function uniqueSorted(arr: (string | undefined)[]): string[] {
 
 function CartPanel({
   items,
+  components,
   total,
   ordering,
   onClose,
@@ -720,6 +901,7 @@ function CartPanel({
   onPlaceOrder,
 }: {
   items: CartItem[];
+  components: ComponentWithInventory[];
   total: number;
   ordering: boolean;
   onClose: () => void;
@@ -745,15 +927,39 @@ function CartPanel({
           ) : (
             items.map((it) => {
               const sku = skuById(it.skuId);
+              // Headroom for this row: total available minus what every
+              // OTHER cart row already reserves for the same components.
+              // The row's own quantity is excluded so the user can still
+              // see and decrement what they already added.
+              const headroom = kitsAvailable(
+                {
+                  bottomCoverId: it.bottomCoverId,
+                  topCoverId: it.topCoverId,
+                  pcbId: it.pcbId,
+                  fuseId: it.fuseId,
+                  fuseCount: it.fuseCount,
+                },
+                components,
+                items,
+                it.id,
+              );
+              const canIncrement = it.quantity < headroom;
               return (
                 <div
                   key={it.id}
                   className="flex gap-3 rounded-xl border p-3 bg-muted/30"
                 >
-                  <div className="w-14 h-20 shrink-0">
-                    <PhonePreviewSmall
-                      topColor={it.topColor}
-                      bottomColor={it.bottomColor}
+                  <div
+                    className="w-14 h-20 shrink-0 rounded-md overflow-hidden flex items-center justify-center"
+                    style={{
+                      backgroundImage:
+                        "linear-gradient(135deg, #211955 0%, #0E063E 100%)",
+                    }}
+                  >
+                    <img
+                      src="/ProductCardImages/ProductCardOriginal.png"
+                      alt={sku.name}
+                      className="w-full h-full object-contain"
                     />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -780,7 +986,13 @@ function CartPanel({
                         </span>
                         <button
                           onClick={() => onUpdateQty(it.id, +1)}
-                          className="p-1 rounded-md border hover:bg-muted"
+                          disabled={!canIncrement}
+                          title={
+                            canIncrement
+                              ? undefined
+                              : "No more of this configuration in stock"
+                          }
+                          className="p-1 rounded-md border hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           <Plus size={12} />
                         </button>
@@ -822,19 +1034,3 @@ function CartPanel({
   );
 }
 
-function PhonePreviewSmall({
-  topColor,
-  bottomColor,
-}: {
-  topColor: string;
-  bottomColor: string;
-}) {
-  const top = COLOR_HEX[topColor] ?? "#1a1a1a";
-  const bottom = COLOR_HEX[bottomColor] ?? "#1a1a1a";
-  return (
-    <div className="w-full h-full rounded-md shadow-md overflow-hidden flex flex-col">
-      <div className="h-1/3" style={{ backgroundColor: top }} />
-      <div className="flex-1" style={{ backgroundColor: bottom }} />
-    </div>
-  );
-}
