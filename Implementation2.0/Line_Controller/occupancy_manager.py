@@ -124,6 +124,18 @@ class OccupancyManager:
             if owner == order_id and self._cargo.get((r, a)) is not None
         ]
 
+    def is_resource_busy(self, resource_id_short: str) -> bool:
+        """True if *any* actor of this resource is reserved, carrying cargo, or
+        stuck. Used by the config-reload coordinator to decide whether a
+        resource removed from the line config can be dropped now or must drain
+        first (a resource an in-flight order is still using must not be yanked).
+        """
+        if any(o is not None for (r, _a), o in self._owner.items() if r == resource_id_short):
+            return True
+        if any(c is not None for (r, _a), c in self._cargo.items() if r == resource_id_short):
+            return True
+        return any(r == resource_id_short for (r, _a) in self._stuck)
+
     def owner_of(self, resource_id_short: str, actor_name: str) -> str | None:
         return self._owner.get((resource_id_short, actor_name))
 

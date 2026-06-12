@@ -17,6 +17,7 @@ import {
   Terminal,
   X,
   Network,
+  Download,
 } from "lucide-react";
 import type { ResourceControlEntry, ResourceControlResponse } from "@/app/api/resource-control/route";
 import type { LineControllerStatus } from "@/app/api/line-controller/route";
@@ -49,6 +50,10 @@ export default function ResourceControlPage() {
   const [lcConfigSaved, setLcConfigSaved] = useState(false);
   const [lcSettingsOpen, setLcSettingsOpen] = useState(false);
   const logEndRef = useRef<HTMLDivElement>(null);
+  // True while the user is parked at the bottom of the LC log. When they
+  // scroll up to read earlier output it flips false, so incoming refreshes
+  // stop yanking the view to the bottom. Scrolling back down re-arms it.
+  const lcStickToBottom = useRef(true);
 
   // MES API state
   const [mesStatus, setMesStatus] = useState<MesApiStatus>({ running: false, configOk: false, port: 8000 });
@@ -76,6 +81,22 @@ export default function ResourceControlPage() {
       const res = await fetch("/api/line-controller/logs");
       const data = await res.json() as { lines: string[] };
       setLcLogLines(data.lines);
+    } catch { /* ignore */ }
+  }, []);
+
+  const downloadLcLog = useCallback(async () => {
+    try {
+      // limit=0 returns the full captured history, not just the live tail.
+      const res = await fetch("/api/line-controller/logs?limit=0");
+      const data = await res.json() as { lines: string[] };
+      const blob = new Blob([data.lines.join("\n")], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+      a.download = `line-controller-${stamp}.log`;
+      a.click();
+      URL.revokeObjectURL(url);
     } catch { /* ignore */ }
   }, []);
 
@@ -153,10 +174,19 @@ export default function ResourceControlPage() {
     }
   };
 
-  // Auto-scroll logs to bottom
+  // Auto-scroll logs to bottom — but only while the user is already at the
+  // bottom, so scrolling up to read earlier output isn't interrupted by the
+  // 1.5 s refresh.
   useEffect(() => {
-    if (lcLogsOpen) logEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (lcLogsOpen && lcStickToBottom.current) {
+      logEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [lcLogLines, lcLogsOpen]);
+
+  // Re-arm follow-to-bottom each time the modal opens.
+  useEffect(() => {
+    if (lcLogsOpen) lcStickToBottom.current = true;
+  }, [lcLogsOpen]);
 
   // Poll LC logs when modal is open
   useEffect(() => {
@@ -813,6 +843,14 @@ export default function ResourceControlPage() {
                 <Button
                   size="sm"
                   variant="ghost"
+                  onClick={() => void downloadLcLog()}
+                  title="Download full log"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
                   onClick={() => void fetchLcLogs()}
                   title="Refresh"
                 >
@@ -825,7 +863,15 @@ export default function ResourceControlPage() {
             </div>
 
             {/* Log output */}
-            <div className="overflow-auto flex-1 bg-black/90 rounded-b-xl p-3">
+            <div
+              className="overflow-auto flex-1 bg-black/90 rounded-b-xl p-3"
+              onScroll={(e) => {
+                const el = e.currentTarget;
+                // Within 50px of the bottom counts as "at the bottom".
+                lcStickToBottom.current =
+                  el.scrollHeight - el.scrollTop - el.clientHeight < 50;
+              }}
+            >
               <pre className="text-xs font-mono text-green-400 whitespace-pre-wrap break-all leading-relaxed">
                 {lcLogLines.length === 0
                   ? <span className="text-muted-foreground italic">No output yet…</span>

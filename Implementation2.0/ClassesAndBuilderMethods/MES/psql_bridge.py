@@ -504,15 +504,31 @@ def _read_property_value(elements, idshort: str) -> str | None:
 
 
 def _fetch_resource_shells() -> list[str]:
-    """Every shell IRI on the AAS server starting with RESOURCE_IRI_PREFIX."""
+    """Every shell IRI on the AAS server starting with RESOURCE_IRI_PREFIX.
+
+    Follows the paging cursor — BaSyx caps page size at 1000, so a single
+    request would silently drop shells past the first page.
+    """
+    shells: list = []
+    cursor: str | None = None
     try:
-        resp = requests.get(f"{AAS_BASE}/shells?limit=1000", timeout=5)
-        resp.raise_for_status()
-        data = resp.json()
+        while True:
+            url = f"{AAS_BASE}/shells?limit=1000"
+            if cursor:
+                url += f"&cursor={requests.utils.quote(cursor, safe='')}"
+            resp = requests.get(url, timeout=5)
+            resp.raise_for_status()
+            data = resp.json()
+            if isinstance(data, list):
+                shells.extend(data)
+                break
+            shells.extend(data.get("result", []))
+            cursor = (data.get("paging_metadata") or {}).get("cursor")
+            if not cursor:
+                break
     except Exception as exc:
         print(f"[discover] failed to list shells from {AAS_BASE}: {exc}")
         return []
-    shells = data.get("result") or (data if isinstance(data, list) else [])
     return [
         s["id"] for s in shells
         if isinstance(s, dict)

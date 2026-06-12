@@ -126,7 +126,7 @@ export async function fetchAllPaged(base: string, path: string): Promise<Record<
   let cursor: string | undefined;
   for (let i = 0; i < 100; i++) {
     const sep = path.includes("?") ? "&" : "?";
-    const url = `${base}${path}${sep}limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
+    const url = `${base}${path}${sep}limit=1000${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
     const res = await fetch(url);
     if (!res.ok) {
       if (i === 0) throw new Error(`${res.status}: ${await res.text().catch(() => "")}`);
@@ -139,6 +139,51 @@ export async function fetchAllPaged(base: string, path: string): Promise<Record<
     if (!cursor) break;
   }
   return out;
+}
+
+/**
+ * Collect the IRIs of component instances already consumed into a product.
+ * Assembly does NOT delete the component shell — it records the link by writing
+ * the instance IRI into the product's BillOfMaterials
+ * (`BOMEntries.<entry>.ComponentShellReference`). Those instances stay on the AAS
+ * but must never count as available stock NOR be re-allocated into a resource.
+ */
+export function collectConsumedIris(submodels: Record<string, unknown>[]): Set<string> {
+  const consumed = new Set<string>();
+
+  const walk = (el: unknown): void => {
+    if (!el || typeof el !== "object") return;
+    const e = el as Record<string, unknown>;
+    if (e.idShort === "ComponentShellReference") {
+      const v = e.value as { keys?: { value?: string }[] } | undefined;
+      const iri = v?.keys?.[0]?.value;
+      if (typeof iri === "string" && iri.trim()) consumed.add(iri.trim());
+    }
+    if (Array.isArray(e.value)) e.value.forEach(walk);
+    if (Array.isArray(e.submodelElements)) e.submodelElements.forEach(walk);
+  };
+
+  for (const sm of submodels) {
+    if (sm.idShort !== "BillOfMaterials") continue;
+    const id = (sm.id as string) ?? "";
+    if (id.includes("/Submodels/Templates/")) continue; // skip the BOM template
+    if (Array.isArray(sm.submodelElements)) sm.submodelElements.forEach(walk);
+  }
+  return consumed;
+}
+
+/**
+ * IRIs of component instances already consumed into a product BOM, read live
+ * from the AAS. Best-effort: returns an empty set if the submodels can't be read
+ * (caller degrades to not excluding consumed parts rather than failing).
+ */
+export async function consumedIrisFromAas(base: string): Promise<Set<string>> {
+  try {
+    const submodels = await fetchAllPaged(base, "/submodels");
+    return collectConsumedIris(submodels);
+  } catch {
+    return new Set<string>();
+  }
 }
 
 /** Resolve the AAS server base URL: explicit arg → env → localhost default. */

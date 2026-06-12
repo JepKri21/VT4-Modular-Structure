@@ -10,7 +10,7 @@ import {
   CREATE_ALLOCATED_INSTANCES_TABLE_SQL,
   MIGRATE_COMPONENT_TYPES_SQL,
 } from "@/lib/inventory";
-import { fetchResourceInventories, type ResourceInventory } from "@/lib/resource-inventory";
+import { collectConsumedIris, fetchResourceInventories, type ResourceInventory } from "@/lib/resource-inventory";
 
 // IRI pattern: https://aausmartlab.org/Shells/Component/{Category}/{Type}-{UUID}
 // The UUID is appended to the last segment with a hyphen/underscore prefix.
@@ -110,7 +110,7 @@ async function fetchAllPaged(base: string, path: string): Promise<Record<string,
   let cursor: string | undefined;
   for (let i = 0; i < 100; i++) {
     const sep = path.includes("?") ? "&" : "?";
-    const url = `${base}${path}${sep}limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
+    const url = `${base}${path}${sep}limit=1000${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
     const res = await fetch(url);
     if (!res.ok) {
       if (i === 0) {
@@ -125,37 +125,6 @@ async function fetchAllPaged(base: string, path: string): Promise<Record<string,
     if (!cursor) break;
   }
   return out;
-}
-
-/**
- * Collect the IRIs of component instances that have already been consumed into a
- * product. Assembly does NOT delete the component shell — it records the link by
- * writing the instance IRI into the product's BillOfMaterials
- * (`BOMEntries.<entry>.ComponentShellReference`). Those instances stay on the AAS
- * but must not count as available stock.
- */
-function collectConsumedIris(submodels: Record<string, unknown>[]): Set<string> {
-  const consumed = new Set<string>();
-
-  const walk = (el: unknown): void => {
-    if (!el || typeof el !== "object") return;
-    const e = el as Record<string, unknown>;
-    if (e.idShort === "ComponentShellReference") {
-      const v = e.value as { keys?: { value?: string }[] } | undefined;
-      const iri = v?.keys?.[0]?.value;
-      if (typeof iri === "string" && iri.trim()) consumed.add(iri.trim());
-    }
-    if (Array.isArray(e.value)) e.value.forEach(walk);
-    if (Array.isArray(e.submodelElements)) e.submodelElements.forEach(walk);
-  };
-
-  for (const sm of submodels) {
-    if (sm.idShort !== "BillOfMaterials") continue;
-    const id = (sm.id as string) ?? "";
-    if (id.includes("/Submodels/Templates/")) continue; // skip the BOM template
-    if (Array.isArray(sm.submodelElements)) sm.submodelElements.forEach(walk);
-  }
-  return consumed;
 }
 
 export async function POST(req: NextRequest) {

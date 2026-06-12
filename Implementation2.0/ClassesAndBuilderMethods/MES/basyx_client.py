@@ -78,7 +78,7 @@ def fetch_submodel(submodel_iri: str, basyx_url: str = BASYX_URL) -> Optional[di
     r = requests.get(f"{url}/submodels/{_b64(submodel_iri)}", timeout=HTTP_TIMEOUT)
     if r.status_code == 200:
         return r.json()
-    log.debug("fetch_submodel %s → %s", submodel_iri, r.status_code)
+    log.debug("fetch_submodel %s -> %s", submodel_iri, r.status_code)
     return None
 
 
@@ -87,19 +87,36 @@ def fetch_shell(shell_iri: str, basyx_url: str = BASYX_URL) -> Optional[dict]:
     r = requests.get(f"{url}/shells/{_b64(shell_iri)}", timeout=HTTP_TIMEOUT)
     if r.status_code == 200:
         return r.json()
-    log.debug("fetch_shell %s → %s", shell_iri, r.status_code)
+    log.debug("fetch_shell %s -> %s", shell_iri, r.status_code)
     return None
 
 
 def list_shells(basyx_url: str = BASYX_URL) -> list[dict]:
-    """Return all shells from BaSyx (paginated, up to 10000)."""
+    """Return all shells from BaSyx, following the paging cursor.
+
+    BaSyx caps page size at 1000 regardless of the requested limit, so a
+    single request silently drops everything past the first page. We follow
+    paging_metadata.cursor until it's exhausted.
+    """
     url = basyx_url.rstrip("/")
-    r = requests.get(f"{url}/shells", params={"limit": 10000}, timeout=HTTP_TIMEOUT)
-    if r.status_code == 200:
+    shells: list[dict] = []
+    cursor: Optional[str] = None
+    while True:
+        req_url = f"{url}/shells?limit=1000"
+        if cursor:
+            req_url += f"&cursor={requests.utils.quote(cursor, safe='')}"
+        r = requests.get(req_url, timeout=HTTP_TIMEOUT)
+        if r.status_code != 200:
+            log.warning("list_shells -> %s", r.status_code)
+            break
         data = r.json()
-        return data.get("result", data) if isinstance(data, dict) else data
-    log.warning("list_shells → %s", r.status_code)
-    return []
+        if not isinstance(data, dict):
+            return data
+        shells.extend(data.get("result", []))
+        cursor = (data.get("paging_metadata") or {}).get("cursor")
+        if not cursor:
+            break
+    return shells
 
 
 def find_shell_by_idshort(id_short: str, basyx_url: str = BASYX_URL) -> Optional[dict]:
@@ -155,14 +172,14 @@ def delete_shell(shell_iri: str, basyx_url: str = BASYX_URL) -> None:
     url = basyx_url.rstrip("/")
     r = requests.delete(f"{url}/shells/{_b64(shell_iri)}", timeout=HTTP_TIMEOUT)
     if r.status_code not in (200, 204, 404):
-        log.warning("delete_shell %s → %s %s", shell_iri, r.status_code, r.text)
+        log.warning("delete_shell %s -> %s %s", shell_iri, r.status_code, r.text)
 
 
 def delete_submodel(submodel_iri: str, basyx_url: str = BASYX_URL) -> None:
     url = basyx_url.rstrip("/")
     r = requests.delete(f"{url}/submodels/{_b64(submodel_iri)}", timeout=HTTP_TIMEOUT)
     if r.status_code not in (200, 204, 404):
-        log.warning("delete_submodel %s → %s %s", submodel_iri, r.status_code, r.text)
+        log.warning("delete_submodel %s -> %s %s", submodel_iri, r.status_code, r.text)
 
 
 def find_element_by_idshort(elements: list, target: str) -> Optional[dict]:

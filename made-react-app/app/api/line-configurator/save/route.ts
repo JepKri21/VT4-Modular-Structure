@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { publish, lineTopic } from "@/lib/mqttPublisher";
 
 interface SaveBody {
   serverUrl?: string;
@@ -152,5 +153,23 @@ export async function POST(req: NextRequest) {
   const communicationSync = await syncResourceCommunication(base, body);
 
   const anyFailed = results.some((r) => !r.ok);
-  return NextResponse.json({ results, communicationSync }, { status: anyFailed ? 207 : 200 });
+
+  // Ping the Line Controller so it re-pulls the new LineConfiguration and picks
+  // up added resources live (no restart). Only after a clean write — so the
+  // controller never re-pulls a half-written config — and best-effort: a broker
+  // hiccup must not fail the save (the operator can still restart the line).
+  let reloadPinged = false;
+  if (!anyFailed) {
+    try {
+      await publish(lineTopic("Controller/ReloadConfig"), { ts: Date.now() });
+      reloadPinged = true;
+    } catch (err) {
+      console.error("[line-configurator/save] reload ping failed:", err);
+    }
+  }
+
+  return NextResponse.json(
+    { results, communicationSync, reloadPinged },
+    { status: anyFailed ? 207 : 200 },
+  );
 }

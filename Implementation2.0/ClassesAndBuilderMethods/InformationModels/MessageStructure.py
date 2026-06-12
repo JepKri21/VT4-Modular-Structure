@@ -274,6 +274,7 @@ class AlarmCategory(str, enum.Enum):
     NO_ALTERNATIVE = "NO_ALTERNATIVE"
     ORDER_RESTARTED = "ORDER_RESTARTED"
     STUCK_CARGO = "STUCK_CARGO"
+    CONFIG_RELOAD_FAILED = "CONFIG_RELOAD_FAILED"
 
 
 #=============================================================================
@@ -441,6 +442,20 @@ class WorkOrderStatusMessage(BaseModel):
     line_id: str
     status: WorkOrderStatus
     message: str | None = None
+    seq_no: int | None = None
+
+
+# Published (retained) by the Line Controller on
+# AAUSmartLab/<line_id>/Controller/Capacity whenever the line configuration is
+# loaded or reloaded. `max_concurrent` is the number of Transport actors the
+# line currently has — the true ceiling on simultaneous orders, since a shuttle
+# is held end-to-end on a no-handoff line. The MES dispatcher consumes this to
+# size how many orders it releases at once, replacing its static
+# MES_MAX_CONCURRENT default.
+class LineCapacityMessage(BaseModel):
+    timestamp: datetime
+    line_id: str
+    max_concurrent: int
     seq_no: int | None = None
 
 

@@ -61,6 +61,7 @@ from occupancy_manager import OccupancyManager
 from product_property_matcher import ProductMatcher
 from scheduler import Scheduler
 from orchestration_snapshot import run_snapshot_publisher
+from config_reload import ConfigReloader
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -125,6 +126,8 @@ def handle_state_message(controller: MQTTClientController, message, topic_info):
     # Reachability + last_seen go onto the controller/RM directly.
     controller.RM.resource_shell_ids[resource_shell_id] = controller.classify_reachability(message)
     controller.last_seen[resource_suffix] = datetime.now()
+    # First contact from a live-added resource clears its matching gate.
+    controller.RM.mark_seen(resource_shell_id)
 
     # Per-actor PackML state lives in the shared dict.
     state_store = controller.shared_handler_variable.setdefault("state", {})
@@ -209,7 +212,11 @@ async def main() -> None:
     # Load line config first so we can filter resource discovery to only the
     # resources actually configured on this line (skips template shells).
     # Source of truth is the ProductionLine shell on the AAS server.
-    line_config = load_line_config_from_aas(AAS_SERVER_BASE, LINE_SHELL_PREFIX)
+    # allow_missing=True lets the controller boot before any line is configured;
+    # it then runs idle until the first Controller/ReloadConfig ping arrives.
+    line_config = load_line_config_from_aas(
+        AAS_SERVER_BASE, LINE_SHELL_PREFIX, allow_missing=True
+    )
     transport_planner = TransportPlanner(line_config)
     pre_process_planner = PreProcessPlanner(transport_planner)
     print(f"[init] line resources in config: {list(line_config.locations)}")
@@ -325,13 +332,52 @@ async def main() -> None:
     controller.client.subscribe(CLEAR_STUCK_TOPIC)
     print(f"[init] subscribed to operator topic: {CLEAR_STUCK_TOPIC}")
 
-    # Initial inventory load from AAS before any work orders arrive.
-    _product_matcher.poll_inventory_from_aas(line_config.locations)
+    # Live line reconfiguration (Phase 1: additive). The configurator publishes
+    # an empty ping here after it writes the new LineConfiguration to the AAS;
+    # we re-pull and expose any newly added resources without a restart.
+    reloader = ConfigReloader(
+        aas_server_base=AAS_SERVER_BASE,
+        line_shell_prefix=LINE_SHELL_PREFIX,
+        transport_planner=transport_planner,
+        scheduler=scheduler,
+        resource_manager=rm,
+        controller=controller,
+        product_matcher=_product_matcher,
+        occupancy=occupancy,
+        alarm_publisher=controller.alarm_publisher,
+    )
+    RELOAD_CONFIG_TOPIC = f"{BASE_TOPIC}/Controller/ReloadConfig"
+
+    def on_reload_config(client, userdata, msg):
+        # Payload is ignored; the AAS is the source of truth. We just re-pull.
+        print("[ReloadConfig] received reload ping")
+        # paho fires on the network thread; bounce into the asyncio loop before
+        # touching the reloader (which schedules a task on that loop).
+        loop.call_soon_threadsafe(reloader.request_reload)
+
+    controller.client.message_callback_add(RELOAD_CONFIG_TOPIC, on_reload_config)
+    controller.client.subscribe(RELOAD_CONFIG_TOPIC)
+    print(f"[init] subscribed to operator topic: {RELOAD_CONFIG_TOPIC}")
+
+    # Initial inventory load from AAS before any work orders arrive. Building
+    # the inventory registry (which resources have an Inventory submodel + which
+    # component types each supports) also indexes every component, so it doubles
+    # as the initial inventory load and powers later scoped, type-targeted lookups.
+    _product_matcher.rebuild_inventory_registry(line_config.locations)
     print("[init] initial inventory loaded from AAS")
+
+    # Publish the line's transport capacity (retained) so the MES dispatcher
+    # sizes how many orders to release to the number of Transport actors the
+    # line actually has, instead of a static constant.
+    reloader.publish_capacity()
 
     # Periodic orchestration snapshot for the MES Production Monitoring UI.
     # Retained publish so a late-joining subscriber sees the current picture.
-    asyncio.create_task(run_snapshot_publisher(scheduler, controller, BASE_TOPIC))
+    asyncio.create_task(
+        run_snapshot_publisher(
+            scheduler, controller, BASE_TOPIC, on_tick=reloader.finalize_drained
+        )
+    )
     print(f"[init] orchestration snapshot publisher running -> "
           f"{BASE_TOPIC}/Orchestration/Snapshot")
 

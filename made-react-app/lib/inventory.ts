@@ -285,6 +285,7 @@ export function rowToOrder(row: Record<string, any>): AasOrder {
     status: (row.status ?? "pending") as OrderStatus,
     startedAt: startedAt instanceof Date ? startedAt.toISOString() : (startedAt ?? null),
     fulfilledAt: fulfilledAt instanceof Date ? fulfilledAt.toISOString() : (fulfilledAt ?? null),
+    totalProducts: row.total_products != null ? Number(row.total_products) : null,
   };
 }
 

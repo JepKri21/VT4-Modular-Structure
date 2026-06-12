@@ -340,9 +340,21 @@ export default function AllocationPage() {
     setAllAllocations(Array.isArray(allocations) ? allocations : []);
   }, []);
 
-  useEffect(() => {
-    fetchComponents().then(() => setComponentsLoading(false)).catch(() => setComponentsLoading(false));
-  }, [fetchComponents]);
+  // Push the AAS server's live inventory into the local DB before reading it, so the
+  // allocation page reflects the same stock as the main inventory page no matter which
+  // one is opened first. Mirrors the main page's `/api/inventory/sync` call.
+  const syncFromServer = useCallback(async (url: string) => {
+    if (!url.trim()) return;
+    try {
+      await fetch("/api/inventory/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ serverUrl: url.trim() }),
+      });
+    } catch {
+      // ignore — fall back to whatever is already in the local DB
+    }
+  }, []);
 
   const loadResources = useCallback(async () => {
     const sv = serverUrlRef.current;
@@ -388,12 +400,19 @@ export default function AllocationPage() {
     setResourcesLoading(false);
   }, [fetchComponents]);
 
-  // Auto-load on mount if a server URL is already saved
+  // Bootstrap on mount: read the saved server URL, sync the AAS inventory into the
+  // local DB, then load components and resources. This makes opening the allocation
+  // page first equivalent to opening the main inventory page first.
   useEffect(() => {
     const saved = typeof window !== "undefined" ? localStorage.getItem("inventory_server_url") ?? "" : "";
     serverUrlRef.current = saved;
     setServerUrl(saved);
-    if (saved) void loadResources();
+    (async () => {
+      await syncFromServer(saved);
+      await fetchComponents().catch(() => {});
+      setComponentsLoading(false);
+      if (saved) await loadResources();
+    })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -512,7 +531,15 @@ export default function AllocationPage() {
           </div>
         </div>
         <button type="button"
-          onClick={() => { setRefreshing(true); void fetchComponents().then(() => setRefreshing(false)); }}
+          onClick={() => {
+            setRefreshing(true);
+            void (async () => {
+              await syncFromServer(serverUrlRef.current);
+              await fetchComponents();
+              if (serverUrlRef.current.trim()) await loadResources();
+              setRefreshing(false);
+            })();
+          }}
           disabled={refreshing}
           className="flex items-center gap-1.5 text-xs rounded-md border border-border px-3 py-1.5 text-muted-foreground hover:text-foreground disabled:opacity-50 transition-colors shrink-0">
           <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />

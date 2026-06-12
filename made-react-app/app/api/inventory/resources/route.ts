@@ -90,8 +90,8 @@ export async function GET(req: NextRequest) {
     let cursor: string | undefined;
     do {
       const url = cursor
-        ? `${base}/shells?limit=100&cursor=${encodeURIComponent(cursor)}`
-        : `${base}/shells?limit=100`;
+        ? `${base}/shells?limit=1000&cursor=${encodeURIComponent(cursor)}`
+        : `${base}/shells?limit=1000`;
       const res = await fetch(url);
       if (!res.ok) {
         const text = await res.text().catch(() => "");

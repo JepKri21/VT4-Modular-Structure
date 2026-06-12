@@ -185,9 +185,20 @@ def load_line_config_from_file(path: str | Path) -> LineConfig:
         return parse_line_config(json.load(f))
 
 
+def empty_line_config() -> LineConfig:
+    """An empty LineConfig — no resources, no connection points.
+
+    Used to boot the Line Controller before any line configuration exists on the
+    AAS server. The controller then runs idle (no resources match, no routes)
+    until the first `Controller/ReloadConfig` ping brings in a real config.
+    """
+    return LineConfig(locations={}, iri_to_id={}, connection_points=())
+
+
 def load_line_config_from_aas(
     aas_server_base: str,
     line_shell_prefix: str = "https://aausmartlab.org/Shells/Resources/ProductionLine/",
+    allow_missing: bool = False,
 ) -> LineConfig:
     """Fetch the active ProductionLine shell from the AAS server and parse its
     LineConfiguration submodel.
@@ -196,6 +207,13 @@ def load_line_config_from_aas(
     its `<shell_id>/LineConfiguration` submodel. If multiple production-line
     shells exist, the first one returned by the server is used — adjust the
     prefix to disambiguate.
+
+    Args:
+        allow_missing: when True, return `empty_line_config()` instead of raising
+            if the ProductionLine shell or its LineConfiguration submodel does
+            not exist yet. Used at startup so the controller can be launched
+            before any line has been configured. Live reloads keep this False so
+            a genuinely failed pull surfaces (and the old config is kept).
     """
     import base64
     import requests
@@ -206,7 +224,7 @@ def load_line_config_from_aas(
     shells: list[dict] = []
     cursor: str | None = None
     while True:
-        url = f"{aas_server_base}/shells?limit=100"
+        url = f"{aas_server_base}/shells?limit=1000"
         if cursor:
             url += f"&cursor={requests.utils.quote(cursor, safe='')}"
         resp = requests.get(url)
@@ -222,12 +240,24 @@ def load_line_config_from_aas(
         None,
     )
     if line_shell_id is None:
+        if allow_missing:
+            print(
+                f"[line-config] no ProductionLine shell yet (prefix "
+                f"'{line_shell_prefix}') — starting with an empty line"
+            )
+            return empty_line_config()
         raise RuntimeError(
             f"No ProductionLine shell found on AAS server with prefix '{line_shell_prefix}'"
         )
 
     submodel_id = f"{line_shell_id}/LineConfiguration"
     sm_resp = requests.get(f"{aas_server_base}/submodels/{_b64(submodel_id)}")
+    if sm_resp.status_code == 404 and allow_missing:
+        print(
+            f"[line-config] ProductionLine shell has no LineConfiguration "
+            "submodel yet — starting with an empty line"
+        )
+        return empty_line_config()
     sm_resp.raise_for_status()
     return parse_line_config(sm_resp.json())
 
@@ -441,7 +471,27 @@ class TransportPlanner:
         self.config = line_config
         self.default_speed = default_speed
         self.default_accel = default_accel
+        # Remember only an *explicit* transport override. When None (the normal
+        # case), transports are inferred from the connection points — and must
+        # be re-inferred on every reload(), otherwise a newly added transport
+        # resource (a second shuttle table, a conveyor) would build no edges and
+        # be invisible to find_route.
+        self._explicit_transport_ids = transport_resource_ids
         self.graph = LineGraph(line_config, transport_resource_ids=transport_resource_ids)
+
+    def reload(self, line_config: LineConfig) -> None:
+        """Swap in a new LineConfiguration live (used by config_reload).
+
+        Builds the new graph first, then rebinds `config` and `graph` in two
+        atomic statements so concurrent order tasks reading these always see a
+        fully-old or fully-new value, never a half-built graph. Transports are
+        re-inferred unless an explicit set was given at construction.
+        """
+        new_graph = LineGraph(
+            line_config, transport_resource_ids=self._explicit_transport_ids
+        )
+        self.config = line_config
+        self.graph = new_graph
 
     # ── Routing ──────────────────────────────────────────────────────────────
 

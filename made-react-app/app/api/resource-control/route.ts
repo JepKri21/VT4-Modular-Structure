@@ -40,8 +40,8 @@ export async function GET(req: NextRequest): Promise<NextResponse<ResourceContro
     let cursor: string | undefined;
     do {
       const url = cursor
-        ? `${serverUrl}/shells?limit=100&cursor=${encodeURIComponent(cursor)}`
-        : `${serverUrl}/shells?limit=100`;
+        ? `${serverUrl}/shells?limit=1000&cursor=${encodeURIComponent(cursor)}`
+        : `${serverUrl}/shells?limit=1000`;
       const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
       if (!res.ok) {
         const text = await res.text().catch(() => "");
