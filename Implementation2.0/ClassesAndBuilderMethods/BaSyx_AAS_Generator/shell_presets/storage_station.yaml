@@ -199,14 +199,14 @@ submodels:
   Inventory:
     Inventories:
       - Specifications:
-          InventorySize: 40
+          InventorySize: 80
         SupportedComponents:
           - "https://aausmartlab.org/Shells/Component/BottomCover"
           - "https://aausmartlab.org/Shells/Component/TopCover"
         Actors:
           - "UR5"
       - Specifications:
-          InventorySize: 20
+          InventorySize: 40
         SupportedComponents:
           - "https://aausmartlab.org/Shells/Product/MobilePhone"
         Actors:

@@ -247,12 +247,12 @@ const Sidebar = () => {
           label="Virtual Store"
           isCollapsed={isSidebarCollapsed}
         />
-        {/* <SidebarLink
+        <SidebarLink
           href="/store"
           icon={Store}
           label="Store"
           isCollapsed={isSidebarCollapsed}
-        /> */}
+        />
         {/* <SidebarLink
           href="/configurator"
           icon={Cog}

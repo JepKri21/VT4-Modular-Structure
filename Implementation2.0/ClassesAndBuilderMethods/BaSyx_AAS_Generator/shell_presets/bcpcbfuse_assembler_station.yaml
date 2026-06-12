@@ -104,7 +104,7 @@ submodels:
   Inventory:
     Inventories:
       - Specifications:
-          InventorySize: 30
+          InventorySize: 100
         SupportedComponents:
           - "https://aausmartlab.org/Shells/Component/Fuse"
         Actors:

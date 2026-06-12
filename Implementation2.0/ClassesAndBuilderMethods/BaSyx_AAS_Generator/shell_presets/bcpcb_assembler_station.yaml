@@ -96,7 +96,7 @@ submodels:
   Inventory:
     Inventories:
       - Specifications:
-          InventorySize: 20
+          InventorySize: 100
         SupportedComponents:
           - "https://aausmartlab.org/Shells/Component/PCB"
         Actors:
@@ -129,7 +129,6 @@ submodels:
           - { XPos: 66.667, YPos: 366.667 }
           - { XPos: -66.667, YPos: 366.667 }
           - { XPos: -222.222, YPos: 111.111 }
-
 
   Communication:
     MQTT:
