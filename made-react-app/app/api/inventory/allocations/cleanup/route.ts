@@ -86,8 +86,8 @@ export async function POST(req: NextRequest) {
   let shellCursor: string | undefined;
   do {
     const url = shellCursor
-      ? `${base}/shells?limit=100&cursor=${encodeURIComponent(shellCursor)}`
-      : `${base}/shells?limit=100`;
+      ? `${base}/shells?limit=1000&cursor=${encodeURIComponent(shellCursor)}`
+      : `${base}/shells?limit=1000`;
     const shellsRes = await fetch(url);
     if (!shellsRes.ok) {
       return NextResponse.json(

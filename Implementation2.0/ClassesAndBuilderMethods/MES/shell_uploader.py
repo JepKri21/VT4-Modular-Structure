@@ -74,7 +74,7 @@ def upload_all(
         asset_name = preset.get("asset_name", preset_name)
         try:
             basyx_client.upload_environment(env, basyx_url)
-            log.info("Uploaded sub-assembly shell %s → %s", asset_name, iri)
+            log.info("Uploaded sub-assembly shell %s -> %s", asset_name, iri)
         except RuntimeError as exc:
             log.warning("Sub-assembly upload error (%s): %s", asset_name, exc)
         shell_iris[asset_name] = iri
@@ -84,7 +84,7 @@ def upload_all(
     asset_name = final_preset.get("asset_name", "FinalProduct")
     try:
         basyx_client.upload_environment(env, basyx_url)
-        log.info("Uploaded final product shell %s → %s", asset_name, final_iri)
+        log.info("Uploaded final product shell %s -> %s", asset_name, final_iri)
     except RuntimeError as exc:
         log.warning("Final product upload error: %s", exc)
     shell_iris[asset_name] = final_iri
@@ -101,6 +101,6 @@ def delete_all(
         sm_iris = basyx_client.get_submodel_refs_for_shell(shell_iri, basyx_url)
         for sm_iri in sm_iris:
             basyx_client.delete_submodel(sm_iri, basyx_url)
-            log.info("Deleted submodel for %s → %s", asset_name, sm_iri)
+            log.info("Deleted submodel for %s -> %s", asset_name, sm_iri)
         basyx_client.delete_shell(shell_iri, basyx_url)
-        log.info("Deleted shell %s → %s", asset_name, shell_iri)
+        log.info("Deleted shell %s -> %s", asset_name, shell_iri)

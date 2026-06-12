@@ -176,8 +176,8 @@ async function fetchBomFromServer(serverUrl: string): Promise<BomSlotDef[] | nul
   let cursor: string | undefined;
   do {
     const url = cursor
-      ? `${base}/shells?limit=100&cursor=${encodeURIComponent(cursor)}`
-      : `${base}/shells?limit=100`;
+      ? `${base}/shells?limit=1000&cursor=${encodeURIComponent(cursor)}`
+      : `${base}/shells?limit=1000`;
     const shellsRes = await fetch(url);
     if (!shellsRes.ok) return null;
     const data = (await shellsRes.json()) as { result?: AasElement[]; paging_metadata?: { cursor?: string } };

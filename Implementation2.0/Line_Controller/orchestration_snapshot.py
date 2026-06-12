@@ -13,7 +13,7 @@ from __future__ import annotations
 import asyncio
 import json
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import Callable, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from scheduler import Scheduler
@@ -95,10 +95,17 @@ async def run_snapshot_publisher(
     controller: "MQTTClientController",
     base_topic: str,
     period_s: float = DEFAULT_PERIOD_S,
+    on_tick: Callable[[], None] | None = None,
 ) -> None:
     """Publish a snapshot every `period_s` seconds. Runs forever; cancel
     the task to stop. Publish is retained so a subscriber that joins late
-    immediately sees the current picture."""
+    immediately sees the current picture.
+
+    `on_tick`, if given, is called once per period (e.g. the config-reload
+    finalize-drained sweep). It reads the same live occupancy state, so
+    piggybacking here avoids a second timer. Guarded so a failure can't kill
+    the publisher.
+    """
     topic = f"{base_topic}/{SNAPSHOT_SUFFIX}"
     while True:
         try:
@@ -106,4 +113,9 @@ async def run_snapshot_publisher(
             controller.client.publish(topic, json.dumps(snapshot, default=str), retain=True)
         except Exception as exc:
             print(f"[snapshot] publish failed: {exc}")
+        if on_tick is not None:
+            try:
+                on_tick()
+            except Exception as exc:
+                print(f"[snapshot] on_tick failed: {exc}")
         await asyncio.sleep(period_s)

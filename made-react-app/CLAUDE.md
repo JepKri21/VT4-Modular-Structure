@@ -102,6 +102,10 @@ When an order is placed through the virtual store, `POST /api/inventory/order` s
 
 `app/virtual-store/page.tsx` — product configurator for the **AAU Mobile Phone**. BOM slots are derived dynamically from `GET /api/inventory/bom-slots` (reads the final product preset YAML or BaSyx server). On page load it fetches `GET /api/inventory` and filters items into each slot by matching `c.category` against the slot's `categoryFilter` (case-insensitive). The "Place Order" button is enabled only when all required slots have a selection.
 
+## MQTT publisher
+
+`lib/mqttPublisher.ts` converts the broker URL into a connection options object before calling `mqtt.connect()`. That avoids MQTT.js falling back to Node's deprecated `url.parse()` path when the server publishes line actions.
+
 ---
 
 ## Preset save direction

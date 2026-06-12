@@ -10,7 +10,7 @@ import { getResourceRunnerConfig, getLineControllerConfig, getMesApiConfig } fro
 // Module-level singleton — one instance per Next.js server process
 const registry = new Map<string, ChildProcess>();
 
-const LOG_MAX_LINES = 200;
+const LOG_MAX_LINES = 2000;
 const LOG_DIR = path.join(os.tmpdir(), "resource-runner-logs");
 
 function ensureLogDir(): void {
@@ -28,13 +28,13 @@ function appendLog(shellId: string, chunk: Buffer | string): void {
   fs.appendFileSync(logFilePath(shellId), text, "utf-8");
 }
 
-export function getProcessLogs(shellId: string): string[] {
+export function getProcessLogs(shellId: string, maxLines: number = LOG_MAX_LINES): string[] {
   const file = logFilePath(shellId);
   if (!fs.existsSync(file)) return [];
   const content = fs.readFileSync(file, "utf-8");
   const lines = content.split(/\r?\n/).filter((l) => l.length > 0);
-  // Return only the last LOG_MAX_LINES lines
-  return lines.slice(-LOG_MAX_LINES);
+  // Return the last `maxLines` lines; maxLines <= 0 means "everything".
+  return maxLines > 0 ? lines.slice(-maxLines) : lines;
 }
 
 export function clearProcessLogs(shellId: string): void {

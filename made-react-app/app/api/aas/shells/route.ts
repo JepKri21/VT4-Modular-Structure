@@ -5,13 +5,25 @@ function serverBase(req: NextRequest): string {
   return s.replace(/\/$/, "");
 }
 
-/** GET /api/aas/shells?server=http://localhost:8081 — list all shells */
+/** GET /api/aas/shells?server=http://localhost:8081 — list all shells (paginated) */
 export async function GET(req: NextRequest) {
   const base = serverBase(req);
   try {
-    const res = await fetch(`${base}/shells`);
-    const data = await res.json();
-    return NextResponse.json(data, { status: res.status });
+    const allShells: unknown[] = [];
+    let cursor: string | undefined;
+    do {
+      const url = cursor
+        ? `${base}/shells?limit=1000&cursor=${encodeURIComponent(cursor)}`
+        : `${base}/shells?limit=1000`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        return NextResponse.json({ error: `AAS server returned ${res.status}` }, { status: res.status });
+      }
+      const data = await res.json() as { result?: unknown[]; paging_metadata?: { cursor?: string } };
+      allShells.push(...(data.result ?? []));
+      cursor = data.paging_metadata?.cursor;
+    } while (cursor);
+    return NextResponse.json({ result: allShells });
   } catch {
     return NextResponse.json({ error: "Could not reach AAS server" }, { status: 502 });
   }
@@ -31,8 +43,8 @@ export async function DELETE(req: NextRequest) {
     let cursor: string | undefined;
     do {
       const url = cursor
-        ? `${base}/shells?limit=100&cursor=${encodeURIComponent(cursor)}`
-        : `${base}/shells?limit=100`;
+        ? `${base}/shells?limit=1000&cursor=${encodeURIComponent(cursor)}`
+        : `${base}/shells?limit=1000`;
       const listRes = await fetch(url);
       if (!listRes.ok) {
         return NextResponse.json({ error: "Failed to list shells" }, { status: 502 });

@@ -59,7 +59,7 @@ def _on_message(client, userdata, msg):
             status_msg.status.value,
             status_msg.line_id,
         )
-        log.info("WorkOrderStatus %s → %s", status_msg.order_id, status_msg.status)
+        log.info("WorkOrderStatus %s -> %s", status_msg.order_id, status_msg.status)
         if status_msg.status == WorkOrderStatus.COMPLETE:
             _notify_webshop_if_batch_complete(status_msg.order_id)
     except Exception as exc:

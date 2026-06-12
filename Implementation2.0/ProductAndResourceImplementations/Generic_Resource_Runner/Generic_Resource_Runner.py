@@ -554,14 +554,12 @@ class InventoryManager:
                 if slot is None:
                     continue
                 inventory_name, slot_id = slot
-                self.inventory_parser.update_slot(
+                self.write_slot_component(
                     inventory_name=inventory_name,
                     slot_id=slot_id,
                     component_id=None,
                 )
                 consumed.append(component_id)
-            if consumed:
-                self.upload()
 
         print(f"[inventory] Assemble consumed from own inventory: {consumed}")
         return consumed
@@ -577,13 +575,11 @@ class InventoryManager:
             model = self.load()
             inventory_name, slot_id = self.find_component_slot(model, component_id)
 
-            self.inventory_parser.update_slot(
+            self.write_slot_component(
                 inventory_name=inventory_name,
                 slot_id=slot_id,
                 component_id=None
             )
-
-            self.upload()
 
         return component_id
 
@@ -598,13 +594,11 @@ class InventoryManager:
             model = self.load()
             inventory_name, slot_id = self.find_free_slot(model, component_id)
 
-            self.inventory_parser.update_slot(
+            self.write_slot_component(
                 inventory_name=inventory_name,
                 slot_id=slot_id,
                 component_id=component_id
             )
-
-            self.upload()
 
         return slot_id
 
@@ -640,16 +634,43 @@ class InventoryManager:
 
         raise ValueError("No free slot found")
 
-    def upload(self):
+    def write_slot_component(self, inventory_name, slot_id, component_id):
+        """Write one slot's ComponentShellReference on the AAS, in place.
 
+        Targets the single ComponentShellReference element via the BaSyx
+        submodel-elements endpoint and leaves every other field untouched —
+        notably SlotReserved, which the Line Controller writes independently.
+        This replaces upload(), whose whole-submodel PUT serialized a snapshot
+        taken at load() and would clobber any field another writer had changed
+        in between (the cross-order reservation race).
+
+        component_id=None empties the slot. The reference *value* is dropped
+        entirely rather than set to an empty-keys reference, which would crash
+        the slot parser at value["keys"][0].
+        """
         headers = {"Content-Type": "application/json"}
+        path = (
+            f"Inventories.{inventory_name}.StoredComponents."
+            f"{slot_id}.ComponentShellReference"
+        )
+        url = f"{self.inventory_url}/submodel-elements/{path}"
 
-        data = json.dumps(self.inventory_parser.raw_submodel.data).encode("utf-8")
+        resp = requests.get(url, headers=headers)
+        if not resp.ok:
+            raise RuntimeError(f"GET {path} failed: {resp.status_code} {resp.text}")
+        element = resp.json()
 
-        r = requests.put(self.inventory_url, headers=headers, data=data)
+        if component_id is None:
+            element.pop("value", None)
+        else:
+            element["value"] = {
+                "type": "ExternalReference",
+                "keys": [{"type": "GlobalReference", "value": str(component_id)}],
+            }
 
+        r = requests.put(url, headers=headers, data=json.dumps(element).encode("utf-8"))
         if r.status_code not in (200, 201, 204):
-            raise RuntimeError(r.text)
+            raise RuntimeError(f"PUT {path} failed: {r.status_code} {r.text}")
 
 
 class GenericStationBehavior(StationBehavior):
