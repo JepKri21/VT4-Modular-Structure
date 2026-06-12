@@ -1,0 +1,120 @@
+﻿type: "transport_station"
+label: "Transport Station – AAU Lab"
+description: "Four-shuttle transport station covering the full line work area"
+asset_name: "Transport"
+
+submodels:
+  TransportCapabilityOffered:
+    SupportedComponents:
+      - "https://aausmartlab.org/Shells/Component/BottomCover"
+      - "https://aausmartlab.org/Shells/Component/TopCover"
+      - "https://aausmartlab.org/Shells/Component/PCB"
+      - "https://aausmartlab.org/Shells/Component/Fuse"
+      - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
+      - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
+      - "https://aausmartlab.org/Shells/Product/MobilePhone"
+    Parameters:
+      TargetPosition:
+        XPos: { min: 60.0, max: 660.0 }
+        YPos: { min: 60.0, max: 900.0 }
+      OperationLabel:
+        en: "Transport operation"
+        dk: "Transportoperation"
+    ProcessTransformations:
+      TransportEmpty:
+        # Empty leg: shuttle moving with no cargo. Use an empty list (not
+        # [null]) so the matcher's "both sides empty" branch fires —
+        # [null] would parse as a one-element list and never match an
+        # empty CMD.
+        InputTypes:
+          ComponentTypeReference: []
+        OutputTypes:
+          ComponentTypeReference: []
+      TransportBottomCover:
+        InputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Component/BottomCover"
+        OutputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Component/BottomCover"
+      TransportTopCover:
+        InputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Component/TopCover"
+        OutputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Component/TopCover"
+      TransportBottomCoverPCB:
+        InputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB" 
+        OutputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
+      TransportBottomCoverPCBFuse:
+        InputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse" 
+        OutputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
+      TransportMobilePhone:
+        InputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Product/MobilePhone"
+        OutputTypes:
+          ComponentTypeReference:
+            - "https://aausmartlab.org/Shells/Product/MobilePhone"
+
+  Skills:
+    Transport:
+      CapabilitySubmodelReference: "https://aausmartlab.org/Shells/Resources/Transport/TransportCapabilityOffered"
+      CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Transport"
+      SkillTriggers:
+        [
+          "START",
+          "STOP",
+          "RESET",
+          "ABORT",
+          "CLEAR",
+          "HOLD",
+          "UNHOLD",
+          "SUSPEND",
+          "UNSUSPEND",
+        ]
+      Actors:
+        - "Shuttle1"
+        - "Shuttle2"
+        - "Shuttle3"
+        - "Shuttle4"
+
+  ResourceZones:
+    CenterPoint:
+      XPos: 0.0
+      YPos: 0.0
+    ResourceGeometry:
+      Points:
+        - { XPos: 0.0, YPos: 0.0 }
+        - { XPos: 720.0, YPos: 0.0 }
+        - { XPos: 720.0, YPos: 960.0 }
+        - { XPos: 0.0, YPos: 960.0 }
+    InOutputZones:
+      - Points:
+          - { XPos: 60.0, YPos: 60.0 }
+          - { XPos: 660.0, YPos: 60.0 }
+          - { XPos: 660.0, YPos: 900.0 }
+          - { XPos: 60.0, YPos: 900.0 }
+
+  Communication:
+    MQTT:
+      ProductionLinePrefix: ""
+      BrokerID: ""
+      BrokerPort: ""
+      Suffixes:
+        CommandSuffix: "CMD"
+        StateSuffix: "PackMLState"
+        JobResultSuffix: "JobResult"
+        InfoRequestSuffix: "InfoRequest"
+        ResourceAcknowledgementSuffix: "ResourceAck"
+        ControllerAcknowledgementSuffix: "ControllerAck"
+        OccupancySuffix: "Occupy"
