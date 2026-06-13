@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import re
 import sys
 import requests
 import base64
@@ -8,6 +9,15 @@ from typing import Dict, List, Tuple
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from ClassesAndBuilderMethods.InformationModels import MessageStructure as MS
+
+
+# Instance shells end in a UUID suffix (e.g. "Drilling_05470520-cd67-..."),
+# template shells do not (e.g. "DrillingStation", "AssemblyModule"). Used only
+# to make the discovery log distinguish "template, never selectable" from
+# "instance that just isn't on this line".
+_INSTANCE_SUFFIX = re.compile(
+    r"_[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+)
 
 
 class ResourceManager:
@@ -37,6 +47,20 @@ class ResourceManager:
         # shell's last URL segment (e.g. Assembly_Screwing_01 vs.
         # Assembly_Screwing_01_<uuid>).
         self._allowed_iris: set[str] | None = None
+
+        # Resources added by a *live* config reload are parked here until we
+        # first hear from them on MQTT. While parked they are hidden from
+        # capability matching, so the scheduler can't assign work to a station
+        # whose physical controller isn't online yet (CMD would get no ACK and
+        # abort an order). Startup discovery does NOT park resources — only
+        # reload-added ones (see `mark_new_pending`). Cleared by `mark_seen`.
+        self._pending_first_contact: set[str] = set()
+
+        # Resources removed from the line config while an in-flight order is
+        # still using them. They stay subscribed and routable for that order
+        # but are hidden from any NEW assignment; the config-reload coordinator
+        # finalizes the drop once they go idle. See config_reload.py.
+        self._draining: set[str] = set()
 
     @staticmethod
     def topic_id_for_iri(iri: str) -> str:
@@ -109,6 +133,18 @@ class ResourceManager:
             # passes through — the scheduler will find out it's offline when
             # the CMD doesn't get answered.
             if status == MS.ResourceReachability.INACTIVE:
+                continue
+
+            # A resource added by a live config reload stays hidden until its
+            # station first reports in on MQTT — otherwise we'd assign work to a
+            # station whose controller isn't online yet and the CMD would get no
+            # ACK. Startup-discovered resources are never parked here.
+            if shell_id in self._pending_first_contact:
+                continue
+
+            # A resource on its way off the line (removed from config but still
+            # finishing an in-flight order) must not pick up NEW work.
+            if shell_id in self._draining:
                 continue
 
             skills = self.get_resource_skills(shell_id)
@@ -217,21 +253,46 @@ class ResourceManager:
     #===========
     #Methods to retrieve resource shells from AAS server
     #===========
-    def update_resource_availablility(self, allowed_iris: set[str] | None = None):
+    def update_resource_availablility(
+        self,
+        allowed_iris: set[str] | None = None,
+        mark_new_pending: bool = False,
+    ) -> list[str]:
         """Pull resource shells from the AAS server and add them to the registry.
 
         If `allowed_iris` is provided, only shells whose full IRI is in the
         set are added — this keeps generic/template shells out of the live
         registry. Pass the IRIs from the line config's ResourceReferences,
         e.g. `{loc.resource_iri for loc in line_config.locations.values()}`.
+
+        Args:
+            allowed_iris: new whitelist, or None to reuse the existing one.
+            mark_new_pending: when True, any newly added shell is parked in
+                `_pending_first_contact` (hidden from matching until it reports
+                in on MQTT). Set by a live config reload; left False at startup
+                so existing behavior is unchanged.
+
+        Returns:
+            The list of shell IRIs newly added to the registry by this call.
         """
         if allowed_iris is not None:
             self._allowed_iris = set(allowed_iris)
         effective_filter = self._allowed_iris
 
-        response = requests.get(self.SHELL_ENDPOINT)
-        data = response.json()
-        resource_shells = data.get("result", [])
+        resource_shells = []
+        cursor = None
+        while True:
+            url = f"{self.SHELL_ENDPOINT}?limit=1000"
+            if cursor:
+                url += f"&cursor={requests.utils.quote(cursor, safe='')}"
+            response = requests.get(url)
+            data = response.json()
+            resource_shells.extend(data.get("result", []))
+            cursor = (data.get("paging_metadata") or {}).get("cursor")
+            if not cursor:
+                break
+
+        added: list[str] = []
         for resource_shell in resource_shells:
             resoruce_shell_id = resource_shell["id"]
             if not resoruce_shell_id.startswith(self.RESOURCE_URL):
@@ -239,19 +300,48 @@ class ResourceManager:
 
             if effective_filter is not None and resoruce_shell_id not in effective_filter:
                 if resoruce_shell_id not in self.resource_shell_ids:
-                    print(f"Skipping resource (not in line config): {resoruce_shell_id}")
+                    if _INSTANCE_SUFFIX.search(resoruce_shell_id):
+                        print(f"Skipping instance (not on this line): {resoruce_shell_id}")
+                    else:
+                        print(f"Skipping template shell: {resoruce_shell_id}")
                 continue
 
             if resoruce_shell_id not in self.resource_shell_ids:
                 print(f"Updating list of resource with: {resoruce_shell_id}")
                 self.resource_shell_ids[resoruce_shell_id] = MS.ResourceReachability.UNREACHABLE
+                added.append(resoruce_shell_id)
+                if mark_new_pending:
+                    self._pending_first_contact.add(resoruce_shell_id)
             else:
                 print("Resource is already known")
-        #It should be able to check if an older resource might not be on the server anymore?
-        #Maybe better, each resource can be shown as active or inactive. 
-        #So when we update we might also send a ping to the actual resource to make sure that it is active, 
-        # otherwise we mark it as inactive
-        return self.resource_shell_ids  
+        return added
+
+    def mark_seen(self, shell_id: str) -> None:
+        """Note that we've heard from a resource on MQTT.
+
+        Clears the first-contact gate so a reload-added resource becomes
+        eligible for capability matching once its station is actually online.
+        No-op for resources that were never parked.
+        """
+        self._pending_first_contact.discard(shell_id)
+
+    def mark_draining(self, shell_id: str) -> None:
+        """Flag a resource (removed from config but still in use) as draining:
+        kept live for its current order, excluded from new assignments."""
+        self._draining.add(shell_id)
+
+    def is_draining(self, shell_id: str) -> bool:
+        return shell_id in self._draining
+
+    def remove_resource(self, shell_id: str) -> None:
+        """Drop a resource from the registry entirely (no longer on the line).
+
+        Clears it from the reachability registry and from the draining /
+        first-contact sets. The MQTT unsubscribe is the controller's job.
+        """
+        self.resource_shell_ids.pop(shell_id, None)
+        self._draining.discard(shell_id)
+        self._pending_first_contact.discard(shell_id)
 
     #def get_all_resource_readiness(self):
     #    #Call the same method that pings the resources to check if they are active

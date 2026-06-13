@@ -46,6 +46,7 @@ export interface AasOrder {
   status: OrderStatus;
   startedAt: string | null;
   fulfilledAt: string | null;
+  totalProducts: number | null;
 }
 
 export interface PlacedOrder extends AasOrder {
@@ -91,6 +92,7 @@ export const MIGRATE_ORDERS_SQL = [
   `ALTER TABLE aas_orders ADD COLUMN IF NOT EXISTS started_at TIMESTAMPTZ`,
   `ALTER TABLE aas_orders ADD COLUMN IF NOT EXISTS fulfilled_at TIMESTAMPTZ`,
   `ALTER TABLE aas_orders ADD COLUMN IF NOT EXISTS cancellation_reason TEXT`,
+  `ALTER TABLE aas_orders ADD COLUMN IF NOT EXISTS total_products INTEGER`,
 ];
 
 export const CREATE_INVENTORY_TABLE_SQL = `
@@ -123,6 +125,34 @@ export const CREATE_ORDER_ITEMS_TABLE_SQL = `
     added_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE(order_id, component_type_id)
   )
+`;
+
+/**
+ * B2 reservation model: `reserved` is NOT a stored counter — it is derived from
+ * open orders. An order is "open" (its components still spoken-for) when it has
+ * been placed but not finished: not cancelled, and status still pending or
+ * in_production. Fulfilled and cancelled orders contribute nothing, so flipping
+ * an order's status automatically releases its reservation. The
+ * `inventory.quantity_reserved` column is left in place (always 0) but unused.
+ */
+export const OPEN_ORDER_STATUSES = ["pending", "in_production"] as const;
+
+/** Aggregate reserved-per-type over all open orders. Join on component_type_id. */
+export const RESERVED_BY_TYPE_SUBQUERY = `
+  SELECT oi.component_type_id, COALESCE(SUM(oi.quantity), 0) AS reserved
+  FROM order_items oi
+  JOIN aas_orders o ON o.order_id = oi.order_id
+  WHERE o.cancelled_at IS NULL AND o.status IN ('pending', 'in_production')
+  GROUP BY oi.component_type_id
+`;
+
+/** Reserved quantity for a single type ($1 = component_type_id) from open orders. */
+export const RESERVED_FOR_TYPE_SQL = `
+  SELECT COALESCE(SUM(oi.quantity), 0) AS reserved
+  FROM order_items oi
+  JOIN aas_orders o ON o.order_id = oi.order_id
+  WHERE oi.component_type_id = $1
+    AND o.cancelled_at IS NULL AND o.status IN ('pending', 'in_production')
 `;
 
 export const CREATE_RESOURCE_SLOTS_TABLE_SQL = `
@@ -255,6 +285,7 @@ export function rowToOrder(row: Record<string, any>): AasOrder {
     status: (row.status ?? "pending") as OrderStatus,
     startedAt: startedAt instanceof Date ? startedAt.toISOString() : (startedAt ?? null),
     fulfilledAt: fulfilledAt instanceof Date ? fulfilledAt.toISOString() : (fulfilledAt ?? null),
+    totalProducts: row.total_products != null ? Number(row.total_products) : null,
   };
 }
 

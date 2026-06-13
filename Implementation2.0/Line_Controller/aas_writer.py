@@ -517,6 +517,7 @@ def get_bom_entry_for_type(
             f"{server}/submodels/{_b64(submodel_id)}/submodel-elements/BOMEntries"
         )
         if resp.status_code != 200:
+            print(f"[bom] GET BOMEntries failed: {resp.status_code} for {product_shell_iri}")
             return None
         entries = resp.json().get("value") or []
         for entry in entries:
@@ -528,9 +529,11 @@ def get_bom_entry_for_type(
             for elem in entry.get("value") or []:
                 if elem.get("idShort") == "ComponentTypeReference":
                     ref_keys = (elem.get("value") or {}).get("keys") or []
+                    bom_type = next((k.get("value") for k in ref_keys), None)
+                    print(f"[bom]   entry={id_short} bom_type={bom_type} wanted={component_type_iri} match={bom_type == component_type_iri}")
                     if any(k.get("value") == component_type_iri for k in ref_keys):
                         type_matches = True
-                if elem.get("idShort") == "ComponentReference":
+                if elem.get("idShort") == "ComponentShellReference":
                     ref_val = elem.get("value")
                     if ref_val and (ref_val.get("keys") or []):
                         comp_ref_filled = True
@@ -562,12 +565,12 @@ def write_bom_component_instance_ref(
     submodel_id = f"{product_shell_iri.rstrip('/')}/BillOfMaterials"
     path = (
         f"{server}/submodels/{_b64(submodel_id)}"
-        f"/submodel-elements/BOMEntries.{bom_entry_id_short}.ComponentReference"
+        f"/submodel-elements/BOMEntries.{bom_entry_id_short}.ComponentShellReference"
     )
     headers = {"Content-Type": "application/json"}
     payload = json.dumps({
         "modelType": "ReferenceElement",
-        "idShort": "ComponentReference",
+        "idShort": "ComponentShellReference",
         "value": {
             "type": "ModelReference",
             "keys": [{"type": "AssetAdministrationShell", "value": instance_iri}],
@@ -576,12 +579,12 @@ def write_bom_component_instance_ref(
     try:
         resp = requests.put(path, headers=headers, data=payload.encode("utf-8"))
         if resp.status_code in (200, 201, 204):
-            print(f"[bom] {bom_entry_id_short}.ComponentReference -> {instance_iri}")
+            print(f"[bom] {bom_entry_id_short}.ComponentShellReference -> {instance_iri}")
             return True
-        print(f"[bom] PUT ComponentReference failed: {resp.status_code} {resp.text[:200]}")
+        print(f"[bom] PUT ComponentShellReference failed: {resp.status_code} {resp.text[:200]}")
         return False
     except requests.RequestException as e:
-        print(f"[bom] HTTP error writing ComponentReference: {e}")
+        print(f"[bom] HTTP error writing ComponentShellReference: {e}")
         return False
 
 

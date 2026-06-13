@@ -993,12 +993,14 @@ export default function AasConfiguratorPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            id: shell.id,
-            globalAssetId: (assetInfo.globalAssetId as string) ?? "",
-            name: assetName,
-            category: assetCategory,
-            shellTypeName: selectedShell!.name,
-            serverUrl,
+            type: "add_type",
+            component: {
+              id: shell.id,
+              name: assetName,
+              category: assetCategory,
+              aasTypeIri: (assetInfo.globalAssetId as string) ?? undefined,
+              createdAt: "",
+            },
           }),
         }).catch(() => {});
       }
@@ -1067,12 +1069,14 @@ export default function AasConfiguratorPage() {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                id: shellObj.id,
-                globalAssetId: (assetInfo.globalAssetId as string) ?? "",
-                name: assetNameVal,
-                category: assetCategoryVal,
-                shellTypeName: shell.name,
-                serverUrl: batchServerUrl,
+                type: "add_type",
+                component: {
+                  id: shellObj.id as string,
+                  name: assetNameVal,
+                  category: assetCategoryVal,
+                  aasTypeIri: (assetInfo.globalAssetId as string) ?? undefined,
+                  createdAt: "",
+                },
               }),
             });
 

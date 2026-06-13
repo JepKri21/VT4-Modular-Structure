@@ -9,9 +9,11 @@ import {
   CREATE_RESOURCE_ALLOCATIONS_TABLE_SQL,
   CREATE_ALLOCATED_INSTANCES_TABLE_SQL,
   MIGRATE_COMPONENT_TYPES_SQL,
+  RESERVED_BY_TYPE_SUBQUERY,
   rowToComponentType,
   type ComponentType,
 } from "@/lib/inventory";
+import { allocatedByTypeFromAas, resolveAasBase } from "@/lib/resource-inventory";
 
 async function ensureTables() {
   await pool.query(CREATE_COMPONENT_TYPES_TABLE_SQL);
@@ -26,21 +28,47 @@ async function ensureTables() {
   await pool.query(CREATE_ALLOCATED_INSTANCES_TABLE_SQL);
 }
 
-export async function GET() {
-  await ensureTables();
+// Run once per server process lifetime — not on every request.
+let _ensureTablesPromise: Promise<void> | null = null;
+function ensureTablesOnce() {
+  if (!_ensureTablesPromise) _ensureTablesPromise = ensureTables().catch((e) => {
+    _ensureTablesPromise = null; // retry on next request if it failed
+    throw e;
+  });
+  return _ensureTablesPromise;
+}
+
+export async function GET(req: NextRequest) {
+  await ensureTablesOnce();
+
+  // `quantityAllocated` (what the webshop sells from) is derived LIVE from the AAS
+  // resource Inventory submodels — a part leaves its slot the instant it is picked,
+  // so this can't drift the way the cached resource_allocations table does. The DB
+  // sum is kept only as a fallback for when the AAS server is unreachable.
+  const serverUrl = new URL(req.url).searchParams.get("serverUrl");
+  const base = resolveAasBase(serverUrl);
+  // `quantityAllocated` (what the webshop sells from) is derived LIVE from the AAS
+  // resource Inventory submodels — a part leaves its slot the instant it is picked,
+  // so this can't drift the way the cached resource_allocations table does. The DB
+  // sum is kept only as a fallback for when the AAS server is unreachable.
+  const aasAllocated = await allocatedByTypeFromAas(base);
+
+  // `quantity_reserved` is derived from open orders (B2 model), not the stored
+  // inventory column — so a cancelled/fulfilled order automatically stops counting.
   const res = await pool.query(`
     SELECT
       ct.id, ct.category, ct.material, ct.color, ct.finish, ct.current_rating, ct.voltage_rating,
       ct.version, ct.weight, ct.aas_type_iri, ct.name, ct.description, ct.created_at,
       COALESCE(inv.quantity_available, 0) as quantity_available,
-      COALESCE(inv.quantity_reserved, 0) as quantity_reserved,
+      COALESCE(open_res.reserved, 0) as quantity_reserved,
       COALESCE(SUM(ra.quantity), 0) as quantity_allocated
     FROM component_types ct
     LEFT JOIN inventory inv ON ct.id = inv.component_type_id
     LEFT JOIN resource_allocations ra ON ct.id = ra.component_type_id
+    LEFT JOIN (${RESERVED_BY_TYPE_SUBQUERY}) open_res ON open_res.component_type_id = ct.id
     GROUP BY ct.id, ct.category, ct.material, ct.color, ct.finish, ct.current_rating,
              ct.voltage_rating, ct.version, ct.weight, ct.aas_type_iri, ct.name,
-             ct.description, ct.created_at, inv.quantity_available, inv.quantity_reserved
+             ct.description, ct.created_at, inv.quantity_available, open_res.reserved
     ORDER BY ct.category, ct.created_at DESC
   `);
 
@@ -49,7 +77,10 @@ export async function GET() {
       ...rowToComponentType(row),
       quantityAvailable: row.quantity_available,
       quantityReserved: row.quantity_reserved,
-      quantityAllocated: parseInt(row.quantity_allocated) || 0,
+      // Live AAS count when reachable (0 for a type with no filled slots), else DB fallback.
+      quantityAllocated: aasAllocated
+        ? aasAllocated.get(row.id) ?? 0
+        : parseInt(row.quantity_allocated) || 0,
     }))
   );
 }
@@ -62,7 +93,7 @@ export async function POST(req: NextRequest) {
     quantity?: number;
   };
 
-  await ensureTables();
+  await ensureTablesOnce();
 
   if (body.type === "add_type" && body.component) {
     // Insert a new component type
@@ -106,7 +137,7 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "id query param is required" }, { status: 400 });
   }
 
-  await ensureTables();
+  await ensureTablesOnce();
   await pool.query("DELETE FROM order_items WHERE component_type_id = $1", [componentTypeId]);
   await pool.query("DELETE FROM resource_allocations WHERE component_type_id = $1", [componentTypeId]);
   await pool.query("DELETE FROM inventory WHERE component_type_id = $1", [componentTypeId]);

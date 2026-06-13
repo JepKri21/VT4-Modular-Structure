@@ -210,4 +210,9 @@ export const ZONES_COMPATIBLE = (a: ZoneType, b: ZoneType): boolean => {
   );
 };
 
-export const MM_PER_GRID = 200;
+// Grid step in millimetres. Used both for the visible canvas grid AND for
+// snap-to-grid placement of resources, connection points, and zones.
+// 200 mm was too coarse for typical AAU line layouts where connection
+// points sit at sub-100 mm offsets within shuttle frames; 50 mm gives
+// fine-enough placement without making the grid visually noisy.
+export const MM_PER_GRID = 25;

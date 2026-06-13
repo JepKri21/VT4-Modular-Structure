@@ -1,11 +1,16 @@
 """MES dispatcher — releases queued WorkOrders to the broker when the
 line has spare capacity.
 
-Capacity model: at most `MES_MAX_CONCURRENT` orders may be RELEASED
-but not yet COMPLETED at any time. The dispatcher reacts to two events:
+Capacity model: at most `max_concurrent` orders may be RELEASED but not yet
+COMPLETED at any time. `max_concurrent` is driven by the Line Controller, which
+publishes its live Transport-actor count (retained) on Controller/Capacity — the
+true ceiling on simultaneous orders, since a shuttle is held from a part's first
+Retrieve to its final Store. `MES_MAX_CONCURRENT` is only the fallback until that
+message arrives. The dispatcher reacts to:
 
   - boot:            try to fill capacity with whatever is PENDING
   - OrderCompleted:  mark that order COMPLETED, then try to fill capacity
+  - Capacity:        adopt the controller's value, then try to fill capacity
 
 A safety-net periodic tick covers the unlikely case where an
 OrderCompleted is lost (the bridge would also miss it, but the next
@@ -38,6 +43,8 @@ if str(THIS_DIR) not in sys.path:
     sys.path.insert(0, str(THIS_DIR))
 
 import queue_manager  # noqa: E402
+import order_store    # noqa: E402
+import webshop_notify  # noqa: E402
 
 # Pull in the shared MessageStructure so we can parse OrderCompleted
 # messages without re-declaring the schema.
@@ -57,8 +64,34 @@ logging.basicConfig(
 MQTT_HOST = os.environ.get("MQTT_HOST", "localhost")
 MQTT_PORT = int(os.environ.get("MQTT_PORT", "1883"))
 LINE_ID_DEFAULT = os.environ.get("LINE_ID", "ProductionLine1")
-MAX_CONCURRENT = int(os.environ.get("MES_MAX_CONCURRENT", "2"))
+# Fallback capacity until the controller publishes the live transport-actor
+# count on Controller/Capacity (see `_max_concurrent` below). The published
+# value is authoritative once seen.
+MAX_CONCURRENT_FALLBACK = int(os.environ.get("MES_MAX_CONCURRENT", "2"))
 SAFETY_TICK_S = int(os.environ.get("MES_DISPATCH_TICK_S", "30"))
+
+# Live capacity, driven by the controller's retained Controller/Capacity
+# message. `_capacity_from_controller` flips True on the first such message, at
+# which point the published value (not the env fallback) governs releases.
+# Guarded by a lock because on_message and the safety thread both read it.
+_capacity_lock = threading.Lock()
+_max_concurrent = MAX_CONCURRENT_FALLBACK
+_capacity_from_controller = False
+
+
+def current_max_concurrent() -> int:
+    with _capacity_lock:
+        return _max_concurrent
+
+
+def set_max_concurrent(value: int) -> bool:
+    """Record a controller-published capacity. Returns True if it changed."""
+    global _max_concurrent, _capacity_from_controller
+    with _capacity_lock:
+        changed = (not _capacity_from_controller) or value != _max_concurrent
+        _max_concurrent = value
+        _capacity_from_controller = True
+    return changed
 # Dispatcher-level retry: when the controller fully aborts an order
 # (after exhausting its own OrderRecovery attempts), requeue it for
 # another go after a backoff. Total worst case is MAX_ATTEMPTS × the
@@ -69,6 +102,9 @@ RETRY_BACKOFF_S = int(os.environ.get("MES_RETRY_BACKOFF_S", "60"))
 # Topics. Order completion is what the controller publishes on every
 # run_order exit (added in Step 3 of the metrics work).
 ORDER_COMPLETED_TOPIC = f"AAUSmartLab/{LINE_ID_DEFAULT}/Controller/OrderCompleted"
+# Retained capacity broadcast: the controller publishes the line's transport-
+# actor count here on boot and on every line-config reload.
+CAPACITY_TOPIC = f"AAUSmartLab/{LINE_ID_DEFAULT}/Controller/Capacity"
 
 
 def workorder_topic(line_id: str) -> str:
@@ -84,9 +120,10 @@ def try_release(client: mqtt.Client) -> int:
     """
     released = 0
     while True:
+        max_concurrent = current_max_concurrent()
         in_flight = queue_manager.in_flight_count()
-        if in_flight >= MAX_CONCURRENT:
-            log.debug("[dispatch] at capacity (%s/%s)", in_flight, MAX_CONCURRENT)
+        if in_flight >= max_concurrent:
+            log.debug("[dispatch] at capacity (%s/%s)", in_flight, max_concurrent)
             return released
 
         candidate = queue_manager.peek_next()
@@ -116,7 +153,7 @@ def try_release(client: mqtt.Client) -> int:
         )
         log.info(
             "[dispatch] released %s to line %s (%d/%d in flight)",
-            order_id, line_id, in_flight + 1, MAX_CONCURRENT,
+            order_id, line_id, in_flight + 1, max_concurrent,
         )
         released += 1
 
@@ -131,11 +168,73 @@ def on_connect(client: mqtt.Client, userdata, flags, rc):
     log.info("[mqtt] connected to %s:%s", MQTT_HOST, MQTT_PORT)
     client.subscribe(ORDER_COMPLETED_TOPIC, qos=1)
     log.info("[mqtt] subscribed to %s", ORDER_COMPLETED_TOPIC)
+    # Retained capacity — delivered immediately on subscribe if the controller
+    # has already published it, so we adopt the live value before releasing.
+    client.subscribe(CAPACITY_TOPIC, qos=1)
+    log.info("[mqtt] subscribed to %s", CAPACITY_TOPIC)
     # Boot-time release: catch up if anything was queued before we started.
     try_release(client)
 
 
+def _notify_webshop_if_batch_complete(order_id: str) -> None:
+    """Mark the webshop order fulfilled once every MES sibling is COMPLETED.
+
+    A webshop order can fan out into several per-product MES orders. We only
+    call complete_order when the last one finishes so it isn't called twice.
+    order_store re-reads from disk on miss, so this works even when the order
+    was added by the mes_api process after the dispatcher started.
+    """
+    all_done, batch_id = queue_manager.batch_all_completed(order_id)
+    if not all_done:
+        return
+    order = order_store.get_order(order_id)
+    if not order:
+        log.debug("[dispatch] no order_store entry for %s — cannot notify webshop", order_id)
+        return
+    webshop_id = order.get("webshop_id")
+    if not webshop_id:
+        log.debug("[dispatch] order %s has no webshop_id — skipping webshop notify", order_id)
+        return
+    log.info("[dispatch] batch %s complete — fulfilling webshop order %s", batch_id, webshop_id)
+    webshop_notify.complete_order(webshop_id)
+
+
+def _cancel_webshop_on_final_abort(order_id: str) -> None:
+    """Cancel the webshop order after all dispatcher retry attempts are exhausted.
+
+    A webshop order may fan out into several per-product MES orders sharing the same
+    webshop_id. We only cancel when the FIRST sibling hits the retry limit — further
+    siblings arriving later will get a 404/400 from the webshop (order already
+    cancelled) which webshop_notify ignores. Safe to call multiple times.
+    """
+    order = order_store.get_order(order_id)
+    if not order:
+        log.debug("[dispatch] no order_store entry for %s — cannot cancel webshop", order_id)
+        return
+    webshop_id = order.get("webshop_id")
+    if not webshop_id:
+        return
+    log.info("[dispatch] final abort for %s — cancelling webshop order %s", order_id, webshop_id)
+    webshop_notify.cancel_order(webshop_id, reason="Order aborted after all retry attempts")
+
+
 def on_message(client: mqtt.Client, userdata, msg):
+    if msg.topic == CAPACITY_TOPIC:
+        try:
+            payload = json.loads(msg.payload.decode("utf-8"))
+            capacity = MS.LineCapacityMessage(**payload)
+        except Exception as exc:
+            log.warning("[mqtt] bad Capacity payload: %s", exc)
+            return
+        if set_max_concurrent(capacity.max_concurrent):
+            log.info(
+                "[dispatch] capacity from controller: max_concurrent=%s",
+                capacity.max_concurrent,
+            )
+            # Newly-granted capacity should be used immediately.
+            try_release(client)
+        return
+
     if msg.topic != ORDER_COMPLETED_TOPIC:
         return
     try:
@@ -155,6 +254,9 @@ def on_message(client: mqtt.Client, userdata, msg):
         "[dispatch] order %s -> %s (attempts=%s)",
         completed.order_id, terminal, completed.attempt_count,
     )
+
+    if terminal == "COMPLETED":
+        _notify_webshop_if_batch_complete(completed.order_id)
 
     # Dispatcher-level retry on ABORTED. Look up the current
     # attempt_count via the queue (the controller's attempt_count in
@@ -176,6 +278,11 @@ def on_message(client: mqtt.Client, userdata, msg):
                 "[dispatch] %s exhausted %s/%s dispatcher attempts — final ABORT",
                 completed.order_id, cur_attempt, MAX_ATTEMPTS,
             )
+            # All retries exhausted — release the webshop reservation so the
+            # parts return to available stock. Parts already assembled into
+            # completed sub-assemblies stay consumed (their shells remain
+            # referenced in product BOMs). Best-effort; never raises.
+            _cancel_webshop_on_final_abort(completed.order_id)
 
     try_release(client)
 
@@ -196,7 +303,10 @@ def _safety_loop(client: mqtt.Client, stop: threading.Event) -> None:
 
 def main() -> None:
     queue_manager.init()
-    log.info("[dispatch] max_concurrent=%s topic=%s", MAX_CONCURRENT, ORDER_COMPLETED_TOPIC)
+    log.info(
+        "[dispatch] max_concurrent fallback=%s (awaiting %s) topic=%s",
+        MAX_CONCURRENT_FALLBACK, CAPACITY_TOPIC, ORDER_COMPLETED_TOPIC,
+    )
 
     client = mqtt.Client(client_id="MES_Dispatcher", clean_session=True)
     client.on_connect = on_connect

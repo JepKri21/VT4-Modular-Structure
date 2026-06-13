@@ -199,14 +199,14 @@ submodels:
   Inventory:
     Inventories:
       - Specifications:
-          InventorySize: 40
+          InventorySize: 80
         SupportedComponents:
           - "https://aausmartlab.org/Shells/Component/BottomCover"
           - "https://aausmartlab.org/Shells/Component/TopCover"
         Actors:
           - "UR5"
       - Specifications:
-          InventorySize: 20
+          InventorySize: 40
         SupportedComponents:
           - "https://aausmartlab.org/Shells/Product/MobilePhone"
         Actors:
@@ -217,15 +217,25 @@ submodels:
       XPos: 0.0
       YPos: 0.0
     ResourceGeometry:
-      Point1: { XPos: -600.0, YPos: -600.0 }
-      Point2: { XPos: 600.0, YPos: -600.0 }
-      Point3: { XPos: 600.0, YPos: 600.0 }
-      Point4: { XPos: -600.0, YPos: 600.0 }
+      Points:
+        - { XPos: 75.0, YPos: 75.0 }
+        - { XPos: 75.0, YPos: -75.0 }
+        - { XPos: 225.0, YPos: -75.0 }
+        - { XPos: 225.0, YPos: -225.0 }
+        - { XPos: -225.0, YPos: -225.0 }
+        - { XPos: -225.0, YPos: -75.0 }
+        - { XPos: -75.0, YPos: -75.0 }
+        - { XPos: -75.0, YPos: 75.0 }
     InOutputZones:
-      - Point1: { XPos: -500.0, YPos: 600.0 }
-        Point2: { XPos: 500.0, YPos: 600.0 }
-        Point3: { XPos: 500.0, YPos: 1500.0 }
-        Point4: { XPos: -500.0, YPos: 1500.0 }
+      - Points:
+          - { XPos: -100.0, YPos: 0.0 }
+          - { XPos: -100.0, YPos: 100.0 }
+          - { XPos: 100.0, YPos: 100.0 }
+          - { XPos: 100.0, YPos: 0.0 }
+          - { XPos: 250.0, YPos: 0.0 }
+          - { XPos: 250.0, YPos: 250.0 }
+          - { XPos: -250.0, YPos: 250.0 }
+          - { XPos: -250.0, YPos: 0.0 }
 
   Communication:
     MQTT:

@@ -44,6 +44,24 @@ class InventoryIndexer:
         # Fast type lookup
         self.component_type_index: Dict[str, List[MS.IndexedComponent]] = {}
 
+        # ── Inventory registry (built per line-config) ──────────────────────
+        # Which resources actually expose an Inventory submodel — detected by
+        # probing the submodel itself, NOT by Retrieve/Store capability, since a
+        # station can carry an internal feeder inventory without either skill.
+        self.inventory_resources: set[str] = set()
+        # type_ref -> resource IRIs whose inventory declares it in
+        # SupportedComponents. Lets a lookup for type T refresh only the
+        # inventories that can hold T instead of every line resource.
+        self.type_to_resources: Dict[str, set[str]] = {}
+        # Inventories with empty/absent SupportedComponents are treated as
+        # "holds anything" (same empty-means-no-restriction convention as the
+        # capability checks) and so are consulted for every type.
+        self.universal_inventory_resources: set[str] = set()
+        # Remembered so scoped refreshes can map a resource IRI back to its loc
+        # and re-issue the submodel GET. Set by rebuild_inventory_registry.
+        self._registry_locations: dict = {}
+        self._registry_server_base: str = ""
+
     # ========================================================
     # Public API
     # ========================================================
@@ -92,78 +110,209 @@ class InventoryIndexer:
         #print("[COMPONENT TYPE INDEX]",self.component_type_index)
 
     def rebuild_from_aas(self, locations: dict, aas_server_base: str) -> None:
-        """Rebuild the inventory index by polling each resource's Inventory submodel on BaSyx.
+        """Rebuild the WHOLE inventory index by polling every resource's
+        Inventory submodel on BaSyx.
 
-        Resources without an Inventory submodel (404) are silently skipped.
-        accessible_actors is left empty; the scheduler treats None as "any actor".
+        Used at boot and as the fallback path. Per-step lookups should prefer
+        `refresh_for_type`, which only re-polls the inventories that can hold the
+        requested type. Resources without an Inventory submodel (404) are
+        silently skipped.
         """
         self.indexed_components.clear()
         self.component_id_index.clear()
         self.component_type_index.clear()
 
         for loc in locations.values():
-            submodel_iri = f"{loc.resource_iri}/Inventory"
-            try:
-                resp = requests.get(
-                    f"{aas_server_base}/submodels/{_b64(submodel_iri)}",
-                    timeout=5,
-                )
-            except requests.RequestException as exc:
-                print(f"[inventory/aas] {loc.resource_id}: request failed: {exc}")
+            submodel = self._fetch_inventory_submodel(loc, aas_server_base)
+            if submodel is None:
                 continue
-
-            if resp.status_code == 404:
-                print(f"[inventory/aas] {loc.resource_id}: no Inventory submodel, skipping")
-                continue
-            resp.raise_for_status()
-
-            top = resp.json().get("submodelElements", [])
-            inventories_el = _find_el(top, "Inventories")
-
-            for inv in (inventories_el or {}).get("value", []):
-                inventory_name = inv.get("idShort", "unknown")
-                stored = _find_el(inv.get("value", []), "StoredComponents")
-
-                for slot in (stored or {}).get("value", []):
-                    slot_id = slot.get("idShort", "")
-
-                    # Carry SlotReserved through; find_by_component_type
-                    # filters reserved entries out of the freely-pickable
-                    # pool, find_by_component_id returns them so exact
-                    # instance lookups (e.g. "where is this IRI?") still
-                    # succeed for parts already claimed by a running order.
-                    reserved_el = _find_el(slot.get("value", []), "SlotReserved")
-                    reserved = (reserved_el or {}).get("value") == "true"
-
-                    ref_el = _find_el(slot.get("value", []), "ComponentShellReference")
-                    if ref_el is None:
-                        continue
-                    component_id = _ref_iri(ref_el)
-                    if not component_id:
-                        continue
-
-                    actors_el = _find_el(inv.get("value", []), "Actors")
-                    actors = [
-                        item.get("value", "")
-                        for item in (actors_el or {}).get("value", [])
-                        if item.get("value")
-                    ]
-
-                    indexed = self._create_indexed_component(
-                        component_id=component_id,
-                        resource_shell_id=loc.resource_iri,
-                        inventory_name=inventory_name,
-                        slot_id=slot_id,
-                        accessible_actors=actors,
-                        reserved=reserved,
-                    )
-                    self._add_to_indexes(indexed)
-
+            self._index_resource_from_submodel(loc, submodel)
             count = sum(
                 1 for c in self.indexed_components
                 if c.resource_shell_id == loc.resource_iri
             )
             print(f"[inventory/aas] {loc.resource_id}: {count} item(s) indexed")
+
+    # ── Per-resource fetch + index helpers ──────────────────────────────────
+
+    def _fetch_inventory_submodel(self, loc, aas_server_base: str) -> Optional[dict]:
+        """GET one resource's Inventory submodel JSON, or None on 404/error."""
+        submodel_iri = f"{loc.resource_iri}/Inventory"
+        try:
+            resp = requests.get(
+                f"{aas_server_base}/submodels/{_b64(submodel_iri)}",
+                timeout=5,
+            )
+        except requests.RequestException as exc:
+            print(f"[inventory/aas] {loc.resource_id}: request failed: {exc}")
+            return None
+        if resp.status_code == 404:
+            print(f"[inventory/aas] {loc.resource_id}: no Inventory submodel, skipping")
+            return None
+        resp.raise_for_status()
+        return resp.json()
+
+    def _index_resource_from_submodel(self, loc, submodel: dict) -> None:
+        """Add a resource's stored components to the index from its submodel.
+
+        Caller is responsible for having cleared this resource's prior entries
+        (full rebuild clears everything; scoped refresh removes per-resource).
+        """
+        top = submodel.get("submodelElements", [])
+        inventories_el = _find_el(top, "Inventories")
+
+        for inv in (inventories_el or {}).get("value", []):
+            inventory_name = inv.get("idShort", "unknown")
+            stored = _find_el(inv.get("value", []), "StoredComponents")
+
+            actors_el = _find_el(inv.get("value", []), "Actors")
+            actors = [
+                item.get("value", "")
+                for item in (actors_el or {}).get("value", [])
+                if item.get("value")
+            ]
+
+            for slot in (stored or {}).get("value", []):
+                slot_id = slot.get("idShort", "")
+
+                # Carry SlotReserved through; find_by_component_type filters
+                # reserved entries out of the freely-pickable pool,
+                # find_by_component_id returns them so exact instance lookups
+                # (e.g. "where is this IRI?") still succeed for parts already
+                # claimed by a running order.
+                reserved_el = _find_el(slot.get("value", []), "SlotReserved")
+                reserved = (reserved_el or {}).get("value") == "true"
+
+                ref_el = _find_el(slot.get("value", []), "ComponentShellReference")
+                if ref_el is None:
+                    continue
+                component_id = _ref_iri(ref_el)
+                if not component_id:
+                    continue
+
+                indexed = self._create_indexed_component(
+                    component_id=component_id,
+                    resource_shell_id=loc.resource_iri,
+                    inventory_name=inventory_name,
+                    slot_id=slot_id,
+                    accessible_actors=actors,
+                    reserved=reserved,
+                )
+                self._add_to_indexes(indexed)
+
+    @staticmethod
+    def _supported_types_from_submodel(submodel: dict) -> tuple[set[str], bool]:
+        """Read SupportedComponents across a resource's inventories.
+
+        Returns (declared_type_refs, has_unrestricted). `has_unrestricted` is
+        True when any inventory has an empty/absent SupportedComponents list,
+        meaning that resource should be consulted for every type.
+        """
+        types: set[str] = set()
+        has_unrestricted = False
+        top = submodel.get("submodelElements", [])
+        inventories_el = _find_el(top, "Inventories")
+        for inv in (inventories_el or {}).get("value", []):
+            supported_el = _find_el(inv.get("value", []), "SupportedComponents")
+            entries = [
+                item.get("value", "")
+                for item in (supported_el or {}).get("value", [])
+                if item.get("value")
+            ]
+            if entries:
+                types.update(entries)
+            else:
+                has_unrestricted = True
+        return types, has_unrestricted
+
+    # ── Per-resource index removal (for scoped refresh) ─────────────────────
+
+    def _remove_resource_from_indexes(self, resource_iri: str) -> None:
+        """Drop every indexed entry belonging to one resource, so the resource
+        can be re-indexed fresh without disturbing the others."""
+        self.indexed_components = [
+            c for c in self.indexed_components
+            if c.resource_shell_id != resource_iri
+        ]
+        self.component_id_index = {
+            cid: c for cid, c in self.component_id_index.items()
+            if c.resource_shell_id != resource_iri
+        }
+        for type_ref in list(self.component_type_index.keys()):
+            kept = [
+                c for c in self.component_type_index[type_ref]
+                if c.resource_shell_id != resource_iri
+            ]
+            if kept:
+                self.component_type_index[type_ref] = kept
+            else:
+                del self.component_type_index[type_ref]
+
+    # ── Inventory registry + scoped refresh ─────────────────────────────────
+
+    def rebuild_inventory_registry(self, locations: dict, aas_server_base: str) -> None:
+        """Probe each line resource once to learn which have an Inventory
+        submodel and which component types each supports.
+
+        Call on boot and whenever the line configuration changes. Detection is
+        by the Inventory submodel itself (not capability), so internal-feeder
+        stations are included. Also (re)indexes each resource so the index is
+        consistent with the freshly-built registry.
+        """
+        self._registry_locations = locations
+        self._registry_server_base = aas_server_base
+        self.inventory_resources = set()
+        self.type_to_resources = {}
+        self.universal_inventory_resources = set()
+
+        self.indexed_components.clear()
+        self.component_id_index.clear()
+        self.component_type_index.clear()
+
+        for loc in locations.values():
+            submodel = self._fetch_inventory_submodel(loc, aas_server_base)
+            if submodel is None:
+                continue
+            iri = loc.resource_iri
+            self.inventory_resources.add(iri)
+            types, unrestricted = self._supported_types_from_submodel(submodel)
+            for type_ref in types:
+                self.type_to_resources.setdefault(type_ref, set()).add(iri)
+            if unrestricted:
+                self.universal_inventory_resources.add(iri)
+            self._index_resource_from_submodel(loc, submodel)
+
+        print(
+            f"[inventory/registry] {len(self.inventory_resources)} inventory "
+            f"resource(s); {len(self.type_to_resources)} type(s) mapped; "
+            f"{len(self.universal_inventory_resources)} unrestricted"
+        )
+
+    def refresh_for_type(self, component_type_reference: str) -> None:
+        """Re-poll only the inventories that can hold the requested type, and
+        partial-update the index for just those resources.
+
+        Falls back to all inventory-bearing resources if the type isn't mapped
+        (e.g. new stock type not declared in any SupportedComponents), so a
+        lookup can never silently miss a part that physically exists.
+        """
+        if not self._registry_locations:
+            # Registry not built yet — nothing to scope to. Caller should have
+            # done a full poll at boot; do nothing rather than guess.
+            return
+        candidates = set(self.type_to_resources.get(component_type_reference, set()))
+        candidates |= self.universal_inventory_resources
+        if not candidates:
+            candidates = set(self.inventory_resources)
+
+        for iri in candidates:
+            loc = self._registry_locations.get(iri)
+            if loc is None:
+                continue
+            submodel = self._fetch_inventory_submodel(loc, self._registry_server_base)
+            self._remove_resource_from_indexes(iri)
+            if submodel is not None:
+                self._index_resource_from_submodel(loc, submodel)
 
     def find_by_component_id(self,component_id: str) -> Optional[MS.IndexedComponent]:
 
@@ -655,6 +804,23 @@ class ProductMatcher:
     def poll_inventory_from_aas(self, locations: dict) -> None:
         """Refresh the inventory index from AAS for all line resources."""
         self.inventory_indexer.rebuild_from_aas(locations, self.AAS_SERVER_BASE)
+
+    def rebuild_inventory_registry(self, locations: dict) -> None:
+        """(Re)build the inventory registry that powers scoped lookups. Call on
+        boot and on every line-config change."""
+        self.inventory_indexer.rebuild_inventory_registry(locations, self.AAS_SERVER_BASE)
+
+    def refresh_for_type(self, component_type_reference: str) -> None:
+        """Re-poll only the inventories that can hold the given type, updating
+        just those resources' index entries. Used per-step instead of a full
+        poll so concurrent orders do far less AAS work."""
+        self.inventory_indexer.refresh_for_type(component_type_reference)
+
+    def has_inventory_registry(self) -> bool:
+        """True once `rebuild_inventory_registry` has discovered at least one
+        inventory-bearing resource. Lets callers fall back to a full poll when
+        the registry hasn't been built (e.g. in unit tests)."""
+        return bool(self.inventory_indexer.inventory_resources)
 
     def find_in_resource_inventory(
         self,

@@ -137,6 +137,11 @@ class OrderRecovery:
         #    excluded. Without a failed_resource_iri (e.g. an INCOMPLETE
         #    result where the resource is still healthy) we still let the
         #    restart proceed — same resource is allowed to try again.
+        #
+        #    A restart normally excludes the resource that just failed so the
+        #    matcher reaches for a different one. We override that to None when
+        #    the failed resource is the ONLY provider (see below).
+        exclude_on_restart: str | None = failed_resource_iri
         if failed_resource_iri and failed_step_info:
             tentative_excluded = handler.get_excluded_resources() | {
                 failed_resource_iri
@@ -145,20 +150,25 @@ class OrderRecovery:
                 failed_step_info, excluded_resources=tentative_excluded
             )
             if not alternatives:
-                self._publish_no_alternative(
-                    order_id,
-                    failed_resource_topic,
-                    "no alternative resource offers the required capability",
+                # The failed resource is the sole provider for this step.
+                # Excluding it would guarantee an immediate re-abort and strand
+                # the order's cargo on the line — even when the failure is
+                # transient (e.g. a station that wasn't subscribed yet and
+                # missed its CMD window, which is exactly the CMD_NO_ACK case).
+                # The MAX_ATTEMPTS gate above has already passed, so give the
+                # same resource another whole-order attempt instead of giving
+                # up. A genuinely dead station simply fails again and trips
+                # MAX_ATTEMPTS on the next pass, aborting then.
+                print(
+                    f"[recovery] {failed_resource_iri} is the sole provider for "
+                    f"the failed step — retrying it instead of aborting "
+                    f"(attempt {attempt + 1}/{MAX_ATTEMPTS})"
                 )
-                return RecoveryDecision(
-                    action=RecoveryAction.ABORT,
-                    attempt=attempt,
-                    excluded_resources=sorted(tentative_excluded),
-                )
+                exclude_on_restart = None
 
         # 5. Restart: reset non-COMPLETED steps to PENDING and bump attempt.
         new_attempt = handler.reset_for_retry(
-            failed_resource=failed_resource_iri
+            failed_resource=exclude_on_restart
         )
         self.alarms.publish(
             category=MS.AlarmCategory.ORDER_RESTARTED,

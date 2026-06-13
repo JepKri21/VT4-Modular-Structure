@@ -149,7 +149,7 @@ export interface BBox {
 
 export const resourceBBox = (res: Resource, typeById: TypeById): BBox => {
   const type = typeById[res.typeId];
-  if (!type) return { minX: res.x, maxX: res.x, minY: res.y, maxY: res.y };
+  if (!type) return { minX: res.position.x, maxX: res.position.x, minY: res.position.y, maxY: res.position.y };
   const localCorners: [number, number][] =
     type.geometry && type.geometry.length >= 3
       ? type.geometry

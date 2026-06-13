@@ -215,7 +215,18 @@ const Sidebar = () => {
           label="Expenses"
           isCollapsed={isSidebarCollapsed}
         /> */}
-
+        <SidebarLink
+          href="/virtual-store"
+          icon={Store}
+          label="Virtual Store"
+          isCollapsed={isSidebarCollapsed}
+        />
+        <SidebarLink
+          href="/store"
+          icon={Store}
+          label="Store"
+          isCollapsed={isSidebarCollapsed}
+        />
         <SidebarLink
           href="/orders"
           icon={ShoppingCart}
@@ -241,18 +252,6 @@ const Sidebar = () => {
         >
           <h3 className="text-xs text-primary ">ADMIN CONTROL</h3>
         </div>
-        <SidebarLink
-          href="/virtual-store"
-          icon={Store}
-          label="Virtual Store"
-          isCollapsed={isSidebarCollapsed}
-        />
-        {/* <SidebarLink
-          href="/store"
-          icon={Store}
-          label="Store"
-          isCollapsed={isSidebarCollapsed}
-        /> */}
         {/* <SidebarLink
           href="/configurator"
           icon={Cog}

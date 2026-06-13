@@ -21,6 +21,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "InformationModels"))
 sys.path.insert(0, str(Path(__file__).parent))
 from MessageStructure import WorkOrderMessage
 import basyx_client
+import preset_loader
 
 log = logging.getLogger(__name__)
 
@@ -116,7 +117,7 @@ def _get_type_shell_properties(component_iri: str, basyx_url: str) -> dict:
             if elem.get("idShort") and elem.get("value") is not None
         }
 
-    log.info("  → sections=%s", list(result.keys()) or "EMPTY")
+    log.info("  -> sections=%s", list(result.keys()) or "EMPTY")
     _TYPE_SHELL_PROPS_CACHE[component_iri] = result
     return result
 
@@ -408,6 +409,12 @@ def build_workorder(
     assemblies: dict[str, dict] = {}
     process_steps: dict[str, dict] = {}
 
+    # Number of fuses ordered — drives expansion of the fuse sub-assembly so the
+    # workorder traverses one assemble step per physical fuse. Must match the
+    # count used by shell_uploader so the generated operation names line up with
+    # what was uploaded to BaSyx.
+    fuse_count = preset_loader.fuse_count(configuration)
+
     _name_count: dict[str, int] = {}
     _step_counter = [0]
     _last_step_id: list[str | None] = [None]  # global across recursion levels
@@ -437,7 +444,7 @@ def build_workorder(
         for slot in configuration:
             ctype = slot.get("componentTypeId", "")
             if ctype and (ctype == asset_name or ctype in ref_iri or asset_name in ctype):
-                log.debug("slot match (typeId) for %s → slot=%s", asset_name, slot.get("slot"))
+                log.debug("slot match (typeId) for %s -> slot=%s", asset_name, slot.get("slot"))
                 return slot
         # 2. Try category/slot-label match, normalising spaces→underscores
         iri_lower = ref_iri.lower()
@@ -445,7 +452,7 @@ def build_workorder(
             for field in ("category", "slot"):
                 raw = (slot.get(field) or "").lower().replace(" ", "_")
                 if raw and raw in iri_lower:
-                    log.debug("slot match (%s) for %s → slot=%s", field, asset_name, slot.get("slot"))
+                    log.debug("slot match (%s) for %s -> slot=%s", field, asset_name, slot.get("slot"))
                     return slot
         log.warning("no slot match for %s — properties will be empty", asset_name)
         return {}
@@ -491,7 +498,9 @@ def build_workorder(
                 if not sub_preset_name:
                     log.warning("No preset mapping for sub-assembly IRI: %s", ref_iri)
                     continue
-                sub_preset = _load_preset(sub_preset_name)
+                sub_preset = preset_loader.expand_fuse_assembly(
+                    _load_preset(sub_preset_name), fuse_count
+                )
                 sub_output_ids = resolve(sub_preset)
                 input_ids.extend(sub_output_ids)
             else:

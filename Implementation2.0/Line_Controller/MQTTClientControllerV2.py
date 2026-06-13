@@ -88,6 +88,11 @@ class MQTTClientController:
             }
         """
 
+        # Resource suffixes we currently hold an MQTT subscription for. Used by
+        # refresh_subscriptions() to subscribe only the newly added resources on
+        # a live config reload (and reset on reconnect so on_connect re-subs all).
+        self._subscribed_suffixes: set[str] = set()
+
         #This will be called to make a map of what topic to use for a specific message type
         #This will be used in publish_message, which checks the message type and uses the corresponding suffix to send the message
         self.topic_maps = {}
@@ -326,57 +331,68 @@ class MQTTClientController:
         
         for resource_shell_id in self.RM.resource_shell_ids:
             resource_suffix = resource_shell_id.rstrip("/").split("/")[-1]
-            #===============
-            #Updating self.shell_id_to_topic
-            #===============
-            self.shell_id_to_topic[resource_shell_id] = resource_suffix
+            # Build each resource's maps independently so one shell with a
+            # missing/incomplete Communication submodel (or a transient AAS
+            # error) can't wipe out the maps for the others (R3).
+            try:
+                #===============
+                #Updating self.shell_id_to_topic
+                #===============
+                self.shell_id_to_topic[resource_shell_id] = resource_suffix
 
-            #===============
-            #Updating self.topic_to_shell_id
-            #===============
-            self.topic_to_shell_id[resource_suffix] = resource_shell_id
+                #===============
+                #Updating self.topic_to_shell_id
+                #===============
+                self.topic_to_shell_id[resource_suffix] = resource_shell_id
 
-            #===============
-            #Updating self.topic_maps
-            #===============
-            
-            #UPDATE TOPIC MAP to include the Occupancy and Cargo message type
-            suffixes = self.RM.get_resource_MQTT_suffixes(resource_shell_id)
-            self.topic_maps[resource_suffix] = {
-                MS.CommandMessage: suffixes.get("CommandSuffix"),
-                MS.StateMessage: suffixes.get("StateSuffix"),
-                MS.RequestMessage: suffixes.get("InfoRequestSuffix"),
-                MS.AlarmsMessage: suffixes.get("AlarmSuffix"),
-                MS.AcknowledgementMessage: {"ResourceAcknowledgementSuffix": suffixes.get("ResourceAcknowledgementSuffix"), "ControllerAcknowledgementSuffix": suffixes.get("ControllerAcknowledgementSuffix") },
-                MS.JobResultMessage: suffixes.get("JobResultSuffix"),
-                MS.InventoryLevelMessage: suffixes.get("InventoryLevelSuffix"),
-                MS.OccupancyMessage: suffixes.get("OccupancySuffix"),
-                MS.CargoMessage: suffixes.get("CargoSuffix")
-                }
-            
-            # ===============================
-            # Updating self.reverse_topic_maps
-            # ===============================
+                #===============
+                #Updating self.topic_maps
+                #===============
 
-            reverse = {}
+                #UPDATE TOPIC MAP to include the Occupancy and Cargo message type
+                suffixes = self.RM.get_resource_MQTT_suffixes(resource_shell_id)
+                self.topic_maps[resource_suffix] = {
+                    MS.CommandMessage: suffixes.get("CommandSuffix"),
+                    MS.StateMessage: suffixes.get("StateSuffix"),
+                    MS.RequestMessage: suffixes.get("InfoRequestSuffix"),
+                    MS.AlarmsMessage: suffixes.get("AlarmSuffix"),
+                    MS.AcknowledgementMessage: {"ResourceAcknowledgementSuffix": suffixes.get("ResourceAcknowledgementSuffix"), "ControllerAcknowledgementSuffix": suffixes.get("ControllerAcknowledgementSuffix") },
+                    MS.JobResultMessage: suffixes.get("JobResultSuffix"),
+                    MS.InventoryLevelMessage: suffixes.get("InventoryLevelSuffix"),
+                    MS.OccupancyMessage: suffixes.get("OccupancySuffix"),
+                    MS.CargoMessage: suffixes.get("CargoSuffix")
+                    }
 
-            for message_type, suffix in self.topic_maps[resource_suffix].items():
-            
-                if suffix is None:
-                    continue
-                
-                # Acknowledgement suffixes are stored as dicts
-                if isinstance(suffix, dict):
-                
-                    for ack_suffix in suffix.values():
-                    
-                        if ack_suffix is not None:
-                            reverse[ack_suffix] = message_type
+                if not suffixes.get("StateSuffix"):
+                    print(f"[update_information] WARNING: {resource_suffix} has no "
+                          "StateSuffix — its Communication submodel may be incomplete")
 
-                else:
-                    reverse[suffix] = message_type
+                # ===============================
+                # Updating self.reverse_topic_maps
+                # ===============================
 
-            self.reverse_topic_maps[resource_suffix] = reverse
+                reverse = {}
+
+                for message_type, suffix in self.topic_maps[resource_suffix].items():
+
+                    if suffix is None:
+                        continue
+
+                    # Acknowledgement suffixes are stored as dicts
+                    if isinstance(suffix, dict):
+
+                        for ack_suffix in suffix.values():
+
+                            if ack_suffix is not None:
+                                reverse[ack_suffix] = message_type
+
+                    else:
+                        reverse[suffix] = message_type
+
+                self.reverse_topic_maps[resource_suffix] = reverse
+            except Exception as exc:
+                print(f"[update_information] WARNING: skipping {resource_suffix}: {exc}")
+                continue
 
     def request_data(self,message_type,resource_shell_id: str | None = None):
         resource_suffix = None
@@ -491,18 +507,65 @@ class MQTTClientController:
             print(f"[ON_CONNECT ERROR] Failed to connect to MQTT broker. Return code: {rc}")
             return
 
-        # Refresh all topic/resource mappings
+        # A fresh (re)connect drops any broker-side subscriptions, so forget
+        # what we think we're subscribed to and let refresh_subscriptions()
+        # re-subscribe every resource currently in the registry.
+        self._subscribed_suffixes.clear()
+        self.refresh_subscriptions()
+
+    def refresh_subscriptions(self) -> None:
+        """Rebuild topic maps and subscribe any not-yet-subscribed resources.
+
+        Single source of truth for which resource namespaces we listen on.
+        Called once on connect (when nothing is subscribed yet) and again by the
+        config-reload coordinator after new resources are discovered, so a
+        live-added station's `{base}/{suffix}/#` topics start flowing without a
+        controller restart. Additive for now — removal/unsubscribe is Phase 2.
+        """
+        # Refresh all topic/resource mappings (re-pulls the registry + each
+        # resource's Communication submodel).
         self.update_information()
 
-        # Subscribe to every resource namespace
         for resource_shell_id in self.RM.resource_shell_ids.keys():
-            resource_topic = self.shell_id_to_topic[resource_shell_id]
+            resource_topic = self.shell_id_to_topic.get(resource_shell_id)
+            if resource_topic is None:
+                # update_information skipped this shell (R3) — nothing to sub to.
+                continue
+            if resource_topic in self._subscribed_suffixes:
+                continue
 
             topic = f"{self.base_topic}/{resource_topic}/#"
+            self.client.subscribe(topic)
+            self._subscribed_suffixes.add(resource_topic)
+            print(f"[SUBSCRIBE] {topic}")
 
-            client.subscribe(topic)
+    def unsubscribe_resource(self, resource_suffix: str) -> None:
+        """Stop listening to a resource's namespace (used when a resource is
+        removed from the line config and has finished draining)."""
+        if resource_suffix not in self._subscribed_suffixes:
+            return
+        topic = f"{self.base_topic}/{resource_suffix}/#"
+        self.client.unsubscribe(topic)
+        self._subscribed_suffixes.discard(resource_suffix)
+        print(f"[UNSUBSCRIBE] {topic}")
 
-            print(f"[ON_CONNECT] Subscribed to: {topic}")
+    def forget_resource(self, shell_iri: str) -> None:
+        """Purge all controller-side state for a removed resource.
+
+        Drops its topic maps and any per-resource entries in the shared handler
+        variable (state / inventory / job_result / occupancy / cargo), so a
+        dropped resource stops appearing as a stale 'frozen' lane in the
+        orchestration snapshot. Called after unsubscribe.
+        """
+        suffix = self.shell_id_to_topic.pop(shell_iri, None)
+        if suffix is not None:
+            self.topic_to_shell_id.pop(suffix, None)
+            self.topic_maps.pop(suffix, None)
+            self.reverse_topic_maps.pop(suffix, None)
+            self.last_seen.pop(suffix, None)
+        for store in self.shared_handler_variable.values():
+            if isinstance(store, dict):
+                store.pop(shell_iri, None)
 
     def on_message(self, client, userdata, msg):
 
@@ -604,7 +667,7 @@ class MQTTClientController:
                 # CASE 1: never heard from this resource — probe and wait.
                 if resource_id_short not in self.last_seen:
                     if resource_id_short not in probed_at:
-                        print(f"[WATCHDOG] {resource_id_short} never seen → probing")
+                        print(f"[WATCHDOG] {resource_id_short} never seen -> probing")
                         self._request_resource_update(resource_id_short)
                         probed_at[resource_id_short] = now
                     continue
@@ -621,7 +684,7 @@ class MQTTClientController:
                     # Either no probe outstanding, or the resource replied to
                     # a prior probe and went silent again. Send a fresh probe
                     # and wait one grace period before declaring offline.
-                    print(f"[WATCHDOG] {resource_id_short} silent → probing")
+                    print(f"[WATCHDOG] {resource_id_short} silent -> probing")
                     self._request_resource_update(resource_id_short)
                     probed_at[resource_id_short] = now
                     continue
@@ -633,7 +696,7 @@ class MQTTClientController:
                 # Probe went unanswered → declare offline.
                 prior = self.RM.resource_shell_ids.get(resource_shell_id)
                 print(
-                    f"[WATCHDOG] {resource_id_short} did not reply to probe → "
+                    f"[WATCHDOG] {resource_id_short} did not reply to probe -> "
                     f"marking UNREACHABLE"
                 )
                 self.RM.resource_shell_ids[resource_shell_id] = MS.ResourceReachability.UNREACHABLE
@@ -746,8 +809,8 @@ class MQTTClientController:
         resource_shell_id: str,
         command_message,
         *,
-        timeout: float = 1.0,
-        max_retries: int = 1,
+        timeout: float = 2.0,
+        max_retries: int = 2,
     ):
         """Publish a CommandMessage and wait for its acknowledgement.
 

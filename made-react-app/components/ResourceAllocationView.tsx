@@ -39,6 +39,37 @@ function packmlPillClass(state: string): string {
 }
 
 export default function ResourceAllocationView({ lanes }: Props) {
+  const [clearing, setClearing] = React.useState<string | null>(null);
+
+  async function clearStuck(resource_id: string, actor_name: string) {
+    const key = `${resource_id}/${actor_name}`;
+    if (
+      !window.confirm(
+        `Clear STUCK on ${key}?\n\nOnly do this after the physical part has ` +
+          `been removed from the actor. The Line Controller will mark it ` +
+          `available again.`,
+      )
+    ) {
+      return;
+    }
+    setClearing(key);
+    try {
+      const res = await fetch("/api/resilience/clear-stuck", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resource_id, actor_name }),
+      });
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: "" }));
+        window.alert(`Failed to clear stuck cargo: ${error || res.statusText}`);
+      }
+    } catch (err) {
+      window.alert(`Failed to clear stuck cargo: ${String(err)}`);
+    } finally {
+      setClearing(null);
+    }
+  }
+
   if (lanes.length === 0) {
     return (
       <div className="text-sm text-gray-500 italic p-4 border border-dashed rounded">
@@ -104,8 +135,19 @@ export default function ResourceAllocationView({ lanes }: Props) {
                 </td>
                 <td className="px-3 py-2">
                   {l.stuck && (
-                    <span className="inline-flex items-center rounded-full border border-red-300 bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
-                      STUCK
+                    <span className="inline-flex items-center gap-2">
+                      <span className="inline-flex items-center rounded-full border border-red-300 bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
+                        STUCK
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => clearStuck(l.resource_id, l.actor_name)}
+                        disabled={clearing === key}
+                        className="rounded border border-red-300 px-2 py-0.5 text-xs font-medium text-red-700 hover:bg-red-100 disabled:opacity-50"
+                        title="Clear the STUCK flag after manually removing the part"
+                      >
+                        {clearing === key ? "Clearing…" : "Clear"}
+                      </button>
                     </span>
                   )}
                 </td>

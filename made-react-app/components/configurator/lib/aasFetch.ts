@@ -38,6 +38,7 @@ interface Shell {
   id: string;
   idShort: string;
   submodels?: { keys: { type: string; value: string }[]; type: string }[];
+  assetInformation?: { assetKind?: string };
 }
 
 interface Submodel extends SME {
@@ -86,7 +87,11 @@ const parsePoint = (col: SME): [number, number] => [
 
 const parsePolygon = (col: SME | undefined): PolygonLocal => {
   if (!col) return [];
-  const points = children(col).filter(
+  // Current AAS layout nests the points under a "Points" collection
+  // (ResourceGeometry/Points/Point1.. and Zone/Points/Point1..). Fall back to
+  // direct PointN children for the legacy flat layout.
+  const container = findChild(col, "Points") ?? col;
+  const points = children(container).filter(
     (c) => c.modelType === "SubmodelElementCollection" && /^Point\d+$/.test(c.idShort),
   );
   points.sort((a, b) => {
@@ -165,8 +170,9 @@ const toResourceType = (shell: Shell, submodel: Submodel): ResourceType => {
 const pagedResults = async <T,>(url: string): Promise<T[]> => {
   const out: T[] = [];
   let cursor: string | undefined;
-  for (let i = 0; i < 10; i++) {
-    const u = cursor ? `${url}?cursor=${encodeURIComponent(cursor)}` : url;
+  const sep = url.includes("?") ? "&" : "?";
+  for (;;) {
+    const u = `${url}${sep}limit=1000${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
     const res = await fetch(u);
     if (!res.ok) throw new Error(`${res.status} ${url}`);
     const json = await res.json();
@@ -328,19 +334,32 @@ export const fetchResourceCapabilities = async (
 export const fetchResourceLibrary = async (
   serverUrl: string = AAS_SERVER_URL,
 ): Promise<ResourceType[]> => {
-  const [shells, submodels] = await Promise.all([
-    pagedResults<Shell>(`${serverUrl}/shells`),
-    pagedResults<Submodel>(`${serverUrl}/submodels`),
-  ]);
-  const zonesById = new Map<string, Submodel>();
-  submodels.forEach((s) => {
-    if (s.idShort === "ResourceZones") zonesById.set(s.id, s);
-  });
-  const library: ResourceType[] = [];
-  for (const shell of shells) {
-    const sm = zonesById.get(`${shell.id}/ResourceZones`);
-    if (!sm) continue;
-    library.push(toResourceType(shell, sm));
-  }
-  return library;
+  // A shell is a resource type iff it references a ".../ResourceZones" submodel.
+  // The shell already lists its submodel IRIs, so we never need to scan the whole
+  // submodel collection — we read the ref off the shell and GET that one by ID.
+  // This scales with the number of resources (~handful), not the total submodel
+  // count (thousands), and skips the standalone ResourceZones template.
+  const shells = await pagedResults<Shell>(`${serverUrl}/shells`);
+
+  const targets = shells
+    // Exclude Type/template shells (AssemblyModule, StorageModule, ...) —
+    // only concrete instance resources belong in the configurator library.
+    .filter((shell) => shell.assetInformation?.assetKind !== "Type")
+    .map((shell) => {
+      const zonesIri = (shell.submodels ?? [])
+        .flatMap((ref) => ref.keys ?? [])
+        .map((k) => k.value)
+        .find((iri) => iri.endsWith("/ResourceZones"));
+      return zonesIri ? { shell, zonesIri } : null;
+    })
+    .filter((t): t is { shell: Shell; zonesIri: string } => t !== null);
+
+  const library = await Promise.all(
+    targets.map(async ({ shell, zonesIri }) => {
+      const res = await fetch(`${serverUrl}/submodels/${b64url(zonesIri)}`);
+      if (!res.ok) return null;
+      return toResourceType(shell, (await res.json()) as Submodel);
+    }),
+  );
+  return library.filter((t): t is ResourceType => t !== null);
 };

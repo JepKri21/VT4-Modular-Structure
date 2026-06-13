@@ -1,5 +1,8 @@
 {
-  "generatorPath": "C:\\Users\\Lucas Bonde\\OneDrive - Aalborg Universitet\\Uni\\Github\\VT4-Modular-Structure\\Implementation2.0\\ClassesAndBuilderMethods\\BaSyx_AAS_Generator",
-  "resourceRunnerPath": "C:\\Users\\Lucas Bonde\\OneDrive - Aalborg Universitet\\Uni\\Github\\VT4-Modular-Structure\\Implementation2.0\\ProductAndResourceImplementations\\Generic_Resource_Runner\\Generic_Resource_Runner.py",
-  "pythonExecutable": "python"
+  "generatorPath": "/Users/lucasn.bonde/Desktop/Privat/Programming/Speciale/VT4-Modular-Structure/Implementation2.0/ClassesAndBuilderMethods/BaSyx_AAS_Generator",
+  "resourceRunnerPath": "/Users/lucasn.bonde/Desktop/Privat/Programming/Speciale/VT4-Modular-Structure/Implementation2.0/ProductAndResourceImplementations/Generic_Resource_Runner/Generic_Resource_Runner.py",
+  "pythonExecutable": "python",
+  "lineControllerPath": "/Users/lucasn.bonde/Desktop/Privat/Programming/Speciale/VT4-Modular-Structure/Implementation2.0/Line_Controller/main.py",
+  "mesApiPath": "/Users/lucasn.bonde/Desktop/Privat/Programming/Speciale/VT4-Modular-Structure/Implementation2.0/ClassesAndBuilderMethods/MES/mes_api.py",
+  "mesApiPort": 8000
 }

@@ -274,6 +274,7 @@ class AlarmCategory(str, enum.Enum):
     NO_ALTERNATIVE = "NO_ALTERNATIVE"
     ORDER_RESTARTED = "ORDER_RESTARTED"
     STUCK_CARGO = "STUCK_CARGO"
+    CONFIG_RELOAD_FAILED = "CONFIG_RELOAD_FAILED"
 
 
 #=============================================================================
@@ -403,55 +404,11 @@ class InventoryLevelMessage(BaseModel):
 #this means we don't have to define any specific request types and we don't have to make specific structures for EVERY kind of response
 #It is already baked into the topic messages that we are sending, using the definitions above.
 
-
-#class StandardRequestType(str, enum.Enum):
-#    STATE = "STATE"
-#    ALARMS = "ALARMS"
-#    INVENTORY_LEVELS = "INVENTORY_LEVELS"
-
 class RequestMessage(BaseModel):
     timestamp: datetime
     requested_topic_update: str
     resource_id: str
     seq_no: int | None = None
-
-
-#class StateResponse(BaseModel):
-#    state: PackMLState
-#
-#class AlarmResponse(BaseModel):
-#    alarm_ids: List[str]
-#
-#class InventoryResponse(BaseModel):
-#    inventory: Dict[str, Dict[str, int]]
-#
-#class ResponseMessage(BaseModel):
-#    timestamp: datetime
-#    requested_data: StandardRequestType
-#    resource_id: str
-#    data: StateResponse | AlarmResponse | InventoryResponse
-#    seq_no: int | None = None
-#
-#    @model_validator(mode="after")
-#    def validate_data_matches_request(self):
-#        match self.requested_data:
-#            case StandardRequestType.STATE:
-#                if not isinstance(self.data, StateResponse):
-#                    raise ValueError("STATE request requires StateResponse")
-#                
-#            case StandardRequestType.ALARMS:
-#                if not isinstance(self.data, AlarmResponse):
-#                    raise ValueError("STATE request requires AlarmResponse")
-#            
-#            case StandardRequestType.INVENTORY_LEVELS:
-#                if not isinstance(self.data, InventoryResponse):
-#                    raise ValueError("STATE request requires InventoryResponse")
-#        
-#        return self
-
-
-
-
 
 #=============================================================================
 #============================== MES WorkOrder ================================
@@ -485,6 +442,20 @@ class WorkOrderStatusMessage(BaseModel):
     line_id: str
     status: WorkOrderStatus
     message: str | None = None
+    seq_no: int | None = None
+
+
+# Published (retained) by the Line Controller on
+# AAUSmartLab/<line_id>/Controller/Capacity whenever the line configuration is
+# loaded or reloaded. `max_concurrent` is the number of Transport actors the
+# line currently has — the true ceiling on simultaneous orders, since a shuttle
+# is held end-to-end on a no-handoff line. The MES dispatcher consumes this to
+# size how many orders it releases at once, replacing its static
+# MES_MAX_CONCURRENT default.
+class LineCapacityMessage(BaseModel):
+    timestamp: datetime
+    line_id: str
+    max_concurrent: int
     seq_no: int | None = None
 
 

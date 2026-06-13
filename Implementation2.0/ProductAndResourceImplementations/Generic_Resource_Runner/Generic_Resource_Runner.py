@@ -125,7 +125,13 @@ class GenericResourceExecutor:
 
         suffixes = self.parsed_resource["Communication"].suffixes
         prefix = self.parsed_resource["Communication"].production_line_prefix
-        base = f"{prefix}/{self.shell_id_short}"
+        # Build the diagnostic base from the SAME identifier the MQTT client
+        # actually subscribes/publishes with (client_id = the shell IRI's last
+        # segment, e.g. "PhoneAssembler_<uuid>"), NOT shell_id_short (the AAS
+        # id_short, e.g. "PhoneAssembler"). These differ when the IRI carries a
+        # UUID; printing id_short here makes the log show a topic the resource
+        # is not really listening on — defeating the whole point of this dump.
+        base = f"{prefix}/{self.mqtt_client.client_id}"
 
         # Diagnostic: log every topic this resource will SUBSCRIBE to and the
         # ones it will PUBLISH to, fully-qualified. Grep the stdout for the
@@ -185,6 +191,26 @@ class GenericResourceExecutor:
 
         except Exception as e:
             print(f"[MQTT HANDLE_COMMAND ERROR] {e}")
+            try:
+                job_result_message = MS.JobResultMessage(
+                    timestamp=datetime.now(),
+                    resource_id=self.resource_shell_id,
+                    order_id=getattr(msg, "order_id", None),
+                    job_id=getattr(msg, "job_id", None),
+                    ideal_cycle_time_ms=0,
+                    actual_cycle_time_ms=0,
+                    process_transformation=getattr(msg, "process_transformation", None),
+                    result=MS.Result.INCOMPLETE,
+                    quality=MS.Quality.NA,
+                    output_parameters=None,
+                )
+
+                self.mqtt_client.publish(
+                    f"{self.parsed_resource['Communication'].suffixes.job_result_suffix}/{msg.actor_name}",
+                    job_result_message,
+                )
+            except Exception as publish_exc:
+                print(f"[MQTT HANDLE_COMMAND RESULT ERROR] {publish_exc}")
 
             try:
                 job_result_message = MS.JobResultMessage(
@@ -214,7 +240,7 @@ class GenericResourceExecutor:
             machine = actor_entry["machine"]
             state_msg = MS.StateMessage(
                 timestamp=datetime.now(),
-                resource_id=self.resource_shell_id,
+                resource_id=self.shell_id_short,
                 state=machine.state
             )
             self.mqtt_client.publish(
@@ -246,7 +272,10 @@ class GenericResourceExecutor:
                 actor_name=actor_name,
                 mqtt_client=self.mqtt_client,
                 suffixes=self.parsed_resource["Communication"].suffixes,
-                resource_id=self.resource_shell_id,
+                # All MQTT messages carry the SHORT id (not the full IRI) so
+                # downstream metrics group cleanly. The full IRI lives in
+                # the topic path; consumers can reconstruct it if needed.
+                resource_id=self.shell_id_short,
                 inventory_manager=self.inventory_manager
             )
 
@@ -476,6 +505,7 @@ class InventoryManager:
 
     STORE_CAPABILITY = "https://aausmartlab.org/Submodels/Capability/Store"
     RETRIEVE_CAPABILITY = "https://aausmartlab.org/Submodels/Capability/Retrieve"
+    ASSEMBLE_CAPABILITY = "https://aausmartlab.org/Submodels/Capability/Assemble"
 
     def __init__(self, resource_loader: AASResourceLoader, resource_parser: ResourceParser, resource_shell_id, submodel_endpoint):
         self.resource_loader = resource_loader
@@ -509,6 +539,52 @@ class InventoryManager:
         if cap == self.RETRIEVE_CAPABILITY:
             return await self.retrieve_component(context)
 
+        if cap == self.ASSEMBLE_CAPABILITY:
+            return await self.consume_assembled_inputs(context)
+
+    async def consume_assembled_inputs(self, context):
+        """Remove any assembly input that was sourced from this resource's own
+        inventory (e.g. a Fuse from the assembler's feeder).
+
+        Inputs not physically held here — the transported-in sub-assembly, or
+        the previous partial assembly carried over as an input on a subsequent
+        assemble step — aren't in this inventory, so find_component_slot_optional
+        returns None for them and they're left untouched. Without this, the
+        consumed fuse stays listed in the assembler's Inventory submodel forever
+        and every new order's matcher picks the same instance again.
+        """
+        input_ids = context.command.process_transformation.get("InputTypes") or []
+        output_ids = set(context.command.process_transformation.get("OutputTypes") or [])
+
+        consumed = []
+        async with self._lock:
+            try:
+                model = self.load()
+            except Exception as e:
+                # Assemblers that only combine transported-in parts (e.g. the final
+                # PhoneAssembler) have no own feeder Inventory submodel — there is
+                # nothing here to consume, so skip gracefully instead of failing the
+                # job. Without this guard the missing submodel raises and the whole
+                # assemble step is reported INCOMPLETE, aborting the order.
+                print(f"[inventory] {self.resource_shell_id}: no Inventory submodel — nothing to consume ({e})")
+                return consumed
+            for component_id in input_ids:
+                if not component_id or component_id in output_ids:
+                    continue
+                slot = self.find_component_slot_optional(model, component_id)
+                if slot is None:
+                    continue
+                inventory_name, slot_id = slot
+                self.write_slot_component(
+                    inventory_name=inventory_name,
+                    slot_id=slot_id,
+                    component_id=None,
+                )
+                consumed.append(component_id)
+
+        print(f"[inventory] Assemble consumed from own inventory: {consumed}")
+        return consumed
+
     async def retrieve_component(self, context):
 
         component_id = context.command.process_transformation.get("OutputTypes") or []
@@ -520,13 +596,11 @@ class InventoryManager:
             model = self.load()
             inventory_name, slot_id = self.find_component_slot(model, component_id)
 
-            self.inventory_parser.update_slot(
+            self.write_slot_component(
                 inventory_name=inventory_name,
                 slot_id=slot_id,
                 component_id=None
             )
-
-            self.upload()
 
         return component_id
 
@@ -541,23 +615,28 @@ class InventoryManager:
             model = self.load()
             inventory_name, slot_id = self.find_free_slot(model, component_id)
 
-            self.inventory_parser.update_slot(
+            self.write_slot_component(
                 inventory_name=inventory_name,
                 slot_id=slot_id,
                 component_id=component_id
             )
 
-            self.upload()
-
         return slot_id
 
     def find_component_slot(self, model, component_id):
+        slot = self.find_component_slot_optional(model, component_id)
+        if slot is None:
+            raise ValueError(f"Component not found: {component_id}")
+        return slot
+
+    def find_component_slot_optional(self, model, component_id):
+        """Like find_component_slot but returns None instead of raising when the
+        component isn't held in any of this resource's inventories."""
         for inv_name, inv in model.inventories.items():
             for slot_id, slot in inv.storage.items():
                 if slot.component_id == component_id:
                     return inv_name, slot_id
-
-        raise ValueError(f"Component not found: {component_id}")
+        return None
 
     def find_free_slot(self, model, component_id):
         for inv_name, inv in model.inventories.items():
@@ -576,16 +655,43 @@ class InventoryManager:
 
         raise ValueError("No free slot found")
 
-    def upload(self):
+    def write_slot_component(self, inventory_name, slot_id, component_id):
+        """Write one slot's ComponentShellReference on the AAS, in place.
 
+        Targets the single ComponentShellReference element via the BaSyx
+        submodel-elements endpoint and leaves every other field untouched —
+        notably SlotReserved, which the Line Controller writes independently.
+        This replaces upload(), whose whole-submodel PUT serialized a snapshot
+        taken at load() and would clobber any field another writer had changed
+        in between (the cross-order reservation race).
+
+        component_id=None empties the slot. The reference *value* is dropped
+        entirely rather than set to an empty-keys reference, which would crash
+        the slot parser at value["keys"][0].
+        """
         headers = {"Content-Type": "application/json"}
+        path = (
+            f"Inventories.{inventory_name}.StoredComponents."
+            f"{slot_id}.ComponentShellReference"
+        )
+        url = f"{self.inventory_url}/submodel-elements/{path}"
 
-        data = json.dumps(self.inventory_parser.raw_submodel.data).encode("utf-8")
+        resp = requests.get(url, headers=headers)
+        if not resp.ok:
+            raise RuntimeError(f"GET {path} failed: {resp.status_code} {resp.text}")
+        element = resp.json()
 
-        r = requests.put(self.inventory_url, headers=headers, data=data)
+        if component_id is None:
+            element.pop("value", None)
+        else:
+            element["value"] = {
+                "type": "ExternalReference",
+                "keys": [{"type": "GlobalReference", "value": str(component_id)}],
+            }
 
+        r = requests.put(url, headers=headers, data=json.dumps(element).encode("utf-8"))
         if r.status_code not in (200, 201, 204):
-            raise RuntimeError(r.text)
+            raise RuntimeError(f"PUT {path} failed: {r.status_code} {r.text}")
 
 
 class GenericStationBehavior(StationBehavior):

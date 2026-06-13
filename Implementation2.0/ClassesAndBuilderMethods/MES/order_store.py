@@ -79,6 +79,8 @@ def get_all() -> list[dict]:
 
 def get_order(order_id: str) -> Optional[dict]:
     with _lock:
+        if order_id not in _orders:
+            _load_from_disk()
         return _orders.get(order_id)
 
 
@@ -88,3 +90,13 @@ def get_order_by_webshop_id(webshop_id: str) -> Optional[dict]:
             if order.get("webshop_id") == webshop_id:
                 return order
         return None
+
+
+def get_orders_by_webshop_id(webshop_id: str) -> list[dict]:
+    """Return every MES order belonging to a webshop order. A multi-product
+    webshop order fans out into one MES order per product ("ORD-<8hex>-1",
+    "-2", …), each carrying its own shell_iris — so cleanup must consider all
+    of them, not just the first match.
+    """
+    with _lock:
+        return [o for o in _orders.values() if o.get("webshop_id") == webshop_id]

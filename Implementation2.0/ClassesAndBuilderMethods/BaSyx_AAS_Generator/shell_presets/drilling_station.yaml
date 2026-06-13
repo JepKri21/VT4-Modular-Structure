@@ -21,8 +21,8 @@ submodels:
         min: 0.0
         max: 200.0
       TargetPosition:
-        XPos: { min: -600.0, max: 600.0 }
-        YPos: { min: -600.0, max: 600.0 }
+        XPos: { min: -60.0, max: 60.0 }
+        YPos: { min: -60.0, max: 60.0 }
       OperationLabel:
         en: "Drilling operation"
         dk: "Boreoperation"
@@ -66,15 +66,22 @@ submodels:
       XPos: 0.0
       YPos: 0.0
     ResourceGeometry:
-      Point1: { XPos: -600.0, YPos: -600.0 }
-      Point2: { XPos: 600.0, YPos: -600.0 }
-      Point3: { XPos: 600.0, YPos: 600.0 }
-      Point4: { XPos: -600.0, YPos: 600.0 }
+      Points:
+        - { XPos: -100.0, YPos: -100.0 }
+        - { XPos: 100.0, YPos: -100.0 }
+        - { XPos: 100.0, YPos: 100.0 }
+        - { XPos: -100.0, YPos: 100.0 }
+
     InOutputZones:
-      - Point1: { XPos: -500.0, YPos: 600.0 }
-        Point2: { XPos: 500.0, YPos: 600.0 }
-        Point3: { XPos: 500.0, YPos: 1500.0 }
-        Point4: { XPos: -500.0, YPos: 1500.0 }
+      - Points:
+          - { XPos: -133.333, YPos: -100.0 }
+          - { XPos: -133.333, YPos: 133.333 }
+          - { XPos: 133.333, YPos: 133.333 }
+          - { XPos: 133.333, YPos: -100.0 }
+          - { XPos: 333.333, YPos: -100.0 }
+          - { XPos: 333.333, YPos: 333.333 }
+          - { XPos: -333.333, YPos: 333.333 }
+          - { XPos: -333.333, YPos: -100.0 }
 
   Communication:
     MQTT:

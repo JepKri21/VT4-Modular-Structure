@@ -55,9 +55,16 @@ const WINDOW_LABEL: Record<Window, string> = {
   "7d": "Last 7 days",
 };
 
-// Drilling_12345678 → Drilling
+// The DB stores the resource_id either as the short id_short (preferred)
+// or, in older rows, as the full shell IRI. Either way the card label
+// is the last URL path segment so the UUID stays intact:
+//   https://…/Resources/Transport_3898395f-…  → Transport_3898395f-…
+//   Transport_3898395f-…                      → Transport_3898395f-…
 function prettifyResourceId(id: string): string {
-  return id.replace(/_\d+$/, "");
+  if (id.includes("/")) {
+    return id.split("/").filter(Boolean).pop() ?? id;
+  }
+  return id;
 }
 
 export default function PerformancePage() {

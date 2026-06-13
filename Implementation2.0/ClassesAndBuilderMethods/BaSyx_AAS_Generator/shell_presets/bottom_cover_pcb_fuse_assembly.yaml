@@ -1,13 +1,20 @@
 # SA2 Sub-Assembly: Bottom Cover PCB Fuse Assembly
-# Inputs: SA1 (Bottom Cover PCB) + 2 Fuses
-# Output: Bottom Cover with PCB and fuses mounted
-# Two separate BOM entries (one per fuse) so each physical fuse gets its own
-# ComponentReference slot for full traceability.
+# Inputs: SA1 (Bottom Cover PCB) + N Fuses
+# Output: Bottom Cover with PCB and N fuses mounted
+#
+# The number of fuses is DYNAMIC — driven by the fuse quantity selected in the
+# webstore (fuseCount: 1/2/3/…). The single Fuse BOM entry and single
+# "Assemble Fuse" process step below are marked `PerFuseUnit: true` and expanded
+# at order time by preset_loader.expand_fuse_assembly() into one concrete BOM
+# entry + one assemble step per physical fuse — each with its own
+# ComponentReference slot (for traceability) and its own TargetPosition
+# (XPos constant, YPos = -10 × fuseIndex).
+#
 # IsSubAssembly flags are MES-specific — ignored by form_to_aas.py template processing.
 
 type: "bottom_cover_assembly_chain"
 label: "Bottom Cover PCB Fuse Sub-Assembly"
-description: "Sub-assembly in which two fuses are mounted onto the PCB inside the bottom cover."
+description: "Sub-assembly in which one or more fuses are mounted onto the PCB inside the bottom cover."
 
 asset_type: "BottomCoverPCBFuse"
 asset_name: "BottomCoverPCBFuse"
@@ -28,9 +35,9 @@ submodels:
         text: "Bundlåg PCB Sikring Samleenhed"
     Description:
       - language: "en"
-        text: "Sub-assembly: bottom cover PCB assembly with two fuses mounted on the PCB"
+        text: "Sub-assembly: bottom cover PCB assembly with one or more fuses mounted on the PCB"
       - language: "da"
-        text: "Samleenhed: bundlåg PCB samleenhed med to sikringer monteret på PCB"
+        text: "Samleenhed: bundlåg PCB samleenhed med en eller flere sikringer monteret på PCB"
 
   BillOfMaterials:
     BOMEntries:
@@ -38,27 +45,33 @@ submodels:
         Quantity: 1
         IsSubAssembly: true
         ComponentTypeReference: "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
-      - Description: "Fuse Slow Blow 1"
+      # Per-fuse template — expanded to `fuseCount` entries at order time.
+      # Each physical fuse gets its own entry (Quantity 1) for full traceability.
+      # MinQuantity/MaxQuantity are the single source of truth for how many fuses
+      # a phone may have. They bound the webstore selection (UI + order API) and
+      # clamp the MES expander. To change the allowed fuse range, edit them here.
+      - Description: "Fuse Slow Blow"
         Quantity: 1
         IsSubAssembly: false
-        ComponentTypeReference: "https://aausmartlab.org/Shells/Component/Fuse"
-      - Description: "Fuse Slow Blow 2"
-        Quantity: 1
-        IsSubAssembly: false
-        MinOrderedQuantity: 2
+        PerFuseUnit: true
+        MinQuantity: 1
+        MaxQuantity: 3
         ComponentTypeReference: "https://aausmartlab.org/Shells/Component/Fuse"
 
   BillOfProcesses:
     ProcessTracking:
-      - StepRef: "Assemble_First_Fuse_1"
+      - StepRef: "Assemble_Fuse_1"
         StepStatus: "Pending"
-      - StepRef: "Assemble_Second_Fuse_2"
-        StepStatus: "Pending"
-        MinOrderedQuantity: 2
 
     ProcessSteps:
-      - Operation: "Assemble First Fuse"
+      # Per-fuse template — expanded to one "Assemble Fuse {i}" step per physical
+      # fuse at order time. The first fuse step also consumes the BottomCoverPCB
+      # sub-assembly; subsequent steps build on the partial BottomCoverPCBFuse.
+      # The expander rewrites Operation, RequiredComponents, TargetPosition,
+      # OperationLabel and ProcessTransformations per fuse index.
+      - Operation: "Assemble Fuse"
         ProcessType: "Assemble"
+        PerFuseUnit: true
         RequiredComponents:
           - "BottomCoverPCB"
           - "Fuse"
@@ -72,11 +85,11 @@ submodels:
               YPos: -10.0
             OperationLabel:
               - language: "en"
-                text: "Assemble first fuse onto PCB"
+                text: "Assemble fuse onto PCB"
               - language: "da"
-                text: "Monter første sikring på PCB"
+                text: "Monter sikring på PCB"
           ProcessTransformations:
-            AssembleFirstFuse:
+            AssembleFuse:
               InputTypes:
                 ComponentTypeReference:
                   - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
@@ -86,35 +99,4 @@ submodels:
                   - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
           SupportedComponents:
             - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCB"
-            - "https://aausmartlab.org/Shells/Component/Fuse"
-
-      - Operation: "Assemble Second Fuse"
-        ProcessType: "Assemble"
-        MinOrderedQuantity: 2
-        RequiredComponents:
-          - "Fuse"
-        StepConstraints:
-          MaxDurationS: 90
-          RequiresInspection: false
-        CapabilityParams:
-          Parameters:
-            TargetPosition:
-              XPos: 5.0
-              YPos: -20.0
-            OperationLabel:
-              - language: "en"
-                text: "Assemble second fuse onto PCB"
-              - language: "da"
-                text: "Monter anden sikring på PCB"
-          ProcessTransformations:
-            AssembleSecondFuse:
-              InputTypes:
-                ComponentTypeReference:
-                  - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
-                  - "https://aausmartlab.org/Shells/Component/Fuse"
-              OutputTypes:
-                ComponentTypeReference:
-                  - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
-          SupportedComponents:
-            - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
             - "https://aausmartlab.org/Shells/Component/Fuse"

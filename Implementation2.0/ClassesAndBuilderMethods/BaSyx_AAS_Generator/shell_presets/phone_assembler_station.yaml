@@ -7,6 +7,7 @@ asset_name: "PhoneAssembler"
 submodels:
   AssembleCapabilityOffered:
     CapabilityCategory: "Offered"
+    CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Assemble"
     SupportedComponents:
       - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
       - "https://aausmartlab.org/Shells/Component/TopCover"
@@ -30,6 +31,7 @@ submodels:
 
   HandoffCapabilityOffered:
     CapabilityCategory: "Offered"
+    CapabilityTypeReference: "https://aausmartlab.org/Submodels/Capability/Handoff"
     SupportedComponents:
       - "https://aausmartlab.org/Shells/Assembly/BottomCoverPCBFuse"
       - "https://aausmartlab.org/Shells/Component/TopCover"
@@ -105,15 +107,21 @@ submodels:
       XPos: 0.0
       YPos: 0.0
     ResourceGeometry:
-      Point1: { XPos: -500.0, YPos: -500.0 }
-      Point2: { XPos: 500.0, YPos: -500.0 }
-      Point3: { XPos: 500.0, YPos: 500.0 }
-      Point4: { XPos: -500.0, YPos: 500.0 }
+      Points:
+        - { XPos: -75.0, YPos: -150.0 }
+        - { XPos: 75.0, YPos: -150.0 }
+        - { XPos: 150.0, YPos: -75.0 }
+        - { XPos: 150.0, YPos: 75.0 }
+        - { XPos: 75.0, YPos: 150.0 }
+        - { XPos: -75.0, YPos: 150.0 }
+        - { XPos: -150.0, YPos: 75.0 }
+        - { XPos: -150.0, YPos: -75.0 }
     InOutputZones:
-      - Point1: { XPos: -400.0, YPos: 500.0 }
-        Point2: { XPos: 400.0, YPos: 500.0 }
-        Point3: { XPos: 400.0, YPos: 1300.0 }
-        Point4: { XPos: -400.0, YPos: 1300.0 }
+      - Points:
+          - { XPos: -175.0, YPos: 175.0 }
+          - { XPos: 175.0, YPos: 175.0 }
+          - { XPos: 175.0, YPos: 375.0 }
+          - { XPos: -175.0, YPos: 375.0 }
 
   Communication:
     MQTT:

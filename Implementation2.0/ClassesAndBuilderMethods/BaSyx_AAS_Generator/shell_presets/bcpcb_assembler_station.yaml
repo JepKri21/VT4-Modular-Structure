@@ -96,7 +96,7 @@ submodels:
   Inventory:
     Inventories:
       - Specifications:
-          InventorySize: 30
+          InventorySize: 100
         SupportedComponents:
           - "https://aausmartlab.org/Shells/Component/PCB"
         Actors:
@@ -107,15 +107,28 @@ submodels:
       XPos: 0.0
       YPos: 0.0
     ResourceGeometry:
-      Point1: { XPos: -500.0, YPos: -500.0 }
-      Point2: { XPos: 500.0, YPos: -500.0 }
-      Point3: { XPos: 500.0, YPos: 500.0 }
-      Point4: { XPos: -500.0, YPos: 500.0 }
+      Points:
+        - { XPos: -133.333, YPos: -66.667 }
+        - { XPos: -133.333, YPos: 66.667 }
+        - { XPos: -66.667, YPos: 133.333 }
+        - { XPos: 66.667, YPos: 133.333 }
+        - { XPos: 133.333, YPos: 66.667 }
+        - { XPos: 133.333, YPos: -66.667 }
+        - { XPos: 222.222, YPos: -66.667 }
+        - { XPos: 222.222, YPos: -155.556 }
+        - { XPos: -222.222, YPos: -155.556 }
+        - { XPos: -222.222, YPos: -66.667 }
+
     InOutputZones:
-      - Point1: { XPos: -400.0, YPos: 500.0 }
-        Point2: { XPos: 400.0, YPos: 500.0 }
-        Point3: { XPos: 400.0, YPos: 1300.0 }
-        Point4: { XPos: -400.0, YPos: 1300.0 }
+      - Points:
+          - { XPos: -177.778, YPos: 66.667 }
+          - { XPos: -66.667, YPos: 177.778 }
+          - { XPos: 66.667, YPos: 177.778 }
+          - { XPos: 177.778, YPos: 66.667 }
+          - { XPos: 222.222, YPos: 111.111 }
+          - { XPos: 66.667, YPos: 366.667 }
+          - { XPos: -66.667, YPos: 366.667 }
+          - { XPos: -222.222, YPos: 111.111 }
 
   Communication:
     MQTT:

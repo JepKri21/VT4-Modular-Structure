@@ -9,7 +9,13 @@ import {
   CREATE_RESOURCE_ALLOCATIONS_TABLE_SQL,
   CREATE_ALLOCATED_INSTANCES_TABLE_SQL,
   MIGRATE_COMPONENT_TYPES_SQL,
+  RESERVED_BY_TYPE_SUBQUERY,
 } from "@/lib/inventory";
+import {
+  consumedIrisFromAas,
+  fetchAllPaged,
+  fetchResourceInventories,
+} from "@/lib/resource-inventory";
 
 async function ensureTables() {
   await pool.query(CREATE_COMPONENT_TYPES_TABLE_SQL);
@@ -30,14 +36,20 @@ async function findAvailableInstances(
   quantity: number,
   excludeIris: Set<string>
 ): Promise<string[]> {
-  const res = await fetch(`${base}/shells?limit=1000`);
-  if (!res.ok) throw new Error(`AAS server returned ${res.status} when fetching instances`);
-
-  const data = (await res.json()) as { result?: unknown[] };
-  const shells = (data.result ?? (Array.isArray(data) ? data : [])) as Array<{
-    id: string;
-    assetInformation?: { assetKind?: string };
-  }>;
+  type RawShell = { id: string; assetInformation?: { assetKind?: string } };
+  const shells: RawShell[] = [];
+  let cursor: string | undefined;
+  do {
+    const url = cursor
+      ? `${base}/shells?limit=1000&cursor=${encodeURIComponent(cursor)}`
+      : `${base}/shells?limit=1000`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`AAS server returned ${res.status} when fetching instances`);
+    const data = (await res.json()) as { result?: RawShell[]; paging_metadata?: { cursor?: string } };
+    const page = data.result ?? (Array.isArray(data) ? (data as unknown as RawShell[]) : []);
+    shells.push(...page);
+    cursor = data.paging_metadata?.cursor;
+  } while (cursor);
 
   const typePrefix = aasTypeIri + "-";
   const available = shells.filter((s) => {
@@ -127,49 +139,51 @@ async function updateAasInventory(
       return false;
     }
 
-    // Fill empty slots in-place with the instance IRIs
-    const updated = entries.map((entry) => {
-      const iriForThisSlot = instanceIris[emptySlots.indexOf(entry)];
-      if (iriForThisSlot === undefined) return entry; // not a slot we're filling
-
-      return {
-        ...entry,
-        value: (entry.value ?? []).map((child) => {
-          if (child.idShort === "ComponentShellReference") {
-            return {
-              ...child,
-              value: {
-                type: "ModelReference",
-                keys: [{ type: "AssetAdministrationShell", value: iriForThisSlot }],
-              },
-            };
-          }
-          return child;
-        }),
-      };
-    });
-
-    // PUT the modified collection back
-    const putRes = await fetch(
-      `${base}/submodels/${encodedSmId}/submodel-elements/${storedPath}`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          idShort: "StoredComponents",
-          modelType: "SubmodelElementCollection",
-          value: updated,
-        }),
+    // Fill the chosen empty slots one at a time via a targeted write on each
+    // slot's ComponentShellReference element. Unlike a whole-collection PUT, this
+    // leaves every other field — notably SlotReserved, which the Line Controller
+    // writes independently during production — untouched, so a concurrent
+    // reservation can't be clobbered by a stale snapshot.
+    let allOk = true;
+    for (let i = 0; i < instanceIris.length; i++) {
+      const entry = emptySlots[i];
+      const iri = instanceIris[i];
+      const refChild = (entry.value ?? []).find(
+        (c) => c.idShort === "ComponentShellReference"
+      );
+      if (!refChild) {
+        console.error(`AAS: slot ${entry.idShort} has no ComponentShellReference`);
+        allOk = false;
+        continue;
       }
-    );
 
-    if (!putRes.ok) {
-      const detail = await putRes.text().catch(() => "");
-      console.error(`AAS: PUT StoredComponents failed (${putRes.status}): ${detail}`);
-      return false;
+      const element = {
+        ...refChild,
+        value: {
+          type: "ModelReference",
+          keys: [{ type: "AssetAdministrationShell", value: iri }],
+        },
+      };
+
+      const putRes = await fetch(
+        `${base}/submodels/${encodedSmId}/submodel-elements/${storedPath}.${entry.idShort}.ComponentShellReference`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(element),
+        }
+      );
+
+      if (!putRes.ok) {
+        const detail = await putRes.text().catch(() => "");
+        console.error(
+          `AAS: PUT slot ${entry.idShort} failed (${putRes.status}): ${detail}`
+        );
+        allOk = false;
+      }
     }
 
-    return true;
+    return allOk;
   } catch (err) {
     console.error("updateAasInventory:", err);
     return false;
@@ -279,12 +293,14 @@ export async function POST(req: NextRequest) {
   // Validate each type's stock level
   for (const item of items) {
     const invResult = await pool.query(
-      `SELECT i.quantity_available, i.quantity_reserved,
+      `SELECT i.quantity_available,
+              COALESCE(open_res.reserved, 0) AS quantity_reserved,
               COALESCE(SUM(ra.quantity), 0) AS already_allocated
        FROM inventory i
        LEFT JOIN resource_allocations ra ON ra.component_type_id = i.component_type_id
+       LEFT JOIN (${RESERVED_BY_TYPE_SUBQUERY}) open_res ON open_res.component_type_id = i.component_type_id
        WHERE i.component_type_id = $1
-       GROUP BY i.quantity_available, i.quantity_reserved`,
+       GROUP BY i.quantity_available, open_res.reserved`,
       [item.componentTypeId]
     );
     if (invResult.rows.length === 0) {
@@ -293,7 +309,7 @@ export async function POST(req: NextRequest) {
     const row = invResult.rows[0];
     const netAvailable =
       (row.quantity_available ?? 0) -
-      (row.quantity_reserved ?? 0) -
+      (parseInt(row.quantity_reserved) || 0) -
       (parseInt(row.already_allocated) || 0);
     if (netAvailable < item.quantity) {
       return NextResponse.json(
@@ -303,9 +319,25 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Get all already-allocated instance IRIs so we don't double-allocate
+  // Build the set of instances that must NOT be picked for allocation:
+  //  1. already recorded as allocated in the DB (avoid double-allocation),
+  //  2. already physically sitting in a resource StoredComponents slot, and
+  //  3. already consumed into a product BOM.
+  // (3) is the important one: a consumed component shell is never deleted, so
+  // without excluding it the picker would treat it as "available" and re-insert
+  // it into an inventory, where the Line Controller would assemble it again.
   const allocatedResult = await pool.query(`SELECT instance_iri FROM allocated_instances`);
-  const allocatedIris = new Set<string>(allocatedResult.rows.map((r) => r.instance_iri as string));
+  const excludeIris = new Set<string>(allocatedResult.rows.map((r) => r.instance_iri as string));
+
+  try {
+    const shells = await fetchAllPaged(base, "/shells");
+    for (const inv of await fetchResourceInventories(base, shells)) {
+      for (const slot of inv.filled) excludeIris.add(slot.instanceIri);
+    }
+  } catch {
+    /* best-effort — DB allocated_instances still guards against double-allocation */
+  }
+  for (const iri of await consumedIrisFromAas(base)) excludeIris.add(iri);
 
   // Resolve type IRIs and find available instances on AAS for each item
   const instanceMap = new Map<string, string[]>(); // componentTypeId → chosen instance IRIs
@@ -324,13 +356,13 @@ export async function POST(req: NextRequest) {
 
     let instances: string[];
     try {
-      instances = await findAvailableInstances(base, aasTypeIri, item.quantity, allocatedIris);
+      instances = await findAvailableInstances(base, aasTypeIri, item.quantity, excludeIris);
     } catch (err) {
       return NextResponse.json({ error: String(err) }, { status: 400 });
     }
 
     // Mark these as taken so parallel items in the same request don't pick the same shells
-    instances.forEach((iri) => allocatedIris.add(iri));
+    instances.forEach((iri) => excludeIris.add(iri));
     instanceMap.set(item.componentTypeId, instances);
   }
 

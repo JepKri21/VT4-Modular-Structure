@@ -295,3 +295,4 @@ next-env.d.ts
 *.log
 *.cache
 Implementation2.0/.claude/settings.local.json
+Implementation2.0/ClassesAndBuilderMethods/MES/orders.json

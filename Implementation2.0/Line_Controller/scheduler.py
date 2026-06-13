@@ -51,6 +51,11 @@ PRE_PROCESS_TIMEOUT_S = 60.0
 BOP_TIMEOUT_S = 180.0
 IDLE_WAIT_S = 15.0
 TICK_INTERVAL_S = 0.5
+# How many consecutive ticks a step may fail arrival planning before we give
+# up and let it abort. At TICK_INTERVAL_S=0.5s this is ~60s of retrying — long
+# enough for a busy shuttle to free up, short enough that a truly un-runnable
+# step (missing input, no capable transport) doesn't park the order forever.
+PLAN_RETRY_BUDGET = 120
 
 CAP_HANDOFF = "https://aausmartlab.org/Submodels/Capability/Handoff"
 
@@ -195,6 +200,21 @@ class Scheduler:
         # instead of always grabbing the first one in the list.
         self._shuttle_pick_cursor: int = 0
 
+        # Bounded retry for arrival planning. A step that can't be planned
+        # (no free/ capable transport, missing input) pauses and retries so
+        # a *transient* shortage clears — but only up to PLAN_RETRY_BUDGET
+        # ticks. Past that we treat it as un-runnable and let the failure
+        # propagate to recovery, which aborts the order instead of leaving
+        # it parked in the dispatch queue forever. Keyed by (order, step).
+        self._plan_retry_counts: dict[tuple[str, str], int] = {}
+
+        # Serializes inventory refreshes across concurrent orders. The refresh
+        # itself runs in a worker thread (off the event loop) but mutates the
+        # shared ProductMatcher index, so two orders must not rebuild it at the
+        # same time. Holding the lock only spans the threaded refresh, so the
+        # loop stays free for the other order's non-inventory work.
+        self._inventory_lock = asyncio.Lock()
+
     # ── Cross-order instance reservation ────────────────────────────────────
 
     def _reserve_instance(
@@ -226,6 +246,101 @@ class Scheduler:
             print(f"[reserve] released {instance_iri} (slot={slot} now empty)")
             if shell_id and inv_name and slot:
                 self._patch_slot_reserved(shell_id, inv_name, slot, False)
+
+    def _consume_instance(self, instance_iri: str, order_id: str) -> None:
+        """Permanently remove a consumed instance from its resource Inventory slot.
+
+        Called at the actual consumption event — a Retrieve that pulls a part
+        out of storage, or an Assemble that ate a part from a resource feeder.
+        The matcher indexes a slot only while its ComponentShellReference holds
+        a value (see InventoryIndexer.rebuild_from_aas), so emptying that field
+        is what stops the instance being re-selected by a later order.
+
+        SlotReserved is only a cross-order concurrency guard; clearing it alone
+        (the old behaviour) left ComponentShellReference filled, so the instance
+        leaked straight back into the freely-pickable pool and got assembled
+        again — the duplicate ProcessHistory Assemble_N records. Here the
+        controller clears ComponentShellReference itself and releases the
+        reservation **only after the slot is confirmed empty**; if the clear
+        didn't take, the reservation is kept so the part stays claimed rather
+        than re-appearing.
+
+        No-ops when the instance isn't a reservation we own — i.e. a part
+        already emptied at Retrieve, or a transported-in sub-assembly that was
+        never a reserved storage/feeder instance.
+        """
+        entry = self._reserved_instances.get(instance_iri)
+        if entry is None or entry[0] != order_id:
+            return
+        _, shell_id, inv_name, slot = entry
+        if not (shell_id and inv_name and slot):
+            # No slot metadata to clear — fall back to a plain release.
+            self._release_instance_reservation(instance_iri, order_id)
+            return
+        if not self._clear_slot_component(shell_id, inv_name, slot):
+            print(
+                f"[consume] {instance_iri}: slot {slot} not confirmed empty — "
+                "keeping reservation so it is not re-selected"
+            )
+            return
+        self._release_instance_reservation(instance_iri, order_id)
+
+    def _clear_slot_component(
+        self,
+        resource_shell_id: str,
+        inventory_name: str,
+        slot_id: str,
+    ) -> bool:
+        """Empty a slot's ComponentShellReference on BaSyx, then verify.
+
+        Drops the reference *value* entirely (not an empty-keys reference,
+        which would crash the station parser at value['keys'][0]), mirroring
+        the storage station's own slot-empty write. Returns True iff a re-read
+        confirms the slot no longer holds a component.
+        """
+        import base64
+        import requests as _requests
+        submodel_iri = f"{resource_shell_id}/Inventory"
+        b64 = base64.urlsafe_b64encode(submodel_iri.encode()).decode().rstrip("=")
+        path = f"Inventories.{inventory_name}.StoredComponents.{slot_id}.ComponentShellReference"
+        url = f"{self.aas_server_base}/submodels/{b64}/submodel-elements/{path}"
+        try:
+            resp = _requests.get(url, timeout=3)
+            if resp.status_code != 200:
+                print(f"[consume] GET {slot_id} ref -> {resp.status_code}")
+                return False
+            element = resp.json()
+            element.pop("value", None)
+            put = _requests.put(url, json=element, timeout=3)
+            if put.status_code not in (200, 201, 204):
+                print(f"[consume] PUT clear {slot_id} -> {put.status_code} {put.text[:160]}")
+                return False
+            check = _requests.get(url, timeout=3)
+            if check.status_code != 200:
+                return False
+            val = check.json().get("value")
+            empty = not val or not (val.get("keys") if isinstance(val, dict) else None)
+            if empty:
+                print(f"[consume] AAS slot {slot_id} ComponentShellReference cleared")
+            return empty
+        except Exception as exc:
+            print(f"[consume] clear failed for {slot_id}: {exc}")
+            return False
+
+    def _consume_inputs_from_inventory(self, process_transformation: dict, order_id: str) -> None:
+        """Empty the Inventory slots of every feeder input an Assemble consumed.
+
+        Skips the identity case (input IRI also an output, e.g. Drilling) and
+        defers the "is this actually a reserved feeder part?" decision to
+        _consume_instance, which no-ops on already-emptied or never-reserved
+        inputs.
+        """
+        inputs = (process_transformation or {}).get("InputTypes") or []
+        outputs = {o for o in ((process_transformation or {}).get("OutputTypes") or []) if o}
+        for iri in inputs:
+            if not iri or iri in outputs:
+                continue
+            self._consume_instance(iri, order_id)
 
     def _patch_slot_reserved(
         self,
@@ -334,6 +449,9 @@ class Scheduler:
                     return
         finally:
             self._active_orders.pop(order_id, None)
+            # Drop this order's arrival-planning retry counters.
+            for key in [k for k in self._plan_retry_counts if k[0] == order_id]:
+                self._plan_retry_counts.pop(key, None)
             self._release_order_reservations(order_id)
             # release() leaves stuck cargo claimed — exactly what we want
             # when an order aborts mid-flight with a part on a shuttle.
@@ -451,6 +569,14 @@ class Scheduler:
         order_id = handler.workorder["OrderId"]
         info = handler.get_step_execution_info(bop["step_id"])
 
+        # Refresh the inventory index for exactly this step's input types, off
+        # the event loop, before any binding/planning. This is the single AAS
+        # poll per step (previously done synchronously inside every
+        # _resolve_input_instance call); doing it here, scoped and threaded,
+        # keeps AAS authoritative while letting a concurrent order run instead
+        # of freezing on our network round-trips.
+        await self._refresh_inventory_for_step(info)
+
         # If this step's ingredient is a raw input (ComponentReference still
         # empty), bind it to a concrete instance via the ProductMatcher *now*,
         # before planning or sending any CMD. The pre-process plan and the
@@ -539,8 +665,12 @@ class Scheduler:
         iri_by_topic: dict[str, str] = {target.resource_id: target_iri}
         reservations: list[tuple[str, str]] = [(target.resource_id, target.actor_name)]
         shuttles_used: list[tuple[str, str]] = []
+        # Terminal step id of the last sub-plan that used each shuttle. When a
+        # later input reuses a shuttle (degraded fleet), its legs are chained
+        # after this id so the shuttle isn't asked to carry two parts at once.
+        shuttle_tail: dict[tuple[str, str], str] = {}
 
-        for ing in inputs:
+        for input_index, ing in enumerate(inputs):
             try:
                 sub_plan, sub_iris, sub_reservations = self._plan_arrival_for_input(
                     handler=handler,
@@ -551,13 +681,56 @@ class Scheduler:
                     target_iri=target_iri,
                     material=material,
                     prior_reservations=reservations,
+                    input_index=input_index,
                 )
             except RuntimeError as exc:
-                print(f"[bop] cannot plan arrival for input '{ing.get('name')}': {exc}")
+                # Arrival planning failed. Usually a *transient* shortage of
+                # free Transport actors (every shuttle is busy on another
+                # order); rolling the step back to PENDING and pausing lets the
+                # next tick re-attempt once a shuttle frees. But if it keeps
+                # failing past PLAN_RETRY_BUDGET ticks the step is effectively
+                # un-runnable (input lost, no capable transport, fleet too
+                # degraded) — so we stop retrying and let the error propagate
+                # to recovery, which aborts the order. That clears it out of
+                # the dispatch queue and frees its reservations instead of
+                # leaving it parked at N% forever.
+                key = (order_id, bop["step_id"])
+                attempts = self._plan_retry_counts.get(key, 0) + 1
+                self._plan_retry_counts[key] = attempts
+                if attempts > PLAN_RETRY_BUDGET:
+                    self._plan_retry_counts.pop(key, None)
+                    print(
+                        f"[bop] cannot plan arrival for input '{ing.get('name')}': "
+                        f"{exc} — gave up after {PLAN_RETRY_BUDGET} retries; aborting step"
+                    )
+                    raise
+                print(
+                    f"[bop] cannot plan arrival for input '{ing.get('name')}': "
+                    f"{exc} — pausing step for retry ({attempts}/{PLAN_RETRY_BUDGET})"
+                )
+                handler.update_step(bop["step_id"], StepStates.PENDING)
+                await asyncio.sleep(TICK_INTERVAL_S)
                 return
             if sub_plan is None:
                 # Already at target; nothing to transport.
                 continue
+
+            # If this sub-plan reuses a shuttle an earlier input already used,
+            # serialize: a shuttle can't carry two parts simultaneously, so
+            # this sub-plan's root steps wait for the prior sub-plan's tail.
+            sub_shuttle = sub_reservations[0] if sub_reservations else None
+            if sub_shuttle is not None and sub_shuttle in shuttle_tail:
+                prev_tail = shuttle_tail[sub_shuttle]
+                print(
+                    f"[plan] serializing input '{ing.get('name')}' after "
+                    f"{prev_tail} (shuttle {sub_shuttle[0]}/{sub_shuttle[1]} reused)"
+                )
+                for s in sub_plan.steps:
+                    if s.depends_on is None:
+                        s.depends_on = prev_tail
+            if sub_shuttle is not None and sub_plan.steps:
+                shuttle_tail[sub_shuttle] = self._plan_terminal_step_id(sub_plan.steps)
+
             combined_steps.extend(sub_plan.steps)
             combined_occupies.extend(sub_plan.occupies_through_bop)
             iri_by_topic.update(sub_iris)
@@ -566,6 +739,11 @@ class Scheduler:
                     reservations.append(res)
                     if res not in shuttles_used and res[0] != target.resource_id:
                         shuttles_used.append(res)
+
+        # Planning succeeded for every input — clear this step's retry budget
+        # so a later transient stall starts fresh rather than inheriting a
+        # near-exhausted count.
+        self._plan_retry_counts.pop((order_id, bop["step_id"]), None)
 
         plan = PreProcessPlan(
             bop_step_id=bop["step_id"],
@@ -604,6 +782,18 @@ class Scheduler:
                 self.occupancy.release_one(resource_id, actor_name, order_id)
             self.occupancy.release_one(target.resource_id, target.actor_name, order_id)
 
+    @staticmethod
+    def _plan_terminal_step_id(steps: list[PreProcessStep]) -> str:
+        """Return the tail of a sub-plan's dependency chain — the step on
+        which nothing else in `steps` depends. Used to serialize a reused
+        shuttle's next sub-plan after this one finishes.
+        """
+        referenced = {s.depends_on for s in steps if s.depends_on is not None}
+        tails = [s.step_id for s in steps if s.step_id not in referenced]
+        # A well-formed linear sub-plan has exactly one tail; if more than one
+        # surfaces, the last-appended step is the true end of the chain.
+        return tails[-1] if tails else steps[-1].step_id
+
     def _plan_arrival_for_input(
         self,
         *,
@@ -615,13 +805,23 @@ class Scheduler:
         target_iri: str,
         material: str | None,
         prior_reservations: list[tuple[str, str]] | None = None,
+        input_index: int = 0,
     ) -> tuple[PreProcessPlan | None, dict[str, str], list[tuple[str, str]]]:
         """Build a PreProcessPlan that gets one input ingredient to `target`.
 
         Returns (plan, iri_by_topic_additions, reservations). `plan` is None
         when the input is already at the target (no transport needed).
+
+        `input_index` namespaces the generated pre-process step ids so that
+        two inputs of the SAME BoP step (e.g. an Assemble that consumes two
+        parts, each fetched via its own transport leg) don't produce colliding
+        step ids — and therefore colliding job ids. Without it, both sub-plans
+        would emit `<step>-pp1-transport`, breaking JobResult correlation and
+        the DAG executor's steps_by_id map.
         """
         ingredient_name = ingredient.get("name")
+        # Distinct step-id prefix per input of this BoP step.
+        plan_step_id = f"{bop_step_id}-in{input_index}"
         iris: dict[str, str] = {}
         reservations: list[tuple[str, str]] = []
 
@@ -683,7 +883,7 @@ class Scheduler:
             iris[shuttle.resource_id] = shuttle_iri
             reservations.append((shuttle.resource_id, shuttle.actor_name))
             plan = self.planner.plan_shuttle_to_target(
-                bop_step_id=bop_step_id,
+                bop_step_id=plan_step_id,
                 order_id=order_id,
                 component_reference=component_ref,
                 shuttle=shuttle,
@@ -723,7 +923,7 @@ class Scheduler:
                     f"{source.resource_id}/{source.actor_name} (release={release_skills})"
                 )
                 plan = self.planner.plan(
-                    bop_step_id=bop_step_id,
+                    bop_step_id=plan_step_id,
                     order_id=order_id,
                     component_reference=component_ref,
                     current_location=source,
@@ -757,7 +957,7 @@ class Scheduler:
         )
         print(f"[plan] release sequence at source for '{ingredient_name}': {release_skills}")
         plan = self.planner.plan(
-            bop_step_id=bop_step_id,
+            bop_step_id=plan_step_id,
             order_id=order_id,
             component_reference=component_ref,
             current_location=storage,
@@ -787,15 +987,20 @@ class Scheduler:
                   "(unresolved inputs) — pausing")
             return
 
-        self._update_output_bom_with_inputs(handler, info)
-
         bop_job_id = f"{order_id}-{bop['step_id']}"
         handler.update_step(bop["step_id"], StepStates.IN_PROGRESS)
         start_time = datetime.now()
         print(f"[bop] step {bop['step_id']} -> IN_PROGRESS")
 
-        tracking = self._start_process_tracking(bop, info, handler, target, chosen, start_time)
-        bop_rec_id = self._write_bop_step_started(handler, bop, target, start_time)
+        # AAS process-tracking writes run in a worker thread so a concurrent
+        # order isn't frozen on our BaSyx round-trips. Per-order ordering is
+        # preserved — we still await our own writes before continuing.
+        tracking = await asyncio.to_thread(
+            self._start_process_tracking, bop, info, handler, target, chosen, start_time
+        )
+        bop_rec_id = await asyncio.to_thread(
+            self._write_bop_step_started, handler, bop, target, start_time
+        )
 
         result = await self._send_and_wait(
             target_iri=target_iri,
@@ -812,10 +1017,29 @@ class Scheduler:
         if result.result == MS.Result.COMPLETE:
             self._apply_output_traceability(handler, info, result)
             self._apply_bop_cargo_transformation(info, result)
+            # AAS writes off the loop (BOM, slot-clear, tracking) so a peer
+            # order keeps running while we talk to BaSyx.
+            await asyncio.to_thread(self._update_output_bom_with_inputs, handler, info)
+            # Empty the Inventory slots of any feeder parts this step consumed.
+            # Storage-sourced inputs were already emptied at Retrieve (their
+            # reservation is gone, so this no-ops on them); transported-in
+            # sub-assemblies were never reserved feeder instances. Only a part
+            # still reserved in a resource's own feeder (e.g. a Fuse the
+            # assembler picked from its magazine) is cleared here — closing the
+            # gap that let those parts be re-selected by later orders.
+            await asyncio.to_thread(
+                self._consume_inputs_from_inventory,
+                result.process_transformation or process_transformation, order_id,
+            )
             handler.update_step(bop["step_id"], StepStates.COMPLETED)
             print(f"[ok]  BoP step {bop['step_id']} -> COMPLETED")
-            self._complete_process_tracking(bop, info, handler, tracking, target, chosen, start_time, result)
-            self._write_bop_step_completed(handler, bop_rec_id, result)
+            await asyncio.to_thread(
+                self._complete_process_tracking,
+                bop, info, handler, tracking, target, chosen, start_time, result,
+            )
+            await asyncio.to_thread(
+                self._write_bop_step_completed, handler, bop_rec_id, result
+            )
         else:
             print(f"[fail] BoP step {bop['step_id']} returned {result.result.value}")
             # Leave the step as IN_PROGRESS — operator decides what to do.
@@ -925,7 +1149,9 @@ class Scheduler:
 
         pre_rec_id: str | None = None
         if step.component_reference:
-            pre_rec_id = aas_writer.write_process_started(
+            # AAS write off the loop so a concurrent order isn't blocked.
+            pre_rec_id = await asyncio.to_thread(
+                aas_writer.write_process_started,
                 aas_server_base=self.aas_server_base,
                 component_shell_iri=step.component_reference,
                 process_type=step.skill,
@@ -952,13 +1178,18 @@ class Scheduler:
             step.timestamps[StepStates.COMPLETED] = datetime.now()
             print(f"[ok]        {step.step_id} ({step.skill}) -> COMPLETED\n")
             if pre_rec_id and step.component_reference:
-                aas_writer.write_process_completed(
+                await asyncio.to_thread(
+                    aas_writer.write_process_completed,
                     aas_server_base=self.aas_server_base,
                     component_shell_iri=step.component_reference,
                     record_id_short=pre_rec_id,
                     completion_time=step.timestamps[StepStates.COMPLETED].isoformat(),
                 )
-            self._capture_retrieve_traceability(step, result, order_id)
+            # Retrieve traceability clears the storage slot on BaSyx (GET/PUT/GET)
+            # — offload so the slot-clear doesn't freeze a peer order.
+            await asyncio.to_thread(
+                self._capture_retrieve_traceability, step, result, order_id
+            )
             # Apply the step's declared cargo side-effects to the ledger.
             # See PreProcessStep.cargo_transfers for the semantics:
             # Retrieve sets cargo on storage, Handoff moves cargo between
@@ -997,10 +1228,39 @@ class Scheduler:
         Handoff/Retrieve/Store). The matcher works on types; the scheduler
         resolves to instances right before issuing the CMD.
         """
+        # R1 — config-reload race guard. A live reload between this step's
+        # planning pass and now may have dropped the chosen resource from the
+        # line (idle resources are removed immediately). Firing a CMD at a
+        # resource the controller no longer manages would hang on no-ACK; fail
+        # the step instead so recovery re-plans onto the remaining resources
+        # (the removed shell is gone from the registry, so it won't be re-picked).
+        if target_iri not in self.rm.resource_shell_ids:
+            raise CmdNoAckError(
+                f"target {resource_topic} ({target_iri}) was removed from the "
+                "line configuration mid-plan; re-planning step onto remaining resources"
+            )
+
         idle = await self._wait_for_idle(resource_topic, actor_name, timeout=IDLE_WAIT_S)
         if not idle:
+            # A station that started AFTER the order's initial state-seed never
+            # received an InfoRequest, so it never reported IDLE — even though
+            # it may be up, subscribed, and ready. Send a targeted probe to
+            # prompt it and re-wait once before committing the CMD. This is the
+            # late-subscribing-station case that otherwise fires a CMD into a
+            # resource that hasn't confirmed reachability, producing a false
+            # CMD_NO_ACK (and, for a sole-capable resource, an aborted order
+            # with stranded cargo).
             print(
-                f"[warn] never saw IDLE for {resource_topic}/{actor_name}; "
+                f"[gate] never saw IDLE for {resource_topic}/{actor_name}; "
+                "probing and re-waiting before CMD"
+            )
+            self.controller.request_data(MS.StateMessage, target_iri)
+            idle = await self._wait_for_idle(
+                resource_topic, actor_name, timeout=IDLE_WAIT_S
+            )
+        if not idle:
+            print(
+                f"[warn] {resource_topic}/{actor_name} still not IDLE after probe; "
                 "sending CMD anyway"
             )
 
@@ -1016,6 +1276,13 @@ class Scheduler:
             parameters=parameters,
         )
         print(f"[cmd]       -> {resource_topic}/{actor_name}  skill={skill}  job={job_id}")
+        # Drop any stale JobResult for this job_id before issuing the CMD.
+        # Job ids are reused across retries and across reruns of the same
+        # order, and the shared job_result dict is never cleared — without
+        # this, wait_for() below would instantly match a leftover result
+        # from a previous attempt/run and fail (or falsely pass) the step
+        # before this CMD has actually executed.
+        self.jobs.forget(job_id)
         # send_command_with_ack assigns a seq_no, publishes, and waits for
         # the station ACK. Raises CmdNoAckError after retries are exhausted;
         # we let that propagate — the existing exception path treats it the
@@ -1025,6 +1292,43 @@ class Scheduler:
         return await self.jobs.wait_for(job_id, timeout=timeout)
 
     # ── Transformation: ingredient names → instance IRIs ────────────────────
+
+    async def _refresh_inventory_for_step(self, info: dict) -> None:
+        """Scoped, off-the-loop inventory refresh for one BoP step's input types.
+
+        Gathers the type references this step needs (the main ingredient plus
+        every InputIngredient) and re-polls only the inventories that can hold
+        those types, each via `asyncio.to_thread` so the event loop is free for
+        other orders while we wait on the AAS. The shared index is mutated under
+        `_inventory_lock` so two orders never rebuild it concurrently.
+
+        AAS stays the single source of truth — this is the same per-step poll,
+        just narrowed by type and moved off the loop thread.
+        """
+        if self.locations is None:
+            return
+        type_refs: set[str] = set()
+        main_type = info.get("ComponentTypeReference")
+        if main_type:
+            type_refs.add(main_type)
+        for ing in info.get("InputIngredients") or []:
+            t = ing.get("ComponentTypeReference")
+            if t:
+                type_refs.add(t)
+        if not type_refs:
+            return
+        async with self._inventory_lock:
+            if not self.product_matcher.has_inventory_registry():
+                # Registry not built (e.g. tests) — full poll preserves the old
+                # "always fresh from AAS" behaviour, still off the loop.
+                await asyncio.to_thread(
+                    self.product_matcher.poll_inventory_from_aas, self.locations
+                )
+                return
+            for type_ref in type_refs:
+                await asyncio.to_thread(
+                    self.product_matcher.refresh_for_type, type_ref
+                )
 
     def _resolve_input_instance(
         self,
@@ -1042,12 +1346,13 @@ class Scheduler:
           On a hit, persist the choice and reserve it.
 
         Returns None if no free instance can be resolved.
-        """
-        # Pull fresh inventory from AAS before matching so we never work off
-        # stale cached state.
-        if self.locations is not None:
-            self.product_matcher.poll_inventory_from_aas(self.locations)
 
+        Assumes the inventory index is already fresh for this ingredient's type:
+        `_execute_bop_step` calls `_refresh_inventory_for_step` (a scoped,
+        off-the-event-loop AAS poll) before any resolution/planning, so this
+        method matches against the current index without doing its own blocking
+        AAS round-trip on the loop thread.
+        """
         existing = ingredient.get("ComponentReference") or ""
         if existing:
             if order_id is not None:
@@ -1071,9 +1376,17 @@ class Scheduler:
                   f"(type={type_ref})")
             return None
 
-        # Skip instances already reserved by a concurrent order.
+        # Skip instances already reserved — by any order (concurrent) or by
+        # this order for a different ingredient (same-order double-booking).
         instance = None
         for m in matches:
+            entry = self._reserved_instances.get(m.component_id)
+            if entry is not None:
+                print(
+                    f"[reserve] '{ingredient.get('name')}': skipping {m.component_id} "
+                    f"(already reserved by order {entry[0]})"
+                )
+                continue
             if order_id is None or self._reserve_instance(
                 m.component_id, order_id,
                 m.resource_shell_id, m.inventory_name, m.slot_id,
@@ -1083,15 +1396,10 @@ class Scheduler:
                 if order_id is not None:
                     self._patch_slot_reserved(m.resource_shell_id, m.inventory_name, m.slot_id, True)
                 break
-            entry = self._reserved_instances.get(m.component_id)
-            print(
-                f"[reserve] '{ingredient.get('name')}': skipping {m.component_id} "
-                f"(claimed by order {entry[0] if entry else '?'})"
-            )
         if instance is None:
             print(
                 f"[trans] all {len(matches)} match(es) for '{ingredient.get('name')}' "
-                f"are reserved by other orders — pausing"
+                f"are reserved — pausing"
             )
             return None
 
@@ -1382,6 +1690,15 @@ class Scheduler:
 
         excluded_set: set[tuple[str, str]] = set(excluded or [])
 
+        # If every distinct shuttle is taken by an earlier input of the SAME
+        # step (i.e. only `excluded` shuttles remain available), we fall back
+        # to reusing one of them. A single shuttle can serve several inputs as
+        # long as their transport legs run sequentially — the caller chains
+        # the reusing sub-plan after the prior one. This is what keeps a line
+        # whose fleet is degraded to one shuttle (e.g. the other is STUCK)
+        # from deadlocking on a multi-input step; it just runs slower.
+        reuse: tuple[str, str, str, int] | None = None  # (topic, actor, iri, next_cursor)
+
         for shuttle_iri, topic, actors in offering:
             if not self._transport_supports(shuttle_iri, component_ref, material):
                 print(
@@ -1400,9 +1717,14 @@ class Scheduler:
 
             for offset in range(n):
                 actor = actors[(start + offset) % n]
-                if (topic, actor) in excluded_set:
-                    continue
                 if not self.occupancy.is_available(topic, actor):
+                    continue
+                if (topic, actor) in excluded_set:
+                    # Already claimed for an earlier input of this step.
+                    # Remember the first such shuttle as a reuse fallback,
+                    # but keep looking for a genuinely free one first.
+                    if reuse is None:
+                        reuse = (topic, actor, shuttle_iri, (start + offset + 1) % n)
                     continue
                 self._shuttle_pick_cursor = (start + offset + 1) % n
                 endpoint = ResourceEndpoint(
@@ -1412,6 +1734,21 @@ class Scheduler:
                     resource_iri=shuttle_iri,
                 )
                 return endpoint, shuttle_iri
+
+        if reuse is not None:
+            topic, actor, shuttle_iri, next_cursor = reuse
+            self._shuttle_pick_cursor = next_cursor
+            print(
+                f"[plan] no spare shuttle free; reusing {topic}/{actor} "
+                "sequentially for another input of this step"
+            )
+            endpoint = ResourceEndpoint(
+                resource_id=topic,
+                actor_name=actor,
+                has_handoff=self.rm.has_handoff(shuttle_iri),
+                resource_iri=shuttle_iri,
+            )
+            return endpoint, shuttle_iri
 
         raise RuntimeError(
             f"No free Transport actor that supports {component_ref} / {material}"
@@ -1486,8 +1823,10 @@ class Scheduler:
             return
         self._traceability.setdefault(order_id, {})[instance] = instance
         print(f"[trace] {order_id}: Retrieve -> {instance}")
-        # Slot is now empty — release reservation so future orders can use it.
-        self._release_instance_reservation(instance, order_id)
+        # The part has physically left storage. Empty its slot on the AAS
+        # (so the matcher stops offering it) and release the reservation once
+        # the slot is confirmed empty.
+        self._consume_instance(instance, order_id)
 
     # ── Finalization (post-process + AAS writeback + status) ────────────────
 
@@ -1502,7 +1841,7 @@ class Scheduler:
         print(f"\n[finalize] order {order_id} — all BoP steps complete")
 
         await self._run_post_process(handler)
-        self._write_traceability(order_id, handler)
+        await asyncio.to_thread(self._write_traceability, order_id, handler)
         self._publish_order_complete(handler)
 
         print(f"[finalize] order {order_id} -> COMPLETE\n")
@@ -1765,13 +2104,16 @@ class Scheduler:
                 in_name = in_ing.get("name", "")
                 in_instance_iri = live.get(in_name, {}).get("ComponentReference") or ""
                 in_type_iri = live.get(in_name, {}).get("ComponentTypeReference") or ""
+                print(f"[bom] input {in_name}: instance={in_instance_iri} type={in_type_iri}")
                 if not in_instance_iri or not in_type_iri:
+                    print(f"[bom] skipping {in_name} — missing instance or type IRI")
                     continue
 
                 bom_entry = aas_writer.get_bom_entry_for_type(
                     self.aas_server_base, out_shell_iri, in_type_iri
                 )
                 if not bom_entry:
+                    print(f"[bom] no BOM entry found for type {in_type_iri} in {out_shell_iri}")
                     continue
 
                 aas_writer.write_bom_component_instance_ref(

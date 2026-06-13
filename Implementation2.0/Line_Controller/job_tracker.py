@@ -51,6 +51,27 @@ class JobTracker:
             await asyncio.sleep(poll)
         raise TimeoutError(f"No JobResult received for {job_id} within {timeout}s")
 
+    def forget(self, job_id: str) -> None:
+        """Drop any stored JobResult carrying this job_id.
+
+        Call right before (re)issuing a CMD for `job_id`. Job ids are
+        deterministic (`<order>-<step>-<substep>`) and therefore reused
+        across retries AND across reruns of the same order. The shared
+        job_result dict only keeps the latest message per (shell, actor)
+        and is never cleared, so without this `wait_for` would match a
+        stale result from a previous attempt/run and return it immediately
+        — failing (or falsely passing) the step before the new CMD has even
+        executed.
+        """
+        jr = self.controller.shared_handler_variable.get("job_result", {})
+        for by_actor in jr.values():
+            stale = [
+                actor for actor, msg in by_actor.items()
+                if getattr(msg, "job_id", None) == job_id
+            ]
+            for actor in stale:
+                del by_actor[actor]
+
     def latest(self, shell_iri: str, actor_name: str) -> MS.JobResultMessage | None:
         """Most recent JobResult from this (shell, actor), or None."""
         jr = self.controller.shared_handler_variable.get("job_result", {})
