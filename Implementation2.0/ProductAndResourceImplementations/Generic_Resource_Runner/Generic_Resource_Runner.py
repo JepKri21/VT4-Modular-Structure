@@ -158,6 +158,17 @@ class GenericResourceExecutor:
             self.handle_request,
         )
 
+        # Live re-spawn: when the line config changes (e.g. a shuttle added or
+        # retired), the controller pings ReloadConfig. We re-read our own Skills
+        # submodel and reconcile the actor set without restarting. The topic is
+        # line-level (Controller/...), outside this resource's own namespace, so
+        # it needs an absolute subscription.
+        reload_topic = f"{prefix}/Controller/ReloadConfig"
+        self.mqtt_client.register_absolute_subscriber(
+            reload_topic, self.handle_reload_config
+        )
+        print(f"  SUBSCRIBE  ReloadConfig    -> {reload_topic}")
+
     def handle_command(self, msg: MS.CommandMessage):
 
         try:
@@ -182,10 +193,14 @@ class GenericResourceExecutor:
                 msg
             )
 
-            behavior.apply_context(context)
-
+            # Don't fire the trigger straight at the state machine. A START that
+            # arrives while the actor is still COMPLETING/RESETTING from the
+            # previous job is invalid in PackML (START needs IDLE) and would be
+            # silently dropped — the controller then waits out its full 60s job
+            # timeout (the intermittent Retrieve→Handoff stall). dispatch_or_queue
+            # runs it now if IDLE, or buffers it to run the moment we hit IDLE.
             asyncio.run_coroutine_threadsafe(
-                machine.state_command_callback(msg.skill_trigger),
+                behavior.dispatch_or_queue(machine, context, msg.skill_trigger),
                 self.main_loop
             )
 
@@ -266,6 +281,76 @@ class GenericResourceExecutor:
             }
 
         print(f"[{self.resource_shell_id}] Runtime initialized with {len(self.actors)} actors")
+
+    def handle_reload_config(self, client, userdata, msg):
+        """ReloadConfig ping handler (absolute topic). Re-read our Skills
+        submodel and reconcile the actor set — runs on the paho network thread,
+        same as handle_command, so mutating self.actors here is consistent."""
+        print(f"[{self.resource_shell_id}] ReloadConfig ping — reconciling actors")
+        try:
+            self.reconcile_actors()
+        except Exception as exc:
+            print(f"[{self.resource_shell_id}] reconcile failed (keeping current actors): {exc}")
+
+    def reconcile_actors(self):
+        """Diff the freshly-pulled actor set against the running one, spawning
+        new shuttles and dropping retired ones — no restart.
+
+        A removed actor is only torn down once its own state machine is IDLE
+        (safety net). The controller's retire protocol deletes the actor from
+        the AAS only after it is idle + empty, so by the time we see it gone it
+        is safe to drop and cargo is never stranded.
+        """
+        self.refresh_resource()  # re-pull + re-parse Skills (and shell id_short)
+
+        skills = self.parsed_resource["Skills"].skills
+        new_set = set()
+        for skill in skills.values():
+            for actor in skill.actors:
+                new_set.add(actor)
+
+        current = set(self.actors.keys())
+        added = new_set - current
+        removed = current - new_set
+        suffixes = self.parsed_resource["Communication"].suffixes
+
+        for actor_name in added:
+            behavior = GenericStationBehavior(
+                resource_id_short=self.shell_id_short,
+                actor_name=actor_name,
+                mqtt_client=self.mqtt_client,
+                suffixes=suffixes,
+                resource_id=self.shell_id_short,
+                inventory_manager=self.inventory_manager,
+            )
+            machine = PackMLStateMachine(behavior)
+            self.actors[actor_name] = {"behavior": behavior, "machine": machine}
+            # Announce the new shuttle as IDLE so the controller sees it
+            # available and starts routing work to it immediately.
+            state_msg = MS.StateMessage(
+                timestamp=datetime.now(),
+                resource_id=self.shell_id_short,
+                state=machine.state,
+            )
+            self.mqtt_client.publish(f"{suffixes.state_suffix}/{actor_name}", state_msg)
+            print(f"[{self.resource_shell_id}] reconcile: spawned actor {actor_name}")
+
+        for actor_name in removed:
+            machine = self.actors[actor_name]["machine"]
+            if machine.state not in (
+                PackMLState.IDLE,
+                PackMLState.STOPPED,
+                PackMLState.ABORTED,
+            ):
+                # Should not happen given the controller's drain ordering, but
+                # never yank an actor mid-job — keep it until it returns to idle.
+                print(
+                    f"[{self.resource_shell_id}] reconcile: deferring drop of "
+                    f"{actor_name} (state={machine.state})"
+                )
+                continue
+            self.actors.pop(actor_name, None)
+            print(f"[{self.resource_shell_id}] reconcile: removed actor {actor_name}")
 
 
 class SkillExecutionContext:
@@ -687,6 +772,12 @@ class GenericStationBehavior(StationBehavior):
         # execution context (set per job)
         self.context = None
 
+        # Commands (START) that arrived while this actor was still finishing the
+        # previous job. PackML only accepts START in IDLE, so rather than let the
+        # state machine drop a too-early START, we buffer it here and idle()
+        # drains it on the way back to IDLE. Only ever touched on the main loop.
+        self._pending_commands = []
+
         # runtime outputs (always reset per job)
         self.result = None
         self.quality = None
@@ -708,6 +799,36 @@ class GenericStationBehavior(StationBehavior):
         self.parameters = context.parameters
 
     # =========================================================
+    # COMMAND INTAKE (run now, or queue until IDLE)
+    # =========================================================
+    async def dispatch_or_queue(self, machine, context, trigger):
+        """Run a command now, or buffer a START until the actor is IDLE.
+
+        Only START begins a new job and is state-gated by PackML (valid in IDLE
+        only). A START that lands while we're still finishing the previous job
+        (COMPLETING/COMPLETE/RESETTING) would otherwise be dropped, and the
+        controller would wait out its full job timeout. So we buffer it and let
+        `idle()` drain it the moment we return to IDLE. The context is NOT applied
+        yet — applying it now would overwrite the in-flight job's context and
+        corrupt its JobResult; idle() applies it at drain time instead.
+
+        All other triggers (STOP/ABORT/HOLD/RESET/...) are control commands that
+        must act immediately in whatever state, so they pass straight through.
+
+        Runs on the main event loop (scheduled from the MQTT thread), so it reads
+        a consistent `machine.state` and shares the loop with the state tasks.
+        """
+        if trigger == MS.CommandType.START and machine.state != PackMLState.IDLE:
+            self._pending_commands.append((context, trigger))
+            print(
+                f"[{self.actor_name}] busy ({machine.state}) — queued START, "
+                f"will run when IDLE"
+            )
+            return
+        self.apply_context(context)
+        await machine.state_command_callback(trigger)
+
+    # =========================================================
     # PACKML STATES
     # =========================================================
 
@@ -718,6 +839,17 @@ class GenericStationBehavior(StationBehavior):
             state=PackMLState.IDLE
         )
         self.mqtt_client.publish(f"{self.suffixes.state_suffix}/{self.actor_name}", msg)
+
+        # Drain a command that arrived while we were busy. Fire it as its own
+        # task rather than awaiting here: state_command_callback → transition_to
+        # cancels the *current* state task, which right now IS this idle()
+        # coroutine. Scheduling it separately lets that transition cancel idle()
+        # cleanly, exactly as an externally-delivered command would.
+        if self._pending_commands:
+            context, trigger = self._pending_commands.pop(0)
+            print(f"[{self.actor_name}] IDLE — running queued {trigger} command")
+            self.apply_context(context)
+            asyncio.create_task(machine.state_command_callback(trigger))
 
     async def starting(self, machine):
         msg = MS.StateMessage(
@@ -818,6 +950,8 @@ class GenericStationBehavior(StationBehavior):
         state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=self.resource_id_short, state=PackMLState.STOPPING)
         self.mqtt_client.publish(f"{self.suffixes.state_suffix}/{self.actor_name}", state_message)
         print("Stopping")
+        # Discard any START buffered behind the stopped job for the same reason.
+        self._pending_commands.clear()
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.STOPPED)
 
@@ -853,6 +987,9 @@ class GenericStationBehavior(StationBehavior):
         state_message = MS.StateMessage(timestamp=datetime.now(), resource_id=self.resource_id_short, state=PackMLState.ABORTING)
         self.mqtt_client.publish(f"{self.suffixes.state_suffix}/{self.actor_name}", state_message)
         print("Aborting Assembler")
+        # Drop any START buffered behind the job we're abandoning — it belonged
+        # to the discarded work and must not fire when we later reach IDLE.
+        self._pending_commands.clear()
         await asyncio.sleep(2)
         await machine.transition_to(PackMLState.ABORTED)
 

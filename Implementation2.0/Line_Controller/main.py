@@ -359,6 +359,28 @@ async def main() -> None:
     controller.client.subscribe(RELOAD_CONFIG_TOPIC)
     print(f"[init] subscribed to operator topic: {RELOAD_CONFIG_TOPIC}")
 
+    RETIRE_SHUTTLE_TOPIC = f"{BASE_TOPIC}/Controller/RetireShuttle"
+
+    def on_retire_shuttle(client, userdata, msg):
+        # Cargo-safe retire of one shuttle: the controller drains it before the
+        # AAS Actors entry is deleted, so a part is never stranded on a shuttle
+        # being removed. Payload carries the resource IRI + actor name.
+        try:
+            data = json.loads(msg.payload)
+            resource_iri = data["resource_iri"]
+            actor_name = data["actor_name"]
+        except Exception as exc:  # noqa: BLE001 - a bad payload must not crash the network thread
+            print(f"[RetireShuttle] ignoring malformed request: {exc}")
+            return
+        print(f"[RetireShuttle] received retire request for {actor_name}")
+        # paho fires on the network thread; bounce into the asyncio loop before
+        # touching the reloader (which mutates scheduler-visible state).
+        loop.call_soon_threadsafe(reloader.request_retire, resource_iri, actor_name)
+
+    controller.client.message_callback_add(RETIRE_SHUTTLE_TOPIC, on_retire_shuttle)
+    controller.client.subscribe(RETIRE_SHUTTLE_TOPIC)
+    print(f"[init] subscribed to operator topic: {RETIRE_SHUTTLE_TOPIC}")
+
     # Initial inventory load from AAS before any work orders arrive. Building
     # the inventory registry (which resources have an Inventory submodel + which
     # component types each supports) also indexes every component, so it doubles

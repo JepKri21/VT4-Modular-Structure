@@ -27,11 +27,13 @@ arriving mid-reload are coalesced into one follow-up pass.
 from __future__ import annotations
 
 import asyncio
+import re
 from typing import TYPE_CHECKING
 
 from ClassesAndBuilderMethods.InformationModels import MessageStructure as MS
 from transport_planner import LineConfig, load_line_config_from_aas
 from resource_manager import ResourceManager
+import aas_writer
 
 if TYPE_CHECKING:
     from transport_planner import TransportPlanner
@@ -40,6 +42,12 @@ if TYPE_CHECKING:
     from product_property_matcher import ProductMatcher
     from occupancy_manager import OccupancyManager
     from controller_alarms import ControllerAlarmPublisher
+
+
+def _shuttle_index(actor_name: str) -> int:
+    """Trailing number of a shuttle name ("Shuttle3" -> 3); 0 if none."""
+    m = re.search(r"(\d+)$", actor_name)
+    return int(m.group(1)) if m else 0
 
 
 class ConfigReloader:
@@ -90,11 +98,82 @@ class ConfigReloader:
         if self._task is None or self._task.done():
             self._task = asyncio.create_task(self._run())
 
+    def request_retire(self, resource_iri: str, actor_name: str) -> None:
+        """Begin cargo-safe retirement of one shuttle (actor) on a resource that
+        stays on the line. Runs on the loop thread (bounced from MQTT).
+
+        The UI names a specific shuttle (the highest-numbered one) but only
+        cares that the fleet shrinks by one — so we re-pick an idle+empty victim
+        when the named one is busy. This makes removal complete at once in the
+        common case instead of silently draining a busy shuttle for the whole
+        length of its order. Only if the entire fleet is occupied do we fall
+        back to draining the named (busy) shuttle.
+
+        The victim is excluded from new picks immediately and dropped from the
+        published capacity. It stays routable for any in-flight order holding
+        it; `finalize_drained` deletes it from the AAS only once it is idle +
+        empty (then the station's reconcile drops its state machine).
+        """
+        topic = ResourceManager.topic_id_for_iri(resource_iri)
+        victim = self._pick_retire_victim(resource_iri, topic, actor_name)
+        if self._rm.is_actor_draining(topic, victim):
+            return  # already retiring — coalesce duplicate requests
+        self._rm.mark_actor_draining(topic, victim)
+        if victim != actor_name:
+            print(
+                f"[retire] requested {topic}/{actor_name} was busy; "
+                f"retiring idle {topic}/{victim} instead"
+            )
+        print(f"[retire] marked {topic}/{victim} draining (excluded from new picks)")
+        # Reflect the reduced ceiling at once so the MES stops over-releasing.
+        self.publish_capacity()
+        # Try to complete it now in case the shuttle is already idle + empty.
+        self.finalize_drained()
+
+    def _pick_retire_victim(
+        self, resource_iri: str, topic: str, requested: str
+    ) -> str:
+        """Choose which shuttle to actually retire.
+
+        Prefer an idle + empty, not-already-draining actor so the drain
+        finalizes on the next tick; fall back to the requested actor (cargo-safe
+        drain) when the whole fleet is busy. Among idle candidates the
+        highest-numbered one wins, matching the UI's "remove the last shuttle"
+        intent and keeping the numbering contiguous.
+        """
+        actors = self._rm.actors_for_skill(resource_iri, "Transport")
+        # AAS read failed or unexpected shape — honour the original request.
+        if not actors:
+            return requested
+
+        # Keep the requested shuttle if it is itself free.
+        if (
+            requested in actors
+            and not self._rm.is_actor_draining(topic, requested)
+            and not self._occupancy.actor_busy(topic, requested)
+        ):
+            return requested
+
+        idle = [
+            a
+            for a in actors
+            if not self._rm.is_actor_draining(topic, a)
+            and not self._occupancy.actor_busy(topic, a)
+        ]
+        if idle:
+            return max(idle, key=_shuttle_index)
+
+        # Whole fleet busy — drain the originally requested shuttle cargo-safely.
+        return requested
+
     def finalize_drained(self) -> None:
-        """Drop any draining resource that has gone idle. Cheap; safe to call
-        every tick (driven by the snapshot loop). Runs on the loop thread."""
-        if not self._rm._draining:
+        """Drop any draining resource or shuttle that has gone idle. Cheap; safe
+        to call every tick (driven by the snapshot loop). Runs on the loop
+        thread."""
+        if not self._rm._draining and not self._rm._draining_actors:
             return
+
+        # ── Resource-level drains ────────────────────────────────────────────
         finalized: list[str] = []
         for iri in list(self._rm._draining):
             suffix = ResourceManager.topic_id_for_iri(iri)
@@ -105,23 +184,68 @@ class ConfigReloader:
             self._controller.forget_resource(iri)  # clear stale lane/state
             finalized.append(iri)
 
-        if not finalized:
-            return
-        # Rebuild the topology from the clean baseline plus whatever is still
-        # draining; the finalized resources fall out for good.
-        effective = self._build_effective(
-            self._base_config, self._rm._draining, source=self._planner.config
-        )
-        self._planner.reload(effective)
-        self._scheduler.locations = effective.locations
-        # A finalized resource may have been a shuttle, so transport capacity
-        # could have dropped — and the inventory registry must forget it.
-        self._product_matcher.rebuild_inventory_registry(effective.locations)
-        self.publish_capacity()
-        print(
-            "[reload] finalized drained resource(s): "
-            f"{[ResourceManager.topic_id_for_iri(i) for i in finalized]}"
-        )
+        if finalized:
+            # Rebuild the topology from the clean baseline plus whatever is still
+            # draining; the finalized resources fall out for good.
+            effective = self._build_effective(
+                self._base_config, self._rm._draining, source=self._planner.config
+            )
+            self._planner.reload(effective)
+            self._scheduler.locations = effective.locations
+            # A finalized resource may have been a shuttle, so transport capacity
+            # could have dropped — and the inventory registry must forget it.
+            self._product_matcher.rebuild_inventory_registry(effective.locations)
+            self.publish_capacity()
+            print(
+                "[reload] finalized drained resource(s): "
+                f"{[ResourceManager.topic_id_for_iri(i) for i in finalized]}"
+            )
+
+        # ── Actor-level drains (retiring shuttles) ───────────────────────────
+        finalized_actors: list[tuple[str, str]] = []
+        for topic, actor_name in list(self._rm._draining_actors):
+            # Idle + empty + not stuck? (the cargo-safe gate)
+            if self._occupancy.actor_busy(topic, actor_name):
+                continue
+            iri = self._iri_for_topic(topic)
+            if iri is None:
+                # Resource itself is gone (e.g. dropped meanwhile); just forget
+                # the actor drain so we don't loop forever.
+                self._rm.discard_actor_drain(topic, actor_name)
+                continue
+            if aas_writer.remove_actor_from_skills(
+                self._aas_server_base, iri, actor_name
+            ):
+                self._rm.discard_actor_drain(topic, actor_name)
+                finalized_actors.append((topic, actor_name))
+
+        if finalized_actors:
+            # The Actors list shrank on the AAS — re-ping so the controller
+            # re-pulls and the station's reconcile tears down the now-absent
+            # actor's state machine. Capacity already excluded these, but
+            # republish so the retained value matches the new AAS truth.
+            self.publish_capacity()
+            self._ping_reload()
+            print(
+                "[retire] finalized retired shuttle(s): "
+                f"{[f'{t}/{a}' for t, a in finalized_actors]}"
+            )
+
+    def _iri_for_topic(self, topic: str) -> str | None:
+        """Reverse the topic suffix back to a full resource IRI using the live
+        registry. Returns None if no resource currently maps to this topic."""
+        for iri in self._rm.resource_shell_ids:
+            if ResourceManager.topic_id_for_iri(iri) == topic:
+                return iri
+        return None
+
+    def _ping_reload(self) -> None:
+        """Publish a ReloadConfig ping so controller + stations re-pull the AAS."""
+        topic = f"{self._controller.base_topic}/Controller/ReloadConfig"
+        try:
+            self._controller.client.publish(topic, '{"ts": 0}', qos=1)
+        except Exception as exc:  # noqa: BLE001 - a ping failure must not crash the loop
+            print(f"[retire] reload ping failed: {exc}")
 
     def publish_capacity(self) -> None:
         """Publish the line's transport capacity (retained) so the MES
@@ -134,9 +258,14 @@ class ConfigReloader:
         """
         from datetime import datetime
 
+        # A retiring shuttle is still in the AAS Actors list (we only delete it
+        # once it is idle + empty), so exclude draining actors here — otherwise
+        # the published ceiling would keep counting a shuttle that is leaving.
         capacity = sum(
-            len(actors)
-            for _iri, _topic, actors in self._rm.find_skill_offering("Transport")
+            1
+            for _iri, topic, actors in self._rm.find_skill_offering("Transport")
+            for actor in actors
+            if not self._rm.is_actor_draining(topic, actor)
         )
         line_id = self._controller.base_topic.rsplit("/", 1)[-1]
         topic = f"{self._controller.base_topic}/Controller/Capacity"

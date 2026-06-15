@@ -89,6 +89,12 @@ DATABASE_URL = os.environ.get(
 # disable and require a bridge restart for changes (not recommended).
 DISCOVERY_INTERVAL_S = int(os.environ.get("DISCOVERY_INTERVAL_S", "30"))
 
+# Startup retry: Postgres may not be ready (or may be restarting) when the
+# bridge thread launches alongside the API. Retry the connect+schema with
+# capped exponential backoff instead of letting one OperationalError kill
+# the daemon thread permanently.
+DB_RETRY_MAX_S = float(os.environ.get("DB_RETRY_MAX_S", "30"))
+
 SCHEMA_FILE = Path(__file__).resolve().parent / "schema.sql"
 
 
@@ -97,6 +103,35 @@ def connect_db() -> psycopg2.extensions.connection:
     conn = psycopg2.connect(DATABASE_URL)
     conn.autocommit = False
     return conn
+
+
+def connect_and_init(stop_event: threading.Event | None = None):
+    """Connect to Postgres and ensure the schema, retrying with backoff.
+
+    Returns a live connection with the schema applied, or None if asked to
+    stop before a connection could be established. A transient
+    OperationalError (server not ready, mid-restart) no longer kills the
+    bridge — we back off and try again, capped at DB_RETRY_MAX_S.
+    """
+    delay = 1.0
+    while stop_event is None or not stop_event.is_set():
+        try:
+            conn = connect_db()
+            ensure_schema(conn)
+            return conn
+        except psycopg2.OperationalError as exc:
+            print(
+                f"[DB] connect/schema failed: {exc}"
+                f" — retrying in {delay:.0f}s"
+            )
+            if stop_event is not None:
+                stop_event.wait(delay)
+            else:
+                import time
+
+                time.sleep(delay)
+            delay = min(delay * 2, DB_RETRY_MAX_S)
+    return None
 
 
 def ensure_schema(conn) -> None:
@@ -721,8 +756,11 @@ def on_message(client, userdata, msg):
 
 # ====== MAIN ======
 def main() -> None:
-    conn = connect_db()
-    ensure_schema(conn)
+    stop_event = threading.Event()
+
+    conn = connect_and_init(stop_event)
+    if conn is None:
+        return  # asked to stop before we ever connected
 
     # Initial discovery before MQTT connect so on_connect has something to
     # subscribe to.
@@ -740,7 +778,6 @@ def main() -> None:
     # Background re-discovery: picks up resources added or removed on the
     # AAS while the bridge is running. Each tick walks the AAS once and
     # subscribes/unsubscribes deltas — no full resubscribe.
-    stop_event = threading.Event()
     discovery_thread: threading.Thread | None = None
     if DISCOVERY_INTERVAL_S > 0:
         discovery_thread = threading.Thread(

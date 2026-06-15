@@ -13,7 +13,7 @@ elements:
       - type: property
         id_short: "Length"
         value_type: "xs:integer"
-        semantic_id: "https://aausmartlab.org/Semantics/mm"
+        semantic_id: "https://aausmartlab.org/Semantics/Parameter/Length"
         description: "Length in millimeters"
         cardinality: "ZeroToOne"
         qualifiers:
@@ -25,7 +25,7 @@ elements:
       - type: property
         id_short: "Width"
         value_type: "xs:integer"
-        semantic_id: "https://aausmartlab.org/Semantics/mm"
+        semantic_id: "https://aausmartlab.org/Semantics/Parameter/Width"
         description: "Width in millimeters"
         cardinality: "ZeroToOne"
         qualifiers:
@@ -37,7 +37,7 @@ elements:
       - type: property
         id_short: "Height"
         value_type: "xs:integer"
-        semantic_id: "https://aausmartlab.org/Semantics/mm"
+        semantic_id: "https://aausmartlab.org/Semantics/Parameter/Height"
         description: "Height in millimeters"
         cardinality: "ZeroToOne"
         qualifiers:
@@ -49,7 +49,7 @@ elements:
       - type: property
         id_short: "Weight"
         value_type: "xs:double"
-        semantic_id: "https://aausmartlab.org/Semantics/gram"
+        semantic_id: "https://aausmartlab.org/Semantics/Parameter/Weight"
         description: "Weight in grams â€” used for handling and logistics"
         cardinality: "ZeroToOne"
         qualifiers:

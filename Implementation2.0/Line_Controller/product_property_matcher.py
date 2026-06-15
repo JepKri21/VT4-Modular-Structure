@@ -27,6 +27,36 @@ def _ref_iri(element):
     return None
 
 
+_MATERIAL_SEMANTIC = "https://aausmartlab.org/Semantics/Material"
+
+
+def _material_basename(value):
+    """Reduce a material value to its basename so the canonical IRI
+    (…/Materials/ABS) and the bare name (ABS) compare equal. Non-strings pass
+    through unchanged."""
+    if isinstance(value, str):
+        return value.rsplit("/", 1)[-1]
+    return value
+
+
+def _unique_semantic_index(properties):
+    """Map semantic_id -> property, but only for semanticIds carried by exactly
+    one property in the mapping. A semanticId shared by several properties (e.g.
+    the unit '…/mm' on Length/Width/Height) is not a usable identity and is
+    excluded, so the caller falls back to name (idShort) for those. Mirrors the
+    capability matchers' collision-aware keying."""
+    counts: dict[str, int] = {}
+    for prop in properties.values():
+        sem = getattr(prop, "semantic_id", None)
+        if sem:
+            counts[sem] = counts.get(sem, 0) + 1
+    return {
+        prop.semantic_id: prop
+        for prop in properties.values()
+        if getattr(prop, "semantic_id", None) and counts[prop.semantic_id] == 1
+    }
+
+
 # ============================================================
 # Inventory Indexer
 # ============================================================
@@ -685,11 +715,23 @@ class ConstraintEvaluator:
 
                 continue
 
+            # Index this collection's actual properties by unique semanticId so
+            # we can match on identity, not name (mirrors the capability matcher).
+            actual_by_semantic = _unique_semantic_index(actual_collection.properties)
+
             # Compare properties
             for (property_name,requested_property) in requested_collection.properties.items():
 
-                actual_property = (
-                    actual_collection.properties.get(property_name))
+                # Prefer identity semanticId when it is unique on the actual side;
+                # fall back to idShort name otherwise. This makes matching robust
+                # to name drift, while staying safe for properties that share a
+                # unit semanticId (e.g. PhysicalDimensions Length/Width/Height all
+                # carry …/Semantics/mm → non-unique → name fallback, as before).
+                actual_property = None
+                if requested_property.semantic_id:
+                    actual_property = actual_by_semantic.get(requested_property.semantic_id)
+                if actual_property is None:
+                    actual_property = actual_collection.properties.get(property_name)
 
                 # Property missing
                 if actual_property is None:
@@ -704,8 +746,11 @@ class ConstraintEvaluator:
 
                     continue
 
-                # Semantic mismatch
-                if (requested_property.semantic_id!= actual_property.semantic_id):
+                # Semantic mismatch — only meaningful on the name-fallback path
+                # (when matched by semanticId the IDs are equal by construction).
+                # Both sides must declare a semanticId for a mismatch to count.
+                if (requested_property.semantic_id and actual_property.semantic_id
+                        and requested_property.semantic_id != actual_property.semantic_id):
 
                     failed_properties.append(
                         MS.PropertyMatchFailure(
@@ -719,8 +764,17 @@ class ConstraintEvaluator:
 
                     continue
 
-                # Value mismatch
-                if (requested_property.value!= actual_property.value):
+                # Value mismatch. Material is identity-bearing: the work order may
+                # carry the canonical IRI (…/Materials/ABS) while the component
+                # stores the bare name (ABS) — compare on the basename so the two
+                # forms still match. Other properties compare by exact value.
+                req_val = requested_property.value
+                act_val = actual_property.value
+                if requested_property.semantic_id == _MATERIAL_SEMANTIC:
+                    req_val = _material_basename(req_val)
+                    act_val = _material_basename(act_val)
+
+                if (req_val != act_val):
 
                     failed_properties.append(
                         MS.PropertyMatchFailure(

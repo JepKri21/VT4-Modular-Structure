@@ -136,6 +136,12 @@ class OccupancyManager:
             return True
         return any(r == resource_id_short for (r, _a) in self._stuck)
 
+    def actor_busy(self, resource_id_short: str, actor_name: str) -> bool:
+        """True if this single actor is reserved, carrying cargo, or stuck —
+        i.e. not safe to retire yet. Inverse of `is_available`; named for the
+        config-reload coordinator's per-shuttle drain check."""
+        return not self.is_available(resource_id_short, actor_name)
+
     def owner_of(self, resource_id_short: str, actor_name: str) -> str | None:
         return self._owner.get((resource_id_short, actor_name))
 

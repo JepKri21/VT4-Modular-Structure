@@ -44,6 +44,12 @@ class MQTTClientResource:
         # }
         self.subscribers = {}
 
+        # Fully-qualified topics outside this resource's own namespace (e.g. the
+        # line-level Controller/ReloadConfig). Routed by per-topic paho
+        # callbacks, NOT the suffix-based on_message dispatch, and re-subscribed
+        # on every (re)connect. topic -> callback(client, userdata, msg).
+        self.absolute_subscribers = {}
+
         self.client = mqtt.Client(
             client_id=self.client_id,
             callback_api_version=mqtt.CallbackAPIVersion.VERSION1
@@ -80,6 +86,19 @@ class MQTTClientResource:
         full_topic = f"{self.base_topic}/{self.client_id}/{topic_suffix}"
         self.client.subscribe(full_topic)
 
+    def register_absolute_subscriber(self, topic, callback):
+        """Subscribe to a fully-qualified topic outside this resource's
+        namespace (e.g. the line-level Controller/ReloadConfig).
+
+        The callback receives the raw paho message and bypasses the
+        suffix-based on_message dispatch. Stored so it is re-subscribed on
+        reconnect (see on_connect).
+        """
+        self.absolute_subscribers[topic] = callback
+        self.client.message_callback_add(topic, callback)
+        self.client.subscribe(topic)
+        print(f"Registered absolute subscriber: {topic}")
+
     # =========================================================
     # MQTT Events
     # =========================================================
@@ -92,6 +111,13 @@ class MQTTClientResource:
                 full_topic = f"{self.base_topic}/{self.client_id}/{topic_suffix}"
                 client.subscribe(full_topic)
                 print(f"Subscribed to {full_topic}")
+
+            # Re-subscribe absolute (cross-namespace) topics on every connect so
+            # a reconnect doesn't silently drop e.g. ReloadConfig handling.
+            for topic, callback in self.absolute_subscribers.items():
+                client.message_callback_add(topic, callback)
+                client.subscribe(topic)
+                print(f"Subscribed to {topic}")
 
         else:
             print(f"Connection failed: {rc}")

@@ -73,6 +73,10 @@ def build_snapshot(scheduler: "Scheduler", controller: "MQTTClientController") -
                 "owner_order": scheduler.occupancy.owner_of(topic, actor_name),
                 "cargo": scheduler.occupancy.cargo_of(topic, actor_name),
                 "stuck": scheduler.occupancy.is_stuck(topic, actor_name),
+                # A shuttle being retired: excluded from new picks, leaving once
+                # idle + empty. Lets the UI badge it as "retiring" instead of
+                # looking like a normal idle shuttle.
+                "draining": scheduler.rm.is_actor_draining(topic, actor_name),
             })
 
     # ── Reservations (instance IRI → order) ─────────────────────────────────

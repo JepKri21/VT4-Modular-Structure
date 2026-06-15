@@ -2,7 +2,7 @@
 #
 # Shared across all assembly module presets:
 #   - CapabilityCategory / CapabilityReference for Assemble and Handoff
-#   - AllowedMaterials (PLA, ABS, Aluminum)
+#   - AllowedMaterials (PLA, ABS, PETG, Aluminum)
 #   - Standard PackML Communication suffixes
 #
 # Preset (type: "assembly_module") must supply:
@@ -49,6 +49,7 @@ submodels:
     AllowedMaterials:
       - "https://aausmartlab.org/Materials/PLA"
       - "https://aausmartlab.org/Materials/ABS"
+      - "https://aausmartlab.org/Materials/PETG"
       - "https://aausmartlab.org/Materials/Aluminum"
 
   HandoffCapabilityOffered:
@@ -57,6 +58,7 @@ submodels:
     AllowedMaterials:
       - "https://aausmartlab.org/Materials/PLA"
       - "https://aausmartlab.org/Materials/ABS"
+      - "https://aausmartlab.org/Materials/PETG"
       - "https://aausmartlab.org/Materials/Aluminum"
 
   Communication:

@@ -113,7 +113,8 @@ export const buildServiceOfferedSubmodel = (
     smc(`${cap.capabilityType}_${i}`, [
       prop("CapabilityType", cap.capabilityType, "xs:string"),
       modelRef("ResourceReference", cap.resourceRef, "AssetAdministrationShell"),
-      modelRef("CapabilityReference", cap.capabilityRef, "Submodel"),
+      // idShort matches the resource Skills submodel's CapabilitySubmodelReference
+      modelRef("CapabilitySubmodelReference", cap.capabilityRef, "Submodel"),
     ]),
   );
   return {

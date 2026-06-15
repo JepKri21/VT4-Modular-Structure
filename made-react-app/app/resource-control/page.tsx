@@ -19,6 +19,7 @@ import {
   Network,
   Download,
 } from "lucide-react";
+import { ShuttleStepper } from "@/components/ShuttleStepper";
 import type { ResourceControlEntry, ResourceControlResponse } from "@/app/api/resource-control/route";
 import type { LineControllerStatus } from "@/app/api/line-controller/route";
 import type { MesApiStatus } from "@/app/api/mes-controller/route";
@@ -67,6 +68,9 @@ export default function ResourceControlPage() {
   const [mesConfigSaved, setMesConfigSaved] = useState(false);
   const [mesSettingsOpen, setMesSettingsOpen] = useState(false);
   const mesLogEndRef = useRef<HTMLDivElement>(null);
+  // Same as lcStickToBottom: only follow new output while the user is parked
+  // at the bottom, so scrolling up to read earlier output isn't yanked back.
+  const mesStickToBottom = useRef(true);
 
   const fetchLcStatus = useCallback(async () => {
     try {
@@ -116,9 +120,17 @@ export default function ResourceControlPage() {
     } catch { /* ignore */ }
   }, []);
 
+  // Follow new output only while the user is at the bottom (see lcStickToBottom).
   useEffect(() => {
-    if (mesLogsOpen) mesLogEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (mesLogsOpen && mesStickToBottom.current) {
+      mesLogEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [mesLogLines, mesLogsOpen]);
+
+  // Re-arm follow-to-bottom each time the modal opens.
+  useEffect(() => {
+    if (mesLogsOpen) mesStickToBottom.current = true;
+  }, [mesLogsOpen]);
 
   useEffect(() => {
     if (!mesLogsOpen) return;
@@ -537,6 +549,17 @@ export default function ResourceControlPage() {
                 </div>
               </div>
 
+              {resource.isTransport && (
+                <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
+                  <ShuttleStepper
+                    shellId={resource.shellId}
+                    shuttleCount={resource.shuttleCount ?? 0}
+                    serverUrl={serverUrl}
+                    onChanged={fetchResources}
+                  />
+                </div>
+              )}
+
               {expandedLogs.has(resource.shellId) && (
                 <div className="mt-3 rounded-md bg-black/80 border border-border overflow-hidden">
                   <div className="px-2 py-1 text-xs text-muted-foreground border-b border-border flex items-center gap-1">
@@ -790,7 +813,15 @@ export default function ResourceControlPage() {
                 </Button>
               </div>
             </div>
-            <div className="overflow-auto flex-1 bg-black/90 rounded-b-xl p-3">
+            <div
+              className="overflow-auto flex-1 bg-black/90 rounded-b-xl p-3"
+              onScroll={(e) => {
+                const el = e.currentTarget;
+                // Within 50px of the bottom counts as "at the bottom".
+                mesStickToBottom.current =
+                  el.scrollHeight - el.scrollTop - el.clientHeight < 50;
+              }}
+            >
               <pre className="text-xs font-mono text-green-400 whitespace-pre-wrap break-all leading-relaxed">
                 {mesLogLines.length === 0
                   ? <span className="text-muted-foreground italic">No output yet…</span>

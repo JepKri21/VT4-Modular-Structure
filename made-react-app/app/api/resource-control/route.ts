@@ -7,6 +7,45 @@ export interface ResourceControlEntry {
   displayName: string;
   running: boolean;
   pid?: number;
+  // Transport stations carry a shuttle count (the Transport skill's Actors
+  // list). Only set for transport resources; undefined elsewhere so the UI
+  // renders the stepper on transport cards only.
+  isTransport?: boolean;
+  shuttleCount?: number;
+}
+
+const b64url = (id: string) => Buffer.from(id).toString("base64url");
+
+// A transport resource is identified by its shell IRI. Covers both the type
+// shell (.../Resources/TransportStation) and a running instance
+// (.../Resources/Transport_<uuid>). No other resource family (Storage,
+// Drilling, *Assembler) contains "Transport".
+function isTransportShell(shellId: string): boolean {
+  return shellId.includes("/Shells/Resources/Transport");
+}
+
+// Count shuttles = length of the Transport skill's Actors list in the Skills
+// submodel. Returns 0 if the submodel/skill/actors can't be read.
+async function fetchShuttleCount(serverUrl: string, shellId: string): Promise<number> {
+  try {
+    const smId = `${shellId}/Skills`;
+    const res = await fetch(`${serverUrl}/submodels/${b64url(smId)}`, {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return 0;
+    const sm = (await res.json()) as {
+      submodelElements?: { idShort?: string; value?: unknown }[];
+    };
+    const skills = sm.submodelElements ?? [];
+    const transport =
+      skills.find((s) => s.idShort === "Transport") ?? skills[0];
+    const children = (transport?.value as { idShort?: string; value?: unknown }[] | undefined) ?? [];
+    const actors = children.find((c) => c.idShort === "Actors");
+    const list = (actors?.value as unknown[] | undefined) ?? [];
+    return list.length;
+  } catch {
+    return 0;
+  }
 }
 
 export interface ResourceControlResponse {
@@ -62,12 +101,20 @@ export async function GET(req: NextRequest): Promise<NextResponse<ResourceContro
         s.assetInformation?.assetKind !== "Type"
     );
 
-    const resources: ResourceControlEntry[] = resourceShells.map((s) => ({
-      shellId: s.id,
-      displayName: (s.idShort ?? s.id.split("/").pop() ?? s.id).replace(/_/g, " "),
-      running: liveIds.has(s.id),
-    }));
-
+    const resources: ResourceControlEntry[] = await Promise.all(
+      resourceShells.map(async (s) => {
+        const entry: ResourceControlEntry = {
+          shellId: s.id,
+          displayName: (s.idShort ?? s.id.split("/").pop() ?? s.id).replace(/_/g, " "),
+          running: liveIds.has(s.id),
+        };
+        if (isTransportShell(s.id)) {
+          entry.isTransport = true;
+          entry.shuttleCount = await fetchShuttleCount(serverUrl, s.id);
+        }
+        return entry;
+      }),
+    );
 
     return NextResponse.json({ resources, configOk });
   } catch (err) {

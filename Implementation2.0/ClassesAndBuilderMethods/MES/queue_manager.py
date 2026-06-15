@@ -15,6 +15,7 @@ import json
 import logging
 import os
 import threading
+import time
 from datetime import datetime
 from typing import Any
 
@@ -27,6 +28,11 @@ DATABASE_URL = os.environ.get(
     "DATABASE_URL", "postgresql://made:made@localhost:5432/made_app"
 )
 
+# Startup retry: Postgres may not be ready (or may be mid-restart) when the
+# dispatcher thread launches alongside the API. init() retries with capped
+# exponential backoff instead of letting one OperationalError kill the thread.
+DB_RETRY_MAX_S = float(os.environ.get("DB_RETRY_MAX_S", "30"))
+
 _conn: psycopg2.extensions.connection | None = None
 _conn_lock = threading.Lock()
 
@@ -34,6 +40,25 @@ _conn_lock = threading.Lock()
 def _connect() -> psycopg2.extensions.connection:
     global _conn
     with _conn_lock:
+        # Validate any cached connection before handing it back. An abrupt
+        # server-side drop (Postgres restart, idle timeout, connection abort)
+        # leaves psycopg2's `.closed` at 0 while the socket is actually dead —
+        # so the next query would raise OperationalError on every call forever.
+        # Probe with a cheap SELECT 1 and rebuild on failure. This also clears
+        # a connection stuck in an aborted-transaction state. The probe rolls
+        # back, and _connect() is always called before any work, so there is
+        # nothing uncommitted to lose.
+        if _conn is not None and not _conn.closed:
+            try:
+                with _conn.cursor() as cur:
+                    cur.execute("SELECT 1")
+                _conn.rollback()
+            except psycopg2.Error:
+                try:
+                    _conn.close()
+                except Exception:
+                    pass
+                _conn = None
         if _conn is None or _conn.closed:
             _conn = psycopg2.connect(DATABASE_URL)
             _conn.autocommit = False
@@ -41,8 +66,23 @@ def _connect() -> psycopg2.extensions.connection:
 
 
 def init() -> None:
-    """Open the connection eagerly so config errors surface at startup."""
-    _connect()
+    """Open the connection eagerly so config errors surface at startup.
+
+    Retries with capped exponential backoff: if Postgres isn't ready yet
+    (or is mid-restart) when the dispatcher launches, we back off and try
+    again rather than letting the OperationalError kill the daemon thread.
+    """
+    delay = 1.0
+    while True:
+        try:
+            _connect()
+            return
+        except psycopg2.OperationalError as exc:
+            log.warning(
+                "[queue] DB connect failed: %s — retrying in %.0fs", exc, delay
+            )
+            time.sleep(delay)
+            delay = min(delay * 2, DB_RETRY_MAX_S)
 
 
 # ── Mutations ──────────────────────────────────────────────────────────
@@ -321,6 +361,33 @@ def get_order(order_id: str) -> dict[str, Any] | None:
         cur.execute(sql, (order_id,))
         row = cur.fetchone()
     return dict(row) if row else None
+
+
+def batch_has_active_siblings(order_id: str) -> bool:
+    """True if any row in the same batch is still PENDING or RELEASED.
+
+    Used to decide whether a single unit's terminal failure should cancel the
+    whole webshop order: it should not while siblings are still producing — only
+    once every unit of the batch has reached a terminal state. Returns False when
+    the order is unknown or carries no batch_id (a lone order is its own batch).
+    """
+    row = get_order(order_id)
+    if not row:
+        return False
+    batch_id = row.get("batch_id")
+    if not batch_id:
+        return False
+    sql = """
+        SELECT 1 FROM mes_orders
+        WHERE batch_id = %s
+          AND order_id <> %s
+          AND status IN ('PENDING', 'RELEASED')
+        LIMIT 1
+    """
+    conn = _connect()
+    with conn.cursor() as cur:
+        cur.execute(sql, (batch_id, order_id))
+        return cur.fetchone() is not None
 
 
 def batch_all_completed(order_id: str) -> tuple[bool, str | None]:

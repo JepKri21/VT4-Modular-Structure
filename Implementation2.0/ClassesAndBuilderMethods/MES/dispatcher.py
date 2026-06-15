@@ -176,46 +176,64 @@ def on_connect(client: mqtt.Client, userdata, flags, rc):
     try_release(client)
 
 
-def _notify_webshop_if_batch_complete(order_id: str) -> None:
-    """Mark the webshop order fulfilled once every MES sibling is COMPLETED.
+def _resolve_batch_if_terminal(order_id: str, unit_terminal: str) -> None:
+    """Resolve the whole webshop order once EVERY unit of its batch is terminal.
 
-    A webshop order can fan out into several per-product MES orders. We only
-    call complete_order when the last one finishes so it isn't called twice.
-    order_store re-reads from disk on miss, so this works even when the order
-    was added by the mes_api process after the dispatcher started.
+    A multi-product order fans out into several MES units sharing one webshop_id.
+    Each unit finishes independently; we only resolve the customer order when no
+    sibling is still PENDING/RELEASED, so one unit's outcome never disturbs the
+    others while they're producing. Three terminal shapes:
+
+      - every unit COMPLETED            -> fulfil the webshop order
+      - mixed (some done, some failed)  -> close it; the produced units stay
+                                           consumed, the reservation for the
+                                           unproduced units is released
+      - every unit failed               -> close it; full reservation released
+
+    Call this only for a unit that is genuinely terminal — NOT one about to be
+    requeued for another dispatcher attempt — so a retrying unit keeps the order
+    open. Idempotent: webshop_notify ignores a repeat fulfil/cancel, so it's safe
+    if two units reach terminal back-to-back. order_store re-reads from disk on
+    miss, so this works even when the order was added after the dispatcher booted.
     """
+    if queue_manager.batch_has_active_siblings(order_id):
+        log.info(
+            "[dispatch] %s terminal but batch still has active siblings — "
+            "keeping webshop order open",
+            order_id,
+        )
+        return
+    order = order_store.get_order(order_id)
+    if not order:
+        log.debug("[dispatch] no order_store entry for %s — cannot resolve webshop", order_id)
+        return
+    webshop_id = order.get("webshop_id")
+    if not webshop_id:
+        log.debug("[dispatch] order %s has no webshop_id — skipping webshop resolve", order_id)
+        return
+
     all_done, batch_id = queue_manager.batch_all_completed(order_id)
-    if not all_done:
-        return
-    order = order_store.get_order(order_id)
-    if not order:
-        log.debug("[dispatch] no order_store entry for %s — cannot notify webshop", order_id)
-        return
-    webshop_id = order.get("webshop_id")
-    if not webshop_id:
-        log.debug("[dispatch] order %s has no webshop_id — skipping webshop notify", order_id)
-        return
-    log.info("[dispatch] batch %s complete — fulfilling webshop order %s", batch_id, webshop_id)
-    webshop_notify.complete_order(webshop_id)
-
-
-def _cancel_webshop_on_final_abort(order_id: str) -> None:
-    """Cancel the webshop order after all dispatcher retry attempts are exhausted.
-
-    A webshop order may fan out into several per-product MES orders sharing the same
-    webshop_id. We only cancel when the FIRST sibling hits the retry limit — further
-    siblings arriving later will get a 404/400 from the webshop (order already
-    cancelled) which webshop_notify ignores. Safe to call multiple times.
-    """
-    order = order_store.get_order(order_id)
-    if not order:
-        log.debug("[dispatch] no order_store entry for %s — cannot cancel webshop", order_id)
-        return
-    webshop_id = order.get("webshop_id")
-    if not webshop_id:
-        return
-    log.info("[dispatch] final abort for %s — cancelling webshop order %s", order_id, webshop_id)
-    webshop_notify.cancel_order(webshop_id, reason="Order aborted after all retry attempts")
+    if batch_id is None:
+        # Not part of a multi-unit batch (lone order / legacy null batch_id):
+        # resolve by this unit's own outcome rather than the batch query, which
+        # reports False for a missing batch_id and would wrongly close a success.
+        all_done = unit_terminal == "COMPLETED"
+    if all_done:
+        log.info(
+            "[dispatch] batch %s fully complete — fulfilling webshop order %s",
+            batch_id, webshop_id,
+        )
+        webshop_notify.complete_order(webshop_id)
+    else:
+        log.info(
+            "[dispatch] batch %s terminal with failures — closing webshop order %s "
+            "(releasing reservation for unproduced units)",
+            batch_id, webshop_id,
+        )
+        webshop_notify.cancel_order(
+            webshop_id,
+            reason="Order closed: one or more units could not be produced",
+        )
 
 
 def on_message(client: mqtt.Client, userdata, msg):
@@ -256,7 +274,9 @@ def on_message(client: mqtt.Client, userdata, msg):
     )
 
     if terminal == "COMPLETED":
-        _notify_webshop_if_batch_complete(completed.order_id)
+        # A completed unit may be the last of its batch to finish — resolve the
+        # whole order (fulfil if all done, close if a sibling failed).
+        _resolve_batch_if_terminal(completed.order_id, "COMPLETED")
 
     # Dispatcher-level retry on ABORTED. Look up the current
     # attempt_count via the queue (the controller's attempt_count in
@@ -278,11 +298,12 @@ def on_message(client: mqtt.Client, userdata, msg):
                 "[dispatch] %s exhausted %s/%s dispatcher attempts — final ABORT",
                 completed.order_id, cur_attempt, MAX_ATTEMPTS,
             )
-            # All retries exhausted — release the webshop reservation so the
-            # parts return to available stock. Parts already assembled into
-            # completed sub-assemblies stay consumed (their shells remain
-            # referenced in product BOMs). Best-effort; never raises.
-            _cancel_webshop_on_final_abort(completed.order_id)
+            # This unit is now genuinely terminal. Resolve the batch: if it was
+            # the last unit, close (or fulfil) the webshop order. Parts already
+            # assembled into completed sub-assemblies stay consumed (their shells
+            # remain referenced in product BOMs); only the unproduced units'
+            # reservation is released. Best-effort; never raises.
+            _resolve_batch_if_terminal(completed.order_id, "ABORTED")
 
     try_release(client)
 

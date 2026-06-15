@@ -30,7 +30,7 @@ elements:
       - type: property
         id_short: "HoleDiameter"
         value_type: "xs:float"
-        semantic_id: "https://aausmartlab.org/Semantics/mm"
+        semantic_id: "https://aausmartlab.org/Semantics/Parameter/HoleDiameter"
         description: "Drill bit diameter in mm"
         cardinality: "One"
         qualifiers:
@@ -42,13 +42,22 @@ elements:
             value_type: "xs:float"
             value: 20.0
             kind: "TEMPLATE_QUALIFIER"
+          - type: "unit"
+            value_type: "xs:string"
+            value: "mm"
+            kind: "CONCEPT_QUALIFIER"
 
       - type: range
         id_short: "DrillDepth"
         value_type: "xs:float"
-        semantic_id: "https://aausmartlab.org/Semantics/mm"
+        semantic_id: "https://aausmartlab.org/Semantics/Parameter/DrillDepth"
         description: "Minimum and maximum drill depth in mm"
         cardinality: "One"
+        qualifiers:
+          - type: "unit"
+            value_type: "xs:string"
+            value: "mm"
+            kind: "CONCEPT_QUALIFIER"
 
       - type: collection
         id_short: "TargetPosition"
@@ -59,15 +68,25 @@ elements:
           - type: range
             id_short: "XPos"
             value_type: "xs:float"
-            semantic_id: "https://aausmartlab.org/Semantics/mm"
+            semantic_id: "https://aausmartlab.org/Semantics/Parameter/XPos"
             description: "X range of hole placement in mm"
             cardinality: "One"
+            qualifiers:
+              - type: "unit"
+                value_type: "xs:string"
+                value: "mm"
+                kind: "CONCEPT_QUALIFIER"
           - type: range
             id_short: "YPos"
             value_type: "xs:float"
-            semantic_id: "https://aausmartlab.org/Semantics/mm"
+            semantic_id: "https://aausmartlab.org/Semantics/Parameter/YPos"
             description: "Y range of hole placement in mm"
             cardinality: "One"
+            qualifiers:
+              - type: "unit"
+                value_type: "xs:string"
+                value: "mm"
+                kind: "CONCEPT_QUALIFIER"
 
       - type: multi_language_property
         id_short: "OperationLabel"

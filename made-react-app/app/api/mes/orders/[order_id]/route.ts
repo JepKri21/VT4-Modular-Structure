@@ -31,33 +31,43 @@ export async function DELETE(
 ) {
   const { order_id } = await context.params;
 
-  // Fetch the batch_id before cancelling so we can cancel siblings and the webshop order.
-  const lookup = await pool.query(
-    `SELECT batch_id FROM mes_orders WHERE order_id = $1 AND status = 'PENDING'`,
+  // Cancel ONLY this unit (must still be PENDING). Sibling units of the same
+  // batch keep running — one unit's cancellation no longer drops the rest of
+  // the customer's order. Returns the batch_id so we can decide afterwards
+  // whether the whole order is now dead.
+  const cancelled = await pool.query(
+    `UPDATE mes_orders
+     SET status = 'CANCELLED', completed_at = NOW()
+     WHERE order_id = $1 AND status = 'PENDING'
+     RETURNING batch_id`,
     [order_id],
   );
-  if (lookup.rowCount === 0) {
+  if (cancelled.rowCount === 0) {
     return NextResponse.json(
       { error: "order not pending (already released or finished)" },
       { status: 409 },
     );
   }
-  const batchId: string | null = lookup.rows[0].batch_id;
+  const batchId: string | null = cancelled.rows[0].batch_id;
 
-  // Cancel every PENDING row in the same batch (handles multi-product orders).
-  await pool.query(
-    `UPDATE mes_orders
-     SET status = 'CANCELLED', completed_at = NOW()
-     WHERE batch_id = $1
-       AND status = 'PENDING'`,
-    [batchId],
-  );
+  // Only cancel the webshop order + release its reservation + clean up shells
+  // once NO sibling of the batch is still active (PENDING/RELEASED). While other
+  // units are in flight the customer order stays open. A lone order (no batch
+  // siblings) trivially satisfies this and is cancelled immediately.
+  const active = batchId
+    ? await pool.query(
+        `SELECT 1 FROM mes_orders
+         WHERE batch_id = $1 AND status IN ('PENDING', 'RELEASED') LIMIT 1`,
+        [batchId],
+      )
+    : { rowCount: 0 };
+  const batchFullyTerminal = (active.rowCount ?? 0) === 0;
 
   // batch_id is "ORD-<first 8 hex chars of the webshop UUID uppercase>".
   // Use that to find and cancel the matching webshop order so its inventory
   // reservation is released in the same action — no need to cancel separately
   // on the orders page.
-  if (batchId) {
+  if (batchId && batchFullyTerminal) {
     const hexPrefix = batchId.replace(/^ORD-/i, "").toLowerCase();
     if (hexPrefix.length === 8) {
       await pool.query(

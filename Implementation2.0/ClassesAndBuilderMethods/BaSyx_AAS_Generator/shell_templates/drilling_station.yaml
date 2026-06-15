@@ -2,7 +2,7 @@
 #
 # Shared across all drilling station presets:
 #   - CapabilityCategory / CapabilityTypeReference for Drilling and Handoff
-#   - AllowedMaterials (PLA and ABS)
+#   - AllowedMaterials (PLA, ABS, PETG)
 #   - Standard PackML Communication suffixes
 #
 # Preset (type: "drilling_station") must supply:
@@ -40,6 +40,7 @@ submodels:
     AllowedMaterials:
       - "https://aausmartlab.org/Materials/PLA"
       - "https://aausmartlab.org/Materials/ABS"
+      - "https://aausmartlab.org/Materials/PETG"
 
   HandoffCapabilityOffered:
     CapabilityCategory: "Offered"
@@ -47,6 +48,7 @@ submodels:
     AllowedMaterials:
       - "https://aausmartlab.org/Materials/PLA"
       - "https://aausmartlab.org/Materials/ABS"
+      - "https://aausmartlab.org/Materials/PETG"
 
   Communication:
     MQTT:

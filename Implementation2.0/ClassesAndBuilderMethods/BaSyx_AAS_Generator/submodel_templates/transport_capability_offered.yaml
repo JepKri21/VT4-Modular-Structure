@@ -34,15 +34,25 @@ elements:
           - type: range
             id_short: "XPos"
             value_type: "xs:float"
-            semantic_id: "https://aausmartlab.org/Semantics/mm"
+            semantic_id: "https://aausmartlab.org/Semantics/Parameter/XPos"
             description: "Reachable X range in mm"
             cardinality: "One"
+            qualifiers:
+              - type: "unit"
+                value_type: "xs:string"
+                value: "mm"
+                kind: "CONCEPT_QUALIFIER"
           - type: range
             id_short: "YPos"
             value_type: "xs:float"
-            semantic_id: "https://aausmartlab.org/Semantics/mm"
+            semantic_id: "https://aausmartlab.org/Semantics/Parameter/YPos"
             description: "Reachable Y range in mm"
             cardinality: "One"
+            qualifiers:
+              - type: "unit"
+                value_type: "xs:string"
+                value: "mm"
+                kind: "CONCEPT_QUALIFIER"
 
       - type: multi_language_property
         id_short: "OperationLabel"

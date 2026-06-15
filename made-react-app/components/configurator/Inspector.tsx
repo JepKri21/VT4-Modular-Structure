@@ -4,6 +4,14 @@ import React from "react";
 import { RotateCw, Trash2, X, AlertTriangle } from "lucide-react";
 import type { Scene, TypeById, ZoneType } from "./lib/types";
 import { localToWorld, worldToLocal, getEffectiveZones } from "./lib/geometry";
+import { ShuttleStepper } from "@/components/ShuttleStepper";
+
+// A transport resource's shell IRI. Covers both the type shell
+// (.../Resources/TransportStation) and a running instance
+// (.../Resources/Transport_<uuid>).
+function isTransportShell(shellIri: string): boolean {
+  return shellIri.includes("/Shells/Resources/Transport");
+}
 
 interface InspectorProps {
   selectedId: string | null;
@@ -147,6 +155,12 @@ export function Inspector({
             {selected.instanceId}
           </div>
         </div>
+
+        {isTransportShell(selected.typeId) && (
+          <div className="p-2 mb-4 border border-primary rounded">
+            <ShuttleStepper shellId={selected.typeId} />
+          </div>
+        )}
 
         <InspectorRow label="Position X">
           <NumInput

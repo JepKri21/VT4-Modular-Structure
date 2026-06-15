@@ -2,7 +2,7 @@
 #
 # Shared across all storage module presets:
 #   - CapabilityCategory / CapabilityReference for Store, Retrieve, and Handoff
-#   - AllowedMaterials (PLA, ABS, Aluminum)
+#   - AllowedMaterials (PLA, ABS, PETG, Aluminum)
 #   - Standard PackML Communication suffixes including InventoryLevelSuffix
 #
 # Preset (type: "storage_module") must supply:
@@ -54,6 +54,7 @@ submodels:
     AllowedMaterials:
       - "https://aausmartlab.org/Materials/PLA"
       - "https://aausmartlab.org/Materials/ABS"
+      - "https://aausmartlab.org/Materials/PETG"
       - "https://aausmartlab.org/Materials/Aluminum"
 
   RetrieveCapabilityOffered:
@@ -62,6 +63,7 @@ submodels:
     AllowedMaterials:
       - "https://aausmartlab.org/Materials/PLA"
       - "https://aausmartlab.org/Materials/ABS"
+      - "https://aausmartlab.org/Materials/PETG"
       - "https://aausmartlab.org/Materials/Aluminum"
 
   HandoffCapabilityOffered:
@@ -70,6 +72,7 @@ submodels:
     AllowedMaterials:
       - "https://aausmartlab.org/Materials/PLA"
       - "https://aausmartlab.org/Materials/ABS"
+      - "https://aausmartlab.org/Materials/PETG"
       - "https://aausmartlab.org/Materials/Aluminum"
 
   Communication:

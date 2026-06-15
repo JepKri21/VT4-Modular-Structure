@@ -459,6 +459,18 @@ class LineCapacityMessage(BaseModel):
     seq_no: int | None = None
 
 
+# Published by the UI to ask the Line Controller to retire a single transport
+# shuttle (actor) from a resource. The controller drains it cargo-safely:
+# excluded from new picks at once, kept routable for any in-flight order, and
+# only deleted from the AAS `Actors` list once it is idle + empty. Unlike a
+# direct AAS edit, this never strands cargo on a shuttle being removed.
+class RetireShuttleMessage(BaseModel):
+    timestamp: datetime
+    resource_iri: str
+    actor_name: str
+    seq_no: int | None = None
+
+
 #=============================================================================
 #============================== Resource Heartbeat ===========================
 #=============================================================================

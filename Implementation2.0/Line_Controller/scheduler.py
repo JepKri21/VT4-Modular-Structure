@@ -208,6 +208,15 @@ class Scheduler:
         # it parked in the dispatch queue forever. Keyed by (order, step).
         self._plan_retry_counts: dict[tuple[str, str], int] = {}
 
+        # Bounded retry for the occupancy commit. Mirrors _plan_retry_counts
+        # but counts ticks a step spent unable to reserve its actors. A blocked
+        # commit rolls the step back to PENDING and re-plans (re-picking a
+        # currently-free shuttle) so a shuttle we picked but lost to another
+        # order between plan and commit doesn't pin us forever — the pin is
+        # what turns hold-and-wait into a circular-wait deadlock. Keyed by
+        # (order, step).
+        self._commit_retry_counts: dict[tuple[str, str], int] = {}
+
         # Serializes inventory refreshes across concurrent orders. The refresh
         # itself runs in a worker thread (off the event loop) but mutates the
         # shared ProductMatcher index, so two orders must not rebuild it at the
@@ -449,9 +458,11 @@ class Scheduler:
                     return
         finally:
             self._active_orders.pop(order_id, None)
-            # Drop this order's arrival-planning retry counters.
+            # Drop this order's arrival-planning and commit retry counters.
             for key in [k for k in self._plan_retry_counts if k[0] == order_id]:
                 self._plan_retry_counts.pop(key, None)
+            for key in [k for k in self._commit_retry_counts if k[0] == order_id]:
+                self._commit_retry_counts.pop(key, None)
             self._release_order_reservations(order_id)
             # release() leaves stuck cargo claimed — exactly what we want
             # when an order aborts mid-flight with a part on a shuttle.
@@ -598,9 +609,26 @@ class Scheduler:
                     if ing.get("name") == ingredient_name and not ing.get("ComponentReference"):
                         ing["ComponentReference"] = resolved
             else:
+                # Bounded retry: a transient stockout should clear, but a
+                # permanently un-stockable input must abort to recovery instead
+                # of parking the step forever while it still holds any cargo
+                # reserved by earlier steps (a head-of-line block on the line).
+                # Shares _plan_retry_counts with the planning-retry branch — it's
+                # cleared on planning success and on order teardown.
+                key = (order_id, bop["step_id"])
+                attempts = self._plan_retry_counts.get(key, 0) + 1
+                self._plan_retry_counts[key] = attempts
+                if attempts > PLAN_RETRY_BUDGET:
+                    self._plan_retry_counts.pop(key, None)
+                    raise RuntimeError(
+                        f"step {bop['step_id']} found no inventory match for "
+                        f"'{ingredient_name}' (type={info['ComponentTypeReference']}) "
+                        f"after {PLAN_RETRY_BUDGET} retries"
+                    )
                 print(
                     f"[bop] no inventory match for '{ingredient_name}' "
-                    f"(type={info['ComponentTypeReference']}) — pausing step"
+                    f"(type={info['ComponentTypeReference']}) — pausing step "
+                    f"({attempts}/{PLAN_RETRY_BUDGET})"
                 )
                 await asyncio.sleep(TICK_INTERVAL_S)
                 return
@@ -617,7 +645,23 @@ class Scheduler:
         print("[bop] running capability matcher…")
         candidates = self.matcher.match(info, excluded_resources=excluded)
         if not candidates:
-            print("[bop] no matching resource — pausing this step")
+            # Bounded retry, same rationale as the no-inventory-match branch: a
+            # capability that never becomes matchable must abort to recovery
+            # rather than park forever holding earlier steps' cargo.
+            key = (order_id, bop["step_id"])
+            attempts = self._plan_retry_counts.get(key, 0) + 1
+            self._plan_retry_counts[key] = attempts
+            if attempts > PLAN_RETRY_BUDGET:
+                self._plan_retry_counts.pop(key, None)
+                raise RuntimeError(
+                    f"step {bop['step_id']} found no matching resource for "
+                    f"capability {info['CapabilityReference']} after "
+                    f"{PLAN_RETRY_BUDGET} retries"
+                )
+            print(
+                f"[bop] no matching resource — pausing this step "
+                f"({attempts}/{PLAN_RETRY_BUDGET})"
+            )
             await asyncio.sleep(TICK_INTERVAL_S)
             return
         chosen = candidates[0]
@@ -755,17 +799,49 @@ class Scheduler:
         )
 
         # Reserve all involved actors for this order while the plan runs.
-        # If any required actor is held by a different order, back off and
-        # retry until it frees, instead of failing the whole order.
-        while True:
-            blocker = self.occupancy.try_commit(order_id, reservations)
-            if blocker is None:
-                break
+        #
+        # try_commit is all-or-nothing: on a partial conflict it reserves
+        # *nothing*. So a shuttle this plan picked (free at plan time) can be
+        # taken by another order before we manage to commit — typically because
+        # we're also waiting on a scarce target (an assembler) that's still
+        # busy. Retrying the SAME reservation list would then pin us to the now
+        # stolen shuttle forever, even while other shuttles sit idle. If we're
+        # holding a resource another order needs (an assembler with cargo), that
+        # pin is a circular-wait deadlock (observed: ORD-7 holds the assembler
+        # and waits on a shuttle held by ORD-9, which waits on the assembler).
+        #
+        # Fix: on a blocked commit, roll the step back to PENDING and return so
+        # the next tick re-runs arrival planning and re-picks a currently-free
+        # shuttle — the same self-healing the arrival-planning shortage path
+        # already relies on. Bound it with PLAN_RETRY_BUDGET so a step that is
+        # *genuinely* stuck (its only capable target is permanently held)
+        # eventually raises to recovery and aborts the order instead of wedging
+        # the line forever.
+        blocker = self.occupancy.try_commit(order_id, reservations)
+        if blocker is not None:
+            key = (order_id, bop["step_id"])
+            attempts = self._commit_retry_counts.get(key, 0) + 1
+            self._commit_retry_counts[key] = attempts
+            owner = self.occupancy.owner_of(*blocker)
+            if attempts > PLAN_RETRY_BUDGET:
+                self._commit_retry_counts.pop(key, None)
+                raise RuntimeError(
+                    f"step {bop['step_id']} could not reserve "
+                    f"{blocker[0]}/{blocker[1]} (held by order {owner}) after "
+                    f"{PLAN_RETRY_BUDGET} retries"
+                )
             print(
                 f"[bop] step {bop['step_id']} waiting on {blocker[0]}/{blocker[1]} "
-                f"(held by order {self.occupancy.owner_of(*blocker)})"
+                f"(held by order {owner}) — re-planning "
+                f"({attempts}/{PLAN_RETRY_BUDGET})"
             )
+            handler.update_step(bop["step_id"], StepStates.PENDING)
             await asyncio.sleep(TICK_INTERVAL_S)
+            return
+
+        # Commit succeeded — clear this step's commit-retry budget so a later
+        # stall starts fresh rather than inheriting a near-exhausted count.
+        self._commit_retry_counts.pop((order_id, bop["step_id"]), None)
 
         try:
             await self._print_and_execute_plan(plan, iri_by_topic, "pre-process")
@@ -1330,6 +1406,30 @@ class Scheduler:
                     self.product_matcher.refresh_for_type, type_ref
                 )
 
+    def _has_available_instance(self, ingredient: dict) -> bool:
+        """True if a free (unreserved) instance of this ingredient's type can be
+        resolved from inventory right now.
+
+        Used to decide whether a bound-but-invisible instance is genuinely
+        replaceable (a consumed raw storage part with other stock of its type) or
+        an in-flight sub-assembly that simply isn't in storage (no replacement —
+        keep the binding). Mirrors the candidate filtering in
+        `_resolve_input_instance` so the two agree on what "available" means.
+        """
+        type_ref = ingredient.get("ComponentTypeReference")
+        if not type_ref:
+            return False
+        try:
+            matches = self.product_matcher.find_matching_components(
+                component_type_reference=type_ref,
+                order_properties=ingredient.get("Properties") or {},
+            )
+        except Exception:
+            return False
+        return any(
+            self._reserved_instances.get(m.component_id) is None for m in matches
+        )
+
     def _resolve_input_instance(
         self,
         handler: WorkOrderHandler,
@@ -1355,9 +1455,41 @@ class Scheduler:
         """
         existing = ingredient.get("ComponentReference") or ""
         if existing:
+            # Validate the bound instance still physically exists before reusing
+            # it. A Retrieve on a PRIOR (failed) attempt empties the storage slot
+            # (_consume_instance clears ComponentShellReference), so an instance
+            # bound on attempt 1 may be gone by attempt 2. Reusing it makes every
+            # retry fail at the retrieve step with INCOMPLETE, because no resource
+            # holds it and the storage fallback picks the wrong one. Accept the
+            # binding only if the part is still held by an actor/shuttle or is
+            # present in some inventory; otherwise drop it and re-resolve by type.
+            still_held = self.occupancy.find_holder(existing) is not None
+            still_stocked = (
+                self.product_matcher.find_component_location(existing) is not None
+            )
+            # Only abandon the binding if a fresh same-type instance can actually
+            # be resolved. This distinguishes the two reasons a bound instance can
+            # be "invisible":
+            #   (a) a raw storage part consumed by a failed earlier attempt — its
+            #       type still has other stock, so we switch to a fresh one;
+            #   (b) an in-flight SUB-ASSEMBLY the order is carrying that the
+            #       single-cargo-per-actor ledger lost track of — a multi-input
+            #       assembly target (e.g. PhoneAssembler holding BottomCoverPCBFuse
+            #       *and* TopCover) overwrites the first cargo with the second, so
+            #       find_holder misses it. Sub-assemblies are never in storage, so
+            #       there is no replacement — keep the binding rather than deadlock.
+            if still_held or still_stocked or not self._has_available_instance(ingredient):
+                if order_id is not None:
+                    self._reserve_instance(existing, order_id)
+                return existing
+            print(
+                f"[reserve] '{ingredient.get('name')}': bound instance {existing} "
+                f"was consumed by a failed attempt — re-resolving a fresh instance by type"
+            )
             if order_id is not None:
-                self._reserve_instance(existing, order_id)
-            return existing
+                self._release_instance_reservation(existing, order_id)
+            ingredient["ComponentReference"] = ""
+            handler.update_component_reference(ingredient["name"], "")
 
         type_ref = ingredient.get("ComponentTypeReference")
         if not type_ref:
@@ -1548,12 +1680,22 @@ class Scheduler:
                 picked_instance = location.component_id
 
         if storage_iri is None and component_ref:
-            # Fallback: treat component_ref as a TYPE IRI (e.g. when the
-            # caller hasn't pre-resolved to an instance).
+            # Fallback: the concrete instance isn't locatable (e.g. consumed by a
+            # failed attempt, or the caller never pre-resolved). Re-resolve by the
+            # ingredient's declared TYPE — NOT by component_ref, which may be a
+            # full instance IRI. find_by_component_type keys on the type path, so
+            # passing an instance IRI there can never match and silently misfires
+            # into "first Retrieve resource".
             # Prefer the handler's workorder (per-order, safe across
              # concurrent orders); fall back to self.workorder for legacy
              # single-order use.
             workorder = (handler.workorder if handler is not None else None) or self.workorder
+            ingredient = (
+                (workorder or {}).get("Ingredients", {}).get(ingredient_name, {})
+                if ingredient_name
+                else {}
+            )
+            type_ref = ingredient.get("ComponentTypeReference") or component_ref
             props = (
                 (workorder or {})
                 .get("Properties", {})
@@ -1564,13 +1706,13 @@ class Scheduler:
             try:
                 if props:
                     matches = self.product_matcher.find_matching_components(
-                        component_type_reference=component_ref,
+                        component_type_reference=type_ref,
                         order_properties=props,
                     )
                 else:
                     matches = (
                         self.product_matcher.inventory_indexer
-                        .find_by_component_type(component_ref)
+                        .find_by_component_type(type_ref)
                     )
                     matches = [
                         # Adapt indexed-component → ComponentLocation-shaped dict-like.
@@ -1717,6 +1859,13 @@ class Scheduler:
 
             for offset in range(n):
                 actor = actors[(start + offset) % n]
+                # A shuttle being retired is excluded from ALL new picks (not
+                # even a reuse fallback) — it must run down to idle+empty and
+                # leave, never take on fresh cargo. It stays routable for the
+                # order already holding it via the endpoint baked into that
+                # order's plan. See ResourceManager._draining_actors.
+                if self.rm.is_actor_draining(topic, actor):
+                    continue
                 if not self.occupancy.is_available(topic, actor):
                     continue
                 if (topic, actor) in excluded_set:
@@ -1930,17 +2079,31 @@ class Scheduler:
         # Wait for the shuttle to become free instead of raising if a
         # concurrent order currently owns it. Mirrors the wait-loop in
         # _execute_bop_step so post-process doesn't kill the order on
-        # cross-order contention.
+        # cross-order contention — but bounded: the shuttle was picked once
+        # (above) and an unbounded wait re-creates the very pin/deadlock the
+        # main path was fixed for (finished product wedged on the holder while
+        # we wait forever on a stolen shuttle). On exhaustion give up storing
+        # and leave the part on the holder, matching the "no Store"/"no shuttle"
+        # early-returns above; the order is still marked COMPLETE by the caller.
         post_reservation = [(shuttle.resource_id, shuttle.actor_name)]
-        while True:
+        committed = False
+        for _ in range(PLAN_RETRY_BUDGET):
             blocker = self.occupancy.try_commit(order_id, post_reservation)
             if blocker is None:
+                committed = True
                 break
             print(
                 f"[finalize] post-process waiting on {blocker[0]}/{blocker[1]} "
                 f"(held by order {self.occupancy.owner_of(*blocker)})"
             )
             await asyncio.sleep(TICK_INTERVAL_S)
+        if not committed:
+            print(
+                f"[finalize] post-process could not reserve {shuttle.resource_id}/"
+                f"{shuttle.actor_name} after {PLAN_RETRY_BUDGET} retries — "
+                f"leaving part on holder"
+            )
+            return
         try:
             await self._print_and_execute_plan(plan, iri_by_topic, "post-process")
         finally:

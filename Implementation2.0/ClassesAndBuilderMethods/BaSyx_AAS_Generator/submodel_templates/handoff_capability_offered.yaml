@@ -34,13 +34,23 @@ elements:
           - type: property
             id_short: "XPos"
             value_type: "xs:float"
-            semantic_id: "https://aausmartlab.org/Semantics/mm"
+            semantic_id: "https://aausmartlab.org/Semantics/Parameter/XPos"
             cardinality: "One"
+            qualifiers:
+              - type: "unit"
+                value_type: "xs:string"
+                value: "mm"
+                kind: "CONCEPT_QUALIFIER"
           - type: property
             id_short: "YPos"
             value_type: "xs:float"
-            semantic_id: "https://aausmartlab.org/Semantics/mm"
+            semantic_id: "https://aausmartlab.org/Semantics/Parameter/YPos"
             cardinality: "One"
+            qualifiers:
+              - type: "unit"
+                value_type: "xs:string"
+                value: "mm"
+                kind: "CONCEPT_QUALIFIER"
 
       - type: multi_language_property
         id_short: "OperationLabel"

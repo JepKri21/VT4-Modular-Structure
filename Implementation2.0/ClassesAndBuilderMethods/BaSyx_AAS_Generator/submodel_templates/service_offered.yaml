@@ -44,9 +44,9 @@ elements:
             reference_target: "shell"
 
           - type: reference_element
-            id_short: "CapabilityReference"
-            semantic_id: "https://aausmartlab.org/Semantics/CapabilityReference"
-            description: "Reference to the specific OfferedCapability submodel on that resource"
+            id_short: "CapabilitySubmodelReference"
+            semantic_id: "https://aausmartlab.org/Semantics/CapabilitySubmodelReference"
+            description: "Reference to the specific OfferedCapability submodel on that resource (named to match the resource Skills submodel)"
             cardinality: "One"
             reference_type: "model"
             reference_target: "submodel"

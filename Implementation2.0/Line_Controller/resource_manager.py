@@ -62,6 +62,15 @@ class ResourceManager:
         # finalizes the drop once they go idle. See config_reload.py.
         self._draining: set[str] = set()
 
+        # Individual transport shuttles (actors) being retired from a resource
+        # that itself stays on the line. Keyed by (topic_id, actor_name). Same
+        # idea as `_draining` but one level down: a draining actor is excluded
+        # from new shuttle picks immediately yet remains routable for any
+        # in-flight order holding it, until the config-reload coordinator
+        # confirms it idle + empty and deletes it from the AAS. See
+        # config_reload.request_retire / finalize_drained.
+        self._draining_actors: set[tuple[str, str]] = set()
+
     @staticmethod
     def topic_id_for_iri(iri: str) -> str:
         """Last URI segment of a shell IRI — the resource_id used in MQTT topics.
@@ -226,10 +235,23 @@ class ResourceManager:
         if element.get("semanticId"):
             semantic_id = element["semanticId"]["keys"][0]["value"]
 
-        if id_short:
-            return MS.PropertyElement(id_short=id_short, value=value, semantic_id=semantic_id)
+        if not id_short:
+            return None
 
-        return None
+        # A Property carrying range_min/range_max qualifiers is semantically a
+        # range envelope (e.g. HoleDiameter min=1 max=20). Promote it to a
+        # RangeElement so the matcher's range check applies — without this it
+        # would look like an unconstrained Property and silently pass.
+        rmin = rmax = None
+        for q in element.get("qualifiers", []) or []:
+            if q.get("type") == "range_min":
+                rmin = q.get("value")
+            elif q.get("type") == "range_max":
+                rmax = q.get("value")
+        if rmin is not None and rmax is not None:
+            return MS.RangeElement(id_short=id_short, min=rmin, max=rmax, semantic_id=semantic_id)
+
+        return MS.PropertyElement(id_short=id_short, value=value, semantic_id=semantic_id)
 
     def parse_collection(self, element):
         id_short = element.get("idShort")
@@ -332,6 +354,19 @@ class ResourceManager:
 
     def is_draining(self, shell_id: str) -> bool:
         return shell_id in self._draining
+
+    def mark_actor_draining(self, topic_id: str, actor_name: str) -> None:
+        """Flag a single shuttle (actor) as retiring: excluded from new picks
+        but still routable for the order currently holding it."""
+        self._draining_actors.add((topic_id, actor_name))
+
+    def is_actor_draining(self, topic_id: str, actor_name: str) -> bool:
+        return (topic_id, actor_name) in self._draining_actors
+
+    def discard_actor_drain(self, topic_id: str, actor_name: str) -> None:
+        """Forget a draining actor once it has been finalized (deleted from the
+        AAS) or came back into the config."""
+        self._draining_actors.discard((topic_id, actor_name))
 
     def remove_resource(self, shell_id: str) -> None:
         """Drop a resource from the registry entirely (no longer on the line).

@@ -138,6 +138,71 @@ def write_traceability(
         return False
 
 
+# ── Resource Skills (shuttle retirement) ─────────────────────────────────────
+
+def remove_actor_from_skills(
+    aas_server_base: str,
+    resource_shell_iri: str,
+    actor_name: str,
+) -> bool:
+    """Delete a single actor from every skill's Actors list on a resource's Skills submodel.
+
+    Read-modify-PUT of the whole submodel (index-agnostic, atomic): fetch it,
+    drop any Actors entry whose value == actor_name from each skill, and PUT it
+    back. The config-reload coordinator calls this only once the shuttle is
+    confirmed idle + empty, so a part is never stranded on a removed shuttle.
+
+    Args:
+        aas_server_base: e.g. "http://localhost:8081".
+        resource_shell_iri: IRI of the transport resource shell.
+        actor_name: the shuttle/actor to remove (e.g. "Shuttle3").
+
+    Returns:
+        True if the submodel was rewritten (or the actor was already absent),
+        False on an AAS read/write error. Never raises.
+    """
+    server = aas_server_base.rstrip("/")
+    submodel_id = f"{resource_shell_iri.rstrip('/')}/Skills"
+    url = f"{server}/submodels/{_b64(submodel_id)}"
+    headers = {"Content-Type": "application/json"}
+
+    try:
+        resp = requests.get(url)
+        if resp.status_code != 200:
+            print(f"[retire] GET Skills failed for {resource_shell_iri}: {resp.status_code}")
+            return False
+        submodel = resp.json()
+
+        removed = False
+        for skill in submodel.get("submodelElements", []) or []:
+            children = skill.get("value")
+            if not isinstance(children, list):
+                continue
+            actors_el = next((c for c in children if c.get("idShort") == "Actors"), None)
+            if actors_el is None:
+                continue
+            items = actors_el.get("value") or []
+            kept = [i for i in items if i.get("value") != actor_name]
+            if len(kept) != len(items):
+                actors_el["value"] = kept
+                removed = True
+
+        if not removed:
+            # Already gone — treat as success so finalize doesn't loop forever.
+            print(f"[retire] actor {actor_name} already absent from {resource_shell_iri}/Skills")
+            return True
+
+        put = requests.put(url, headers=headers, data=json.dumps(submodel).encode("utf-8"))
+        if put.status_code in (200, 201, 204):
+            print(f"[retire] removed actor {actor_name} from {resource_shell_iri}/Skills")
+            return True
+        print(f"[retire] PUT Skills failed for {resource_shell_iri}: {put.status_code} {put.text[:200]}")
+        return False
+    except requests.RequestException as e:
+        print(f"[retire] HTTP error removing actor {actor_name}: {e}")
+        return False
+
+
 # ── BillOfProcesses status ───────────────────────────────────────────────────
 
 def write_bop_step_started(

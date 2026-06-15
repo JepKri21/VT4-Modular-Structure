@@ -36,15 +36,25 @@ elements:
           - type: property
             id_short: "XPos"
             value_type: "xs:float"
-            semantic_id: "https://aausmartlab.org/Semantics/mm"
+            semantic_id: "https://aausmartlab.org/Semantics/Parameter/XPos"
             description: "X-coordinate of assembly position in mm"
             cardinality: "One"
+            qualifiers:
+              - type: "unit"
+                value_type: "xs:string"
+                value: "mm"
+                kind: "CONCEPT_QUALIFIER"
           - type: property
             id_short: "YPos"
             value_type: "xs:float"
-            semantic_id: "https://aausmartlab.org/Semantics/mm"
+            semantic_id: "https://aausmartlab.org/Semantics/Parameter/YPos"
             description: "Y-coordinate of assembly position in mm"
             cardinality: "One"
+            qualifiers:
+              - type: "unit"
+                value_type: "xs:string"
+                value: "mm"
+                kind: "CONCEPT_QUALIFIER"
 
       - type: multi_language_property
         id_short: "OperationLabel"

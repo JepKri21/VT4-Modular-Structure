@@ -129,19 +129,30 @@ class CapabilityMatcher:
     def _check_parameters(self, step_params, cap_parameters):
         """Validate every workorder parameter against the capability.
 
-        Both sides are flattened to leaf id_shorts. If the capability declares
-        a Range for a leaf, the workorder value must fall inside it. Property
-        declarations are accepted as-is. Unknown work-order parameters reject.
+        Each leaf is matched to its capability counterpart by *identity*
+        semanticId when that semanticId is unique on the capability side, else by
+        id_short (with PARAMETER_ALIASES). This is safe on both pre-migration data
+        — where dimensioned parameters share the unit semanticId (…/mm), so it is
+        non-unique and matching falls back to id_short — and post-migration data,
+        where each parameter has a distinct identity semanticId. If the capability
+        declares a Range for the matched leaf, the workorder value must fall
+        inside it. Unknown work-order parameters reject.
 
         Returns (ok, reason). `reason` is a short human-readable string when
         ok is False, otherwise empty.
         """
         cap_by_name = self._flatten_cap_parameters(cap_parameters)
+        cap_by_semantic = self._unique_semantic_index(cap_by_name)
         step_by_name = self._flatten_step_params(step_params)
 
-        for name, value in step_by_name.items():
-            cap_param = cap_by_name.get(name)
+        for name, (value, semantic_id) in step_by_name.items():
+            cap_param = None
             resolved_name = name
+            if semantic_id and semantic_id in cap_by_semantic:
+                cap_param = cap_by_semantic[semantic_id]
+                resolved_name = f"{name} (sem={semantic_id})"
+            if cap_param is None:
+                cap_param = cap_by_name.get(name)
             if cap_param is None:
                 aliased = self.PARAMETER_ALIASES.get(name)
                 if aliased:
@@ -198,17 +209,22 @@ class CapabilityMatcher:
         )
 
     def _flatten_step_params(self, step_params):
-        """Walk the work-order parameter tree, returning {leaf_idShort: value}.
+        """Walk the work-order parameter tree, returning {leaf_idShort: (value, semanticId)}.
 
-        Treats any dict containing a 'value' key (with either 'semanticId' or
-        'semantic_id' alongside it, or just 'value' on its own) as a leaf.
-        Other dicts are recursed into. Bare scalar values pass through.
+        Treats any dict containing a 'value' key (with a 'SemanticId'/'semanticId'/
+        'semantic_id' alongside it, or just 'value' on its own) as a leaf. Other
+        dicts are recursed into. Bare scalar values pass through with an empty
+        semanticId.
         """
         flat = {}
 
+        def semantic_of(node):
+            return node.get("SemanticId") or node.get("semanticId") or node.get("semantic_id") or ""
+
         def is_leaf_wrapper(node):
             return isinstance(node, dict) and "value" in node and (
-                "semanticId" in node or "semantic_id" in node or len(node) <= 2
+                "SemanticId" in node or "semanticId" in node or "semantic_id" in node
+                or len(node) <= 2
             )
 
         def walk(node):
@@ -216,14 +232,30 @@ class CapabilityMatcher:
                 return
             for name, body in node.items():
                 if is_leaf_wrapper(body):
-                    flat[name] = body["value"]
+                    flat[name] = (body["value"], semantic_of(body))
                 elif isinstance(body, dict):
                     walk(body)
                 else:
-                    flat[name] = body
+                    flat[name] = (body, "")
 
         walk(step_params or {})
         return flat
+
+    def _unique_semantic_index(self, cap_by_name):
+        """Map identity semanticId -> capability leaf, only for semanticIds carried
+        by exactly one leaf. A shared semanticId (e.g. the unit …/mm before the
+        identity migration) is not a usable identity and is excluded, so matching
+        falls back to id_short for those leaves."""
+        counts = {}
+        for node in cap_by_name.values():
+            sem = getattr(node, "semantic_id", None)
+            if sem:
+                counts[sem] = counts.get(sem, 0) + 1
+        return {
+            node.semantic_id: node
+            for node in cap_by_name.values()
+            if getattr(node, "semantic_id", None) and counts[node.semantic_id] == 1
+        }
 
     def _flatten_cap_parameters(self, cap_parameters):
         flat = {}

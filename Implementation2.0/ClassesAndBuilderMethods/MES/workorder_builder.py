@@ -332,6 +332,9 @@ def _parse_electrical_value(val):
     return val
 
 
+_MATERIALS_BASE = "https://aausmartlab.org/Materials/"
+
+
 def _make_properties_for_slot(slot_cfg: dict) -> dict:
     """Build a Properties dict from slot config, covering all property sections."""
     customer = slot_cfg.get("properties") or {}
@@ -344,22 +347,30 @@ def _make_properties_for_slot(slot_cfg: dict) -> dict:
     ):
         val = customer.get(prop_key)
         if val:
+            # Material carries a resolvable identity: emit the canonical material
+            # IRI (…/Materials/<name>) so it matches a capability's AllowedMaterials
+            # by full IRI rather than a bare-name heuristic. Already-qualified
+            # values (full URLs) pass through unchanged.
+            if id_short == "Material" and isinstance(val, str) and not val.startswith("http"):
+                val = f"{_MATERIALS_BASE}{val}"
             mat[id_short] = {
                 "semanticId": f"https://aausmartlab.org/Semantics/{sem_fragment}",
                 "value": val,
             }
 
     dims = {}
-    for prop_key, sem_key, sem_unit in (
-        ("length", "Length", "mm"),
-        ("width",  "Width",  "mm"),
-        ("height", "Height", "mm"),
-        ("weight", "Weight", "gram"),
+    for prop_key, sem_key in (
+        ("length", "Length"),
+        ("width",  "Width"),
+        ("height", "Height"),
+        ("weight", "Weight"),
     ):
         val = customer.get(prop_key)
         if val is not None:
+            # Identity semanticId per dimension (the unit lives as a qualifier on
+            # the component side); previously all three shared …/Semantics/mm.
             dims[sem_key] = {
-                "semanticId": f"https://aausmartlab.org/Semantics/{sem_unit}",
+                "semanticId": f"https://aausmartlab.org/Semantics/Parameter/{sem_key}",
                 "value": val,
             }
 

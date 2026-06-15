@@ -29,16 +29,26 @@ elements:
       - type: property
         id_short: "HoleDiameter"
         value_type: "xs:float"
-        semantic_id: "https://aausmartlab.org/Semantics/mm"
+        semantic_id: "https://aausmartlab.org/Semantics/Parameter/HoleDiameter"
         description: "Required hole diameter in mm"
         cardinality: "One"
+        qualifiers:
+          - type: "unit"
+            value_type: "xs:string"
+            value: "mm"
+            kind: "CONCEPT_QUALIFIER"
 
       - type: property
         id_short: "DrillDepth"
         value_type: "xs:float"
-        semantic_id: "https://aausmartlab.org/Semantics/mm"
+        semantic_id: "https://aausmartlab.org/Semantics/Parameter/DrillDepth"
         description: "Required drill depth in mm"
         cardinality: "ZeroToOne"
+        qualifiers:
+          - type: "unit"
+            value_type: "xs:string"
+            value: "mm"
+            kind: "CONCEPT_QUALIFIER"
 
       - type: collection
         id_short: "TargetPosition"
@@ -49,15 +59,25 @@ elements:
           - type: property
             id_short: "XPos"
             value_type: "xs:float"
-            semantic_id: "https://aausmartlab.org/Semantics/mm"
+            semantic_id: "https://aausmartlab.org/Semantics/Parameter/XPos"
             description: "X-coordinate of hole position in mm"
             cardinality: "One"
+            qualifiers:
+              - type: "unit"
+                value_type: "xs:string"
+                value: "mm"
+                kind: "CONCEPT_QUALIFIER"
           - type: property
             id_short: "YPos"
             value_type: "xs:float"
-            semantic_id: "https://aausmartlab.org/Semantics/mm"
+            semantic_id: "https://aausmartlab.org/Semantics/Parameter/YPos"
             description: "Y-coordinate of hole position in mm"
             cardinality: "One"
+            qualifiers:
+              - type: "unit"
+                value_type: "xs:string"
+                value: "mm"
+                kind: "CONCEPT_QUALIFIER"
 
       - type: multi_language_property
         id_short: "OperationLabel"

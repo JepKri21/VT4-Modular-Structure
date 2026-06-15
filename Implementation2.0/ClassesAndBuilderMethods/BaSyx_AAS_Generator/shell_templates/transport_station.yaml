@@ -2,7 +2,7 @@
 #
 # Shared across all transport station presets:
 #   - CapabilityCategory / CapabilityReference for Transport
-#   - AllowedMaterials (PLA and ABS)
+#   - AllowedMaterials (PLA, ABS, PETG)
 #   - Standard PackML Communication suffixes
 #
 # Preset (type: "transport_station") must supply:
@@ -39,6 +39,7 @@ submodels:
     AllowedMaterials:
       - "https://aausmartlab.org/Materials/PLA"
       - "https://aausmartlab.org/Materials/ABS"
+      - "https://aausmartlab.org/Materials/PETG"
 
   Communication:
     MQTT:
