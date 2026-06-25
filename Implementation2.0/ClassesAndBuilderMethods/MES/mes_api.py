@@ -46,6 +46,15 @@ log = logging.getLogger("mes_api")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Ensure the schema exists *before* either background thread starts.
+    # psql_bridge.main() also calls ensure_schema(), but it does so inside
+    # its own thread — racing the dispatcher thread's on_connect, which
+    # queries mes_orders as soon as MQTT connects. On a fresh database that
+    # race can lose, crashing the dispatcher thread with UndefinedTable.
+    schema_conn = psql_bridge.connect_and_init()
+    if schema_conn is not None:
+        schema_conn.close()
+
     t_dispatcher = threading.Thread(
         target=dispatcher.main, name="dispatcher", daemon=True
     )
